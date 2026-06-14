@@ -166,9 +166,17 @@
   .pslot .key{position:absolute;top:-7px;right:-5px;font-size:8px;background:var(--twitch);color:#fff;padding:0 3px;border-radius:2px;}
   /* 슬더스 맵 */
   #ovMap .panel-box{max-width:720px;}
-  #mapSvg{width:100%;}
+  #mapSvg{width:100%;max-height:430px;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;}
   #mapSvg svg{width:100%;height:auto;display:block;}
   .mapnode{transition:transform .1s;}
+  .campfire-box{background:radial-gradient(circle at 50% 28%, #3a1e0e 0%, #1c100a 72%);border:1px solid #5a3418;}
+  .campfire-art{position:relative;height:118px;display:flex;align-items:flex-end;justify-content:center;margin-bottom:6px;}
+  .cf-glow{position:absolute;bottom:4px;width:190px;height:120px;background:radial-gradient(circle, rgba(255,150,50,.55), transparent 70%);filter:blur(7px);animation:cfGlow 1.7s ease-in-out infinite;}
+  .cf-fire{font-size:66px;line-height:1;animation:cfFlicker .45s ease-in-out infinite alternate;filter:drop-shadow(0 0 16px #ff8c2a);}
+  .cf-logs{position:absolute;bottom:0;font-size:36px;}
+  .campfire-box .choice .sub{font-size:12px;opacity:.82;margin-top:4px;}
+  @keyframes cfFlicker{from{transform:translateY(0) scale(1) rotate(-2deg);}to{transform:translateY(-3px) scale(1.09) rotate(2deg);}}
+  @keyframes cfGlow{0%,100%{opacity:.55;}50%{opacity:1;}}
   .mapnode.reach{cursor:pointer;}
   .mapnode.reach:hover{transform:scale(1.12);transform-box:fill-box;transform-origin:center;}
   .maplegend{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-top:10px;font-size:11px;color:var(--muted);}
@@ -513,6 +521,20 @@
         </div>
       </div>
 
+      <!-- CAMPFIRE -->
+      <div class="overlay hidden" id="ovCampfire">
+        <div class="panel-box campfire-box">
+          <div class="campfire-art"><div class="cf-glow"></div><div class="cf-fire">🔥</div><div class="cf-logs">🪵</div></div>
+          <div class="tag">🔥 모닷불</div>
+          <h2>잠시 쉬어간다</h2>
+          <p id="cfBody">불 곁에서 한숨 돌리자. 하나만 고를 수 있다.</p>
+          <div class="choices">
+            <button class="choice" id="cfRest"><div class="ttl">😴 휴식</div><div class="sub">체력을 가득(풀피) 회복한다</div></button>
+            <button class="choice" id="cfTrain"><div class="ttl">💪 단련</div><div class="sub">기본 스펙 하나를 무작위로 강화</div></button>
+          </div>
+        </div>
+      </div>
+
       <!-- RELIC CHOICE -->
       <div class="overlay hidden" id="ovRelic">
         <div class="panel-box">
@@ -804,7 +826,7 @@ const ENEMY_TYPES={
   goblin_bomber  :{name:"블페러", r:15, hp:20, spd:96, dmg:8,  color:"#9aa83f", xp:10, ai:"chase", explode:true, label:"블페러"},
   rhino_beetle   :{name:"자잘자",   r:24, hp:30, spd:60, dmg:11, color:"#3a2418", xp:14, ai:"charge", label:"자잘자"},
   earthworm      :{name:"지렁이", r:12, hp:10, spd:74, dmg:6, color:"#e87a8a", xp:4, ai:"erratic", label:"지렁이"},
-  hyechul        :{name:"혜철이", r:30, hp:200, spd:42, dmg:14, color:"#c0392b", xp:0, ai:"hyechul", label:"혜철이"},
+  hyechul        :{name:"혜철이", r:40, hp:200, spd:42, dmg:14, color:"#c0392b", xp:0, ai:"hyechul", label:"혜철이"},
   zergling       :{name:"저글링", r:14, hp:12, spd:120, dmg:7, color:"#c98bff", xp:3, ai:"charge", label:"저글링"},
   mutalisk       :{name:"뮤탈", r:16, hp:16, spd:130, dmg:8, color:"#b97a4a", xp:5, ai:"chase", label:"뮤탈"},
   ultra          :{name:"울트라", r:26, hp:95, spd:52, dmg:20, color:"#8a6f4a", xp:12, ai:"chase", armor:0.25, label:"울트라"},
@@ -832,6 +854,8 @@ const ACT_POOLS=[
 let minionPool=null;
 let tutorial=null;
 let tutorialMode=false, tutorialDoneFlag=false;
+let floatBubbles=[]; // 적이 사라진 자리에 잠시 떠 있는 말풍선
+let lastKiller=null; // 마지막으로 플레이어를 죽인 대상 이름
 let pendingLevels=0;
 // ---------- 난이도 ----------
 const DIFFS={
@@ -842,11 +866,11 @@ const DIFFS={
 let diffSet=DIFFS.easy;
 
 const BOSSES=[
-  {key:"kijo",sprite:"kijo",name:"키죠",title:"1막 보스 · 가면의 마귀",r:46,hp:2400,color:"#c0392b",spd:46,
+  {key:"kijo",sprite:"kijo",name:"키죠",title:"1막 보스 · 가면의 마귀",r:58,hp:2400,color:"#c0392b",spd:46,
    quip:"이 가면 뒤가 보이느냐?",pattern:"summon"},
-  {key:"steel_lord",sprite:"steel_lord",name:"강철 군주",title:"2막 보스 · 흑철의 망령",r:48,hp:900,color:"#5a5a6e",spd:52,
+  {key:"steel_lord",sprite:"steel_lord",name:"강철 군주",title:"2막 보스 · 흑철의 망령",r:58,hp:900,color:"#5a5a6e",spd:52,
    quip:"무릎 꿇어라, 필멸자여.",pattern:"spiral"},
-  {key:"bear",sprite:"bear",name:"거대 곰",title:"3막 보스 · 숲의 지배자",r:52,hp:1250,color:"#9c6b43",spd:58,
+  {key:"bear",sprite:"bear",name:"거대 곰",title:"3막 보스 · 숲의 지배자",r:64,hp:1250,color:"#9c6b43",spd:58,
    quip:"크아아아앙!!",pattern:"split"},
 ];
 
@@ -1084,7 +1108,7 @@ function updateHUD(){
   document.getElementById('hpText').textContent=Math.ceil(player.hp)+" / "+player.maxhp;
   document.getElementById('hpFill').style.width=clamp(player.hp/player.maxhp*100,0,100)+"%";
   document.getElementById('goldText').textContent=gold;
-  document.getElementById('floorText').textContent=act+"막"+(currentRow?(" · "+currentRow):"");
+  document.getElementById('floorText').textContent=act+"막 · "+(currentRow+1)+"층";
   document.getElementById('lvlText').textContent=level;
   document.getElementById('killText').textContent="처치 "+totalKills;
   document.getElementById('xpFill').style.width=clamp(xp/xpNext*100,0,100)+"%";
@@ -1119,7 +1143,7 @@ function banner(big,small,ms){
 let lastRoomKind=null, cutsceneT=0, roomEntryHp=0, retries=0;
 function startCombat(kind){
   lastRoomKind=kind;
-  enemies=[]; pBullets=[]; eBullets=[]; pickups=[]; particles=[]; hazards=[];
+  enemies=[]; pBullets=[]; eBullets=[]; pickups=[]; particles=[]; hazards=[]; floatBubbles=[];
   player.x=W/2; player.y=H-90;
   roomCleared=false; roomIsBoss=(kind==='boss'); kills=0; boss=null; roomHadElite=false; eliteIntro=null; timeScale=1; slowmoT=0;
   const row=currentRow;
@@ -1134,7 +1158,10 @@ function startCombat(kind){
     showEntrance("👑 "+act+"막 보스 등장", b.name, b.quip||b.title||"");
   }else{
     const P=ACT_POOLS[Math.min(act-1,ACT_POOLS.length-1)];
-    let count=clamp(Math.round((rand(3,5)+act*1.0+row*0.4)*diffSet.cnt),3,14);
+    let base=rand(3,5)+act*1.0+row*0.35;
+    if(row<MIDBOSS_ROW) base*=0.6;        // 중간보스 전(1~7층): 적게
+    else if(row>MIDBOSS_ROW) base*=1.5;   // 중간보스 후(9~14층): 많이
+    let count=clamp(Math.round(base*diffSet.cnt), row<MIDBOSS_ROW?2:4, 16);
     if(kind==='midboss'){
       spawnEnemy('hyechul', W/2, 140, diff);
       const eb=enemies[enemies.length-1];
@@ -1224,7 +1251,7 @@ function playerShoot(){
 
 function enemyShootAt(e,tx,ty,speed,size){
   const a=Math.atan2(ty-e.y,tx-e.x);
-  eBullets.push({x:e.x,y:e.y,vx:Math.cos(a)*speed,vy:Math.sin(a)*speed,r:size||7,dmg:e.dmg||9,life:4});
+  eBullets.push({x:e.x,y:e.y,vx:Math.cos(a)*speed,vy:Math.sin(a)*speed,r:size||7,dmg:e.dmg||9,life:4,srcName:e.name||e.label});
 }
 
 // ---------- 파티클 ----------
@@ -1242,9 +1269,10 @@ function floatHeart(x,y,amt){
 }
 
 // ---------- 데미지 ----------
-function hurtPlayer(dmg){
+function hurtPlayer(dmg, src){
   if(player.iframes>0||player.dodging>0||player.buffs.shield>0) return;
   if(player.hitShield>0){ player.hitShield--; player.iframes=0.6; burst(player.x,player.y,'#8be8ff',16,200); return; }
+  if(src) lastKiller=src;
   dmg=dmg*(1-player.armor)*diffSet.dmg;
   player.hp-=dmg; player.iframes=0.5; hitFlash=0.25; screenShake=Math.max(screenShake,8); combatTookHit=true;
   if(player.thorns>0){ enemies.slice().forEach(o=>{ if(dist2(o.x,o.y,player.x,player.y)<12100){ o.hp-=player.thorns; o.hitT=0.1; if(o.hp<=0){ if(o.type==='hyechul'&&(o.phase||1)<3) hyechulNextPhase(o); else killEnemy(o);} } }); }
@@ -1253,13 +1281,13 @@ function hurtPlayer(dmg){
   if(player.hp<=0){
     if(player.reviveOnce && !player.usedRevive){ player.usedRevive=true; player.hp=Math.round(player.maxhp*0.35); player.iframes=1.3; banner('부활!','수호천사가 너를 구했다',1700); burst(player.x,player.y,'#5dff9b',26,260); }
     else if(player.lastStand && !player.usedLastStand){ player.usedLastStand=true; player.hp=1; player.iframes=1.3; banner('막판 정신력!','체력 1로 버텼다',1500); burst(player.x,player.y,'#ffd34d',20,220); }
-    else { player.hp=0; gameOver(false); }
+    else { player.hp=0; gameOver(false, src||lastKiller); }
   }
   updateHUD();
 }
 function damageEnemy(e,dmg,crit,fromBullet){
   e.hp-=dmg*(1-(e.armor||0)); e.hitT=0.1; burst(e.x,e.y,crit?'#ffd34d':e.color,crit?8:4,crit?180:120); sfx.hit();
-  if(e.eliteViewer && !e.tauntedHalf && e.hp<=e.maxhp*0.5){ e.tauntedHalf=true; e.taunt={t:2.4,text:'…봉식님? 저 때리시나요?'}; if(typeof sfx!=='undefined'&&sfx.vote) sfx.vote(); }
+  if(e.eliteViewer && !e.tauntedHalf && e.hp<=e.maxhp*0.5){ e.tauntedHalf=true; e.taunt={t:4.6,text:'…봉식님? 저 때리시나요?'}; if(typeof sfx!=='undefined'&&sfx.vote) sfx.vote(); }
   if(player.stunChance>0 && Math.random()<player.stunChance) e.stunT=Math.max(e.stunT||0,0.6);
   if(fromBullet){
     if(player.burn>0){ e.burnT=3; e.burnDmg=player.burn; }
@@ -1289,7 +1317,7 @@ function killEnemy(e){
   if(e.type==='hyechul'){ enemies=enemies.filter(o=>!['zergling','mutalisk','ultra'].includes(o.type)); }
   if(e.dummy){ burst(e.x,e.y,e.color,10,180); return; }
   burst(e.x,e.y,e.color,14,220);
-  if(e.eliteViewer){ banner('자잘자 처치!','💬 로블록스 하러가야겠다..',1700); }
+  if(e.eliteViewer){ banner('자잘자 처치!','',1100); spawnDeathBubble(e.x, e.y-e.r-12, pick(['로블록스 하러 가야겠다…','봉식님… 너무하시네요 Sadge','다음 생엔 더 셀게요…','채금 풀리면 또 봬요','이게 맞나요…? 운영자 호출']), 3.4); }
   kills++; totalKills++;
   gainXP(e.xp);
   if(player.lifesteal>0 && Math.random()<player.lifesteal){ player.hp=Math.min(player.maxhp,player.hp+5); floatHeart(e.x,e.y,5); }
@@ -1340,7 +1368,7 @@ function updateBoss(dt){
   b.x+=Math.cos(a)*sp*dt; b.y+=Math.sin(a)*sp*dt*0.7;
   b.x=clamp(b.x,b.r,W-b.r); b.y=clamp(b.y,b.r,H*0.6);
   // 접촉
-  if(dist2(b.x,b.y,player.x,player.y)<(b.r+player.r)**2) hurtPlayer(b.enraged?26:18);
+  if(dist2(b.x,b.y,player.x,player.y)<(b.r+player.r)**2) hurtPlayer(b.enraged?26:18, boss?boss.name:'시청자');
   if(b.attackT<=0){
     const rate=b.enraged?0.8:1.3;
     b.attackT=rate;
@@ -1503,9 +1531,12 @@ function update(dt){
     b.x+=b.vx*dt; b.y+=b.vy*dt; b.life-=dt; if(b.spinV) b.spin=(b.spin||0)+b.spinV*dt;
     if(b.life<=0||b.x<-20||b.x>W+20||b.y<-20||b.y>H+20){ eBullets.splice(i,1); continue; }
     if(dist2(b.x,b.y,player.x,player.y)<(b.r+player.r)**2){
-      hurtPlayer(b.dmg); eBullets.splice(i,1);
+      hurtPlayer(b.dmg, b.srcName||(boss?boss.name:'시청자')); eBullets.splice(i,1);
     }
   }
+
+  // 떠다니는 사망 말풍선 (적이 사라진 자리에 잠시 남음)
+  for(let i=floatBubbles.length-1;i>=0;i--){ const fb=floatBubbles[i]; fb.t+=dt; fb.y+=fb.vy*dt; fb.vy*=0.90; if(fb.t>=fb.max) floatBubbles.splice(i,1); }
 
   // 적 AI
   for(const e of enemies){
@@ -1610,7 +1641,7 @@ function update(dt){
     e.x=clamp(e.x,e.r,W-e.r); e.y=clamp(e.y,e.r,H-e.r);
     // 접촉 데미지
     if(e.dmg>0 && dist2(e.x,e.y,player.x,player.y)<(e.r+player.r)**2){
-      hurtPlayer(e.dmg);
+      hurtPlayer(e.dmg, e.name||e.label||'시청자');
     }
   }
 
@@ -1657,12 +1688,13 @@ function update(dt){
 // ========================================================
 //  슬더스식 맵 / 노드 진행
 // ========================================================
-const MAP_COLS=6, MAP_ROWS=6;            // 콘텐츠 행 0..5, 보스는 행 6
-const MAP_W=660, MAP_H=380, MAP_PADX=46, MAP_PADY=34;
-const NODE_ICON={fight:'⚔️',midboss:'🪲',shop:'🛒',event:'❓',boss:'👑'};
+const MAP_COLS=6, MAP_ROWS=14;           // 15층 구조: 콘텐츠 1~14층(행 0~13), 보스 15층(행 14)
+const MIDBOSS_ROW=7, CAMP1_ROW=6, CAMP2_ROW=13; // 중간보스 8층, 모닷불 7층/14층
+const MAP_W=660, MAP_H=600, MAP_PADX=46, MAP_PADY=30;
+const NODE_ICON={fight:'⚔️',midboss:'🪲',shop:'🛒',event:'❓',boss:'👑',campfire:'🔥'};
 const NODE_PIX={fight:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAWklEQVR42mNgoBZ49+nHf4rVrty0n6AhBNXgU0CMBTgVEq0ZmwaSNSNrJKSZiYFWgFgvMGITfLDZEasGBd/9jARtrvHX+U+OHHEK8KkhRjNetbj8TUoYDQwAADslQkhX4ut1AAAAAElFTkSuQmCC',midboss:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAdklEQVR42mNgoDaoL7/7nxw5ggpxaWbEZYiOjhaKhitXrmFVy4RN8JG3139ixBgYGBgYdXS0/iObjm4zOkBXy3TlyjVGmCZ0zcHem/F678qVa4xMMAYhm5E1I7uCCZsgIS8gW0ZxGDASE4X4opKJWIXEenEkAgCvr0sV4zzPUgAAAABJRU5ErkJggg==',shop:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAV0lEQVR42mNgoAZ4sNnxP7l6mSg1hBHZAAXf/YyEDFLw3c+IzGchRhE+VzIRChdCLmIkNUBxuY7ogMSphpRYoCTa8YP4uKj/pMozoUviMoSQPNkuGAYAABSlN1VT8HieAAAAAElFTkSuQmCC',event:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAQUlEQVR42mNgoBAwogvUl9/9j01hY6cyI0HT6svv/sdmAC5xkhThkmchyYnkAqK8MHQ1M1EaPkwMgxbQLQwGHgAAxYo3/u9frj0AAAAASUVORK5CYII=',boss:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAATUlEQVR42mNgoCZ4sNnxPyl8BgYGBiZKLWVCN51YGq8LiHE6VgOYZnCiSIZfn8OAT56BgYGBkRhb0IGC735GqgUiC4yxa/sdhlEwYgEAe08ofqdtjY4AAAAASUVORK5CYII='};
 const POTION_PIX={heal:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAqElEQVR42mNgoBAw4pKo8df5j8xv2XgFq1omBlqCrVe+/N965ct/fGqYaGr7I2+v/4+8vfC6ggmXZqcr2+F8pyvbGXAZwohNs255GFbbLneuYvDW4WHE6YKtV778t5Rjwekt3fIwDJdgeOFLZBCcLbtlK8GwwhkLMM2EDMFpwGMfbxSarHRASDOGAd46PIyXO1fhVEwwFvAZgk0z3tyIHl3YNDMwMDAAAD8JSZp8hwDZAAAAAElFTkSuQmCC',rage:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAjUlEQVR42mNgoBAw4pKo8df5j8xv2XgFq1omBlqCrVe+/N965ct/fGoodgELPtvfRVrC2d46PMSHwdYrX/7rlofB+brlYQy4vMKITbOXNjfDEj09DMVCy48zoLuEiVjNDAwMDO8iLTFcguEFXJppFguDzABvHR5GoeXHcSomGAv4DMGmGW9uRI8uXCkRAByUOwQv9qROAAAAAElFTkSuQmCC',haste:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAk0lEQVR42mNgoBAw4pKo8df5j8xv2XgFq1omBlqCrVe+/N965ct/fGoodgELPtu17/vC2d46PMSHwdYrX/57/QuD873+hTHg8goTVs3a3AwPH36Hiz18+J1B+74vVkOYsGre4oTVW9gMwXABLs00i4VBZoC3Dg/jVcXNOBVfVdzMgJ4eMFyAyxBsmvHmRvTowpUSAWhYRY5joWLZAAAAAElFTkSuQmCC',shield:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAj0lEQVR42mNgoBAw4pKo8df5j8xv2XgFq1omBlqCrVe+/N965ct/fGqYaGq7RPzS/xLxS/G6ggmX5guPv8P5Fx5/Z8BlCCM2zV7a3AySCcswFM8t9Wfw1uFhxOkCfJoZGBgYkrs3YrgEwwu4NNMsFgaZAd46PIxzS/1xKiYYC/gMwaYZb25Ejy5smhkYGBgAflxAcxGB74wAAAAASUVORK5CYII='};
-const NODE_COL ={fight:'#9b8fc4',midboss:'#ffae42',shop:'#5dff9b',event:'#8be8ff',boss:'#ff4d6d'};
+const NODE_COL ={fight:'#9b8fc4',midboss:'#ffae42',shop:'#5dff9b',event:'#8be8ff',boss:'#ff4d6d',campfire:'#ff8c3a'};
 let pendingNode=null;
 
 function nodeXY(row,col){
@@ -1679,7 +1711,7 @@ function genMap(){
     if(!nm[k]){ const p=nodeXY(r,c); nm[k]={id:k,row:r,col:c,x:p.x,y:p.y,type:null,next:[],done:false}; }
     return nm[k];
   }
-  for(let p=0;p<6;p++){          // 6개의 경로를 무작위로 위로
+  for(let p=0;p<5;p++){          // 5개의 경로를 무작위로 위로
     let c=irand(0,MAP_COLS-1);
     ensure(0,c);
     for(let r=0;r<MAP_ROWS-1;r++){
@@ -1699,7 +1731,8 @@ function genMap(){
   nodes.forEach(n=>{
     if(n.type==='boss') return;
     if(n.row===0){ n.type='fight'; return; }
-    if(n.row===3){ n.type='midboss'; return; }   // 중앙 관문: 모든 경로가 통과
+    if(n.row===MIDBOSS_ROW){ n.type='midboss'; return; }   // 8층 중간보스 관문
+    if(n.row===CAMP1_ROW||n.row===CAMP2_ROW){ n.type='campfire'; return; } // 모닷불 관문(중간보스 전·보스 전)
     n.type=rollNodeType(n.row);
   });
   ensureType(nodes,'shop',1);
@@ -1710,8 +1743,9 @@ function genMap(){
 function rollNodeType(row){
   const bag=[];
   for(let i=0;i<50;i++) bag.push('fight');
-  for(let i=0;i<22;i++) bag.push('event');
+  for(let i=0;i<20;i++) bag.push('event');
   if(row>=1) for(let i=0;i<12;i++) bag.push('shop');
+  if(row>=2) for(let i=0;i<6;i++) bag.push('campfire');
   return pick(bag);
 }
 function ensureType(nodes,type,minRow){
@@ -1747,14 +1781,21 @@ function renderMap(){
     const col=NODE_COL[n.type]||'#9b8fc4';
     const op=n.done?0.35:(isReach||isCur?1:0.5);
     let ring='';
-    if(isReach) ring='<circle cx="'+n.x+'" cy="'+n.y+'" r="21" fill="none" stroke="#38e8ff" stroke-width="2"><animate attributeName="r" values="20;25;20" dur="1.4s" repeatCount="indefinite"/></circle>';
-    if(isCur) ring='<circle cx="'+n.x+'" cy="'+n.y+'" r="21" fill="none" stroke="#fff" stroke-width="2"/>';
+    if(isReach) ring='<circle cx="'+n.x+'" cy="'+n.y+'" r="17" fill="none" stroke="#38e8ff" stroke-width="2"><animate attributeName="r" values="16;20;16" dur="1.4s" repeatCount="indefinite"/></circle>';
+    if(isCur) ring='<circle cx="'+n.x+'" cy="'+n.y+'" r="17" fill="none" stroke="#fff" stroke-width="2"/>';
     s+='<g class="mapnode'+(isReach?' reach':'')+'" data-id="'+n.id+'" opacity="'+op+'">'+ring+
-       '<circle cx="'+n.x+'" cy="'+n.y+'" r="16" fill="#1a1330" stroke="'+col+'" stroke-width="2.5"/>'+
-       (NODE_PIX[n.type]?('<image href="'+NODE_PIX[n.type]+'" x="'+(n.x-11)+'" y="'+(n.y-11)+'" width="22" height="22" style="image-rendering:pixelated"/>'):('<text x="'+n.x+'" y="'+(n.y+5)+'" font-size="15" text-anchor="middle">'+(NODE_ICON[n.type]||'?')+'</text>'))+'</g>';
+       '<circle cx="'+n.x+'" cy="'+n.y+'" r="13" fill="#1a1330" stroke="'+col+'" stroke-width="2.5"/>'+
+       (NODE_PIX[n.type]?('<image href="'+NODE_PIX[n.type]+'" x="'+(n.x-9)+'" y="'+(n.y-9)+'" width="18" height="18" style="image-rendering:pixelated"/>'):('<text x="'+n.x+'" y="'+(n.y+4)+'" font-size="12" text-anchor="middle">'+(NODE_ICON[n.type]||'?')+'</text>'))+'</g>';
   });
   s+='</svg>';
   cont.innerHTML=s;
+  requestAnimationFrame(()=>{
+    const svg=cont.querySelector('svg'); if(!svg) return;
+    const dispH=svg.getBoundingClientRect().height||MAP_H;
+    let fNode=cur; if(!fNode){ const rid=[...reach][0]; fNode=rid?mapData.nm[rid]:null; }
+    const fy=fNode?fNode.y:MAP_H;
+    cont.scrollTop=clamp((fy/MAP_H)*dispH - cont.clientHeight*0.5, 0, dispH);
+  });
   cont.querySelectorAll('.mapnode.reach').forEach(g=>{
     g.style.cursor='pointer';
     g.onclick=()=>selectNode(mapData.nm[g.getAttribute('data-id')]);
@@ -1766,6 +1807,7 @@ function selectNode(node){
   pendingNode=node; currentRow=node.row; hideAll();
   if(node.type==='shop'){ openShop(()=>finishNode()); return; }
   if(node.type==='event'){ startEvent(); return; }
+  if(node.type==='campfire'){ openCampfire(()=>finishNode()); return; }
   roomEntryHp=player.hp;
   startCombat(node.type==='boss'?'boss':node.type); // fight | midboss | boss
   state='play';
@@ -1915,6 +1957,24 @@ function startEvent(){
     cont.appendChild(el);
   });
   show('event');
+}
+
+// ========================================================
+//  모닷불 (휴식 / 단련)
+// ========================================================
+const TRAIN_OPTS=[
+  {label:'최대 체력 +16', f:()=>{ player.maxhp+=16; player.hp=Math.min(player.maxhp,player.hp+16); }},
+  {label:'공격력 +12%',   f:()=>{ player.dmgMul*=1.12; }},
+  {label:'발사 속도 +10%', f:()=>{ player.fireMul*=0.90; }},
+  {label:'이동 속도 +8%',  f:()=>{ player.spd*=1.08; }},
+  {label:'방어 +6%',       f:()=>{ player.armor=Math.min(0.85, player.armor+0.06); }},
+];
+function openCampfire(cb){
+  const rest=document.getElementById('cfRest'), train=document.getElementById('cfTrain');
+  const finish=(msg)=>{ rest.onclick=null; train.onclick=null; hideAll(); banner('🔥 모닷불', msg, 1500); updateHUD(); cb&&cb(); };
+  rest.onclick=()=>{ player.hp=player.maxhp; try{sfx.coin&&sfx.coin();}catch(e){} finish('휴식 — 체력 완전 회복'); };
+  train.onclick=()=>{ const t=pick(TRAIN_OPTS); t.f(); try{sfx.vote&&sfx.vote();}catch(e){} finish('단련 — '+t.label); };
+  show('campfire');
 }
 
 // ========================================================
@@ -2597,10 +2657,25 @@ function updateHazards(dt){
       continue;
     }
     if(h.t>=h.warnT && h.t<h.warnT+h.liveT){
-      if(!h.hit && dist2(player.x,player.y,h.x,h.y)<h.r*h.r){ h.hit=true; hurtPlayer(h.dmg); }
+      if(!h.hit && dist2(player.x,player.y,h.x,h.y)<h.r*h.r){ h.hit=true; hurtPlayer(h.dmg, h.srcName||(boss?boss.name:'바닥 장판')); }
       if(Math.random()<0.55) burst(h.x+rand(-h.r*0.5,h.r*0.5),h.y-rand(0,16),pick(['#ffd24a','#ff8c2a','#ff5b2a']),2,220);
     }
     if(h.t>=h.warnT+h.liveT) hazards.splice(i,1);
+  }
+}
+function spawnDeathBubble(x,y,text,dur){
+  floatBubbles.push({x:x, y:y, vy:-16, t:0, max:dur||3.0, text:text});
+}
+function drawFloatBubbles(){
+  for(const fb of floatBubbles){
+    const fade = fb.t > fb.max-0.6 ? Math.max(0,(fb.max-fb.t)/0.6) : 1;
+    ctx.save(); ctx.globalAlpha=fade; ctx.font='bold 13px sans-serif'; ctx.textAlign='center';
+    const tw=ctx.measureText(fb.text).width+22, bx=fb.x-tw/2, by=fb.y-14;
+    ctx.fillStyle='rgba(20,12,28,0.95)'; ctx.fillRect(bx,by,tw,26);
+    ctx.strokeStyle='#ff6a6a'; ctx.lineWidth=1.6; ctx.strokeRect(bx,by,tw,26);
+    ctx.beginPath(); ctx.moveTo(fb.x-6,by+26); ctx.lineTo(fb.x+6,by+26); ctx.lineTo(fb.x,by+33); ctx.closePath(); ctx.fill();
+    ctx.fillStyle='#ffd6d6'; ctx.fillText(fb.text, fb.x, by+17);
+    ctx.restore();
   }
 }
 function drawHazards(){
@@ -2700,6 +2775,7 @@ function draw(){
   drawHazards();
   // 적
   for(const e of enemies) drawEnemy(e);
+  drawFloatBubbles();
   if(boss) drawBoss(boss);
   const _mb=enemies.find(e=>e.midboss); if(_mb) drawMidbossBar(_mb);
   const _el=enemies.find(e=>e.eliteViewer); if(_el && !eliteIntro) drawEliteBar(_el);
@@ -2757,7 +2833,7 @@ function loop(now){
 }
 
 // ---------- 오버레이 제어 ----------
-const overlays={start:'ovStart',map:'ovMap',relic:'ovRelic',shop:'ovShop',event:'ovEvent',inv:'ovInv',level:'ovLevel',reward:'ovReward',end:'ovEnd',help:'ovHelp',story:'ovStory',entrance:'ovEntrance',tierIntro:'ovTierIntro',taunt:'ovTaunt'};
+const overlays={start:'ovStart',map:'ovMap',relic:'ovRelic',shop:'ovShop',event:'ovEvent',inv:'ovInv',level:'ovLevel',reward:'ovReward',end:'ovEnd',help:'ovHelp',story:'ovStory',entrance:'ovEntrance',tierIntro:'ovTierIntro',taunt:'ovTaunt',campfire:'ovCampfire'};
 function hideAll(){ Object.values(overlays).forEach(id=>document.getElementById(id).classList.add('hidden')); }
 function show(st){
   hideAll();
@@ -3100,21 +3176,35 @@ function retryRoom(){
   startCombat(lastRoomKind||'fight');
   player.iframes=1.2;
 }
-function gameOver(win){
+const DEATH_LINES={
+  '자잘자':{title:'자잘자에게 긁혔다', q:['자잘자: 봉식님 그것밖에 안 되시네요 KEKW','채팅: 자잘자한테 짐ㅋㅋ Sadge','자잘자: 로블록스나 하러 가세요']},
+  '혜철이':{title:'혜철이에게 잡아먹혔다', q:['혜철이: 크아아앙!','채팅: 보스도 아닌데… monkaS','혜철이: 한 입 거리였네']},
+  '키죠':{title:'키죠의 가면에 짓밟혔다', q:['키죠: 가소롭군.','채팅: 1막 보스한테 ㅠㅠ','키죠: 이 정도였나?']},
+  '강철 군주':{title:'강철 군주에게 분쇄당했다', q:['강철 군주: 약하다.','채팅: 2막에서 막혔다 Sadge','강철 군주: 녹슨 실력이군']},
+  '거대 곰':{title:'거대 곰에게 짓이겨졌다', q:['거대 곰: 크어어!','채팅: 곰을 어떻게 이겨요…','채팅: 숲의 지배자 클라스 ㄷㄷ']},
+  '울트라':{title:'울트라에게 깔렸다', q:['채팅: 울트라 컨트롤 ㄷㄷ','울트라: 쿠어어','채팅: 저글링부터 잡지 그랬어']},
+  '바닥 장판':{title:'바닥 장판에 녹았다', q:['채팅: 바닥 보고 다녀요 KEKW','채팅: 장판 회피 연습… Sadge','채팅: 그건 좀…']},
+};
+function gameOver(win, killer){
   state='end';
   show('end');
   document.getElementById('retryBtn').style.display=win?'none':'';
   document.getElementById('endTag').textContent=win?'🏆 클리어':'📺 방송 사고';
-  document.getElementById('endTitle').textContent=win?'CLEAR!':'시청자에게 당했다';
+  let title, quip;
+  const k = killer || lastKiller || '시청자';
+  if(win){ title='CLEAR!'; quip=pick(["채팅 단체기립 POGGERS","갓겜 인정 GIGACHAD","클립 박제각 Clap","이게 되네?! KEKW"]); }
+  else {
+    const entry = DEATH_LINES[k];
+    if(entry){ title=entry.title; quip=pick(entry.q); }
+    else { title='"'+k+'"에게 당했다'; quip=pick(["채팅 폭소 KEKW","아 아까비 Sadge","한 판 더! LULW","발컨 박제 monkaS","멘탈 챙기세요"]); }
+  }
+  document.getElementById('endTitle').textContent=title;
   document.getElementById('endTitle').style.color=win?'#5dff9b':'#ff4d6d';
   document.getElementById('endStats').innerHTML=
     "도달: <b>"+act+"막</b> · 처치: <b>"+totalKills+"</b> · 레벨: <b>"+level+"</b><br>"+
     "골드: <b style='color:#ffd34d'>"+gold+"</b> · 유물: <b>"+player.relics.length+"개</b> · 난이도: <b style='color:"+diffSet.col+"'>"+diffSet.label+"</b>";
-  const quip = win
-    ? pick(["채팅 단체기립 POGGERS","갓겜 인정 GIGACHAD","클립 박제각 Clap","이게 되네?! KEKW"])
-    : pick(["채팅 폭소 KEKW","아 아까비 Sadge","한 판 더! LULW","발컨 박제 monkaS","멘탈 챙기세요"]);
   document.getElementById('endQuip').textContent='채팅: "'+quip+'"';
-  chatSys(win?"🎉🎉 클리어!! 채팅 축제":"☠ 사망 — 채팅: "+pick(["GG","한판더","아깝다 Sadge","리트 ㄱㄱ"]));
+  chatSys(win?"🎉🎉 클리어!! 채팅 축제":"☠ 사망 ("+k+") — 채팅: "+pick(["GG","한판더","아깝다 Sadge","리트 ㄱㄱ"]));
 }
 function victory(){ gameOver(true); }
 
@@ -3123,7 +3213,7 @@ function newGame(){
   startBGM();
   act=1; currentRow=0; kills=0; totalKills=0; gold=0; level=1; xp=0; xpNext=20; pendingLevels=0; retries=0;
   resetPlayer();
-  enemies=[];pBullets=[];eBullets=[];pickups=[];particles=[];boss=null;
+  enemies=[];pBullets=[];eBullets=[];pickups=[];particles=[];boss=null;floatBubbles=[];lastKiller=null;
   pendingNode=null; roomCleared=true; tierIntroShown=false; shopIntroShown=false;
   tutorial={active:true,moved:false,shot:false,dodged:false,tabbed:false,doneAt:0};
   genMap();
@@ -3154,7 +3244,7 @@ function newGameSkip(){
   startBGM();
   act=1; currentRow=0; kills=0; totalKills=0; gold=0; level=1; xp=0; xpNext=20; pendingLevels=0; retries=0;
   resetPlayer();
-  enemies=[];pBullets=[];eBullets=[];pickups=[];particles=[];boss=null;
+  enemies=[];pBullets=[];eBullets=[];pickups=[];particles=[];boss=null;floatBubbles=[];lastKiller=null;
   pendingNode=null; roomCleared=true; tierIntroShown=false; shopIntroShown=false;
   tutorial={active:false,moved:true,shot:true,dodged:true,tabbed:true,doneAt:0};
   tutorialMode=false; tutorialDoneFlag=true;
