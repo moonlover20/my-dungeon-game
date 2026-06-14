@@ -61,6 +61,13 @@
     box-shadow:0 0 0 2px #0008, 0 0 28px #9146ff55, 0 10px 0 #120c20;
     max-width:100%;max-height:100%;width:auto;height:auto;display:block;
   }
+  /* 능력치 패널이 떠 있을 땐 캔버스를 왼쪽으로 붙이고 오른쪽 공간을 비워 겹침 방지 */
+  #stageWrap.with-side{ justify-content:flex-start; }
+  #stageWrap.with-side #game{ max-width:calc(100% - 236px); }
+  @media (max-width:880px){
+    #stageWrap.with-side{ justify-content:center; }
+    #stageWrap.with-side #game{ max-width:100%; }
+  }
   /* overlays drawn over canvas */
   .overlay{
     position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
@@ -315,6 +322,21 @@
     100%{transform:scale(1.5);opacity:0;background:#ff3b5c;color:#fff}
   }
 
+  .eb-wrap{display:flex;flex-direction:column;align-items:center;gap:0;}
+  #ebStatus{margin-top:16px;font-family:"Courier New",monospace;font-size:14px;color:#ff6680;
+    letter-spacing:1px;min-height:20px;opacity:0;transition:opacity .15s;text-shadow:0 0 8px rgba(255,59,92,.5);}
+  #ebStatus.show{opacity:1;}
+  #endBroadcastBtn.trying{animation:ebDeny .34s ease;}
+  @keyframes ebDeny{
+    0%{transform:translateX(0)}
+    15%{transform:translateX(-7px);box-shadow:0 0 46px rgba(255,59,92,.95);background:#2a0c12}
+    30%{transform:translateX(7px)}
+    45%{transform:translateX(-5px)}
+    60%{transform:translateX(5px)}
+    80%{transform:translateX(-3px)}
+    100%{transform:translateX(0)}
+  }
+
   /* ===== 스트리머 김봉식 신원 + 방송 화면 연출 ===== */
   .live-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--danger);
     box-shadow:0 0 8px var(--danger);animation:liveblink 1.4s infinite;}
@@ -358,7 +380,7 @@
 <div id="introFx" aria-hidden="true">
   <div id="introBinary"></div>
   <div id="introPopups"></div>
-  <div id="introBlackout"><button id="endBroadcastBtn">■ 방송 종료 · END BROADCAST</button></div>
+  <div id="introBlackout"><div class="eb-wrap"><button id="endBroadcastBtn">■ 방송 종료 · END BROADCAST</button><div id="ebStatus"></div></div></div>
 </div>
 <div id="app">
   <!-- GAME -->
@@ -1624,7 +1646,7 @@ function update(dt){
     if(tutorial.moved&&tutorial.shot&&tutorial.dodged&&!tutorial.doneAt) tutorial.doneAt=performance.now()||1;
     if(tutorial.doneAt&&performance.now()-tutorial.doneAt>2600) tutorial.active=false;
   }
-  if(tutorialMode && tutorial && tutorial.moved && tutorial.shot && tutorial.dodged && tutorial.tabbed && !tutorialDoneFlag){ tutorialDoneFlag=true; finishTutorial(); }
+  if(tutorialMode && tutorial && tutorial.moved && tutorial.shot && tutorial.dodged && !tutorialDoneFlag){ tutorialDoneFlag=true; finishTutorial(); }
   // 클리어 판정 (레벨업 등 오버레이 중엔 보류)
   if(state==='play' && !tutorialMode && !roomCleared && enemies.length===0 && !boss && bossBanner<=0){
     roomCleared=true;
@@ -2515,7 +2537,7 @@ function drawTutorial(){
     ctx.font='bold 17px sans-serif'; ctx.fillStyle=ln[2]?'#5dff9b':'#8be8ff';
     ctx.fillText('「'+ln[1]+'」', x+232, yy);
   });
-  if(tutorial.moved&&tutorial.shot&&tutorial.dodged&&tutorial.tabbed){
+  if(tutorial.moved&&tutorial.shot&&tutorial.dodged){
     ctx.fillStyle='#ffd34d'; ctx.font='bold 18px sans-serif';
     ctx.fillText('튜토리얼 완료! 🎉', x+18, y+h-14);
   }
@@ -2745,8 +2767,9 @@ function show(st){
 }
 function refreshSidePanel(){
   const sp=document.getElementById('sidePanel'); if(!sp) return;
-  if(['play','level','shop','reward','relic','event'].includes(state)){ renderSidePanel(); sp.classList.add('show'); }
-  else sp.classList.remove('show');
+  const sw=document.getElementById('stageWrap');
+  if(['play','level','shop','reward','relic','event'].includes(state)){ renderSidePanel(); sp.classList.add('show'); if(sw) sw.classList.add('with-side'); }
+  else { sp.classList.remove('show'); if(sw) sw.classList.remove('with-side'); }
 }
 
 const STORY_LINES=[
@@ -2812,7 +2835,8 @@ function introFxReset(){
   if(bin){ bin.classList.remove('show'); bin.innerHTML=''; }
   if(pop){ pop.innerHTML=''; }
   if(blk){ blk.classList.remove('show'); }
-  if(eb){ eb.classList.remove('armed'); eb.classList.remove('forced'); }
+  if(eb){ eb.classList.remove('armed'); eb.classList.remove('forced'); eb.classList.remove('trying'); }
+  const ebs=document.getElementById('ebStatus'); if(ebs){ ebs.classList.remove('show'); ebs.textContent=''; }
   if(fx){ fx.classList.remove('on'); }
   const bc=document.getElementById('ovStoryBcast'), pl=document.getElementById('ovStoryPlate');
   if(bc){ bc.classList.remove('show','glitch','crash'); }
@@ -2879,12 +2903,29 @@ function runEndBroadcast(cb){
   if(storyFx.streakInt){ clearInterval(storyFx.streakInt); storyFx.streakInt=null; }
   if(storyFx.binaryInt){ clearInterval(storyFx.binaryInt); storyFx.binaryInt=null; }
   const fx=document.getElementById('introFx'), blk=document.getElementById('introBlackout'),
-        eb=document.getElementById('endBroadcastBtn');
+        eb=document.getElementById('endBroadcastBtn'), st=document.getElementById('ebStatus');
   if(fx) fx.classList.add('on');
   if(blk) blk.classList.add('show');                              // 마무리: 블랙아웃
-  storyFx.timers.push(setTimeout(()=>{ if(eb) eb.classList.add('armed'); try{ if(sfx.boss)sfx.boss(); }catch(e){} },180));
-  storyFx.timers.push(setTimeout(()=>{ if(eb) eb.classList.add('forced'); try{ beep(70,0.5,'sawtooth',0.12); }catch(e){} },800)); // 강제 활성화
-  storyFx.timers.push(setTimeout(()=>{ triggerGlitch(()=>{ introFxReset(); cb&&cb(); }); },1240)); // 게임 진입
+  const T=storyFx.timers;
+  // 종료가 '안 되는' 답답함 — 버튼은 떠 있는데 계속 실패한다
+  const deny=(msg,t)=>{ T.push(setTimeout(()=>{
+    if(eb){ eb.classList.remove('trying'); void eb.offsetWidth; eb.classList.add('trying'); }
+    if(st){ st.classList.add('show'); st.textContent=msg; }
+    try{ beep(92,0.16,'square',0.09); setTimeout(()=>beep(70,0.12,'square',0.08),90); }catch(e){}
+    screenShake=Math.max(screenShake,9);
+  }, t)); };
+  T.push(setTimeout(()=>{ if(eb) eb.classList.add('armed'); if(st){ st.classList.add('show'); st.textContent='▣ 방송 종료 요청 전송 중…'; } try{ if(sfx.boss)sfx.boss(); }catch(e){} }, 320));
+  deny('● 응답 없음 — 재시도 (1/3)', 1100);
+  deny('● 종료 실패 — 송출 서버 먹통 (2/3)', 1950);
+  deny('● ERROR 0x4F4E · 제어권 상실 (3/3)', 2800);
+  deny('● …누군가 종료를 거부하고 있다', 3550);
+  // 마침내 강제 종료
+  T.push(setTimeout(()=>{
+    if(st){ st.textContent='⚠ 강제 종료'; }
+    if(eb){ eb.classList.remove('trying'); void eb.offsetWidth; eb.classList.add('forced'); }
+    try{ beep(70,0.5,'sawtooth',0.12); }catch(e){}
+  }, 4350));
+  T.push(setTimeout(()=>{ triggerGlitch(()=>{ introFxReset(); cb&&cb(); }); }, 4850)); // 게임 진입
 }
 function showStory(cb){
   hideAll(); state='story';
@@ -2897,12 +2938,12 @@ function showStory(cb){
   if(bcast){ bcast.classList.remove('glitch','crash'); requestAnimationFrame(()=>bcast.classList.add('show')); }
   if(plate) plate.classList.add('show');
   const el=document.getElementById('storyText'); el.textContent='';
-  const btn=document.getElementById('storySkip'); btn.textContent='건너뛰기 ▶';
+  const btn=document.getElementById('storySkip'); if(btn) btn.style.display='none';
   const lines=STORY_LINES; let li=0,ci=0,typed=false,proceeded=false,phased=-1,autoT=null;
   function firePhasesUpTo(n){ for(let k=phased+1;k<=n;k++) storyPhase(k); if(n>phased) phased=n; }
-  function complete(){ if(typed) return; clearInterval(tm); el.textContent=lines.join('\n'); typed=true; btn.textContent='■ 방송 종료'; firePhasesUpTo(lines.length-1); autoT=setTimeout(()=>{ if(!proceeded) finish(); },2800); }
+  function complete(){ if(typed) return; clearInterval(tm); el.textContent=lines.join('\n'); typed=true; firePhasesUpTo(lines.length-1); autoT=setTimeout(()=>{ if(!proceeded) finish(); },2800); }
   function finish(){ if(proceeded)return; proceeded=true; clearInterval(tm); if(autoT)clearTimeout(autoT); document.getElementById('ovStory').classList.add('hidden'); runEndBroadcast(cb); }
-  btn.onclick=function(){ if(!typed) complete(); else finish(); };
+  if(btn) btn.onclick=null;
   const tm=setInterval(function(){
     if(li>=lines.length){ complete(); return; }
     if(ci===0){ firePhasesUpTo(li); if(li>0) el.textContent+='\n'; }
