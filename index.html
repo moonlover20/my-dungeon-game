@@ -959,6 +959,7 @@ const DIFFS={
   hard:  {key:'hard',  label:'어려움', hp:2.9, dmg:2.7, cnt:1.7, spd:1.22, eliteCount:5, col:'#ff4d6d', desc:'온스터가 스타 망쳤던 난이도'},
 };
 let diffSet=DIFFS.easy;
+let dodgeLatch=false;   // 회피 키 엣지 감지: 스페이스를 떼야 다음 회피 발동
 
 const BOSSES=[
   {key:"kijo",sprite:"kijo",name:"키죠",title:"1막 보스 · 가면의 마귀",r:58,hp:2400,color:"#c0392b",spd:46,
@@ -1473,10 +1474,11 @@ function killEnemy(e){
   gainXP(SUMMON_TYPES.has(e.type)?0:e.xp);
   if(player.lifesteal>0 && Math.random()<player.lifesteal){ player.hp=Math.min(player.maxhp,player.hp+5); floatHeart(e.x,e.y,5); }
   if(player.healOnKill>0){ player.hp=Math.min(player.maxhp,player.hp+player.healOnKill); floatHeart(e.x,e.y,player.healOnKill); }
-  if(player.donateChance>0 && Math.random()<player.donateChance){ const dg=irand(20,50); gold+=dg; banner('💸 도네 알림!','+'+dg+' G',900); burst(e.x,e.y,'#ffd34d',18,240); }
-  // 골드: 처치 즉시 획득
-  let coin=irand(2,6); if(e.elite) coin+=irand(8,16); coin=Math.round(coin*player.goldMul);
-  gold+=coin; sfx.coin(); burst(e.x,e.y,'#ffd34d',5,120);
+  const isSummon=SUMMON_TYPES.has(e.type);
+  if(!isSummon && player.donateChance>0 && Math.random()<player.donateChance){ const dg=irand(20,50); gold+=dg; banner('💸 도네 알림!','+'+dg+' G',900); burst(e.x,e.y,'#ffd34d',18,240); }
+  // 골드: 처치 즉시 획득 (소환몹은 무한 스폰이라 미지급)
+  if(!isSummon){ let coin=irand(2,6); if(e.elite) coin+=irand(8,16); coin=Math.round(coin*player.goldMul);
+  gold+=coin; sfx.coin(); burst(e.x,e.y,'#ffd34d',5,120); }
   if(player.explodeKill>0){ burst(e.x,e.y,'#ff9b4d',12,200); enemies.forEach(o=>{ if(o!==e && dist2(o.x,o.y,e.x,e.y)<4900){ o.hp-=player.explodeKill; o.hitT=0.1; } }); }
   if(e.explode){
     if(e.type==='goblin_bomber'){
@@ -1753,7 +1755,9 @@ function update(dt){
 
   // 구르기
   if(player.dodging>0){ player.dodging-=dt; }
-  if(keys[' ']&&player.dodgeCharges>0&&player.dodging<=0){
+  if(!keys[' ']) dodgeLatch=false;   // 스페이스 떼면 재장전
+  if(keys[' ']&&!dodgeLatch&&player.dodgeCharges>0&&player.dodging<=0){
+    dodgeLatch=true;
     player.dodging=0.22+(player.dodgeIframeBonus||0); if(player.dodgeCd<=0) player.dodgeCd=10*player.dodgeCdMul; player.dodgeCharges--; sfx.dodge(); if(tutorial)tutorial.dodged=true;
     if(player.dodgeHaste) player.buffs.haste=Math.max(player.buffs.haste,2.5);
     if(player.dodgeBlast>0){ enemies.slice().forEach(o=>{ if(dist2(o.x,o.y,player.x,player.y)<38025){ o.hp-=player.dodgeBlast; o.hitT=0.1; const ka=Math.atan2(o.y-player.y,o.x-player.x); o.x+=Math.cos(ka)*69; o.y+=Math.sin(ka)*69; if(o.hp<=0){ if(o.type==='hyechul'&&(o.phase||1)<3) hyechulNextPhase(o); else killEnemy(o);} } }); burst(player.x,player.y,'#38e8ff',22,280); screenShake=Math.max(screenShake,8); }
@@ -2060,7 +2064,7 @@ function rollNodeType(row){
   const bag=[];
   for(let i=0;i<34;i++) bag.push('fight');   // 전투 비중 ↓
   for(let i=0;i<32;i++) bag.push('event');    // 미지(❓) 비중 ↑
-  if(row>=1) for(let i=0;i<12;i++) bag.push('shop');
+  if(row>=1) for(let i=0;i<5;i++) bag.push('shop');
   if(row>=2) for(let i=0;i<6;i++) bag.push('campfire');
   return pick(bag);
 }
@@ -2379,7 +2383,18 @@ const LEVEL_PERKS=[
   {g:'mythic',icon:'🤝',name:'구독자 소환',desc:'따라다니며 자동 공격하는 구독자',skip:p=>!!p.minion,apply:p=>{p.minion={ang:0,fireT:0,x:p.x,y:p.y};}},
 ];
 const PERK_COUNTS={}; LEVEL_PERKS.forEach(p=>{PERK_COUNTS[p.g]=(PERK_COUNTS[p.g]||0)+1;});
-function perkWeight(pk){ return PERK_TIERS[pk.g].weight/(PERK_COUNTS[pk.g]||1); }
+// 난이도별 고등급 출현 배율 (방송용 쉬움=그대로, 보통=적게, 어려움=더 적게)
+const PERK_DIFF_MUL={
+  easy:   {epic:1.0,  legend:1.0,  mythic:1.0 },
+  normal: {epic:0.85, legend:0.55, mythic:0.45},
+  hard:   {epic:0.70, legend:0.30, mythic:0.20},
+};
+function perkWeight(pk){
+  let w=PERK_TIERS[pk.g].weight/(PERK_COUNTS[pk.g]||1);
+  const m=(PERK_DIFF_MUL[diffSet.key]||{})[pk.g];
+  if(m!=null) w*=m;
+  return w;
+}
 function rollPerks(n){
   const pool=LEVEL_PERKS.filter(pk=>!(pk.skip&&pk.skip(player)));
   const picks=[];
@@ -2485,17 +2500,17 @@ function openShop(after){
   shopAfter=after||null;
   if(!shopIntroShown){ shopIntroShown=true; banner('💡 포션 사용법','구매한 포션은 1·2·3 키로 사용!',2800); }
   const items=[];
-  items.push({kind:'heal',name:"치유 서비스",icon:"🧪",desc:"체력 45 회복",cost:Math.round(20+act*8),
+  items.push({kind:'heal',name:"치유 서비스",icon:"🧪",desc:"체력 45 회복",cost:Math.round(28+act*10),
     buy:()=>{player.hp=Math.min(player.maxhp,player.hp+45);}});
   // 포션 2종
   const ptn=POTIONS.slice().sort(()=>Math.random()-0.5).slice(0,2);
-  ptn.forEach(pt=>items.push({kind:'potion',name:pt.name,icon:pt.icon,desc:pt.desc+" · 포션",cost:Math.round(24+act*6),potion:pt,
+  ptn.forEach(pt=>items.push({kind:'potion',name:pt.name,icon:pt.icon,desc:pt.desc+" · 포션",cost:Math.round(32+act*8),potion:pt,
     buy:()=>{addPotion(pt);}}));
   // 유물 2종
   const owned=new Set(player.relics.map(r=>r.id));
   const availR=RELICS.filter(r=>!owned.has(r.id));
   const relicPicks=[]; for(let i=0;i<2 && availR.length;i++) relicPicks.push(weightedTake(availR));
-  relicPicks.forEach(r=>items.push({kind:'relic',name:r.name,icon:r.icon,desc:r.desc,cost:Math.round((45+act*15+Math.random()*20)*relicTier(r).costMul),relic:r,
+  relicPicks.forEach(r=>items.push({kind:'relic',name:r.name,icon:r.icon,desc:r.desc,cost:Math.round((75+act*24+Math.random()*30)*relicTier(r).costMul),relic:r,
     buy:()=>{player.relics.push(r);r.apply(player);}}));
   renderShop(items);
   show('shop');
