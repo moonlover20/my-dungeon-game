@@ -429,11 +429,24 @@
       <canvas id="game" width="900" height="560"></canvas>
       <div id="banner"><div class="big"></div><div class="small"></div></div>
       <button id="skipTutBtn" style="position:absolute;top:14px;right:14px;z-index:30;display:none;background:#ff8c1a;color:#1a1020;border:3px solid #ffd34d;font-family:inherit;font-weight:bold;font-size:16px;padding:12px 20px;cursor:pointer;box-shadow:0 5px 0 #b35e00;border-radius:8px;">⏭ 튜토리얼 스킵</button>
-      <div id="soundPanel" style="position:absolute;top:8px;right:8px;z-index:40;display:none;background:#1d1530;border:2px solid #3a2d5c;box-shadow:0 6px 0 #120c20;padding:12px 14px;width:196px;font-size:12px;color:var(--ink);">
+      <div id="soundPanel" style="position:absolute;top:8px;left:8px;z-index:80;display:none;background:#1d1530;border:2px solid #3a2d5c;box-shadow:0 6px 0 #120c20;padding:12px 14px;width:196px;font-size:12px;color:var(--ink);">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;"><b>🔊 소리 설정</b><button id="soundClose" style="background:none;border:none;color:#9b8fc4;cursor:pointer;font-size:15px;">✕</button></div>
         <label style="display:flex;align-items:center;gap:6px;margin-bottom:10px;cursor:pointer;"><input type="checkbox" id="muteChk"> 음소거</label>
         <div style="margin-bottom:8px;">효과음 <input type="range" id="sfxRange" min="0" max="100" value="100" style="width:100%;"></div>
         <div>배경음 <input type="range" id="bgmRange" min="0" max="100" value="100" style="width:100%;"></div>
+      </div>
+
+      <!-- PAUSE -->
+      <div class="overlay hidden" id="ovPause" style="z-index:70">
+        <div class="panel-box" style="text-align:center;max-width:360px">
+          <div class="tag">⏸ 일시정지</div>
+          <h2 style="margin-top:6px">잠깐 멈췄다</h2>
+          <p class="sub" style="margin:8px 0 4px">방송을 잠시 멈췄습니다.<br><b>ESC</b> 키로 다시 시작할 수 있어요.</p>
+          <div style="display:flex;gap:8px;justify-content:center;margin-top:14px;flex-wrap:wrap">
+            <button class="btn" id="resumeBtn">▶ 계속하기</button>
+            <button class="btn ghost" id="pauseSoundBtn">🔊 소리 설정</button>
+          </div>
+        </div>
       </div>
 
       <!-- START -->
@@ -792,7 +805,7 @@ window.addEventListener('keydown', armIntroAudio);
 const MUSIC = {
   enabled:true,
   unlocked:false,
-  vol:0.75,                            // 음악 기본 볼륨(배경음 슬라이더와 곱해짐)
+  vol:0.375,                           // 음악 기본 볼륨(배경음 슬라이더와 곱해짐) — 기존 0.75에서 50% 줄임
   tracks:{},
   files:{
     intro:   'intro.mp3',
@@ -1114,8 +1127,10 @@ const keys={};
 let mouseX=W/2, mouseY=H/2, mouseDown=false;
 window.addEventListener('keydown',e=>{
   const k=e.key.toLowerCase();
+  if(k==='escape'){ togglePause(); e.preventDefault(); return; }
   keys[k]=true;
   if([' ','arrowup','arrowdown','arrowleft','arrowright','tab'].includes(k)) e.preventDefault();
+  if(paused) return;                 // 일시정지 중엔 게임 입력 무시
   if(state==='play'){ if(k==='1')usePotion(0); else if(k==='2')usePotion(1); else if(k==='3')usePotion(2); }
 });
 window.addEventListener('keyup',e=>{ keys[e.key.toLowerCase()]=false; });
@@ -1135,6 +1150,7 @@ const player={};
 let enemies=[], pBullets=[], eBullets=[], pickups=[], particles=[];
 let totalKills=0, kills=0, gold=0, level=1, xp=0, xpNext=20;
 let roomCleared=false, roomIsBoss=false, boss=null, bossBanner=0, roomHadElite=false;
+let eliteViewerSpawns=0;   // 자잘자(엘리트 시청자) 런 전체 출몰 횟수 — 최대 1회로 제한
 let roomIsMidboss=false, runActive=false;   // 음악 컨텍스트용 플래그
 let eliteIntro=null, slowmoT=0;
 let sfxVol=1, bgmVol=1;
@@ -1274,7 +1290,8 @@ function startCombat(kind, fresh){
       showEntrance("⚠️ 중간보스 등장","혜철이","해처리 — 저글링 군단");
     }else{
       for(let i=0;i<count;i++) spawnEnemy(pick(P.normal), rand(60,W-60), rand(60,H-180), diff);
-      if(Math.random()<0.33){
+      if(eliteViewerSpawns<1 && Math.random()<0.33){
+        eliteViewerSpawns++;   // 런당 최대 1회만 출몰
         spawnEnemy('rhino_beetle', W/2, 120, diff);
         const ze=enemies[enemies.length-1]; roomHadElite=true;
         ze.elite=true; ze.eliteViewer=true; ze.label='자잘자';
@@ -1299,6 +1316,9 @@ function startCombat(kind, fresh){
   }
   if(player.roomShield>0) player.buffs.shield=Math.max(player.buffs.shield,player.roomShield);
   updateHUD();
+  // 방 입장 즉시 능력치 패널을 우측에 띄운다 (state 갱신 순서와 무관하게 강제 표시)
+  { const sp=document.getElementById('sidePanel'), sw=document.getElementById('stageWrap');
+    if(sp){ renderSidePanel(); sp.classList.add('show'); if(sw) sw.classList.add('with-side'); } }
 }
 
 function spawnEnemy(type,x,y,diff){
@@ -3082,12 +3102,33 @@ function draw(){
 
 // ---------- 메인 루프 ----------
 let last=performance.now();
+// ---------- 일시정지 (ESC) ----------
+let paused=false;
+function togglePause(){
+  if(paused){ resumeGame(); return; }
+  if(state!=='play') return;          // 전투 화면에서만 일시정지 가능
+  paused=true;
+  const ov=document.getElementById('ovPause'); if(ov) ov.classList.remove('hidden');
+  mouseDown=false;                    // 멈출 때 발사 입력 해제
+}
+function resumeGame(){
+  if(!paused) return;
+  paused=false;
+  const ov=document.getElementById('ovPause'); if(ov) ov.classList.add('hidden');
+  last=performance.now();             // 재개 시 dt 폭증 방지
+}
+(function wirePause(){
+  const rb=document.getElementById('resumeBtn'); if(rb) rb.onclick=resumeGame;
+  const sb=document.getElementById('pauseSoundBtn');
+  if(sb) sb.onclick=()=>{ const sp=document.getElementById('soundPanel'); if(sp) sp.style.display=(sp.style.display==='none'||!sp.style.display)?'block':'none'; };
+})();
+
 function loop(now){
   let dt=(now-last)/1000; last=now;
   if(dt>0.05) dt=0.05;
-  update(dt);
+  if(!paused){ update(dt); }
   draw();
-  updateMusic(dt);
+  if(!paused){ updateMusic(dt); }
   requestAnimationFrame(loop);
 }
 
@@ -3227,7 +3268,7 @@ function storyPhase(li){
   const app=document.getElementById('app');
   const bc=document.getElementById('ovStoryBcast');
   if(li===1){ if(app) app.classList.add('app-edge'); }            // 도입: 가장자리 엇나감
-  else if(li===2){ startBinaryRain(); if(bc) bc.classList.add('glitch'); }   // 전개: 방송 화면 깨짐 + 바이너리
+  else if(li===2){ if(bc) bc.classList.add('glitch'); }   // 전개: 방송 화면 깨짐 (바이너리 코드 비는 제거)
   else if(li===4){ startErrorPopups(); }                          // 절정: 에러 팝업 폭주
   else if(li===5){ startProfileStreaks(); if(bc){ bc.classList.remove('glitch'); bc.classList.add('crash'); } } // 절정: 프로필 돌파 + 방송 화면 붕괴
   else if(li===6){ for(let k=0;k<3;k++) storyFx.timers.push(setTimeout(spawnProfileStreak,k*120)); } // …전부 다!
@@ -3478,7 +3519,7 @@ function newGame(){
   act=1; currentRow=0; kills=0; totalKills=0; gold=0; level=1; xp=0; xpNext=20; pendingLevels=0; retries=0;
   resetPlayer();
   enemies=[];pBullets=[];eBullets=[];pickups=[];particles=[];boss=null;floatBubbles=[];lastKiller=null;
-  pendingNode=null; roomCleared=true; tierIntroShown=false; shopIntroShown=false;
+  pendingNode=null; roomCleared=true; tierIntroShown=false; shopIntroShown=false; eliteViewerSpawns=0;
   tutorial={active:true,moved:false,shot:false,dodged:false,tabbed:false,doneAt:0};
   genMap();
   startTutorial();
@@ -3510,7 +3551,7 @@ function newGameSkip(){
   act=1; currentRow=0; kills=0; totalKills=0; gold=0; level=1; xp=0; xpNext=20; pendingLevels=0; retries=0;
   resetPlayer();
   enemies=[];pBullets=[];eBullets=[];pickups=[];particles=[];boss=null;floatBubbles=[];lastKiller=null;
-  pendingNode=null; roomCleared=true; tierIntroShown=false; shopIntroShown=false;
+  pendingNode=null; roomCleared=true; tierIntroShown=false; shopIntroShown=false; eliteViewerSpawns=0;
   tutorial={active:false,moved:true,shot:true,dodged:true,tabbed:true,doneAt:0};
   tutorialMode=false; tutorialDoneFlag=true;
   genMap();
