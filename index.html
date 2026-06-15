@@ -1237,7 +1237,7 @@ let timeScale=1;
 function resetPlayer(){
   Object.assign(player,{
     x:W/2,y:H/2,r:14,hp:70,maxhp:70,spd:175,
-    dmg:7,dmgMul:1,fireMul:1,fireTimer:0,shots:1,
+    dmg:7,dmgMul:1,fireMul:1,fireAdd:0,fireTimer:0,shots:1,
     bulletSize:1,bounce:0,pierce:0,lifesteal:0,armor:0,magnet:60,
     misfire:false,gamble:false,
     dodgeCd:0,dodging:0,iframes:0,relics:[],facing:0,
@@ -1252,6 +1252,9 @@ function resetPlayer(){
     lastStand:false,usedLastStand:false,
     dodgeBlast:0,dodgeHaste:false,dodgeIframeBonus:0,
     dodgeCharges:1,dodgeMaxCharges:1,minion:null,
+    // === 신규 퍼 스탯 ===
+    goldPower:0, statusDmgMul:0, critHeal:0, chainLightning:0,
+    execThreshold:0, execDoom:false, execBlast:0, statusSpread:false,
   });
 }
 
@@ -1429,6 +1432,7 @@ function playerShoot(){
   if(player.gamble) base*=rand(0.6,1.8);
   if(player.lowHpMul>0 && player.hp<player.maxhp*0.3) base*=(1+player.lowHpMul);
   if(player.crowdRage>0) base*=(1+player.crowdRage*Math.min(enemies.length,10));
+  if(player.goldPower>0) base*=(1+Math.min(player.goldPower*Math.floor(gold/100),0.30)); // 현질의 힘
   if(player.chargeShot && performance.now()-(player.lastShot||0)>1100) base*=3;
   player.lastShot=performance.now();
   const speed=560*player.bulletSpeedMul;
@@ -1487,8 +1491,11 @@ function hurtPlayer(dmg, src){
   }
   updateHUD();
 }
+function isBossLike(e){ return e.midboss||e.eliteViewer||e.type==='hyechul'; }
 function damageEnemy(e,dmg,crit,fromBullet){
+  if(player.statusDmgMul>0 && ((e.burnT>0)||(e.chillT>0)||(e.psT>0)||(e.stunT>0))) dmg*=(1+player.statusDmgMul); // 점화
   e.hp-=dmg*(1-(e.armor||0)); e.hitT=0.1; burst(e.x,e.y,crit?'#ffd34d':e.color,crit?8:4,crit?180:120); sfx.hit();
+  if(crit && player.critHeal>0){ player.hp=Math.min(player.maxhp,player.hp+player.critHeal); floatHeart(e.x,e.y,player.critHeal); } // 치명 흡혈
   if(e.eliteViewer && !e.tauntedHalf && e.hp<=e.maxhp*0.5){ e.tauntedHalf=true; e.taunt={t:4.6,text:'…봉식님? 저 때리시나요?'}; if(typeof sfx!=='undefined'&&sfx.vote) sfx.vote(); }
   if(player.stunChance>0 && Math.random()<player.stunChance) e.stunT=Math.max(e.stunT||0,0.6);
   if(fromBullet){
@@ -1496,7 +1503,9 @@ function damageEnemy(e,dmg,crit,fromBullet){
     if(player.chill>0){ e.chillT=2.5; }
     if(player.poison>0){ e.psStacks=Math.min((e.psStacks||0)+1,6); e.psT=4; e.psDmg=player.poison; }
     if(player.bulletExplode>0){ enemies.slice().forEach(o=>{ if(o!==e && dist2(o.x,o.y,e.x,e.y)<8100){ o.hp-=player.bulletExplode; o.hitT=0.1; if(o.hp<=0){ if(o.type==='hyechul'&&(o.phase||1)<3) hyechulNextPhase(o); else killEnemy(o);} } }); burst(e.x,e.y,'#ff9b4d',8,150); }
+    if(player.chainLightning>0){ let cnt=0; enemies.slice().forEach(o=>{ if(o!==e && cnt<player.chainLightning && dist2(o.x,o.y,e.x,e.y)<14400){ o.hp-=dmg*0.5*(1-(o.armor||0)); o.hitT=0.1; burst(o.x,o.y,'#7ad7ff',6,160); cnt++; if(o.hp<=0){ if(o.type==='hyechul'&&(o.phase||1)<3) hyechulNextPhase(o); else killEnemy(o);} } }); } // 감전 연쇄
   }
+  if(player.execThreshold>0 && e.hp>0 && !isBossLike(e) && e.hp<=e.maxhp*player.execThreshold){ e.hp=0; if(player.execBlast>0){ burst(e.x,e.y,'#ff5a5a',16,260); enemies.forEach(o=>{ if(o!==e && dist2(o.x,o.y,e.x,e.y)<6400){ o.hp-=player.execBlast; o.hitT=0.1; } }); } } // 처형
   if(e.hp<=0){ if(e.type==='hyechul'&&(e.phase||1)<3) hyechulNextPhase(e); else killEnemy(e); }
 }
 function hyechulNextPhase(e){
@@ -1521,6 +1530,17 @@ function killEnemy(e){
   if(e.type==='hyechul'){ enemies=enemies.filter(o=>!['zergling','mutalisk','ultra'].includes(o.type)); }
   if(e.dummy){ burst(e.x,e.y,e.color,10,180); return; }
   burst(e.x,e.y,e.color,14,220);
+  if(player.statusSpread){ // 확산
+    const hadBurn=e.burnT>0, hadChill=e.chillT>0, hadPois=e.psT>0;
+    if(hadBurn||hadChill||hadPois){
+      enemies.forEach(o=>{ if(dist2(o.x,o.y,e.x,e.y)<14400){
+        if(hadBurn){ o.burnT=3; o.burnDmg=e.burnDmg||player.burn||4; }
+        if(hadChill){ o.chillT=2.5; }
+        if(hadPois){ o.psStacks=Math.min((o.psStacks||0)+1,6); o.psT=4; o.psDmg=e.psDmg||player.poison||3; }
+      }});
+      burst(e.x,e.y,'#9b6bff',12,180);
+    }
+  }
   if(e.eliteViewer){ banner('자잘자 처치!','',1100); spawnDeathBubble(e.x, e.y-e.r-12, pick(['로블록스 하러 가야겠다…','봉식님… 너무하시네요 Sadge','다음 생엔 더 셀게요…','채금 풀리면 또 봬요','이게 맞나요…? 운영자 호출']), 3.4); }
   kills++; totalKills++;
   gainXP(SUMMON_TYPES.has(e.type)?0:e.xp);
@@ -1829,7 +1849,7 @@ function update(dt){
   if(player.fireTimer>0) player.fireTimer-=dt;
   if(mouseDown && player.fireTimer<=0 && !roomCleared){
     playerShoot(); if(tutorial)tutorial.shot=true;
-    player.fireTimer=0.35*player.fireMul*(player.buffs.haste>0?0.5:1)*(player._fireHandicap||1);
+    player.fireTimer=0.35*player.fireMul/(1+player.fireAdd)*(player.buffs.haste>0?0.5:1)*(player._fireHandicap||1);
   }
 
   // 플레이어 탄
@@ -2392,60 +2412,69 @@ function usePotion(i){
 const PERK_TIERS={
   common:{name:'일반', col:'#ffffff', weight:50},
   rare:  {name:'희귀', col:'#5aa9ff', weight:30},
-  epic:  {name:'영웅', col:'#c46bff', weight:10},
-  legend:{name:'전설', col:'#ffd34d', weight:8},
+  epic:  {name:'영웅', col:'#c46bff', weight:14},
+  legend:{name:'전설', col:'#ffd34d', weight:6},
   mythic:{name:'신화', col:'#ff4d4d', weight:2},
 };
 const PERK_ICONS={"공격 특화":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAbklEQVR42mNgoCV49+nHf0JqmAgpWLlp/3+KDKDYBaMGEAaM2ARnZcn+d/NUQRHbtf0OQ9q0x4xEGfBgsyPWuFfw3c9IkvNq/HX+1/jr0DYhseCSgISDKAMDAwODnLTsf2z+JwgebHb8jys8qAYAbz0hkgwqkt4AAAAASUVORK5CYII=","속사 특화":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAZklEQVR42mNgoDX4f8nr//9LXv9xyTMR0szAwMBw6+hV8m2+OV3+P001M+FyNgMDA4OatTYDIUOYcGkmFqC6QCENhXvr6FUG9cyHjEQbwMgXwMiot42RKvFO89AfRJphBpCtecABAOVRVQGjtDXcAAAAAElFTkSuQmCC","민첩 특화":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAaUlEQVR42mNgoBV49+nHf2LUMRLSKMTHwUiUAbg01vjr/GdgYGBo2XiFEacBMM3otsE0wwA2Q3A6D10zLkOYKA1s2hiAy/lEGUBIM7o8Ezk2I6tjJDXloacTFmTBwpwkojT3T5nHMIwAAGA1LLlQWkJDAAAAAElFTkSuQmCC","활력":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAeklEQVR42mNgGFTggYvX/wcuXv+JFWdgYGBghDEW6+r+txWXhUscfvmYgYGBgQFdLPbyZUYMA9A14wPohjDBGOIpiWR5G27AyznzyTcg9vJlRpifSXE+igsIGYJNM4oB+AzBpRnDAGyG4NOMFyzW1f2/WFf3P8MoIAgAntxGU4hmk2MAAAAASUVORK5CYII=","방어 특화":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAZ0lEQVR42mNgoBAwInPUvfL+41N8c9skRnQxFmTNGjYRhCz8j24IE7oKXzsNkryAYcDmQzcoM4BUQD0Dbm6bxHjjyAqcCm8cWYE1FqjrBVyuwGU7bQIR3RX4bMcL1L3y/hNK2sMEAAAoQyrz+zEm2wAAAABJRU5ErkJggg==","광부":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAZ0lEQVR42mNgoBAwInMeeXv9J0aT3NZtcH1MpGpGV8uCTcHBR48ZYi9fRnHdYl3d//ZyshhqmSgNg1EDqGAAPKpOnLkCj1sLEx1GbIqxqaHYBfCEpKamwsDAwMBw69YdvBpg6oYRAACfIxt3MnDqJQAAAABJRU5ErkJggg==","대구경":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAr0lEQVR42sVTsQ3DMAyjgsxBe0OGbFn6hae80Mv8QqZ84cVbB99gIw+wQ+siQGSnQFBUkwCTFEHJwC+L3pDesIZpNFLukwtILqhvRQEZF9GA9IYyLrLD1+zn6ZdbD40MAG3JXnIB1/tDACBa7LJQBekNox0IAFxncp0/pGgHNdD2cBNvEekmyU620w8FpJskO9CykO8yeJG1DE5voSmRt4TSbRQvUT2Yisipv/D/egLLkng+shx6jQAAAABJRU5ErkJggg==","재생":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAmUlEQVR42mNgoCWo2a/3n5AaJnyajRR1CBrChE8zAwMDAyFDmPBp7u3dznDu/hW8hjBh0wzT6BgkCzcIlyFYvQDTiIuP04AWx0uMMCfvX/cYLm6kqMNw7v4VhhbHS4zoBjBiM9U6V/C/Y5AsXOP+dY8Zjk5+j1UtIy6nZXtpw/07ddtVRrISErIhJCckYgHtDIA5nxhvDCwAACDsRNjUQi1lAAAAAElFTkSuQmCC","경험치 부스트":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAXUlEQVR42mNgoCWYfiTy//Qjkf/xqWHCpxkbmygDYBrOXD3JcObqSbyGMOHSnGmznBEmBmNjM4SJkGZChjARo5kYl2AFyTOV/ifPVCIvFogFowbgMQA59AnFxMACANliNZGHaVSIAAAAAElFTkSuQmCC","도네 알림":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAfklEQVR42mNgGGjAiMyZ//D0/4LeboKaJhSXMiTKmzIyMDAwsCBrhrE/TlrFiM+AAgaG/8jq4Zr588Lggg82O/5HxjBxmBqYHiYGBga4c9CBgu9+RgXf/VjlYHqY0J2PDNBtRw8vDIH5D0//R/YGLsCfF/Yfpp7iWBgFwwIAAFVkTozcVFVhAAAAAElFTkSuQmCC","정밀 조준":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAa0lEQVR42mNgoCUoUrH7T0gNE6WWMJJia9+dQ4xEOblIxe7/lwMX4Zgo76BrRpb7cuDif2R5vAaga0Y2BJsBTEUqdjhNvxJc9x+XKzFcQrYL0BXWpeQyYAuDupRc4hMOKbFA3XQwIEl54AEAPMpmpytWSqcAAAAASUVORK5CYII=","흡혈":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAhElEQVR42mNgoCWolJf/T0gNE01tf+Tt9Z+QKyh2ARMu2zN1tBkuX3rMkKmjjTcsqO8CZNsZGBgIuoIJn2YYwGcITi84ddeRH4gUxwIDAwPDvtIm0g1of/iQcfqVqwy6erIoinT1ZBmmX7nK0P7wISO6AYyE8kCmjjZOzUQlZ2IyFEUAALfXOorxNHZlAAAAAElFTkSuQmCC","충격파":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAeklEQVR42mNgoCV4P1/9PyE1TIQ0EzKEEZdmbg0/OP/rjU0Mgok3GYlyAbpmBgYGBm4NP5wuYSKkmZAhTJQGNBMxtuNzBcUuYGFgYGBo9ef+DwttYkCrP/f/6o1fGRloDlr9uf/DXIfXC7g0ZwXIQHlPyHMyMS4YeAAAJaQ4/hX6s0sAAAAASUVORK5CYII=","관통":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAcUlEQVR42mNgGCjw7tOP/wwMDAxM5GrefeA43BCSNL779OP/yk37/5OkGV0jUZphCglpZEQXqPHXgSvSTZ7M4OpgycDAwMAgxMfBiM0iRkKacWmkmgsoDgMWXAYg2wjTiBz3JLuIonSAzSCqGMIwKAAA2NOO+nHf2IYAAAAASUVORK5CYII=","반사":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAh0lEQVR42mNgIBN0tDf8Z2BgYGBBFlysq/sfxo69fJmRGINYkDXby8kiDGNg+E+MIUzoAqKxiSR5BcOA14vnk2QAC7KfFzMwkBwGKC6IvXyZ8VHXPqI1Y/VCtacoY+v21//xaSIkj1cRTByWDkgyBJlPlAHImtANI9oAXIphYkzEaibJxqEFAOggR4mvW3CjAAAAAElFTkSuQmCC","연사":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAASElEQVR42mNgoBX4f8nrPz4+1TQzUWozEzbFt45excon6Oz/l7z+35wu/x8bnygDkBWTpHlAQn/waGb6f8nrP3I0ofNHAWEAAOJKXn9QvedTAAAAAElFTkSuQmCC","강철 체력":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAn0lEQVR42t2QMQrCQBRE3+4lrDzCv0BASJEqiCmtcrqtLCMeICDkAnuBgJWn+FaRuNldtxSn+swwj8/AT2luWp2bVkt9ALMcTkQPu/07uD8fAIRe773ZAMJyTiHEANyuFwWo6o5pHJLldX48nQ2AjYUpTeNAVXcfns2FuQ82I5ZuEW5g12HvvVnWLylvADlIrBwFxCCp8lc5EXUiyn/rBRUnVy0iZ6vDAAAAAElFTkSuQmCC","거인 사냥":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAXUlEQVR42mNgIBO8+/TjPwMDAwMTuZp3HzgON4RkzSs37f8/qpmKmhlxSTzY7IihScF3PyNRBjzY7Ph/1/Y7cL6bpwpWzQRBjb8OQX8zEdJMjCEUuYCoQCTL/3QDANwpZVG3X8BxAAAAAElFTkSuQmCC","고속탄":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAbklEQVR42mNgoBWIPbX0f+yppf8JqWPEphGbwsVm0YxE20ysoQwMDAws2AT/X/JC0RD3A7eFTJSGFV4DGPW2MTIopOE1gAWnRgYGhv+fNvwn2wUwzYx8AYwkG0CsZpwGEKORoBeINYSF2MQ0jAEA1PYlM8Dw4XwAAAAASUVORK5CYII=","화염탄":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAjElEQVR42mNgoCV4P1/9PyE1TIQ0EzIEpwGf1ygT5UqsBjzy9vrPwMDAIGCsTNArOF0g2w6hYYYQbQDMdmQgENyJ0xUs+GxnUEiD0A9mEecCbLYjByo2VzDhtJ1IcSZKExuGAY8rGRg+nL2L6neFNLgYujcZccUCb8hdrAlLbus2RrwG4AtMdM2DAwAAbD03hUl/eaEAAAAASUVORK5CYII=","빙결탄":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAaklEQVR42mNgoCV49+nHf0JqmJA5rdtf49VASB5DEbILiNKMrhhmAD7NTNgEqz1FGRkYGBimH/1MMBxYkJ07/ehnov2fac3LIMTHwYhXw7tPP/6T5HdywoC6sYCuCD0ASfYOMSlxFDAwAAAWWVv7AllkOwAAAABJRU5ErkJggg==","독침":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAgklEQVR42mNgoCVQD+D6T0gNE01tn34k8j8hVzDR1PbkmUoEXUGxC5iw2V5Q4s9w5upJBgYGBoYzV08yFJT444wRJnyaYQCfITi9EOtSSp4XYGDxnm7KDCArEG9u+MY4oWcjg4m2OYoiE21zhgk9GxlubvjGSHQ6gGFiUiNBg2iaYwGolj62uQYJqwAAAABJRU5ErkJggg==","가시 갑옷":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAa0lEQVR42mNgoBawzhX8TwoNA4zInOSZSv/xWTI3/R4juhgTsZpxqWHC5ixc4MaV9ww4XUAuwDDARNucMgPOXD1JmQFkeeHo5PeMxCjW0BHEECM6HWBLAxhewKUIlzjWMEBXjE8zyalucAIAdS0qSC0M7SsAAAAASUVORK5CYII=","흡성":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAeklEQVR42mNgGFRAdl7pf9l5pf+JFWdgYGBghDH488L+8xnIwyU+XXjIwMDAwIAu9nHSKkYMA9A14wPohjDBGE3OYWR5G25A3d5V5BvwcdIqRpifSXE+igsIGYJNM4oB+AzBpRnDAGyG4NOMF/Dnhf3nzwv7zzAKCAIAYA1G92M0yOIAAAAASUVORK5CYII=","추진력":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAR0lEQVR42mNgGGjAiC4w58i7/7gUp9gIMeI0ac6Rd//xaSZWDUGAbgALIWcT5XxSbMfqAnyuQLeZLJfgCzyio5EqYTAKaAQAXRMuc4hwxvAAAAAASUVORK5CYII=","잔상":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAWklEQVR42mNgoBAwYhM8d/rbf2S+kSkXIy4DmAhpxiWG1QB8CnHJMRGjGZ8aDC+01h9kaK0/iJNP0ACyY4EYL2CLEYpdMAgNQPYjLjZRcXzu9Lf/2MQYhh8AAGbXNAvvduPSAAAAAElFTkSuQmCC","맹공":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAh0lEQVR42t2SwREAEQxF2UoUoAkFGA1pyJUCtKICBye37MlMxiY2e93cMv57MUH1MUF9rAfTx4SUq0iUcgVyqETCwhLJK3ySiGFKIoZbcdCKg12C4T3DivDkdRMOvHATgwXjq97DrTgwvuoYLLCCdbgkOIRhSsK+eStO/MHYhYoWR00/9T+rG3WRo3bHjviFAAAAAElFTkSuQmCC","유도의 눈":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAeElEQVR42mNgGGjAiC7w7tOP/9gUCvFxMOI1AJdGQgaxYNM8/ehnFE2Z1rw4DWRBF5h+9DPDpsufMBTiMoQJ2XZkzWcXlTGcXVTGwMDAwLDp8ie4q9Bdy4guiM0Ffrp8cBdgDQNCTsWlmaRYIBiNuAzCpXEUUBEAAFJ/PPHI/pUjAAAAAElFTkSuQmCC","연쇄 폭발":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAZElEQVR42mNgoCf4/2nDf3QxJqI1X/L6T77Nl7z+v5+v/p9szVT1MzpgRBfQ0dHCqunKlWuM2MSZiNGMT46JGM341GBEo7GRAUnhhGHA2XMXKDOAVMBEKJQJxQQTMVFFrAUDAwABaypUvRcPqgAAAABJRU5ErkJggg==","흡혈귀":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAVklEQVR42mNgGHCgo6P1H5sYMsanhwldgJAGdHlGbBqIAVeuXGNkYGBgYIIxyNEM9wK6IdvkFbCysallJBSg+DTDXYBPASE5JmIUkhNODLjSwCigAQAA6mkv+xfKQPIAAAAASUVORK5CYII=","그림자 보법":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAU0lEQVR42mNgoBAwYhOsL7/7H12ssVOZkaBp9eV3/2PTTEgOp61EqyNWMzb1TMQowmYBTAynAciBhisA68vv/mchN/owDKUoECmJRuompFFAHgAAGyM+WZUEOAwAAAAASUVORK5CYII=","쌍방향 사격":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAOUlEQVR42mNgGHSgvvzuf1LEmYhRhE+eEZukf4gkVgM2rnkOZzd2KjNitQGfFwi5kKwwGAWjgCoAAKa9IzgGGWaeAAAAAElFTkSuQmCC","더블탭":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAR0lEQVR42mNgGGjAyMDAwLBl08r/DAwMDD5+4YwMDAwMDzY7/ud/84yBgYGBYfXpbyga0qY9ZmQYXgAlDGDhMMLCYBQMBgAAu4waA8w4cU4AAAAASUVORK5CYII=","막판 정신력":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAVUlEQVR42mNgGPKAEZlzI8rgPyENGssuMGI1AKZZNqsZp+bH02oxDGFCViCb1cywpCKLgYGBASuNzXAUF+CzHdkVOF2Ay2ZkGq8LyAkDimNhFAwGAABQvStO9JFp+QAAAABJRU5ErkJggg==","저체력 폭주":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAYElEQVR42mNgGGjACGPEx0X9J0bDwkXLGJH5LMic5rcfGBgYGBjktm5jxKYZmyVMlHoBxQW1wgIkeYc24P189f/YaFwAJQz+X/L6D6MFE28yIvNJdgEuPlGALJtHAfkAAGzILjBPZg31AAAAAElFTkSuQmCC","처단":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAeklEQVR42mNgoBAwwhhbr3z5T4wGbx0eRqwGMDAwMLRuf43XkGpPUUZ0MSZkzuQVu7BqnLxiF1bNGAa8WBiNVREucQwDsLkCl6uwhgGusMDlfKwuIKSBKCARv/S/RPzS/4RihYGBgYEFV6ARo5kgoNgQifillLtiBAAADTYrCvvXqJUAAAAASUVORK5CYII=","분노":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAATUlEQVR42mNgoAV45O31HxubZM0kG4JPIS45JnQF+FxAlksIaWIixZ/Y1DCSGlByW7cxkuRssqKUFE1YvYDuTHxyFKcD6qZEquQFugMAcsJMAz2PiG4AAAAASUVORK5CYII=","불사":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAcklEQVR42mNgoBAwogs82Oz4H5tCBd/9jARNe7DZ8f+sLFkMA2Zlyf7HZTBRtuOTY8JmGzFitAkDisG7Tz/+kyrHgk0BumIhPg5GmDiMjRKIMA1CfByM2GxC1oguz4RsAzEAqwuINQSbGiZiFJHiwiEIABXfQAZnLGhlAAAAAElFTkSuQmCC","치명 일격":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAaUlEQVR42mNgoCV4sNnxPyE1TIQ0EzKECZ9meft8gi5hIdbJMDkF3/2MyOKMuGzFBh4enMiAbggjPhfI2+fDNcEAugtYsEli8wq6RqwuwOUaXJqpkg5IAr+Ol/4nOiHh0ozNEIpcMAwAANgsPKVCJR+aAAAAAElFTkSuQmCC","폭주":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAXElEQVR42mNgoBAwogu8+/TjPzaFQnwcjNjEmYjRjE+OiRjN+NQwoQvYWRkx2FkZ4eQTNIDsQCTGC9gCkwmXBDanY4sJRmJjAZcBTNgUwGxGpylKSPgS0yigEAAAruIl4tXNj3gAAAAASUVORK5CYII=","작렬탄":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAW0lEQVR42mNgoCV4P1/9PyE1TKRoIMZAuKL389X/wzA+zYz4DBEwVmb4cPYuAwMDA4Ng4k1GvAag2yBgrAxnwwyBAWTDKHYBEzbNMMXImkkKQGL5VEkHo2AwAADLIkASVRpN8AAAAABJRU5ErkJggg==","이중 도약":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAMElEQVR42mNgoCV4sNnxPyE1TIQ0EzKECZ/mXdvvEO0SFM3oGrCJ0QeMBuIooBsAAFaxN3l3tnqiAAAAAElFTkSuQmCC","재충전 보호막":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAVElEQVR42mNgoBAwYhNs3f76Pzbxak9RRrymtW5//R+XZoLyMIl3n378f/fpB15DkPlM2BQJ8XEwkhQQ+JxNlgtIAQNvAMnhQPUwoDghUTcpD00AAKyJO/hbj7miAAAAAElFTkSuQmCC","다중 사격":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAASklEQVR42mNgoCZ4sNnxPyl8BgYGBiZKLaW+AdiciU8cxQAF3/2M+GzDJs9IrE3EWMBAimGDOBaoZgDM/4TCgQWXxK7tdxhGCAAAwHgfVVCxEfsAAAAASUVORK5CYII=","차지샷":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAYElEQVR42mNgoCX4f8nrPyE1TKRoIMZAuKL/l7z+wzA+zYz4DPlw9i6DgLEyRKHeNkacXkA2HUVzcCfDh7N3GXCpgRuAy3RcAFk9dbyArhmmGFkzSTFALJ8qCWkUUAEAAMuyT/2hFZW/AAAAAElFTkSuQmCC","유리 대포":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAY0lEQVR42mNgoBAwwhhbr3z5j0+htw4PI16T8BmAT44FmfPI2wurwst4LGZCUdi5ClMzFjGsBuDzI0H/o/v3kbfX/0feXv8JBSxeQ4jVzERpOqC+AchOJ8YbTIQSDNkBOYIAAA+gNDNuMLkUAAAAAElFTkSuQmCC","구독자 소환":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAcUlEQVR42mNgoBAw4pL4dbz0P4zNZtmNUx0TIc3Y+AQNYGBgYBCqZUehSTbgXfNPFJrkMDDvugt39skyZdLCAFkzNj5eA8y77v5Ht/FkmTIjLkOYGGgBKPICxYDHpeY/j0vNf0Ji1AcPNjv+p4Va2gMACJozwap21rkAAAAASUVORK5CYII="};
 const LEVEL_PERKS=[
-  // 일반
-  {g:'common',icon:'⚔️',name:'공격 특화',desc:'공격력 +10%',apply:p=>{p.dmgMul*=1.10;}},
-  {g:'common',icon:'⚡',name:'속사 특화',desc:'발사 속도 +8%',apply:p=>{p.fireMul*=0.92;}},
-  {g:'common',icon:'🥾',name:'민첩 특화',desc:'이동 속도 +6%',apply:p=>{p.spd*=1.06;}},
+  // ===== 일반 Common =====
+  {g:'common',icon:'⚔️',name:'공격 특화',desc:'공격력 +10%',apply:p=>{p.dmgMul+=0.10;}},
+  {g:'common',icon:'⚡',name:'속사 특화',desc:'발사 속도 +8%',apply:p=>{p.fireAdd+=0.08;}},
+  {g:'common',icon:'🥾',name:'민첩 특화',desc:'이동 속도 +10',apply:p=>{p.spd+=10;}},
   {g:'common',icon:'❤️',name:'활력',desc:'최대 체력 +15, 10 회복',apply:p=>{p.maxhp+=15;p.hp=Math.min(p.maxhp,p.hp+10);}},
   {g:'common',icon:'🛡️',name:'방어 특화',desc:'받는 피해 -5%',apply:p=>{p.armor+=0.05;}},
   {g:'common',icon:'🧲',name:'광부',desc:'골드 획득 +15%',apply:p=>{p.goldMul*=1.15;}},
-  {g:'common',icon:'💥',name:'대구경',desc:'투사체 크기 +10%',apply:p=>{p.bulletSize*=1.10;}},
+  {g:'common',icon:'💥',name:'대구경',desc:'투사체 크기 +10%',apply:p=>{p.bulletSize+=0.10;}},
   {g:'common',icon:'🌿',name:'재생',desc:'초당 체력 +0.5',apply:p=>{p.regen+=0.5;}},
-  // 희귀
+  {g:'common',icon:'📈',name:'경험치 부스트',desc:'경험치 +25%',apply:p=>{p.xpMul+=0.25;}},
+  {g:'common',icon:'💸',name:'도네 알림',desc:'처치 시 8% 확률로 골드 폭탄',apply:p=>{p.donateChance+=0.08;}},
+  // ===== 희귀 Rare =====
   {g:'rare',icon:'🎯',name:'정밀 조준',desc:'치명타 확률 +10%',apply:p=>{p.critChance+=0.10;}},
   {g:'rare',icon:'🩸',name:'흡혈',desc:'흡혈 확률 +7%',apply:p=>{p.lifesteal+=0.07;}},
   {g:'rare',icon:'🔔',name:'충격파',desc:'기절 확률 +12%',apply:p=>{p.stunChance+=0.12;}},
   {g:'rare',icon:'🍢',name:'관통',desc:'관통 +1',apply:p=>{p.pierce+=1;}},
-  {g:'rare',icon:'🔴',name:'반사',desc:'벽 튕김 +1',apply:p=>{p.bounce+=1;}},
-  {g:'epic',icon:'⚔️',name:'맹공',desc:'공격력 +20%',apply:p=>{p.dmgMul*=1.20;}},
-  {g:'rare',icon:'⚡',name:'연사',desc:'발사 속도 +16%',apply:p=>{p.fireMul*=0.84;}},
+  {g:'rare',icon:'🔴',name:'반사',desc:'벽 팅김 +1',apply:p=>{p.bounce+=1;}},
+  {g:'rare',icon:'⚡',name:'연사',desc:'발사 속도 +16%',apply:p=>{p.fireAdd+=0.16;}},
   {g:'rare',icon:'❤️‍🔥',name:'강철 체력',desc:'최대 체력 +35, 20 회복',apply:p=>{p.maxhp+=35;p.hp=Math.min(p.maxhp,p.hp+20);}},
   {g:'rare',icon:'🗡️',name:'거인 사냥',desc:'보스 피해 +25%',apply:p=>{p.bossDmgMul*=1.25;}},
   {g:'rare',icon:'🔋',name:'고속탄',desc:'투사체 속도 +30%',apply:p=>{p.bulletSpeedMul*=1.3;}},
-  // 전설
-  {g:'mythic',icon:'🔱',name:'다중 사격',desc:'투사체 +1발',apply:p=>{p.shots+=1;}},
-  {g:'mythic',icon:'👁️',name:'유도의 눈',desc:'투사체가 적을 강하게 추적',skip:p=>p.homing>0,apply:p=>{p.homing=12;}},
-  {g:'epic',icon:'💣',name:'연쇄 폭발',desc:'처치 시 주변 폭발',apply:p=>{p.explodeKill+=24;}},
-  {g:'legend',icon:'✨',name:'치명 일격',desc:'치명타 +20%, 치명타 피해 +50%',apply:p=>{p.critChance+=0.20;p.critMult+=0.5;}},
-  {g:'epic',icon:'🧛',name:'흡혈귀',desc:'흡혈 확률 +15%',apply:p=>{p.lifesteal+=0.15;}},
-  {g:'epic',icon:'🌀',name:'그림자 보법',desc:'베인Q 쿨 -40%',apply:p=>{p.dodgeCdMul*=0.6;}},
-  {g:'legend',icon:'💀',name:'폭주',desc:'공격력 +40%',apply:p=>{p.dmgMul*=1.40;}},
-  {g:'epic',icon:'🔙',name:'쌍방향 사격',desc:'뒤로도 한 발 발사 + 공격력 +20%',skip:p=>p.backShot,apply:p=>{p.backShot=true;p.dmgMul*=1.2;}},
-  {g:'common',icon:'📈',name:'경험치 부스트',desc:'경험치 획득 +25%',apply:p=>{p.xpMul+=0.25;}},
-  {g:'common',icon:'💸',name:'도네 알림',desc:'처치 시 8% 확률로 골드 폭탄',apply:p=>{p.donateChance+=0.08;}},
   {g:'rare',icon:'🔥',name:'화염탄',desc:'명중 시 화상(초당 피해)',apply:p=>{p.burn+=4;}},
   {g:'rare',icon:'❄️',name:'빙결탄',desc:'명중 시 적 이동속도 둔화',skip:p=>p.chill>0,apply:p=>{p.chill+=1;}},
   {g:'rare',icon:'🟢',name:'독침',desc:'명중 시 중첩되는 독 피해',apply:p=>{p.poison+=3;}},
-  {g:'epic',icon:'🔫',name:'더블탭',desc:'25% 확률로 한 번에 2발',apply:p=>{p.doubleTap+=0.25;}},
   {g:'rare',icon:'🌵',name:'가시 갑옷',desc:'접촉한 적에게 반사 피해',apply:p=>{p.thorns+=10;}},
   {g:'rare',icon:'💚',name:'흡성',desc:'처치 시 체력 4 회복',apply:p=>{p.healOnKill+=4;}},
-  {g:'epic',icon:'🩹',name:'막판 정신력',desc:'1회 체력1로 버티기',skip:p=>p.lastStand,apply:p=>{p.lastStand=true;}},
   {g:'rare',icon:'💨',name:'추진력',desc:'베인Q 후 잠깐 발사속도↑',skip:p=>p.dodgeHaste,apply:p=>{p.dodgeHaste=true;}},
-  {g:'epic',icon:'🆘',name:'저체력 폭주',desc:'체력 30%↓일 때 공격력 대폭↑',apply:p=>{p.lowHpMul+=0.5;}},
   {g:'rare',icon:'👻',name:'잔상',desc:'베인Q 무적 시간 증가',apply:p=>{p.dodgeIframeBonus+=0.1;}},
+  {g:'rare',icon:'🧨',name:'점화',desc:'상태이상 걸린 적에게 주는 피해 +30%',apply:p=>{p.statusDmgMul+=0.30;}},
+  {g:'rare',icon:'💸',name:'현질의 힘',desc:'보유 골드 100당 공격력 +2% (최대 +30%)',apply:p=>{p.goldPower+=0.02;}},
+  // ===== 영웅 Epic =====
+  {g:'epic',icon:'⚔️',name:'맹공',desc:'공격력 +20%',apply:p=>{p.dmgMul+=0.20;}},
+  {g:'epic',icon:'💣',name:'연쇄 폭발',desc:'처치 시 주변 폭발',apply:p=>{p.explodeKill+=24;}},
+  {g:'epic',icon:'🧛',name:'흡혈귀',desc:'흡혈 확률 +15%',apply:p=>{p.lifesteal+=0.15;}},
+  {g:'epic',icon:'🌀',name:'그림자 보법',desc:'베인Q 쿵 -40%',apply:p=>{p.dodgeCdMul*=0.6;}},
+  {g:'epic',icon:'🔙',name:'쌍방향 사격',desc:'뒤로도 한 발 발사 + 공격력 +20%',skip:p=>p.backShot,apply:p=>{p.backShot=true;p.dmgMul*=1.2;}},
+  {g:'epic',icon:'🔫',name:'더블탭',desc:'25% 확률로 한 번에 2발',apply:p=>{p.doubleTap+=0.25;}},
+  {g:'epic',icon:'🩹',name:'막판 정신력',desc:'1회 체력1로 버티기',skip:p=>p.lastStand,apply:p=>{p.lastStand=true;}},
+  {g:'epic',icon:'🆘',name:'저체력 폭주',desc:'체력 30%↓일 때 공격력 대폭↑',apply:p=>{p.lowHpMul+=0.5;}},
+  {g:'epic',icon:'🌪️',name:'처단',desc:'베인Q 시 주변 폭발+강한 더백(범위·밀치기 1.5배)',apply:p=>{p.dodgeBlast+=18;}},
+  {g:'epic',icon:'😤',name:'분노',desc:'적 1마리당 공격력+6%(최도10마리)',apply:p=>{p.crowdRage+=0.06;}},
+  {g:'epic',icon:'💉',name:'치명 흡혈',desc:'치명타 적중 시 체력 +5 회복',apply:p=>{p.critHeal+=5;}},
+  {g:'epic',icon:'⚡',name:'감전 연쇄',desc:'명중 시 근처 적에게 연쇄 번개(피해 50%)',apply:p=>{p.chainLightning+=1;}},
+  {g:'epic',icon:'✂️',name:'클립 박제',desc:'체력 15% 이하 잡목 즉시 처치 (보스 제외)',apply:p=>{p.execThreshold=Math.max(p.execThreshold,0.15);}},
+  // ===== 전설 Legend =====
+  {g:'legend',icon:'✨',name:'치명 일격',desc:'치명타 +20%, 치명타 피해 +50%',apply:p=>{p.critChance+=0.20;p.critMult+=0.5;}},
+  {g:'legend',icon:'💀',name:'폭주',desc:'공격력 +40%',apply:p=>{p.dmgMul+=0.40;}},
   {g:'legend',icon:'💢',name:'작렬탄',desc:'명중 시 폭발(범위 피해)',apply:p=>{p.bulletExplode+=12;}},
-  {g:'mythic',icon:'🔆',name:'차지샷',desc:'잠깐 안 쏘면 다음 탄 3배',skip:p=>p.chargeShot,apply:p=>{p.chargeShot=true;}},
-  {g:'epic',icon:'🌪️',name:'처단',desc:'베인Q 시 주변 폭발+강한 넉백(범위·밀치기 1.5배)',apply:p=>{p.dodgeBlast+=18;}},
   {g:'legend',icon:'🌀',name:'이중 도약',desc:'베인Q 2회 충전',skip:p=>p.dodgeMaxCharges>=2,apply:p=>{p.dodgeMaxCharges=2;p.dodgeCharges=2;}},
   {g:'legend',icon:'🔵',name:'재충전 보호막',desc:'8초마다 1회 피격 무효',skip:p=>p.shieldRegen>0,apply:p=>{p.shieldRegen=8;}},
+  {g:'legend',icon:'⚰️',name:'사형 선고',desc:'처형 임계값 25%로↑ + 처형 시 주변 폭발',skip:p=>p.execDoom,apply:p=>{p.execDoom=true;p.execThreshold=Math.max(p.execThreshold,0.25);p.execBlast+=16;}},
+  {g:'legend',icon:'🌬️',name:'확산',desc:'상태이상 적 처치 시 주변에 같은 효과 전파',skip:p=>p.statusSpread,apply:p=>{p.statusSpread=true;}},
+  // ===== 신화 Myth =====
+  {g:'mythic',icon:'🔱',name:'다중 사격',desc:'투사체 +1발',apply:p=>{p.shots+=1;}},
+  {g:'mythic',icon:'👁️',name:'유도의 눈',desc:'투사체가 적을 강하게 추적',skip:p=>p.homing>0,apply:p=>{p.homing=12;}},
+  {g:'mythic',icon:'🔆',name:'차지샷',desc:'잠깐 안 쏘면 다음 탄 3배',skip:p=>p.chargeShot,apply:p=>{p.chargeShot=true;}},
   {g:'mythic',icon:'🍷',name:'유리 대포',desc:'공격력 +50%, 받는 피해 +30%',skip:p=>p.glassCannon,apply:p=>{p.glassCannon=true;p.dmgMul*=1.5;p.armor-=0.3;}},
-  {g:'epic',icon:'😤',name:'분노',desc:'적 1마리당 공격력+6%(최대10마리)',apply:p=>{p.crowdRage+=0.06;}},
   {g:'mythic',icon:'🤝',name:'구독자 소환',desc:'따라다니며 자동 공격하는 구독자',skip:p=>!!p.minion,apply:p=>{p.minion={ang:0,fireT:0,x:p.x,y:p.y};}},
 ];
 const PERK_COUNTS={}; LEVEL_PERKS.forEach(p=>{PERK_COUNTS[p.g]=(PERK_COUNTS[p.g]||0)+1;});
@@ -3682,7 +3711,7 @@ function spStats(p){
     ['❤️ 최대체력', Math.round(p.maxhp), p.maxhp],
     ['⚔️ 공격력', (p.dmg*p.dmgMul).toFixed(1), p.dmg*p.dmgMul],
     ['🎯 치명타', Math.round(p.critChance*100)+'%', p.critChance],
-    ['🔥 초당발사', (1/(0.35*p.fireMul)).toFixed(1)+'발', 1/(0.35*p.fireMul)],
+    ['🔥 초당발사', ((1+p.fireAdd)/(0.35*p.fireMul)).toFixed(1)+'발', (1+p.fireAdd)/(0.35*p.fireMul)],
     ['➹ 투사체', p.shots+'발', p.shots],
     ['👟 이동', Math.round(p.spd), p.spd],
     ['🛡️ 피해감소', Math.round(p.armor*100)+'%', p.armor],
@@ -3761,7 +3790,7 @@ function renderSidePanel(previewPk){
 }
 function renderInventory(){
   const p=player;
-  const fr=(1/(0.35*p.fireMul)).toFixed(1);
+  const fr=((1+p.fireAdd)/(0.35*p.fireMul)).toFixed(1);
   const pc=v=>Math.round(v*100)+'%';
   const stats=[
     ['공격력', (p.dmg*p.dmgMul).toFixed(1)],
