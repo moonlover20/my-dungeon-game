@@ -2785,7 +2785,12 @@ function drawEnemy(e){
   const _isc=(e.introScale==null?1:e.introScale);
   if(_isc<=0.01){ ctx.restore(); return; }
   if(_isc!==1) ctx.scale(_isc,_isc);
+  // ── 가시성 보정: 적 실루엣을 따라 외곽 글로우 (배경 대비 강화) ──
+  ctx.save();
+  ctx.shadowColor = e.eliteViewer ? 'rgba(255,80,80,0.95)' : 'rgba(120,205,255,0.85)';
+  ctx.shadowBlur  = 9;   // 더 또렷하게: 12~14, 은은하게: 6
   (SPRITES[e.sprite||e.type]||SPRITES._default)(e.r,e);
+  ctx.restore();
   if(e.eliteViewer){ ctx.save(); ctx.strokeStyle='rgba(255,60,60,'+(0.45+0.4*Math.abs(Math.sin(e.wob*2.5)))+')'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(0,0,e.r+8,0,TAU); ctx.stroke(); ctx.restore(); }
   if(e.ai==='charge' && (e.cs==='wind'||e.cs==='spit')){
     const len=e.cs==='wind'?135:78;
@@ -3150,7 +3155,8 @@ function show(st){
 function refreshSidePanel(){
   const sp=$('sidePanel'); if(!sp) return;
   const sw=$('stageWrap');
-  if(['play','level','shop','reward','relic','event'].includes(state)){ renderSidePanel(); sp.classList.add('show'); if(sw) sw.classList.add('with-side'); }
+  // 게임이 시작된 이후로는 항상 표시 (타이틀 화면 'start' 및 player 미초기화 시에만 숨김)
+  if(state!=='start' && player && player.maxhp!=null){ renderSidePanel(); sp.classList.add('show'); if(sw) sw.classList.add('with-side'); }
   else { sp.classList.remove('show'); if(sw) sw.classList.remove('with-side'); }
 }
 
@@ -3415,9 +3421,6 @@ function renderSidePanel(previewPk){
     }
     h+='<div class="sp-row"><span>'+r[0]+'</span>'+val+'</div>';
   });
-  h+='<div class="sp-row"><span>🩸 현재체력</span><b>'+Math.round(p.hp)+'</b></div>';
-  h+='<div class="sp-row"><span>🪙 골드</span><b>'+gold+'</b></div>';
-  h+='<div class="sp-row"><span>⭐ 레벨</span><b>'+level+'</b></div>';
   const shownE=(aftE&&aftE.length)?aftE:curE;
   if(shownE.length){
     const curKeys=curE.map(x=>x.t);
