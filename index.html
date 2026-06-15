@@ -381,6 +381,37 @@
   #ovStoryPlate img{width:30px;height:30px;border-radius:50%;object-fit:cover;border:2px solid var(--twitch);background:#000;}
   #ovStoryPlate b{color:#fff;}
   #ovStoryPlate .vc{color:var(--muted);margin-left:2px;}
+
+  /* ===== 타이틀(메인 메뉴) 화면 ===== */
+  #ovTitle{padding:0;background:#0c0916;overflow:hidden;backdrop-filter:none;}
+  #titleCanvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;display:block;z-index:0;}
+  #titleVignette{position:absolute;inset:0;z-index:1;pointer-events:none;
+    background:radial-gradient(120% 95% at 50% 38%, transparent 52%, rgba(8,5,16,.6) 100%);}
+  .title-wrap{position:absolute;inset:0;z-index:2;}
+  .title-logo{position:absolute;top:6%;left:0;right:0;text-align:center;pointer-events:none;}
+  .title-logo h1{font-size:clamp(28px,5.6vw,52px);letter-spacing:6px;color:#eafcff;margin:0;font-weight:900;
+    text-shadow:0 0 10px #aef3ff,0 0 26px #38e8ffcc,0 0 48px #9146ff99;animation:titleGlow 3.4s ease-in-out infinite;}
+  .title-logo .sub{margin-top:6px;font-size:clamp(10px,1.5vw,13px);letter-spacing:5px;color:#9bd9e6;
+    text-shadow:0 0 8px #38e8ff66;text-transform:uppercase;}
+  @keyframes titleGlow{0%,100%{text-shadow:0 0 10px #aef3ff,0 0 26px #38e8ffcc,0 0 48px #9146ff99;}
+    50%{text-shadow:0 0 14px #d6fbff,0 0 38px #38e8ff,0 0 66px #9146ffcc;}}
+  .title-menu{position:absolute;left:6%;top:41%;display:flex;flex-direction:column;gap:13px;}
+  .title-item{font-size:clamp(20px,3.3vw,30px);letter-spacing:3px;color:#cfeaf2;font-weight:bold;font-family:inherit;
+    background:none;border:none;text-align:left;cursor:pointer;padding:2px 0;width:max-content;position:relative;
+    text-shadow:0 1px 0 #0008;transition:color .12s,text-shadow .12s,transform .12s;}
+  .title-item:hover:not(.disabled){color:#fff;text-shadow:0 0 12px #38e8ff,0 0 22px #38e8ff88;transform:translateX(6px);}
+  .title-item:hover:not(.disabled)::after{content:"";position:absolute;left:0;right:0;bottom:-3px;height:2px;
+    background:#38e8ff;box-shadow:0 0 8px #38e8ff;}
+  .title-item.disabled{color:#5a5570;cursor:default;text-shadow:none;}
+  .title-live{position:absolute;right:6%;top:29%;text-align:right;font-size:clamp(11px,1.5vw,14px);
+    letter-spacing:2px;color:#ff6680;font-weight:bold;text-shadow:0 0 10px #ff4d6d88;line-height:1.6;}
+  .title-live .ld{display:inline-block;width:9px;height:9px;border-radius:50%;background:#ff4d6d;
+    box-shadow:0 0 8px #ff4d6d;animation:liveblink 1.4s infinite;vertical-align:1px;margin-right:5px;}
+  .title-hint{position:absolute;left:0;right:0;bottom:5%;text-align:center;font-size:11px;color:#8190ad;letter-spacing:2px;}
+  #ovStart .backToTitle{display:inline-block;margin-bottom:6px;color:var(--muted);font-size:11px;letter-spacing:1px;
+    background:none;border:none;font-family:inherit;cursor:pointer;}
+  #ovStart .backToTitle:hover{color:var(--neon);}
+  @media (max-width:560px){ .title-menu{top:45%;} .title-live{top:24%;} }
 </style>
 </head>
 <body>
@@ -449,9 +480,30 @@
         </div>
       </div>
 
-      <!-- START -->
-      <div class="overlay" id="ovStart">
+      <!-- TITLE (메인 메뉴) -->
+      <div class="overlay" id="ovTitle">
+        <canvas id="titleCanvas" width="180" height="112"></canvas>
+        <div id="titleVignette"></div>
+        <div class="title-wrap">
+          <div class="title-logo">
+            <h1>시청자를 막아라</h1>
+            <div class="sub">Block the Viewers</div>
+          </div>
+          <div class="title-live"><span class="ld"></span>LIVE<br><span style="color:#cdbbf2">스트리머 김봉식</span></div>
+          <div class="title-menu">
+            <button class="title-item" id="tmNew">NEW GAME</button>
+            <button class="title-item disabled" id="tmLoad" tabindex="-1">LOAD</button>
+            <button class="title-item" id="tmSettings">SETTINGS</button>
+            <button class="title-item" id="tmExit" style="font-size:clamp(15px,2.5vw,21px);color:#9b8fc4">EXIT</button>
+          </div>
+          <div class="title-hint" id="titleHint">방송을 시작하려면 NEW GAME</div>
+        </div>
+      </div>
+
+      <!-- START (난이도 선택) -->
+      <div class="overlay hidden" id="ovStart">
         <div class="panel-box" style="text-align:center">
+          <button class="backToTitle" id="diffBack">◀ 메뉴로</button>
           <div class="tag">📺 방송 중 비상사태</div>
           <div class="streamer-badge">
             <img id="startAvatar" alt="김봉식">
@@ -798,7 +850,7 @@ function stopIntroDrone(){
 function armIntroAudio(){
   if(introAudioArmed) return; introAudioArmed=true;
   unlockMusic();                       // mp3 음악 잠금 해제
-  if(state==='start') startIntroDrone();
+  if(state==='title'||state==='start') startIntroDrone();
 }
 window.addEventListener('pointerdown', armIntroAudio);
 window.addEventListener('keydown', armIntroAudio);
@@ -1157,7 +1209,7 @@ window.addEventListener('mouseup',()=>{mouseDown=false;});
 cvs.addEventListener('contextmenu',e=>e.preventDefault());
 
 // ---------- 게임 상태 ----------
-let state='start'; // start, play, door, relic, shop, vote, end, help
+let state='title'; // title, start, play, door, relic, shop, vote, end, help
 let prevState='play';
 const player={};
 let enemies=[], pBullets=[], eBullets=[], pickups=[], particles=[];
@@ -3417,7 +3469,7 @@ function loop(now){
 }
 
 // ---------- 오버레이 제어 ----------
-const overlays={start:'ovStart',map:'ovMap',relic:'ovRelic',shop:'ovShop',event:'ovEvent',inv:'ovInv',level:'ovLevel',reward:'ovReward',end:'ovEnd',help:'ovHelp',story:'ovStory',entrance:'ovEntrance',tierIntro:'ovTierIntro',taunt:'ovTaunt',campfire:'ovCampfire'};
+const overlays={title:'ovTitle',start:'ovStart',map:'ovMap',relic:'ovRelic',shop:'ovShop',event:'ovEvent',inv:'ovInv',level:'ovLevel',reward:'ovReward',end:'ovEnd',help:'ovHelp',story:'ovStory',entrance:'ovEntrance',tierIntro:'ovTierIntro',taunt:'ovTaunt',campfire:'ovCampfire'};
 function hideAll(){ Object.values(overlays).forEach(id=>$(id).classList.add('hidden')); }
 function show(st){
   hideAll();
@@ -3881,6 +3933,70 @@ $('tierIntroBtn').onclick=()=>{ showLevelUp(); };
 $('helpBtn').onclick=()=>{ prevState=state; show('help'); };
 $('invClose').onclick=closeInventory;
 $('helpClose').onclick=()=>{ $('ovHelp').classList.add('hidden'); if(prevState&&prevState!=='help'){ if(overlays[prevState]&&prevState!=='play')show(prevState); else {hideAll();state=prevState;} } };
+
+// ===== 타이틀(메인 메뉴) 픽셀 도트 배경 =====
+(function titleScene(){
+  const cv=$('titleCanvas'); if(!cv) return;
+  const c=cv.getContext('2d');
+  const W=cv.width, H=cv.height, GROUND=H-13;
+  const stars=[];
+  for(let i=0;i<66;i++) stars.push({x:(Math.random()*W)|0,y:(Math.random()*(GROUND-16))|0,ph:Math.random()*6.28,sp:.5+Math.random()*1.8,b:Math.random()<.15});
+  function cloudShape(){ return [{dx:0,dy:0,r:6},{dx:7,dy:1,r:8},{dx:16,dy:0,r:7},{dx:9,dy:-4,r:6},{dx:23,dy:2,r:5}]; }
+  const clouds=[
+    {x:30,y:24,s:1.0,v:2.2,sh:cloudShape(),col:'#36456a'},
+    {x:120,y:42,s:0.8,v:1.4,sh:cloudShape(),col:'#2e3c5a'},
+    {x:80,y:14,s:1.2,v:3.1,sh:cloudShape(),col:'#42547a'},
+  ];
+  function blob(x,y,r,col){ c.fillStyle=col; c.beginPath(); c.arc(x,y,r,0,6.283); c.fill(); }
+  function drawCloud(cl){
+    for(const b of cl.sh) blob(cl.x+b.dx*cl.s, cl.y+b.dy*cl.s, b.r*cl.s, cl.col);
+    for(const b of cl.sh) blob(cl.x+b.dx*cl.s, cl.y+b.dy*cl.s-1.5*cl.s, Math.max(1,(b.r-2)*cl.s), '#54678e');
+  }
+  function ruins(){
+    c.fillStyle='#0d1322'; c.fillRect(0,GROUND,W,H-GROUND);
+    c.fillStyle='#141c2f';
+    for(const[tx,th,tw] of [[12,18,8],[24,30,9],[150,26,10],[166,16,7],[64,12,8]]) c.fillRect(tx,GROUND-th,tw,th);
+    // 부서진 모니터
+    c.fillStyle='#10172a'; c.fillRect(40,GROUND-14,18,14);
+    c.fillStyle='#1b2740'; c.fillRect(42,GROUND-12,14,9);
+    c.fillStyle='#0c1120'; c.fillRect(48,GROUND-12,1,9);
+    // 서버 랙
+    c.fillStyle='#141c2f'; c.fillRect(134,GROUND-20,12,20);
+    c.fillStyle='#243250'; for(let i=0;i<5;i++) c.fillRect(136,GROUND-18+i*4,8,2);
+  }
+  function mascot(t){
+    const bob=Math.sin(t*1.6)*1.4, cx=112, cy=GROUND-11+bob;
+    const g=c.createRadialGradient(cx,cy-4,2,cx,cy-4,26);
+    g.addColorStop(0,'rgba(120,220,255,0.32)'); g.addColorStop(1,'rgba(120,220,255,0)');
+    c.fillStyle=g; c.fillRect(cx-28,cy-32,56,46);
+    c.strokeStyle='#ffe17a'; c.lineWidth=1.4;
+    c.beginPath(); c.ellipse(cx,cy-13,7,2.4,0,0,6.283); c.stroke();
+    blob(cx,cy,9,'#cdeffb'); c.fillRect(cx-9,cy,18,5);
+    c.fillStyle='#a9def0'; c.beginPath(); c.arc(cx+2,cy,8,Math.PI*0.05,Math.PI*0.95); c.fill();
+    blob(cx-3,cy-4,2,'#eafbff');
+    c.fillStyle='#22304a'; c.fillRect(cx-4,cy-2,1.6,2.6); c.fillRect(cx+2.4,cy-2,1.6,2.6);
+    c.fillStyle='rgba(255,120,170,0.5)'; c.fillRect(cx-6,cy+1,2,1.2); c.fillRect(cx+4,cy+1,2,1.2);
+  }
+  let raf=null,t0=performance.now();
+  function draw(t){
+    const sky=c.createLinearGradient(0,0,0,GROUND);
+    sky.addColorStop(0,'#10162c'); sky.addColorStop(0.5,'#172244'); sky.addColorStop(1,'#22305a');
+    c.fillStyle=sky; c.fillRect(0,0,W,GROUND);
+    for(const s of stars){ const a=0.3+0.55*(0.5+0.5*Math.sin(t*s.sp+s.ph));
+      c.fillStyle='rgba(220,235,255,'+a.toFixed(2)+')'; c.fillRect(s.x,s.y,s.b?2:1,s.b?2:1); }
+    for(const cl of clouds){ cl.x+=cl.v*0.06; if(cl.x-40*cl.s>W) cl.x=-40*cl.s; drawCloud(cl); }
+    ruins(); mascot(t);
+  }
+  function frame(now){ if($('ovTitle').classList.contains('hidden')){ raf=null; return; } draw((now-t0)/1000); raf=requestAnimationFrame(frame); }
+  window.startTitleScene=function(){ if(!raf){ t0=performance.now(); raf=requestAnimationFrame(frame); } };
+  startTitleScene();
+})();
+
+// ===== 타이틀 메뉴 버튼 =====
+$('tmNew').onclick=()=>{ show('start'); };
+$('tmSettings').onclick=()=>{ const sp=$('soundPanel'); sp.style.display=(sp.style.display==='none'||!sp.style.display)?'block':'none'; };
+$('tmExit').onclick=()=>{ const h=$('titleHint'); if(h) h.textContent='방송을 종료하려면 브라우저 탭을 닫아주세요'; try{ window.close(); }catch(e){} };
+$('diffBack').onclick=()=>{ const sp=$('soundPanel'); if(sp) sp.style.display='none'; show('title'); if(window.startTitleScene) window.startTitleScene(); };
 
 // 초기 채팅 잡담 미리 깔기
 chatSys("스트리머가 곧 들어옵니다...");
