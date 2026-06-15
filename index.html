@@ -994,7 +994,7 @@ const RELICS=[
   // ===== 축복: 생존 =====
   {id:"bread",name:"곰팡이 핀 식빵",icon:"🍞",desc:"최대 체력 +25.",cls:"boon",apply:p=>{p.maxhp+=25;p.hp+=25;}},
   {id:"big_heart",name:"거대한 심장",icon:"❤️‍🔥",desc:"최대 체력 +50.",cls:"boon",apply:p=>{p.maxhp+=50;p.hp+=50;}},
-  {id:"nature_bless",name:"자연의 가호",icon:"🌿",desc:"초당 체력 +3 재생.",cls:"boon",apply:p=>{p.regen+=3;}},
+  {id:"nature_bless",name:"자연의 가호",icon:"🌿",desc:"초당 체력 +1.5 재생.",cls:"boon",apply:p=>{p.regen+=1.5;}},
   {id:"iron_skin",name:"강철 피부",icon:"🪨",desc:"받는 피해 -20%.",cls:"boon",apply:p=>{p.armor+=0.2;}},
   {id:"vampire",name:"모기향(역효과)",icon:"🦟",desc:"처치 시 8% 확률로 체력 5 회복.",cls:"boon",apply:p=>{p.lifesteal+=0.08;}},
   {id:"vampire_fang",name:"흡혈귀 송곳니",icon:"🧛",desc:"처치 시 18% 확률로 체력 5 회복.",cls:"boon",apply:p=>{p.lifesteal+=0.18;}},
@@ -1564,6 +1564,7 @@ function killBoss(){
   banner("보스 처치!","승리!",2000); sfx.coin();
   gold+=irand(90,150); sfx.coin(); burst(boss.x,boss.y,'#ffd34d',20,260);
   gainXP(200+(act-1)*120);   // 최종보스 경험치(막별 스케일: 1막 200 · 2막 320 · 3막 440)
+  if(act>=MAX_ACT){ enemies.length=0; eBullets.length=0; }   // 최종보스 처치 시 남은 잡몹·탄막 정리
   updateHUD();
   boss=null; roomIsBoss=false;
   // 이후 흐름은 onCombatCleared() → finishNode() 에서 처리
@@ -2018,7 +2019,7 @@ const EVENTS=[
    ]},
   {tag:'❓ 운명의 동전',title:'도박꾼의 동전',body:'동전을 던진다. 앞이면 대박, 뒤면 쪽박.',
    choices:[
-     {t:'던진다',f:()=>{ if(Math.random()<0.5){gold+=60;banner('앞면!','골드 +60',1300);} else {player.hp=Math.max(1,player.hp-20);banner('뒷면...','체력 -20',1300);} updateHUD(); finishNode(); }},
+     {t:'던진다',f:()=>{ if(Math.random()<0.5){gold+=60;try{sfx.coin&&sfx.coin();}catch(e){}banner('🪙 앞면!','대박 — 골드 +60',1700);} else {player.hp=Math.max(1,player.hp-20);try{sfx.hurt&&sfx.hurt();}catch(e){}banner('🪙 뒷면...','쪽박 — 체력 -20',1700);} updateHUD(); finishNode(); }},
      {t:'주머니에 넣는다',f:()=>finishNode()},
    ]},
   // ===== 신규 이벤트 =====
@@ -2159,7 +2160,7 @@ const LEVEL_PERKS=[
   {g:'common',icon:'🛡️',name:'방어 특화',desc:'받는 피해 -5%',apply:p=>{p.armor+=0.05;}},
   {g:'common',icon:'🧲',name:'광부',desc:'골드 획득 +15%',apply:p=>{p.goldMul*=1.15;}},
   {g:'common',icon:'💥',name:'대구경',desc:'투사체 크기 +10%',apply:p=>{p.bulletSize*=1.10;}},
-  {g:'common',icon:'🌿',name:'재생',desc:'초당 체력 +1',apply:p=>{p.regen+=1;}},
+  {g:'common',icon:'🌿',name:'재생',desc:'초당 체력 +0.5',apply:p=>{p.regen+=0.5;}},
   // 희귀
   {g:'rare',icon:'🎯',name:'정밀 조준',desc:'치명타 확률 +10%',apply:p=>{p.critChance+=0.10;}},
   {g:'rare',icon:'🩸',name:'흡혈',desc:'흡혈 확률 +7%',apply:p=>{p.lifesteal+=0.07;}},
