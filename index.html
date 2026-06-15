@@ -930,7 +930,29 @@ const sfx={
   coin:()=>beep(1200,0.06,'square',0.04),
   vote:()=>beep(520,0.12,'triangle',0.05),
   dodge:()=>beep(440,0.08,'sine',0.04),
+  // UI 버튼 딸깍 사운드 (픽셀 레트로 느낌)
+  click:()=>{ beep(1100,0.03,'square',0.045); setTimeout(()=>beep(820,0.025,'square',0.025),18); },
+  clickSoft:()=>beep(780,0.04,'square',0.03),   // 보조 버튼·취소용 (살짝 낮고 부드럽게)
+  clickBack:()=>{ beep(600,0.035,'square',0.03); setTimeout(()=>beep(420,0.025,'square',0.02),20); }, // 뒤로가기 느낌
 };
+
+// ── UI 버튼 자동 클릭음 ──────────────────────────────────────────────
+// 모든 .btn, .choice, .vote-opt, .perkcard, .diffbtn, .title-item, .iconbtn, .pslot, .set-btn 에
+// pointerdown 이벤트로 딸깍 사운드를 심는다 (동적 생성 요소 포함)
+(function wireClickSfx(){
+  function playClickFor(el){
+    if(muted) return;
+    try{ if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)(); if(audioCtx.state==='suspended') audioCtx.resume(); }catch(e){}
+    if(el.classList.contains('ghost') || el.classList.contains('set-btn') && el.classList.contains('ghost')) sfx.clickSoft();
+    else if(el.id==='diffBack' || el.classList.contains('backToTitle') || el.id==='setClose' || el.id==='setReset' || el.id==='helpClose' || el.id==='invClose') sfx.clickBack();
+    else sfx.click();
+  }
+  // 위임 방식: document 레벨에서 버튼류 클릭 감지
+  document.addEventListener('pointerdown', function(e){
+    const el=e.target.closest('button,input[type=button],input[type=submit],.choice,.vote-opt,.perkcard,.diffbtn,.title-item,.iconbtn,.pslot:not(.empty),.mapnode.reach,.set-btn,.set-toggle,.choice-btn,.btn');
+    if(el && !el.disabled) playClickFor(el);
+  }, true);
+})();
 
 // ---------- 배경음악 (절차적 WebAudio 루프) ----------
 let bgmTimer=null, bgmStep=0;
