@@ -914,7 +914,7 @@ const ENEMY_TYPES={
   goblin_bomber  :{name:"블페러", r:15, hp:20, spd:96, dmg:8,  color:"#9aa83f", xp:10, ai:"chase", explode:true, label:"블페러"},
   rhino_beetle   :{name:"자잘자",   r:24, hp:30, spd:60, dmg:11, color:"#3a2418", xp:14, ai:"charge", label:"자잘자"},
   earthworm      :{name:"지렁이", r:12, hp:10, spd:74, dmg:6, color:"#e87a8a", xp:4, ai:"erratic", label:"지렁이"},
-  hyechul        :{name:"혜철이", r:40, hp:200, spd:42, dmg:14, color:"#c0392b", xp:0, ai:"hyechul", label:"혜철이"},
+  hyechul        :{name:"혜철이", r:40, hp:200, spd:42, dmg:14, color:"#c0392b", xp:150, ai:"hyechul", label:"혜철이"},
   zergling       :{name:"저글링", r:14, hp:12, spd:120, dmg:7, color:"#c98bff", xp:3, ai:"charge", label:"저글링"},
   mutalisk       :{name:"뮤탈", r:16, hp:16, spd:130, dmg:8, color:"#b97a4a", xp:5, ai:"chase", label:"뮤탈"},
   ultra          :{name:"울트라", r:26, hp:95, spd:52, dmg:20, color:"#8a6f4a", xp:12, ai:"chase", armor:0.25, label:"울트라"},
@@ -1302,7 +1302,7 @@ function startCombat(kind, fresh){
         spawnEnemy('rhino_beetle', W/2, 120, diff);
         const ze=enemies[enemies.length-1]; roomHadElite=true;
         ze.elite=true; ze.eliteViewer=true; ze.label='자잘자';
-        ze.hp*=2.4; ze.maxhp*=2.4; ze.dmg=Math.round(ze.dmg*1.4); ze.r+=4; ze.xp=Math.round((ze.xp||10)*3); ze.coolT=1.0;
+        ze.hp*=2.4; ze.maxhp*=2.4; ze.dmg=Math.round(ze.dmg*1.4); ze.r+=4; ze.xp=80; ze.coolT=1.0;
         ze.x=W/2; ze.y=190; ze.intro=true; ze.introScale=0; ze.stunT=4; ze.tauntedHalf=false;
         eliteIntro={t:0, ze:ze, warn:null, landed:false, banner:0, tensionDone:false};
         beep(330,0.5,'triangle',0.05); beep(440,0.55,'sine',0.035); // "징—"
@@ -1440,6 +1440,8 @@ function hyechulNextPhase(e){
   bossEvolve={ phase:ph, t:0, line, name, col, e };
   cutsceneT=2.6;
 }
+// 보스가 소환하는 적 — 무한 소환되므로 경험치를 주지 않음(무한 레벨업 방지)
+const SUMMON_TYPES=new Set(['earthworm','zergling','mutalisk','ultra']);
 function killEnemy(e){
   const idx=enemies.indexOf(e); if(idx<0) return;
   enemies.splice(idx,1);
@@ -1448,7 +1450,7 @@ function killEnemy(e){
   burst(e.x,e.y,e.color,14,220);
   if(e.eliteViewer){ banner('자잘자 처치!','',1100); spawnDeathBubble(e.x, e.y-e.r-12, pick(['로블록스 하러 가야겠다…','봉식님… 너무하시네요 Sadge','다음 생엔 더 셀게요…','채금 풀리면 또 봬요','이게 맞나요…? 운영자 호출']), 3.4); }
   kills++; totalKills++;
-  gainXP(e.xp);
+  gainXP(SUMMON_TYPES.has(e.type)?0:e.xp);
   if(player.lifesteal>0 && Math.random()<player.lifesteal){ player.hp=Math.min(player.maxhp,player.hp+5); floatHeart(e.x,e.y,5); }
   if(player.healOnKill>0){ player.hp=Math.min(player.maxhp,player.hp+player.healOnKill); floatHeart(e.x,e.y,player.healOnKill); }
   if(player.donateChance>0 && Math.random()<player.donateChance){ const dg=irand(20,50); gold+=dg; banner('💸 도네 알림!','+'+dg+' G',900); burst(e.x,e.y,'#ffd34d',18,240); }
@@ -1559,7 +1561,9 @@ function updateBoss(dt){
 function killBoss(){
   burst(boss.x,boss.y,boss.color,40,320); screenShake=18;
   banner("보스 처치!","승리!",2000); sfx.coin();
-  gold+=irand(90,150); sfx.coin(); burst(boss.x,boss.y,'#ffd34d',20,260); updateHUD();
+  gold+=irand(90,150); sfx.coin(); burst(boss.x,boss.y,'#ffd34d',20,260);
+  gainXP(200+(act-1)*120);   // 최종보스 경험치(막별 스케일: 1막 200 · 2막 320 · 3막 440)
+  updateHUD();
   boss=null; roomIsBoss=false;
   // 이후 흐름은 onCombatCleared() → finishNode() 에서 처리
 }
