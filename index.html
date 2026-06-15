@@ -909,10 +909,10 @@ let ambientTimer=0;
 // ---------- 게임 데이터 ----------
 const ENEMY_TYPES={
   // === 1막: 고블린 소굴 ===
-  goblin_warrior :{name:"러부엉",  r:16, hp:26, spd:72, dmg:11, color:"#6fae4e", xp:7,  ai:"chase", lunge:true, label:"러부엉"},
-  goblin_archer  :{name:"대파",  r:14, hp:18, spd:50, dmg:6,  color:"#7bbf5a", xp:9,  ai:"shooter", range:340, cool:1.5, label:"대파"},
-  goblin_shaman  :{name:"까치",  r:15, hp:24, spd:60, dmg:7,  color:"#8a6fb0", xp:11, ai:"orbit",   range:240, cool:1.2, label:"까치"},
-  goblin_bomber  :{name:"블페러", r:15, hp:20, spd:96, dmg:8,  color:"#9aa83f", xp:10, ai:"chase", explode:true, label:"블페러"},
+  goblin_warrior :{name:"러부엉",  r:16, hp:28, spd:78, dmg:11, color:"#6fae4e", xp:8,  ai:"chase", lunge:true, label:"러부엉"},
+  goblin_archer  :{name:"대파",  r:14, hp:18, spd:50, dmg:6,  color:"#7bbf5a", xp:10, ai:"shooter", range:340, cool:1.25, label:"대파"},
+  goblin_shaman  :{name:"까치",  r:15, hp:24, spd:66, dmg:7,  color:"#8a6fb0", xp:12, ai:"orbit",   range:240, cool:1.05, label:"까치"},
+  goblin_bomber  :{name:"블페러", r:15, hp:22, spd:114, dmg:8,  color:"#9aa83f", xp:11, ai:"chase", explode:true, label:"블페러"},
   rhino_beetle   :{name:"자잘자",   r:24, hp:90, spd:60, dmg:15, color:"#3a2418", xp:14, ai:"charge", label:"자잘자"},
   earthworm      :{name:"지렁이", r:12, hp:10, spd:74, dmg:6, color:"#e87a8a", xp:4, ai:"erratic", label:"지렁이"},
   hyechul        :{name:"혜철이", r:52, hp:200, spd:42, dmg:18, color:"#c0392b", xp:150, ai:"hyechul", label:"혜철이"},
@@ -1294,6 +1294,7 @@ function startCombat(kind, fresh){
   }else{
     const P=ACT_POOLS[Math.min(act-1,ACT_POOLS.length-1)];
     let base=rand(3,5)+act*1.0+row*0.35;
+    if(act===1) base*=1.15;               // 1막 일반방 밀도 소폭 상향
     if(row<MIDBOSS_ROW) base*=0.6;        // 중간보스 전(1~7층): 적게
     else if(row>MIDBOSS_ROW) base*=1.5;   // 중간보스 후(9~14층): 많이
     let count=clamp(Math.round(base*diffSet.cnt), row<MIDBOSS_ROW?2:4, 16);
@@ -1321,7 +1322,7 @@ function startCombat(kind, fresh){
         spawnEnemy('rhino_beetle', W/2, 120, diff);
         const ze=enemies[enemies.length-1]; roomHadElite=true;
         ze.elite=true; ze.eliteViewer=true; ze.label='자잘자';
-        ze.hp*=2.4; ze.maxhp*=2.4; ze.dmg=Math.round(ze.dmg*1.4); ze.r+=4; ze.xp=80; ze.coolT=1.0;
+        ze.hp*=1.75; ze.maxhp*=1.75; ze.dmg=Math.round(ze.dmg*1.4); ze.r+=4; ze.xp=80; ze.coolT=1.0;
         ze.x=W/2; ze.y=190; ze.intro=true; ze.introScale=0; ze.stunT=4; ze.tauntedHalf=false;
         eliteIntro={t:0, ze:ze, warn:null, landed:false, banner:0, tensionDone:false};
         beep(330,0.5,'triangle',0.05); beep(440,0.55,'sine',0.035); // "징—"
@@ -1482,8 +1483,8 @@ function killEnemy(e){
   if(player.explodeKill>0){ burst(e.x,e.y,'#ff9b4d',12,200); enemies.forEach(o=>{ if(o!==e && dist2(o.x,o.y,e.x,e.y)<4900){ o.hp-=player.explodeKill; o.hitT=0.1; } }); }
   if(e.explode){
     if(e.type==='goblin_bomber'){
-      for(let i=0;i<8;i++){ const a2=i/8*TAU+rand(-0.1,0.1); eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*155,vy:Math.sin(a2)*155,r:9,dmg:7,life:2.6,foodImg:(trashbitReady?TRASHBIT_SPRITE:null),spin:rand(0,TAU),spinV:rand(-7,7),spore:true}); }
-      burst(e.x,e.y,'#9aa0ad',12,180);
+      for(let i=0;i<11;i++){ const a2=i/11*TAU+rand(-0.08,0.08); eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*180,vy:Math.sin(a2)*180,r:9,dmg:8,life:2.7,foodImg:(trashbitReady?TRASHBIT_SPRITE:null),spin:rand(0,TAU),spinV:rand(-7,7),spore:true}); }
+      burst(e.x,e.y,'#ff7a3a',16,230); screenShake=Math.max(screenShake,5);
     } else { for(let i=0;i<6;i++) enemyBulletSpore(e.x,e.y,i/6*TAU); }
   }
   // (엘리트 골드는 위에서 합산)
@@ -1845,9 +1846,10 @@ function update(dt){
     const d=Math.hypot(player.x-e.x,player.y-e.y);
     if((e.stunT=(e.stunT||0))>0){ e.stunT-=dt; }
     else if(e.ai==='chase'){
-      if((e.lungeA=e.lungeA||0)>0){ e.lungeA-=dt; e.x+=e.lvx*e.spd*4.0*dt; e.y+=e.lvy*e.spd*4.0*dt; }
+      if((e.lungeA=e.lungeA||0)>0){ const lm=(e.type==='goblin_warrior')?5.2:4.0; e.lungeA-=dt; e.x+=e.lvx*e.spd*lm*dt; e.y+=e.lvy*e.spd*lm*dt; }
       else { e.x+=Math.cos(a)*e.spd*dt; e.y+=Math.sin(a)*e.spd*dt; }
-      if(e.canLunge && e.lungeA<=0){ e.lungeT=(e.lungeT==null?rand(1.6,3.0):e.lungeT)-dt; if(e.lungeT<=0 && d<380 && d>40){ e.lungeA=0.30; e.lvx=Math.cos(a); e.lvy=Math.sin(a); e.lungeT=rand(2.6,3.8); burst(e.x,e.y,e.color,8,170); if(typeof beep==='function')beep(180,0.06,'square',0.04); } }
+      if(e.canLunge && e.lungeA<=0){ const lw=(e.type==='goblin_warrior'); e.lungeT=(e.lungeT==null?rand(lw?1.0:1.6, lw?1.9:3.0):e.lungeT)-dt; if(e.lungeT<=0 && d<(lw?470:380) && d>40){ e.lungeA=lw?0.34:0.30; e.lvx=Math.cos(a); e.lvy=Math.sin(a); e.lungeT=rand(lw?1.7:2.6, lw?2.7:3.8); burst(e.x,e.y,e.color,lw?12:8,lw?210:170); if(typeof beep==='function')beep(lw?210:180,0.06,'square',0.04); } }
+      if(e.type==='goblin_bomber'){ if(d<175){ e.x+=Math.cos(a)*e.spd*0.95*dt; e.y+=Math.sin(a)*e.spd*0.95*dt; if(!e._fuse){ e._fuse=true; burst(e.x,e.y,'#ff4d4d',6,150); if(typeof beep==='function')beep(90,0.05,'square',0.05); } } else { e._fuse=false; } }
       if(e.type==='namu'){ e.poundT=(e.poundT==null?rand(2.6,4.2):e.poundT)-dt; if(e.poundT<=0){ const k=12; for(let i=0;i<k;i++){ const a2=i/k*TAU; eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*150,vy:Math.sin(a2)*150,r:9,dmg:9,life:2.6,spore:true,srcName:'나무'}); } burst(e.x,e.y,e.color,16,200); if(typeof beep==='function')beep(70,0.18,'sawtooth',0.06); e.poundT=rand(3.4,4.8); } }
     }else if(e.ai==='erratic'){
       const wob=Math.sin(e.wob*2)*0.6;
@@ -1861,6 +1863,9 @@ function update(dt){
         if(e.type==='gwangcheon_gim' && e.shotN%3===0){
           const pa=Math.atan2(player.y-e.y,player.x-e.x);
           for(let i=0;i<3;i++) setTimeout(()=>{ if(enemies.includes(e)) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa)*255,vy:Math.sin(pa)*255,r:7,dmg:9,life:4,srcName:e.name}); }, i*110);
+        } else if(e.type==='goblin_archer' && e.shotN%3===0){
+          const pa=Math.atan2(player.y-e.y,player.x-e.x);
+          for(let i=0;i<3;i++) setTimeout(()=>{ if(enemies.includes(e)) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa)*260,vy:Math.sin(pa)*260,r:7,dmg:9,life:4,srcName:e.name}); }, i*85);
         } else enemyShootAt(e,player.x,player.y,240,7,9);
         e.coolT=e.cool;
       }
@@ -1875,8 +1880,8 @@ function update(dt){
       if(e.coolT<=0){
         e.shotN=(e.shotN||0)+1;
         if(e.shotN%3===0){
-          const pa=Math.atan2(player.y-e.y,player.x-e.x);
-          for(let i=-1;i<=1;i++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa+i*0.26)*205,vy:Math.sin(pa+i*0.26)*205,r:8,dmg:9,life:3.6,srcName:e.name});
+          const pa=Math.atan2(player.y-e.y,player.x-e.x); const kw=(e.type==='goblin_shaman'); const lo=kw?-2:-1, hi=kw?2:1;
+          for(let i=lo;i<=hi;i++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa+i*0.24)*210,vy:Math.sin(pa+i*0.24)*210,r:8,dmg:9,life:3.6,srcName:e.name});
         } else enemyShootAt(e,player.x,player.y,200,8,9);
         e.coolT=e.cool;
       }
