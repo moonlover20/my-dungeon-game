@@ -438,7 +438,7 @@
 <div id="introFx" aria-hidden="true">
   <div id="introBinary"></div>
   <div id="introPopups"></div>
-  <div id="introBlackout"><div class="eb-wrap"><button id="endBroadcastBtn">■ 방송 종료 · END BROADCAST</button><div id="ebStatus"></div></div></div>
+  <div id="introBlackout"><div class="eb-wrap"><button id="endBroadcastBtn">■ 방송 종료 · END BROADCAST</button><div id="ebStatus"></div></div><button id="introSkipBtn" style="position:absolute;right:18px;bottom:18px;background:rgba(20,14,32,0.75);color:#9b8fc4;border:1px solid #3a2d5c;font-family:inherit;font-size:12px;padding:7px 14px;cursor:pointer;letter-spacing:1px;z-index:10;">인트로 스킵 ▶▶</button></div>
 </div>
 <div id="app">
   <!-- GAME -->
@@ -639,6 +639,7 @@
         <div class="panel-box taunt-box" style="text-align:center">
           <div class="tag" style="color:var(--danger)">█▓▒ ??? ▒▓█</div>
           <div id="tauntText"></div>
+          <div style="margin-top:14px;font-size:11px;color:#5a5070;letter-spacing:1px">화면을 클릭하면 건너뜁니다</div>
         </div>
       </div>
 
@@ -649,7 +650,7 @@
         <div class="panel-box" style="text-align:center;max-width:560px">
           <div class="tag">📺 LIVE</div>
           <div id="storyText" style="min-height:170px;margin:16px 2px;font-size:16px;line-height:1.75;color:#eaf2d0;text-align:left;white-space:pre-wrap"></div>
-          <button class="btn" id="storySkip">건너뛰기 ▶</button>
+          <button class="btn ghost" id="storySkip" style="font-size:12px;padding:8px 16px;opacity:.7">건너뛰기 ▶▶</button>
         </div>
       </div>
 
@@ -4005,6 +4006,7 @@ function introFxReset(){
   if(blk){ blk.classList.remove('show'); }
   if(eb){ eb.classList.remove('armed'); eb.classList.remove('forced'); eb.classList.remove('trying'); }
   const ebs=$('ebStatus'); if(ebs){ ebs.classList.remove('show'); ebs.textContent=''; }
+  const iskip=$('introSkipBtn'); if(iskip){ iskip.style.display='none'; iskip.onclick=null; }
   if(fx){ fx.classList.remove('on'); }
   const bc=$('ovStoryBcast'), pl=$('ovStoryPlate');
   if(bc){ bc.classList.remove('show','glitch','crash'); }
@@ -4075,6 +4077,16 @@ function runEndBroadcast(cb){
   if(fx) fx.classList.add('on');
   if(blk) blk.classList.add('show');                              // 마무리: 블랙아웃
   const T=storyFx.timers;
+  // 인트로 스킵 버튼 연결
+  let skipped=false;
+  const skipBtn=$('introSkipBtn');
+  function doSkip(){
+    if(skipped) return; skipped=true;
+    if(skipBtn){ skipBtn.style.display='none'; skipBtn.onclick=null; }
+    storyFx.timers.forEach(id=>{ clearTimeout(id); clearInterval(id); }); storyFx.timers=[];
+    triggerGlitch(()=>{ introFxReset(); cb&&cb(); });
+  }
+  if(skipBtn){ skipBtn.style.display=''; skipBtn.onclick=doSkip; }
   // 종료가 '안 되는' 답답함 — 버튼은 떠 있는데 계속 실패한다
   const deny=(msg,t)=>{ T.push(setTimeout(()=>{
     if(eb){ eb.classList.remove('trying'); void eb.offsetWidth; eb.classList.add('trying'); }
@@ -4106,12 +4118,12 @@ function showStory(cb){
   if(bcast){ bcast.classList.remove('glitch','crash'); requestAnimationFrame(()=>bcast.classList.add('show')); }
   if(plate) plate.classList.add('show');
   const el=$('storyText'); el.textContent='';
-  const btn=$('storySkip'); if(btn) btn.style.display='none';
+  const btn=$('storySkip'); if(btn){ btn.style.display=''; btn.textContent='건너뛰기 ▶▶'; }
   const lines=STORY_LINES; let li=0,ci=0,typed=false,proceeded=false,phased=-1,autoT=null;
   function firePhasesUpTo(n){ for(let k=phased+1;k<=n;k++) storyPhase(k); if(n>phased) phased=n; }
-  function complete(){ if(typed) return; clearInterval(tm); el.textContent=lines.join('\n'); typed=true; firePhasesUpTo(lines.length-1); autoT=setTimeout(()=>{ if(!proceeded) finish(); },2800); }
-  function finish(){ if(proceeded)return; proceeded=true; clearInterval(tm); if(autoT)clearTimeout(autoT); $('ovStory').classList.add('hidden'); runEndBroadcast(cb); }
-  if(btn) btn.onclick=null;
+  function complete(){ if(typed) return; clearInterval(tm); el.textContent=lines.join('\n'); typed=true; firePhasesUpTo(lines.length-1); if(btn){ btn.textContent='다음 ▶'; } autoT=setTimeout(()=>{ if(!proceeded) finish(); },2800); }
+  function finish(){ if(proceeded)return; proceeded=true; clearInterval(tm); if(autoT)clearTimeout(autoT); if(btn) btn.style.display='none'; $('ovStory').classList.add('hidden'); runEndBroadcast(cb); }
+  if(btn) btn.onclick=()=>{ if(!typed) complete(); else finish(); };
   const tm=setInterval(function(){
     if(li>=lines.length){ complete(); return; }
     if(ci===0){ firePhasesUpTo(li); if(li>0) el.textContent+='\n'; }
