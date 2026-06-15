@@ -456,7 +456,7 @@
       <div class="hud-card">
         <div class="hud-label">막 / 구역</div>
         <div class="hud-val" id="floorText">1막</div>
-        <div class="hud-label" style="margin-top:3px">🔄 재도전 <span id="retryText" style="color:var(--neon)">0</span></div>
+        <div class="hud-label" style="margin-top:3px">🔄 재도전 <span id="retryText" style="color:var(--neon)">∞</span></div>
       </div>
       <div class="hud-card" style="flex:1.6 1 0">
         <div class="hud-label"><img class="hicon" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAM0lEQVR42mNgGNQg9tTS/7Gnlv7Hp4YJn2ZsbLJsJsYlBJ1NlCGEFJHkktFYGDaxQBcAAF4cWWX2RsPxAAAAAElFTkSuQmCC">레벨 <span id="lvlText" style="color:var(--neon)">1</span></div>
@@ -1186,9 +1186,9 @@ let lastKiller=null; // 마지막으로 플레이어를 죽인 대상 이름
 let pendingLevels=0;
 // ---------- 난이도 ----------
 const DIFFS={
-  easy:  {key:'easy',  label:'쉬움',   hp:1.3, dmg:1.25,cnt:1.1, spd:1.00, eliteCount:2, col:'#5dff9b', desc:'키죠가 긁는 난이도'},
-  normal:{key:'normal',label:'보통',   hp:2.2, dmg:2.1, cnt:1.45,spd:1.13, eliteCount:3, col:'#ffd34d', desc:'박제인간이 \'아니\'하는 난이도'},
-  hard:  {key:'hard',  label:'어려움', hp:2.9, dmg:2.7, cnt:1.7, spd:1.22, eliteCount:5, col:'#ff4d6d', desc:'온스터가 스타 망쳤던 난이도'},
+  easy:  {key:'easy',  label:'쉬움',   hp:1.3, dmg:1.25,cnt:1.1, spd:1.00, eliteCount:2, col:'#5dff9b', desc:'키죠가 긁는 난이도 · 재도전 무제한', maxRetries:Infinity},
+  normal:{key:'normal',label:'보통',   hp:2.2, dmg:2.1, cnt:1.45,spd:1.13, eliteCount:3, col:'#ffd34d', desc:'박제인간이 \'아니\'하는 난이도 · 재도전 3회', maxRetries:3},
+  hard:  {key:'hard',  label:'어려움', hp:2.9, dmg:2.7, cnt:1.7, spd:1.22, eliteCount:5, col:'#ff4d6d', desc:'온스터가 스타 망쳤던 난이도 · 재도전 1회', maxRetries:1},
 };
 let diffSet=DIFFS.easy;
 let dodgeLatch=false;   // 회피 키 엣지 감지: 스페이스를 떼야 다음 회피 발동
@@ -1447,7 +1447,7 @@ function updateHpHud(){
   $('hpFill').style.width=clamp(player.hp/player.maxhp*100,0,100)+"%";
 }
 function updateHUD(){
-  { const rt=$('retryText'); if(rt) rt.textContent=retries; }
+  { const rt=$('retryText'); if(rt){ const max=diffSet.maxRetries; const left=max===Infinity?'∞':Math.max(0,max-retries); rt.textContent=left; rt.style.color=(max!==Infinity&&left<=1)?'#ff4d6d':'var(--neon)'; } }
   updateHpHud();
   $('goldText').textContent=gold;
   $('floorText').textContent=act+"막 · "+(currentRow+1)+"층";
@@ -2670,9 +2670,16 @@ const EVENTS=[
      {t:'받아친다 — 강화 정예전(승리 시 유물)',f:()=>{nextCombatMods={hpMul:1.6,spdMul:1.1,rewardMul:1.5,banner:{big:'디스전 시작!',small:'정예를 박살내라'}};hideAll();startCombat('fight');state='play';}},
      {t:'회피한다 — 골드 -25(체면 손상)',f:()=>{gold=Math.max(0,gold-25);updateHUD();banner('회피','체면이 깎였다 -25G',1300);finishNode();}},
    ]},
+  {tag:'🎟️ 구독 알림',title:'시청자 선물',body:'"봉식님 구독 감사! 재도전권 하나 드릴게요~" 죽어도 다시 한 번 — 재도전 충전권을 받는다.',
+   filter:()=>diffSet.maxRetries!==Infinity,
+   choices:[
+     {t:'감사합니다! — 재도전 횟수 +1',f:()=>{ diffSet=Object.assign({},diffSet,{maxRetries:diffSet.maxRetries+1}); banner('🎟️ 재도전 +1','구독자 감사합니다!',1500); updateHUD(); finishNode(); }},
+     {t:'괜찮아요 — 그냥 지나친다',f:()=>finishNode()},
+   ]},
 ];
 function startEvent(){
-  const ev=pick(EVENTS);
+  const pool=EVENTS.filter(ev=>!ev.filter||ev.filter());
+  const ev=pick(pool);
   $('eventTag').textContent=ev.tag;
   $('eventTitle').textContent=ev.title;
   $('eventBody').textContent=ev.body;
@@ -2939,6 +2946,15 @@ function openShop(after){
   const items=[];
   items.push({kind:'heal',name:"치유 서비스",icon:"🧪",desc:"체력 45 회복",cost:Math.round(28+act*10),
     buy:()=>{player.hp=Math.min(player.maxhp,player.hp+45);}});
+  // 재도전 충전권 — 횟수 제한 난이도(보통·어려움)에서만 등장
+  if(diffSet.maxRetries !== Infinity){
+    const retryCost = diffSet.key==='hard' ? 90 : 55;
+    items.push({kind:'retry',name:"재도전 충전권",icon:"🎟️",
+      desc:"이번 런에서 재도전 횟수 +1회. (현재 남은 횟수: "+(Math.max(0,diffSet.maxRetries-retries))+"회)",
+      cost:retryCost,
+      buy:()=>{ diffSet=Object.assign({},diffSet,{maxRetries:diffSet.maxRetries+1}); banner('🎟️ 재도전 +1','한 번 더 기회!',1400); updateHUD(); }
+    });
+  }
   // 포션 2종
   const ptn=POTIONS.slice().sort(()=>Math.random()-0.5).slice(0,2);
   ptn.forEach(pt=>items.push({kind:'potion',name:pt.name,icon:pt.icon,desc:pt.desc+" · 포션",cost:Math.round(32+act*8),potion:pt,
@@ -4269,7 +4285,15 @@ function gameOver(win, killer){
   // 승리 시에만 인트로로 전환 — 사망 시엔 죽은 막의 음악을 그대로 유지
   if(win){ runActive=false; roomIsBoss=false; roomIsMidboss=false; }
   show('end');
-  $('retryBtn').style.display=win?'none':'';
+  const canRetry = !win && (diffSet.maxRetries === Infinity || retries < diffSet.maxRetries);
+  $('retryBtn').style.display = canRetry ? '' : 'none';
+  // 재도전 버튼 텍스트에 남은 횟수 표시
+  if(canRetry && diffSet.maxRetries !== Infinity){
+    const left = diffSet.maxRetries - retries;
+    $('retryBtn').textContent = '↺ 재도전하기 (남은 ' + left + '회)';
+  } else {
+    $('retryBtn').textContent = '↺ 재도전하기';
+  }
   $('endTag').textContent=win?'🏆 클리어':'📺 방송 사고';
   let title, quip;
   const k = killer || lastKiller || '시청자';
@@ -4357,7 +4381,10 @@ buildDiffButtons();
   const set=(id,src)=>{ const el=$(id); if(el&&src) el.src=src; };
   set('startAvatar',BONGSIK_AVATAR); set('ovStoryAvatar',BONGSIK_AVATAR); set('ovStoryBcast',BROADCAST_SCREEN);
 })();
-$('retryBtn').onclick=()=>{ retryRoom(); };
+$('retryBtn').onclick=()=>{
+  if(diffSet.maxRetries !== Infinity && retries >= diffSet.maxRetries){ banner('재도전 불가','횟수를 모두 소진했습니다',1400); return; }
+  retryRoom();
+};
 $('restartBtn').onclick=()=>{
   introFxReset(); stopBGM(); hideAll();
   try{ if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)(); if(audioCtx.state==='suspended')audioCtx.resume(); }catch(e){}
