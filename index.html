@@ -831,7 +831,8 @@ const MUSIC = {
 })();
 // 현재 상황에 맞는 음악 키
 function desiredMusicKey(){
-  if(!runActive) return 'intro';   // 시작·스토리·엔드 화면
+  if(state==='start') return 'act1';  // 첫 화면 — act1 곡으로 소리 미리듣기/설정
+  if(!runActive) return 'intro';   // 스토리·엔드 화면
   if(roomIsBoss) return 'boss';
   if(roomIsMidboss) return 'midboss';
   return 'act1';                   // 일반 전투·맵·상점·이벤트·레벨업 등
@@ -3204,7 +3205,7 @@ function bossTaunt(diff, cb){
   const tm=setInterval(()=>{
     if(ci<full.length){ el.textContent+=full.charAt(ci++); try{ if(ci%2===0)beep(110,0.02,'sawtooth',0.035); }catch(e){} }
     else finish();
-  }, 36);
+  }, 72);
 }
 // ===== 인트로 시네마틱 연출 =====
 const storyFx={ timers:[], binaryInt:null, popupInt:null, streakInt:null };
@@ -3338,7 +3339,7 @@ function showStory(cb){
     el.textContent+=lines[li].charAt(ci); ci++;
     try{ if(ci%2===0) beep(660,0.012,'square',0.012); }catch(e){}
     if(ci>=lines[li].length){ li++; ci=0; }
-  }, 32);
+  }, 64);
 }
 function showEntrance(role,name,quip){
   cutsceneT=2.0;
