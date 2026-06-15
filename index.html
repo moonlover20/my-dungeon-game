@@ -909,13 +909,13 @@ let ambientTimer=0;
 // ---------- 게임 데이터 ----------
 const ENEMY_TYPES={
   // === 1막: 고블린 소굴 ===
-  goblin_warrior :{name:"러부엉",  r:16, hp:26, spd:72, dmg:11, color:"#6fae4e", xp:7,  ai:"chase", label:"러부엉"},
-  goblin_archer  :{name:"대파",  r:14, hp:18, spd:50, dmg:0,  color:"#7bbf5a", xp:9,  ai:"shooter", range:340, cool:1.5, label:"대파"},
-  goblin_shaman  :{name:"까치",  r:15, hp:24, spd:60, dmg:0,  color:"#8a6fb0", xp:11, ai:"orbit",   range:240, cool:1.2, label:"까치"},
+  goblin_warrior :{name:"러부엉",  r:16, hp:26, spd:72, dmg:11, color:"#6fae4e", xp:7,  ai:"chase", lunge:true, label:"러부엉"},
+  goblin_archer  :{name:"대파",  r:14, hp:18, spd:50, dmg:6,  color:"#7bbf5a", xp:9,  ai:"shooter", range:340, cool:1.5, label:"대파"},
+  goblin_shaman  :{name:"까치",  r:15, hp:24, spd:60, dmg:7,  color:"#8a6fb0", xp:11, ai:"orbit",   range:240, cool:1.2, label:"까치"},
   goblin_bomber  :{name:"블페러", r:15, hp:20, spd:96, dmg:8,  color:"#9aa83f", xp:10, ai:"chase", explode:true, label:"블페러"},
-  rhino_beetle   :{name:"자잘자",   r:24, hp:30, spd:60, dmg:11, color:"#3a2418", xp:14, ai:"charge", label:"자잘자"},
+  rhino_beetle   :{name:"자잘자",   r:24, hp:90, spd:60, dmg:15, color:"#3a2418", xp:14, ai:"charge", label:"자잘자"},
   earthworm      :{name:"지렁이", r:12, hp:10, spd:74, dmg:6, color:"#e87a8a", xp:4, ai:"erratic", label:"지렁이"},
-  hyechul        :{name:"혜철이", r:40, hp:200, spd:42, dmg:14, color:"#c0392b", xp:150, ai:"hyechul", label:"혜철이"},
+  hyechul        :{name:"혜철이", r:52, hp:200, spd:42, dmg:18, color:"#c0392b", xp:150, ai:"hyechul", label:"혜철이"},
   zergling       :{name:"저글링", r:14, hp:12, spd:120, dmg:7, color:"#c98bff", xp:3, ai:"charge", label:"저글링"},
   mutalisk       :{name:"뮤탈", r:16, hp:16, spd:130, dmg:8, color:"#b97a4a", xp:5, ai:"chase", label:"뮤탈"},
   ultra          :{name:"울트라", r:26, hp:95, spd:52, dmg:20, color:"#8a6f4a", xp:12, ai:"chase", armor:0.25, label:"울트라"},
@@ -935,11 +935,11 @@ const ENEMY_TYPES={
   elf_melee   :{name:"엘프 검사",  r:14,hp:26,spd:82,dmg:11,color:"#bfe3a0",xp:11,ai:"chase"},
   elf_ranged  :{name:"엘프 궁수",  r:14,hp:22,spd:54,dmg:0, color:"#a8d98a",xp:12,ai:"shooter",range:360,cool:1.3},
   // === 2막 (봉식 월드): 광천김 소굴 ===
-  gwangcheon_gim:{name:"광천김", r:18, hp:34,  spd:40, dmg:0,  color:"#3f7a34", xp:11, ai:"shooter", range:330, cool:1.6, label:"광천김"},
-  reura         :{name:"러라",   r:15, hp:26,  spd:96, dmg:11, color:"#ffd166", xp:9,  ai:"chase",   label:"러라"},
-  namu          :{name:"나무",   r:22, hp:80,  spd:30, dmg:14, color:"#5fa84a", xp:14, ai:"chase",   label:"나무"},
-  pobear        :{name:"포베어", r:24, hp:60,  spd:58, dmg:13, color:"#c8884a", xp:13, ai:"charge",  label:"포베어"},
-  yanggaeng     :{name:"양갱",   r:38, hp:360, spd:46, dmg:16, color:"#d4843a", xp:150, ai:"yanggaeng", cool:2, label:"양갱"},
+  gwangcheon_gim:{name:"광천김", r:18, hp:55,  spd:40, dmg:9,  color:"#3f7a34", xp:11, ai:"shooter", range:330, cool:1.6, label:"광천김"},
+  reura         :{name:"러라",   r:15, hp:44,  spd:96, dmg:13, color:"#ffd166", xp:9,  ai:"chase", lunge:true, label:"러라"},
+  namu          :{name:"나무",   r:22, hp:130, spd:30, dmg:17, color:"#5fa84a", xp:14, ai:"chase",   label:"나무"},
+  pobear        :{name:"포베어", r:24, hp:100, spd:58, dmg:16, color:"#c8884a", xp:13, ai:"charge",  label:"포베어"},
+  yanggaeng     :{name:"양갱",   r:50, hp:380, spd:46, dmg:19, color:"#d4843a", xp:150, ai:"yanggaeng", cool:2, label:"양갱"},
 };
 const ACT_POOLS=[
   { normal:["goblin_warrior","goblin_archer","goblin_shaman","goblin_bomber"], elite:["rhino_beetle"] },
@@ -962,13 +962,13 @@ let diffSet=DIFFS.easy;
 let dodgeLatch=false;   // 회피 키 엣지 감지: 스페이스를 떼야 다음 회피 발동
 
 const BOSSES=[
-  {key:"kijo",sprite:"kijo",name:"키죠",title:"1막 보스 · 가면의 마귀",r:58,hp:2400,color:"#c0392b",spd:46,
+  {key:"kijo",sprite:"kijo",name:"키죠",title:"1막 보스 · 가면의 마귀",r:70,hp:2400,color:"#c0392b",spd:46,
    quip:"이 가면 뒤가 보이느냐?",pattern:"summon"},
   {key:"steel_lord",sprite:"steel_lord",name:"강철 군주",title:"2막 보스 · 흑철의 망령",r:58,hp:900,color:"#5a5a6e",spd:52,
    quip:"무릎 꿇어라, 필멸자여.",pattern:"spiral"},
   {key:"bear",sprite:"bear",name:"거대 곰",title:"3막 보스 · 숲의 지배자",r:64,hp:1250,color:"#9c6b43",spd:58,
    quip:"크아아아앙!!",pattern:"split"},
-  {key:"seungwoo",sprite:"seungwoo",name:"승우",title:"2막 보스 · 시스템 침식",r:50,hp:1100,color:"#9146ff",spd:56,
+  {key:"seungwoo",sprite:"seungwoo",name:"승우",title:"2막 보스 · 시스템 침식",r:64,hp:2850,color:"#9146ff",spd:56,
    quip:"…봉식님. 이 게임, 제가 좀 만져도 되겠습니까.",pattern:"glitch"},
 ];
 
@@ -1353,7 +1353,7 @@ function spawnEnemy(type,x,y,diff){
     type,sprite:type,name:d.name,x,y,r:d.r,
     hp:d.hp*diff*diffSet.hp,maxhp:d.hp*diff*diffSet.hp,spd:d.spd*diffSet.spd,dmg:d.dmg*Math.min(diff,2.2),
     color:d.color,xp:d.xp,ai:d.ai,range:d.range||0,cool:d.cool||0,coolT:rand(0,1.2),
-    explode:d.explode,armor:d.armor||0,label:d.label,vx:0,vy:0,wob:rand(0,TAU),hitT:0,
+    explode:d.explode,armor:d.armor||0,label:d.label,canLunge:d.lunge,vx:0,vy:0,wob:rand(0,TAU),hitT:0,
   });
 }
 function spawnBoss(b){
@@ -1399,9 +1399,9 @@ function playerShoot(){
   sfx.shoot();
 }
 
-function enemyShootAt(e,tx,ty,speed,size){
+function enemyShootAt(e,tx,ty,speed,size,bdmg){
   const a=Math.atan2(ty-e.y,tx-e.x);
-  eBullets.push({x:e.x,y:e.y,vx:Math.cos(a)*speed,vy:Math.sin(a)*speed,r:size||7,dmg:e.dmg||9,life:4,srcName:e.name||e.label});
+  eBullets.push({x:e.x,y:e.y,vx:Math.cos(a)*speed,vy:Math.sin(a)*speed,r:size||7,dmg:bdmg!=null?bdmg:(e.dmg||9),life:4,srcName:e.name||e.label});
 }
 
 // ---------- 파티클 ----------
@@ -1523,9 +1523,9 @@ function updateBoss(dt){
   b.x+=Math.cos(a)*sp*dt; b.y+=Math.sin(a)*sp*dt*0.7;
   b.x=clamp(b.x,b.r,W-b.r); b.y=clamp(b.y,b.r,H*0.6);
   // 접촉
-  if(dist2(b.x,b.y,player.x,player.y)<(b.r+player.r)**2) hurtPlayer(b.enraged?26:18, boss?boss.name:'시청자');
+  if(dist2(b.x,b.y,player.x,player.y)<(b.r+player.r)**2) hurtPlayer(b.enraged?38:28, boss?boss.name:'시청자');
   if(b.attackT<=0){
-    const rate=b.enraged?0.8:1.3;
+    const rate=b.enraged?1.1:1.6;
     b.attackT=rate;
     if(b.pattern==='split'||b.pattern==='chaos'){
       for(let i=0;i<8;i++) enemyShootAt(b, b.x+Math.cos(i/8*TAU)*100, b.y+Math.sin(i/8*TAU)*100, 200,8);
@@ -1534,39 +1534,32 @@ function updateBoss(dt){
       b.atkN=(b.atkN||0)+1;
       const phase=b.atkN%5;
       if(phase===0){
-        // ① 소환 + 조준 견제
-        if(enemies.length<4){
-          const diff=1+(act-1)*0.3;
-          const mp=minionPool||["goblin_warrior"];
-          const n=Math.min(2,4-enemies.length);
-          for(let i=0;i<n;i++) spawnEnemy(pick(mp), rand(60,W-60), rand(60,260), diff);
-          banner("소환!","부하를 부른다",700);
-        }
+        // ① 조준 5갈래 음식 부채 (소환 제거)
         const pa=Math.atan2(player.y-b.y,player.x-b.x);
-        for(let i=-1;i<=1;i++) throwFood(b,pa+i*0.16,305,10);
+        for(let i=-2;i<=2;i++) throwFood(b,pa+i*0.15,205,10);
       } else if(phase===1){
-        // ② 조준 부채꼴 (촘촘·빠름)
+        // ② 조준 부채꼴
         const pa=Math.atan2(player.y-b.y,player.x-b.x), k=b.enraged?9:7;
-        for(let i=0;i<k;i++) throwFood(b,pa+(i-(k-1)/2)*0.16,305,10);
+        for(let i=0;i<k;i++) throwFood(b,pa+(i-(k-1)/2)*0.16,205,10);
       } else if(phase===2){
         // ③ 2갈래 회전 나선
         const k=b.enraged?14:11, base=b.angle*2.6;
-        for(let i=0;i<k;i++){ throwFood(b, base+i/k*TAU, 245, 9); throwFood(b, -base+i/k*TAU+0.3, 215, 9); }
+        for(let i=0;i<k;i++){ throwFood(b, base+i/k*TAU, 185, 9); throwFood(b, -base+i/k*TAU+0.3, 175, 9); }
       } else if(phase===3){
         // ④ 이중 사방 링
         const k=b.enraged?16:13;
-        for(let i=0;i<k;i++){ throwFood(b, i/k*TAU, 225, 9); throwFood(b, i/k*TAU+Math.PI/k, 150, 9); }
+        for(let i=0;i<k;i++){ throwFood(b, i/k*TAU, 185, 9); throwFood(b, i/k*TAU+Math.PI/k, 135, 9); }
       } else {
         // ⑤ 음식 폭격 (낙하·증가)
         const n=b.enraged?8:6;
         const fall=b.enraged?0.8:1;   // 격노 시 낙하 음식 속도 완화
-        for(let i=0;i<n;i++){ const fx=rand(50,W-50); eBullets.push({x:fx,y:-12,vx:rand(-25,25),vy:rand(230,300)*fall,r:13,dmg:9,life:4.2,foodImg:pickFood(),spin:rand(0,TAU),spinV:rand(-7,7)}); }
+        for(let i=0;i<n;i++){ const fx=rand(50,W-50); eBullets.push({x:fx,y:-12,vx:rand(-25,25),vy:rand(165,205)*fall,r:13,dmg:9,life:4.2,foodImg:pickFood(),spin:rand(0,TAU),spinV:rand(-7,7)}); }
         banner("음식 폭격!","",600);
       }
       // 격노 보너스: 유도하는 음식탄 (피하기 까다로움)
       if(b.enraged && Math.random()<0.32){
         const pa=Math.atan2(player.y-b.y,player.x-b.x);
-        for(let i=0;i<5;i++) throwFood(b, pa+i/5*TAU, 215, 9, 1.25);
+        for(let i=0;i<5;i++) throwFood(b, pa+i/5*TAU, 175, 9, 1.25);
       }
     }
     if(b.pattern==='spiral'){
@@ -1679,7 +1672,7 @@ function updateSeungwoo(b,dt){
     if(b.gphase===2&&Math.random()<0.35){ b.x=b.tx;b.y=b.ty; burst(b.x,b.y,'#9146ff',20,260); if(typeof chatRandom==='function')chatRandom('렉걸렸다 ㅋㅋ'); } }
   b.x+=(b.tx-b.x)*Math.min(1,dt*1.4); b.y+=(b.ty-b.y)*Math.min(1,dt*1.4);
   b.x=clamp(b.x,b.r,W-b.r); b.y=clamp(b.y,b.r,H*0.55);
-  if(dist2(b.x,b.y,player.x,player.y)<(b.r+player.r)**2) hurtPlayer(b.enraged?24:16,'승우');
+  if(dist2(b.x,b.y,player.x,player.y)<(b.r+player.r)**2) hurtPlayer(b.enraged?38:28,'승우');
 
   // 페이즈 전환
   if(b.gphase===1 && b.hp<=b.maxhp*0.5){ b.gphase=2; b.color='#ff4dd2'; b.attackT=2.2; b.patI=0; eBullets.length=0; gZones=[];gSlow=[];gTrack=null; screenShake=20; hitFlash=0.5; GL.blackout=1.1; banner('SYSTEM CORRUPTED','PHASE 2 — 붕괴',1500); if(typeof chatSys==='function')chatSys('▓▒░ 화면이 깨진다'); return; }
@@ -1852,7 +1845,10 @@ function update(dt){
     const d=Math.hypot(player.x-e.x,player.y-e.y);
     if((e.stunT=(e.stunT||0))>0){ e.stunT-=dt; }
     else if(e.ai==='chase'){
-      e.x+=Math.cos(a)*e.spd*dt; e.y+=Math.sin(a)*e.spd*dt;
+      if((e.lungeA=e.lungeA||0)>0){ e.lungeA-=dt; e.x+=e.lvx*e.spd*4.0*dt; e.y+=e.lvy*e.spd*4.0*dt; }
+      else { e.x+=Math.cos(a)*e.spd*dt; e.y+=Math.sin(a)*e.spd*dt; }
+      if(e.canLunge && e.lungeA<=0){ e.lungeT=(e.lungeT==null?rand(1.6,3.0):e.lungeT)-dt; if(e.lungeT<=0 && d<380 && d>40){ e.lungeA=0.30; e.lvx=Math.cos(a); e.lvy=Math.sin(a); e.lungeT=rand(2.6,3.8); burst(e.x,e.y,e.color,8,170); if(typeof beep==='function')beep(180,0.06,'square',0.04); } }
+      if(e.type==='namu'){ e.poundT=(e.poundT==null?rand(2.6,4.2):e.poundT)-dt; if(e.poundT<=0){ const k=12; for(let i=0;i<k;i++){ const a2=i/k*TAU; eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*150,vy:Math.sin(a2)*150,r:9,dmg:9,life:2.6,spore:true,srcName:'나무'}); } burst(e.x,e.y,e.color,16,200); if(typeof beep==='function')beep(70,0.18,'sawtooth',0.06); e.poundT=rand(3.4,4.8); } }
     }else if(e.ai==='erratic'){
       const wob=Math.sin(e.wob*2)*0.6;
       e.x+=Math.cos(a+wob)*e.spd*dt; e.y+=Math.sin(a+wob)*e.spd*dt;
@@ -1860,7 +1856,14 @@ function update(dt){
       // 거리 유지하며 사격
       if(d<e.range*0.6){ e.x-=Math.cos(a)*e.spd*dt; e.y-=Math.sin(a)*e.spd*dt; }
       else if(d>e.range){ e.x+=Math.cos(a)*e.spd*dt; e.y+=Math.sin(a)*e.spd*dt; }
-      if(e.coolT<=0){ enemyShootAt(e,player.x,player.y,240,7); e.coolT=e.cool; e.dmg=9; }
+      if(e.coolT<=0){
+        e.shotN=(e.shotN||0)+1;
+        if(e.type==='gwangcheon_gim' && e.shotN%3===0){
+          const pa=Math.atan2(player.y-e.y,player.x-e.x);
+          for(let i=0;i<3;i++) setTimeout(()=>{ if(enemies.includes(e)) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa)*255,vy:Math.sin(pa)*255,r:7,dmg:9,life:4,srcName:e.name}); }, i*110);
+        } else enemyShootAt(e,player.x,player.y,240,7,9);
+        e.coolT=e.cool;
+      }
     }else if(e.ai==='orbit'){
       // 일정 거리 공전 + 사격
       const target=e.range;
@@ -1869,7 +1872,14 @@ function update(dt){
       e.y+=Math.sin(a)*Math.sign(radial)*e.spd*dt;
       e.x+=Math.cos(a+Math.PI/2)*e.spd*0.6*dt;
       e.y+=Math.sin(a+Math.PI/2)*e.spd*0.6*dt;
-      if(e.coolT<=0){ enemyShootAt(e,player.x,player.y,200,8); e.coolT=e.cool; e.dmg=9; }
+      if(e.coolT<=0){
+        e.shotN=(e.shotN||0)+1;
+        if(e.shotN%3===0){
+          const pa=Math.atan2(player.y-e.y,player.x-e.x);
+          for(let i=-1;i<=1;i++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa+i*0.26)*205,vy:Math.sin(pa+i*0.26)*205,r:8,dmg:9,life:3.6,srcName:e.name});
+        } else enemyShootAt(e,player.x,player.y,200,8,9);
+        e.coolT=e.cool;
+      }
     }
     else if(e.ai==='hyechul'){
       const ph=e.phase||1; e.wob+=dt*2;
