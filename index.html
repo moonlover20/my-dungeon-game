@@ -607,7 +607,7 @@
             <h1>시청자를 막아라</h1>
             <div class="sub">Block the Viewers</div>
           </div>
-          <div class="title-live"><span class="ld"></span>LIVE<br><span style="color:#cdbbf2">스트리머 김봉식</span></div>
+          <div class="title-live"><span class="ld"></span>LIVE<br><span style="color:#cdbbf2">스트리머 김봉식</span><br><span style="color:#7a6fa0;font-size:clamp(9px,1.1vw,11px);letter-spacing:1.5px;font-weight:normal;line-height:2;display:block;margin-top:6px;">Developer: 달좋아해요<br>Music: 케터<br>Beta Tester: 키죠, 킬조이, 러라, 타포</span></div>
           <div class="title-menu">
             <button class="title-item" id="tmNew">NEW GAME</button>
             <button class="title-item disabled" id="tmLoad" tabindex="-1">LOAD</button>
@@ -999,6 +999,17 @@ function armIntroAudio(){
 }
 window.addEventListener('pointerdown', armIntroAudio);
 window.addEventListener('keydown', armIntroAudio);
+
+// 페이지 로드 직후 배경음 자동 시작 시도 (브라우저 정책으로 실패해도 괜찮음)
+window.addEventListener('load', function(){
+  setTimeout(function(){
+    try{
+      if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+      if(audioCtx.state==='suspended') audioCtx.resume().then(function(){ armIntroAudio(); }).catch(function(){});
+      else armIntroAudio();
+    }catch(e){}
+  }, 200);
+});
 
 // ---------- mp3 배경음악 매니저 ----------
 // index.html 과 같은 폴더에 아래 5개의 mp3 파일이 있어야 합니다. (main=시작·난이도 화면)
@@ -1657,6 +1668,14 @@ function damageEnemy(e,dmg,crit,fromBullet){
   if(crit && player.critHeal>0){ player.hp=Math.min(player.maxhp,player.hp+player.critHeal); floatHeart(e.x,e.y,player.critHeal); } // 치명 흡혈
   if(e.eliteViewer && !e.tauntedHalf && e.hp<=e.maxhp*0.5){ e.tauntedHalf=true; e.taunt={t:4.6,text:'…봉식님? 저 때리시나요?'}; if(typeof sfx!=='undefined'&&sfx.vote) sfx.vote(); }
   if(player.stunChance>0 && Math.random()<player.stunChance) e.stunT=Math.max(e.stunT||0,0.6);
+  // 나무: 피격 시 주변 몹 방어력 버프 (3초간 최대 3회 중첩)
+  if(e.type==='namu' && e.hp>0){
+    const now=performance.now(); if(!(e._namuBuffT>0)||now-(e._namuBuffLast||0)>1000){
+      e._namuBuffLast=now; e._namuBuffT=3.0;
+      enemies.forEach(o=>{ if(o!==e && dist2(o.x,o.y,e.x,e.y)<62500){ o.armor=Math.min((o.armor||0)+0.12,0.5); o._armorBuff=3.0; burst(o.x,o.y,'#5fa84a',6,120); } });
+      burst(e.x,e.y,'#5fa84a',12,160); if(typeof beep==='function')beep(90,0.1,'sine',0.05);
+    }
+  }
   if(fromBullet){
     if(player.burn>0){ e.burnT=3; e.burnDmg=player.burn; }
     if(player.chill>0){ e.chillT=2.5; }
@@ -2084,11 +2103,41 @@ function update(dt){
     const d=Math.hypot(player.x-e.x,player.y-e.y);
     if((e.stunT=(e.stunT||0))>0){ e.stunT-=dt; }
     else if(e.ai==='chase'){
-      if((e.lungeA=e.lungeA||0)>0){ const lm=(e.type==='goblin_warrior')?5.2:4.0; e.lungeA-=dt; e.x+=e.lvx*e.spd*lm*dt; e.y+=e.lvy*e.spd*lm*dt; }
+      if((e.lungeA=e.lungeA||0)>0){ const lm=(e.type==='goblin_warrior')?5.2:4.0; e.lungeA-=dt; e.x+=e.lvx*e.spd*lm*dt; e.y+=e.lvy*e.spd*lm*dt;
+        // 러라 잔상 폭발: 돌진 중 잔상 위치를 기록하고, 돌진 종료 시 2초 후 폭발
+        if(e.type==='reura'){ if(!(e.afterimageT>0)) e.afterimageT=0; e.afterimageT-=dt; if(e.afterimageT<=0){ e.afterimageT=0.07; const ax=e.x, ay=e.y; (e.afterimages=e.afterimages||[]).push({x:ax,y:ay,t:2.0}); burst(ax,ay,'#ffd166',4,80); } }
+      }
       else { e.x+=Math.cos(a)*e.spd*dt; e.y+=Math.sin(a)*e.spd*dt; }
       if(e.canLunge && e.lungeA<=0){ const lw=(e.type==='goblin_warrior'); e.lungeT=(e.lungeT==null?rand(lw?1.0:1.6, lw?1.9:3.0):e.lungeT)-dt; if(e.lungeT<=0 && d<(lw?470:380) && d>40){ e.lungeA=lw?0.34:0.30; e.lvx=Math.cos(a); e.lvy=Math.sin(a); e.lungeT=rand(lw?1.7:2.6, lw?2.7:3.8); burst(e.x,e.y,e.color,lw?12:8,lw?210:170); if(typeof beep==='function')beep(lw?210:180,0.06,'square',0.04); } }
+      // 러부엉: 근접(거리 70 이하) 시 날개 퍼덕임 — 플레이어 넉백
+      if(e.type==='goblin_warrior'){
+        e._wingT=(e._wingT==null?rand(1.8,2.8):e._wingT)-dt;
+        if(e._wingT<=0 && d<70){
+          const ka=Math.atan2(player.y-e.y,player.x-e.x);
+          player.x+=Math.cos(ka)*130; player.y+=Math.sin(ka)*130;
+          player.x=clamp(player.x,18,W-18); player.y=clamp(player.y,18,H-18);
+          hurtPlayer(e.dmg*0.6,'러부엉'); burst(e.x,e.y,'#6fae4e',14,200);
+          if(typeof beep==='function')beep(250,0.1,'square',0.05); banner('🪶 날개 퍼덕임!','','500');
+          e._wingT=rand(2.2,3.4);
+        }
+      }
       if(e.type==='goblin_bomber'){ if(d<175){ e.x+=Math.cos(a)*e.spd*0.95*dt; e.y+=Math.sin(a)*e.spd*0.95*dt; if(!e._fuse){ e._fuse=true; burst(e.x,e.y,'#ff4d4d',6,150); if(typeof beep==='function')beep(90,0.05,'square',0.05); } } else { e._fuse=false; } }
+      // 나무 피격 방어력 버프 타이머 감소
+      if(e._armorBuff>0){ e._armorBuff-=dt; if(e._armorBuff<=0){ e._armorBuff=0; e.armor=Math.max((e.armor||0)-0.12,0); } }
+      if(e._namuBuffT>0) e._namuBuffT-=dt;
       if(e.type==='namu'){ e.poundT=(e.poundT==null?rand(2.6,4.2):e.poundT)-dt; if(e.poundT<=0){ const k=12; for(let i=0;i<k;i++){ const a2=i/k*TAU; eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*150,vy:Math.sin(a2)*150,r:9,dmg:9,life:2.6,spore:true,srcName:'나무'}); } burst(e.x,e.y,e.color,16,200); if(typeof beep==='function')beep(70,0.18,'sawtooth',0.06); e.poundT=rand(3.4,4.8); } }
+      // 러라 잔상 폭발 처리
+      if(e.type==='reura' && e.afterimages && e.afterimages.length){
+        for(let i=e.afterimages.length-1;i>=0;i--){
+          e.afterimages[i].t-=dt;
+          if(e.afterimages[i].t<=0){
+            const ax=e.afterimages[i].x, ay=e.afterimages[i].y;
+            const k=10; for(let j=0;j<k;j++){ const a2=j/k*TAU; eBullets.push({x:ax,y:ay,vx:Math.cos(a2)*180,vy:Math.sin(a2)*180,r:7,dmg:8,life:2.2,srcName:'러라'}); }
+            burst(ax,ay,'#ffd166',16,220); screenShake=Math.max(screenShake||0,4); if(typeof beep==='function')beep(160,0.14,'sawtooth',0.06);
+            e.afterimages.splice(i,1);
+          }
+        }
+      }
     }else if(e.ai==='erratic'){
       const wob=Math.sin(e.wob*2)*0.6;
       e.x+=Math.cos(a+wob)*e.spd*dt; e.y+=Math.sin(a+wob)*e.spd*dt;
@@ -2101,6 +2150,10 @@ function update(dt){
         if(e.type==='gwangcheon_gim' && e.shotN%3===0){
           const pa=Math.atan2(player.y-e.y,player.x-e.x);
           for(let i=0;i<3;i++) setTimeout(()=>{ if(enemies.includes(e)) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa)*255,vy:Math.sin(pa)*255,r:7,dmg:9,life:4,srcName:e.name}); }, i*110);
+          // 김 가루 살포: 5발 연사 후마다 주변에 감속장 생성
+          if(e.shotN%5===0){
+            setTimeout(()=>{ if(enemies.includes(e)){ spawnSlowField(e.x,e.y,80,4); burst(e.x,e.y,'#3f7a34',14,160); banner('🌿 김 가루 살포','범위 내 이동 둔화',700); if(typeof beep==='function')beep(180,0.12,'sawtooth',0.05); } }, 340);
+          }
         } else if(e.type==='goblin_archer' && e.shotN%3===0){
           const pa=Math.atan2(player.y-e.y,player.x-e.x);
           for(let i=0;i<3;i++) setTimeout(()=>{ if(enemies.includes(e)) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa)*260,vy:Math.sin(pa)*260,r:7,dmg:9,life:4,srcName:e.name}); }, i*85);
@@ -2122,6 +2175,23 @@ function update(dt){
           for(let i=lo;i<=hi;i++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa+i*0.24)*210,vy:Math.sin(pa+i*0.24)*210,r:8,dmg:9,life:3.6,srcName:e.name});
         } else enemyShootAt(e,player.x,player.y,200,8,9);
         e.coolT=e.cool;
+      }
+      // 까치: HP 50% 이하 시 급강하 돌격
+      if(e.type==='goblin_shaman' && e.hp<=e.maxhp*0.5 && !e._diveMode){
+        e._diveMode=true; banner('🐦 까치 급강하!','체력이 절반 이하!',800);
+      }
+      if(e.type==='goblin_shaman' && e._diveMode){
+        e._diveT=(e._diveT==null?rand(2.0,3.2):e._diveT)-dt;
+        if(e._diveT<=0){
+          // 급강하: 빠르게 플레이어를 향해 직진 후 복귀
+          if(!e._diving){ e._diving=true; e._diveAx=Math.cos(a); e._diveAy=Math.sin(a); e._diveLife=0.28; burst(e.x,e.y,'#8a6fb0',10,180); if(typeof beep==='function')beep(300,0.12,'square',0.05); banner('🐦 급강하!','','500'); }
+        }
+        if(e._diving){
+          e._diveLife-=dt;
+          e.x+=e._diveAx*e.spd*6.0*dt; e.y+=e._diveAy*e.spd*6.0*dt;
+          if(dist2(e.x,e.y,player.x,player.y)<2500){ hurtPlayer(e.dmg,'까치'); burst(e.x,e.y,'#8a6fb0',12,200); e._diving=false; e._diveT=rand(2.0,3.2); }
+          if(e._diveLife<=0){ e._diving=false; e._diveT=rand(2.0,3.2); }
+        }
       }
     }
     else if(e.ai==='egg'){
@@ -2224,8 +2294,19 @@ function update(dt){
       } else if(e.cs==='dash'){
         e.csT-=dt; e.faceAng=Math.atan2(e.aimY,e.aimX);
         e.x+=e.aimX*e.spd*5.5*dt; e.y+=e.aimY*e.spd*5.5*dt;
-        if(e.x<=e.r||e.x>=W-e.r||e.y<=e.r||e.y>=H-e.r){ e.csT=0; e.stunT=0.9; burst(e.x,e.y,'#caa14a',14,200); screenShake=Math.max(screenShake,6); }
-        if(e.csT<=0){ e.cs='rest'; e.csT=0.6; e.coolT=1.7; }
+        if(e.x<=e.r||e.x>=W-e.r||e.y<=e.r||e.y>=H-e.r){
+          // 포베어: 벽 충돌 시 튕기며 재돌진
+          if(e.type==='pobear' && !(e._bounced)){
+            if(e.x<=e.r||e.x>=W-e.r) e.aimX*=-1;
+            if(e.y<=e.r||e.y>=H-e.r) e.aimY*=-1;
+            e.x=clamp(e.x,e.r,W-e.r); e.y=clamp(e.y,e.r,H-e.r);
+            e._bounced=true; e.csT=0.45;
+            burst(e.x,e.y,'#c8884a',16,240); screenShake=Math.max(screenShake,8); if(typeof beep==='function')beep(110,0.18,'sawtooth',0.07);
+            banner('💥 반동 재돌진!','',550);
+          } else { e._bounced=false; e.csT=0; e.stunT=0.9; burst(e.x,e.y,'#caa14a',14,200); screenShake=Math.max(screenShake,6); }
+        }
+        if(e.csT<=0 && !e._bounced){ e._bounced=false; e.cs='rest'; e.csT=0.6; e.coolT=1.7; }
+        if(e.csT<=0 && e._bounced){ e._bounced=false; e.cs='rest'; e.csT=0.6; e.coolT=1.7; }
       } else { e.csT-=dt; if(e.csT<=0) e.cs='approach'; }
     }
     else if(e.ai==='yanggaeng'){
