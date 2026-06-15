@@ -883,11 +883,10 @@ const MUSIC = {
 })();
 // 현재 상황에 맞는 음악 키
 function desiredMusicKey(){
-  if(state==='start') return 'act1';  // 첫 화면 — act1 곡으로 소리 미리듣기/설정
-  if(!runActive) return 'intro';   // 스토리·엔드 화면
+  if(!runActive) return 'intro';   // 타이틀·시작/난이도 선택·스토리·엔드 화면
   if(roomIsBoss) return 'boss';
   if(roomIsMidboss) return 'midboss';
-  return 'act1';                   // 일반 전투·맵·상점·이벤트·레벨업 등
+  return 'act1';                   // 실제 act1 진입 후 — 전투·맵·상점·이벤트·레벨업 등
 }
 // 첫 사용자 제스처에서 모든 트랙 재생 권한 확보
 function unlockMusic(){
