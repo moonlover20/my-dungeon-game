@@ -444,6 +444,9 @@ const RELICS=[
   {id:"gold_pig",name:"황금 돼지 저금통",icon:"🐷",desc:"골드 획득 +60%.",cls:"boon",apply:p=>{p.goldMul*=1.6;}},
   {id:"xp_book",name:"경험의 서",icon:"📖",desc:"경험치 획득 +40%.",cls:"boon",apply:p=>{p.xpMul*=1.4;}},
   {id:"potion_belt",name:"비상용 물약 벨트",icon:"🧪",desc:"즉시 랜덤 포션 1개 획득.",cls:"boon",apply:p=>{addPotion(pick(POTIONS));}},
+  {id:"kijo_mask",name:"키죠의 가면",icon:"🎭",desc:"보스 피해 +15%. 받는 피해 +10%.",cls:"boon",apply:p=>{p.bossDmgMul*=1.15;p.armor-=0.1;}},
+  {id:"viewer_slayer_mic",name:"시청자 학살자의 마이크",icon:"🎤",desc:"처치 시 6% 확률 폭발(피해 18, 내부쿨 0.15초).",cls:"boon",apply:p=>{p.killBurstChance+=0.06;p.killBurstDmg+=18;}},
+  {id:"abstinence_chalice",name:"금욕의 성배",icon:"🏆",desc:"포션 0개 보유 시 공격력 +18%.",cls:"boon",apply:p=>{p.noPotionDmgMul*=1.18;}},
   // ===== 저주: 양날의 검 =====
   {id:"glass",name:"유리 대포",icon:"🔮",desc:"공격력 +80%. 최대 체력 -40%.",cls:"curse",apply:p=>{p.dmgMul*=1.8;p.maxhp=Math.round(p.maxhp*0.6);p.hp=Math.min(p.hp,p.maxhp);}},
   {id:"berserk",name:"광전사의 분노",icon:"🩸",desc:"공격력 +60%. 받는 피해 +20%.",cls:"curse",apply:p=>{p.dmgMul*=1.6;p.armor-=0.2;}},
@@ -469,7 +472,7 @@ const TIERS={
   legend: {name:'전설',   col:'#ffd34d', weight:11, costMul:2.0, glow:1},
   unique: {name:'유니크', col:'#ffae42', weight:3,  costMul:3.0, glow:2},
 };
-const _UNIQUE=['homing_eye','one_shot','guardian_angel','glass'];
+const _UNIQUE=['homing_eye','one_shot','guardian_angel','glass','kijo_mask','viewer_slayer_mic','abstinence_chalice'];
 const _LEGEND=['harpoon','fork','redbull','long_skewer'];
 const _EPIC=['coupon','sniper','heavy_cal','bignuke','comeback','giant_slayer','crit_glasses','crit_hammer','clover','speed_bullet','skewer','super_bouncy','stun_bell','chain_bomb','big_heart','iron_skin','nature_bless','vampire_fang','berserk','heavy_ammo','hair_trigger'];
 const TIER_OF={};
@@ -611,8 +614,39 @@ const RETRY_SCORE_PENALTY=2500;
 const HIT_SCORE_PENALTY=450;
 const LEADERBOARD_COLLECTIONS={easy:'scores_easy',normal:'scores_normal',hard:'scores_hard'};
 let leaderboardApiPromise=null;
+let progressApiPromise=null;
+let progressLoadPromise=null;
+let progressSaveTimer=null;
 let scoreSubmitSeq=0;
 let rankingDifficulty='easy';
+const USER_PROGRESS_COLLECTION='user_progress';
+const USER_PROGRESS_LOCAL_KEY='btvUserProgressBackup';
+const ACHIEVEMENT_RELIC_IDS=['kijo_mask','viewer_slayer_mic','abstinence_chalice'];
+const ACHIEVEMENTS=[
+  {id:'first_play',name:'첫 방송',desc:'처음 게임을 시작한다.',reward:'칭호: 첫방송'},
+  {id:'first_kill',name:'첫 처치',desc:'처음으로 시청자를 처치한다.',reward:'칭호: 초보사냥꾼'},
+  {id:'kill_100',name:'100 처치',desc:'누적 처치 100회를 달성한다.',reward:'시작 골드 +20'},
+  {id:'kill_1000',name:'1000 처치',desc:'누적 처치 1000회를 달성한다.',reward:'유물 해금: 시청자 학살자의 마이크'},
+  {id:'defeat_kijo',name:'키죠 격파',desc:'키죠를 쓰러뜨린다.',reward:'유물 해금: 키죠의 가면'},
+  {id:'clear_act1',name:'1막 클리어',desc:'1막 보스를 격파한다.',reward:'시작 포션 +1'},
+  {id:'clear_game',name:'게임 클리어',desc:'최종 보스를 쓰러뜨리고 방송을 지킨다.',reward:'칭호: 방송생존자'},
+  {id:'hard_clear',name:'어려움 클리어',desc:'어려움 난이도로 게임을 클리어한다.',reward:'업적'},
+  {id:'no_potion_clear',name:'무포션 클리어',desc:'포션을 사용하지 않고 게임을 클리어한다.',reward:'유물 해금: 금욕의 성배'},
+  {id:'no_hit_boss',name:'노히트 보스',desc:'보스 전투를 한 대도 맞지 않고 클리어한다.',reward:'칭호: 노히트장인'},
+];
+const TITLE_REWARDS={first_play:'첫방송',first_kill:'초보사냥꾼',clear_game:'방송생존자',no_hit_boss:'노히트장인'};
+const RELIC_REWARDS={defeat_kijo:'kijo_mask',kill_1000:'viewer_slayer_mic',no_potion_clear:'abstinence_chalice'};
+let userProgress={
+  uid:null,
+  achievements:{},
+  titles:{},
+  unlockedRelics:{},
+  selectedTitle:'',
+  stats:{totalKills:0},
+  loaded:false,
+  dirty:false
+};
+let runPotionUsed=false;
 
 function ensureLeaderboardApi(){
   if(!leaderboardApiPromise){
@@ -625,6 +659,203 @@ function ensureLeaderboardApi(){
     });
   }
   return leaderboardApiPromise;
+}
+function defaultProgress(){
+  return {uid:null,achievements:{},titles:{},unlockedRelics:{},selectedTitle:'',stats:{totalKills:0},loaded:false,dirty:false};
+}
+function normalizeProgress(data){
+  const base=defaultProgress();
+  data=data||{};
+  base.uid=data.uid||null;
+  base.achievements=Object.assign({},data.achievements||{});
+  base.titles=Object.assign({},data.titles||{});
+  base.unlockedRelics=Object.assign({},data.unlockedRelics||{});
+  base.selectedTitle=base.titles[data.selectedTitle]?data.selectedTitle:'';
+  base.stats=Object.assign({},base.stats,data.stats||{});
+  base.stats.totalKills=Number(base.stats.totalKills)||0;
+  base.loaded=!!data.loaded;
+  return base;
+}
+function mergeProgress(remote,local){
+  remote=normalizeProgress(remote);
+  local=normalizeProgress(local);
+  remote.achievements=Object.assign({},remote.achievements,local.achievements);
+  remote.titles=Object.assign({},remote.titles,local.titles);
+  remote.unlockedRelics=Object.assign({},remote.unlockedRelics,local.unlockedRelics);
+  remote.selectedTitle=local.selectedTitle||remote.selectedTitle||'';
+  if(remote.selectedTitle&&!remote.titles[remote.selectedTitle]) remote.selectedTitle='';
+  remote.stats.totalKills=Math.max(Number(remote.stats.totalKills)||0,Number(local.stats.totalKills)||0);
+  remote.loaded=true;
+  remote.dirty=!!local.dirty;
+  return remote;
+}
+function loadLocalProgress(){
+  try{ return normalizeProgress(JSON.parse(localStorage.getItem(USER_PROGRESS_LOCAL_KEY)||'{}')); }
+  catch(e){ return defaultProgress(); }
+}
+function storeLocalProgress(){
+  try{
+    localStorage.setItem(USER_PROGRESS_LOCAL_KEY, JSON.stringify({
+      uid:userProgress.uid||null,
+      achievements:userProgress.achievements||{},
+      titles:userProgress.titles||{},
+      unlockedRelics:userProgress.unlockedRelics||{},
+      selectedTitle:userProgress.selectedTitle||'',
+      stats:userProgress.stats||{totalKills:0},
+      updatedAt:Date.now()
+    }));
+  }catch(e){}
+}
+function ensureProgressApi(){
+  if(!progressApiPromise){
+    progressApiPromise=Promise.all([
+      import('https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js'),
+      import('https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js'),
+      import('https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js')
+    ]).then(async([appMod,firestoreMod,authMod])=>{
+      const app=appMod.getApps().length?appMod.getApps()[0]:appMod.initializeApp(LEADERBOARD_FIREBASE_CONFIG);
+      const auth=authMod.getAuth(app);
+      if(!auth.currentUser) await authMod.signInAnonymously(auth);
+      return {db:firestoreMod.getFirestore(app), fs:firestoreMod, auth, uid:auth.currentUser.uid};
+    });
+  }
+  return progressApiPromise;
+}
+async function loadUserProgress(){
+  if(progressLoadPromise) return progressLoadPromise;
+  userProgress=loadLocalProgress();
+  userProgress.loaded=true;
+  progressLoadPromise=(async()=>{
+    try{
+      const api=await ensureProgressApi();
+      const ref=api.fs.doc(api.db,USER_PROGRESS_COLLECTION,api.uid);
+      const snap=await api.fs.getDoc(ref);
+      if(snap.exists()) userProgress=mergeProgress(Object.assign({uid:api.uid},snap.data(),{loaded:true}),userProgress);
+      else { userProgress.uid=api.uid; userProgress.loaded=true; await saveUserProgress(true); }
+      storeLocalProgress();
+      if(userProgress.dirty) await saveUserProgress(true);
+      renderAchievements();
+      return userProgress;
+    }catch(e){
+      console.warn('progress load failed, using localStorage',e);
+      userProgress.loaded=true;
+      renderAchievements();
+      return userProgress;
+    }
+  })();
+  renderAchievements();
+  return progressLoadPromise;
+}
+async function saveUserProgress(force){
+  userProgress.dirty=true;
+  storeLocalProgress();
+  if(!force){
+    clearTimeout(progressSaveTimer);
+    progressSaveTimer=setTimeout(()=>saveUserProgress(true),700);
+    return;
+  }
+  clearTimeout(progressSaveTimer);
+  try{
+    const api=await ensureProgressApi();
+    userProgress.uid=api.uid;
+    await api.fs.setDoc(api.fs.doc(api.db,USER_PROGRESS_COLLECTION,api.uid),{
+      achievements:userProgress.achievements||{},
+      titles:userProgress.titles||{},
+      unlockedRelics:userProgress.unlockedRelics||{},
+      selectedTitle:userProgress.selectedTitle||'',
+      stats:userProgress.stats||{totalKills:0},
+      updatedAt:api.fs.serverTimestamp()
+    },{merge:true});
+    userProgress.dirty=false;
+    storeLocalProgress();
+  }catch(e){
+    console.warn('progress save failed, localStorage backup kept',e);
+  }
+}
+function achievementById(id){ return ACHIEVEMENTS.find(a=>a.id===id); }
+function isAchievementUnlocked(id){ return !!(userProgress.achievements&&userProgress.achievements[id]); }
+function isRelicUnlockedByAchievement(id){
+  return ACHIEVEMENT_RELIC_IDS.indexOf(id)<0 || !!(userProgress.unlockedRelics&&userProgress.unlockedRelics[id]);
+}
+function applyAchievementReward(id){
+  if(TITLE_REWARDS[id]) userProgress.titles[TITLE_REWARDS[id]]=true;
+  if(RELIC_REWARDS[id]) userProgress.unlockedRelics[RELIC_REWARDS[id]]=true;
+}
+function unlockAchievement(id){
+  if(!userProgress.achievements) userProgress=normalizeProgress(userProgress);
+  if(userProgress.achievements[id]) return false;
+  userProgress.achievements[id]={at:Date.now()};
+  applyAchievementReward(id);
+  const a=achievementById(id);
+  if(a) banner('🏆 업적 달성',a.name,1800);
+  renderAchievements();
+  saveUserProgress();
+  return true;
+}
+function selectTitle(title){
+  if(title && !(userProgress.titles&&userProgress.titles[title])) return;
+  userProgress.selectedTitle=title||'';
+  renderAchievements();
+  saveUserProgress();
+}
+function applyStartBonuses(){
+  if(isAchievementUnlocked('kill_100')) gold+=20;
+  if(isAchievementUnlocked('clear_act1')) addPotion(pick(POTIONS));
+}
+function currentAttackMul(p){
+  p=p||player;
+  return p.dmgMul*(p.noPotionDmgMul&&(!p.potions||p.potions.length===0)?p.noPotionDmgMul:1);
+}
+function visibleLeaderboardName(name,title){
+  name=cleanLeaderboardName(name);
+  title=String(title||'').trim();
+  return title?'['+title+'] '+name:name;
+}
+function renderAchievements(){
+  const ov=$('ovAchievements'); if(!ov) return;
+  const done=ACHIEVEMENTS.filter(a=>isAchievementUnlocked(a.id)).length;
+  const rate=Math.round(done/ACHIEVEMENTS.length*100);
+  const rateEl=$('achRate'); if(rateEl) rateEl.textContent=done+' / '+ACHIEVEMENTS.length+' ('+rate+'%)';
+  document.querySelectorAll('.ach-tab').forEach(btn=>btn.classList.toggle('active',btn.dataset.tab===(ov.dataset.tab||'achievements')));
+  const body=$('achBody'); if(!body) return;
+  const tab=ov.dataset.tab||'achievements';
+  body.innerHTML='';
+  if(tab==='achievements'){
+    ACHIEVEMENTS.forEach(a=>{
+      const unlocked=isAchievementUnlocked(a.id);
+      const row=document.createElement('div');
+      row.className='ach-row'+(unlocked?' unlocked':'');
+      row.innerHTML='<div class="ach-medal">'+(unlocked?'🏆':'🔒')+'</div><div><b>'+a.name+'</b><span>'+a.desc+'</span><small>'+a.reward+'</small></div>';
+      body.appendChild(row);
+    });
+  }else if(tab==='titles'){
+    const titles=Object.values(TITLE_REWARDS);
+    titles.forEach(t=>{
+      const owned=!!(userProgress.titles&&userProgress.titles[t]);
+      const selected=userProgress.selectedTitle===t;
+      const row=document.createElement('button');
+      row.className='ach-row title-pick'+(owned?' unlocked':'')+(selected?' selected':'');
+      row.disabled=!owned;
+      row.innerHTML='<div class="ach-medal">'+(selected?'✓':owned?'🎖️':'🔒')+'</div><div><b>'+t+'</b><span>'+(owned?(selected?'장착 중':'클릭해서 장착'):'아직 해금되지 않음')+'</span></div>';
+      row.onclick=()=>selectTitle(selected?'':t);
+      body.appendChild(row);
+    });
+    const clear=document.createElement('button');
+    clear.className='btn ghost ach-clear-title';
+    clear.textContent='칭호 해제';
+    clear.onclick=()=>selectTitle('');
+    body.appendChild(clear);
+  }else{
+    ACHIEVEMENT_RELIC_IDS.forEach(id=>{
+      const r=RELICS.find(x=>x.id===id);
+      if(!r) return;
+      const owned=isRelicUnlockedByAchievement(id);
+      const row=document.createElement('div');
+      row.className='ach-row relic-'+(TIER_OF[id]||'rare')+(owned?' unlocked':'');
+      row.innerHTML='<div class="ach-medal">'+(owned?relicIconHTML(r,'relic-pix-lg'):'🔒')+'</div><div><b>'+r.name+'</b><span>'+r.desc+'</span><small>'+(owned?'유물 풀에 등장 가능':'관련 업적 달성 시 해금')+'</small></div>';
+      body.appendChild(row);
+    });
+  }
 }
 function cleanLeaderboardName(name){
   const v=String(name||'').trim().replace(/\s+/g,' ').slice(0,NAME_MAX_LEN);
@@ -695,6 +926,7 @@ async function saveRunScore(win,killer,scoreData){
       elapsedSec:Math.round(scoreData.elapsedSec),
       win:!!win,
       killer:killer||lastKiller||'',
+      title:userProgress.selectedTitle||'',
       difficultyKey,
       difficulty:diffSet&&diffSet.label?diffSet.label:'',
       createdAt:api.fs.serverTimestamp()
@@ -724,7 +956,7 @@ async function renderRankingList(){
         '<div class="rank-no">#'+rank+'</div>'+
         '<div><div class="rank-name"></div><div class="rank-meta"></div></div>'+
         '<div class="rank-score">'+fmtScore(Number(d.score)||0)+'</div>';
-      row.querySelector('.rank-name').textContent=cleanLeaderboardName(d.name);
+      row.querySelector('.rank-name').textContent=visibleLeaderboardName(d.name,d.title);
       row.querySelector('.rank-meta').textContent=rankingReachedText(d);
       list.appendChild(row);
       rank++;
@@ -774,6 +1006,7 @@ function resetPlayer(){
     burn:0,chill:0,poison:0,bulletExplode:0,
     doubleTap:0,chargeShot:false,lastShot:0,
     thorns:0,healOnKill:0,donateChance:0,crowdRage:0,
+    killBurstChance:0,killBurstDmg:0,killBurstCd:0,noPotionDmgMul:1,
     shieldRegen:0,shieldRegenT:0,hitShield:0,
     lastStand:false,usedLastStand:false,
     dodgeBlast:0,dodgeHaste:false,dodgeIframeBonus:0,
@@ -995,7 +1228,7 @@ function playerShoot(){
   player.facing=ang;
   if(typeof GL!=='undefined'&&GL.mirror>0) ang+=Math.PI; // 거울 모드: 반대로 발사
   if(player.misfire && Math.random()<0.12) ang+=rand(-0.5,0.5); // 오발
-  let base=player.dmg*player.dmgMul*(player.buffs.rage>0?2:1);
+  let base=player.dmg*currentAttackMul()*(player.buffs.rage>0?2:1);
   if(player.gamble) base*=rand(0.6,1.8);
   if(player.lowHpMul>0 && player.hp<player.maxhp*0.3) base*=(1+player.lowHpMul);
   if(player.crowdRage>0) base*=(1+player.crowdRage*Math.min(enemies.length,10));
@@ -1148,6 +1381,11 @@ function killEnemy(e){
   }
   if(e.eliteViewer){ banner('자잘자 처치!','',1100); spawnDeathBubble(e.x, e.y-e.r-12, pick(['로블록스 하러 가야겠다…','봉식님… 너무하시네요 Sadge','다음 생엔 더 셀게요…','채금 풀리면 또 봬요','이게 맞나요…? 운영자 호출']), 3.4); }
   kills++; totalKills++;
+  userProgress.stats.totalKills=(Number(userProgress.stats.totalKills)||0)+1;
+  unlockAchievement('first_kill');
+  if(userProgress.stats.totalKills>=100) unlockAchievement('kill_100');
+  if(userProgress.stats.totalKills>=1000) unlockAchievement('kill_1000');
+  else saveUserProgress();
   gainXP(SUMMON_TYPES.has(e.type)?0:e.xp);
   if(player.lifesteal>0 && Math.random()<player.lifesteal){ player.hp=Math.min(player.maxhp,player.hp+5); floatHeart(e.x,e.y,5); }
   if(player.healOnKill>0){ player.hp=Math.min(player.maxhp,player.hp+player.healOnKill); floatHeart(e.x,e.y,player.healOnKill); }
@@ -1157,6 +1395,11 @@ function killEnemy(e){
   if(!isSummon){ let coin=irand(2,6); if(e.elite) coin+=irand(8,16); coin=Math.round(coin*player.goldMul);
   gold+=coin; sfx.coin(); burst(e.x,e.y,'#ffd34d',5,120); }
   if(player.explodeKill>0){ burst(e.x,e.y,'#ff9b4d',12,200); enemies.forEach(o=>{ if(o!==e && dist2(o.x,o.y,e.x,e.y)<4900){ o.hp-=player.explodeKill; o.hitT=0.1; } }); }
+  if(player.killBurstChance>0 && Math.random()<player.killBurstChance && performance.now()>(player.killBurstCd||0)){
+    player.killBurstCd=performance.now()+150;
+    burst(e.x,e.y,'#ff5d9b',16,240);
+    enemies.forEach(o=>{ if(o!==e && dist2(o.x,o.y,e.x,e.y)<6400){ o.hp-=player.killBurstDmg||18; o.hitT=0.1; } });
+  }
   if(e.explode){
     if(e.type==='goblin_bomber'){
       for(let i=0;i<11;i++){ const a2=i/11*TAU+rand(-0.08,0.08); eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*180,vy:Math.sin(a2)*180,r:9,dmg:8,life:2.7,foodImg:(trashbitReady?TRASHBIT_SPRITE:null),spin:rand(0,TAU),spinV:rand(-7,7),spore:true}); }
@@ -1389,10 +1632,12 @@ function updateBoss(dt){
   if(b.hp<=0) killBoss();
 }
 function killBoss(){
+  const deadBoss=boss;
   burst(boss.x,boss.y,boss.color,40,320); screenShake=18;
   banner("보스 처치!","승리!",2000); sfx.coin();
   gold+=irand(90,150); sfx.coin(); burst(boss.x,boss.y,'#ffd34d',20,260);
   gainXP(200+(act-1)*120);   // 최종보스 경험치(막별 스케일: 1막 200 · 2막 320 · 3막 440)
+  if(deadBoss&&deadBoss.key==='kijo') unlockAchievement('defeat_kijo');
   if(act>=MAX_ACT){ enemies.length=0; eBullets.length=0; }   // 최종보스 처치 시 남은 잡몹·탄막 정리
   updateHUD();
   if(typeof clearSeungwooFx==='function') clearSeungwooFx();
@@ -1551,7 +1796,7 @@ function update(dt){
   if(player.iframes>0) player.iframes-=dt;
   if(player.dodgeCharges<player.dodgeMaxCharges){ if(player.dodgeCd>0) player.dodgeCd-=dt; if(player.dodgeCd<=0){ player.dodgeCharges++; if(player.dodgeCharges<player.dodgeMaxCharges) player.dodgeCd=10*player.dodgeCdMul; } }
   if(player.shieldRegen>0){ player.shieldRegenT=(player.shieldRegenT||0)+dt; if(player.shieldRegenT>=player.shieldRegen){ player.shieldRegenT=0; player.hitShield=Math.min((player.hitShield||0)+1,1); } }
-  if(player.minion){ const mn=player.minion; mn.ang=(mn.ang||0)+dt*2.2; mn.x=player.x+Math.cos(mn.ang)*48; mn.y=player.y+Math.sin(mn.ang)*48; mn.fireT=(mn.fireT||0)-dt; if(mn.fireT<=0){ let tx=null,ty=null,bd=1e9; for(const e of enemies){ const d2=dist2(mn.x,mn.y,e.x,e.y); if(d2<bd){bd=d2;tx=e.x;ty=e.y;} } if(boss){ const d2=dist2(mn.x,mn.y,boss.x,boss.y); if(d2<bd){bd=d2;tx=boss.x;ty=boss.y;} } if(tx!==null && bd<200000){ const ma=Math.atan2(ty-mn.y,tx-mn.x); pBullets.push({x:mn.x,y:mn.y,vx:Math.cos(ma)*520,vy:Math.sin(ma)*520,r:5,dmg:Math.max(2,player.dmg*player.dmgMul*0.55),life:1.0,bounce:0,pierce:0,hitSet:new Set(),crit:false,homing:0}); mn.fireT=0.6; } else mn.fireT=0.3; } }
+  if(player.minion){ const mn=player.minion; mn.ang=(mn.ang||0)+dt*2.2; mn.x=player.x+Math.cos(mn.ang)*48; mn.y=player.y+Math.sin(mn.ang)*48; mn.fireT=(mn.fireT||0)-dt; if(mn.fireT<=0){ let tx=null,ty=null,bd=1e9; for(const e of enemies){ const d2=dist2(mn.x,mn.y,e.x,e.y); if(d2<bd){bd=d2;tx=e.x;ty=e.y;} } if(boss){ const d2=dist2(mn.x,mn.y,boss.x,boss.y); if(d2<bd){bd=d2;tx=boss.x;ty=boss.y;} } if(tx!==null && bd<200000){ const ma=Math.atan2(ty-mn.y,tx-mn.x); pBullets.push({x:mn.x,y:mn.y,vx:Math.cos(ma)*520,vy:Math.sin(ma)*520,r:5,dmg:Math.max(2,player.dmg*currentAttackMul()*0.55),life:1.0,bounce:0,pierce:0,hitSet:new Set(),crit:false,homing:0}); mn.fireT=0.6; } else mn.fireT=0.3; } }
   if(player.regen!==0){ player.regenAcc+=dt; if(player.regenAcc>=1){ player.regenAcc-=1; player.hp=clamp(player.hp+player.regen,1,player.maxhp); updateHpHud(); } }
   if(player.buffs.rage>0) player.buffs.rage-=dt;
   if(player.buffs.haste>0) player.buffs.haste-=dt;
@@ -2559,6 +2804,7 @@ function onCombatCleared(){
   // 다음전투 골드 페널티(이벤트) 소비
   if(nextGoldPenalty>0){ const loss=Math.round(gold*nextGoldPenalty); gold=Math.max(0,gold-loss); nextGoldPenalty=0; if(loss>0) setTimeout(()=>banner('분위기 하락','골드 -'+loss,1200),200); updateHUD(); }
   banner('CLEAR', t==='boss'?'보스 격파!':(t==='midboss'?'중간보스 격파!':(t==='elite'?'자잘자 격파!':'정리 완료')), 1000);
+  if(t==='boss'&&!combatTookHit) unlockAchievement('no_hit_boss');
   setTimeout(()=>{
     // 도전과제(노히트) 판정 우선
     if(combatChallenge==='nohit'){
@@ -2579,6 +2825,7 @@ function finishNode(){
   if(pendingNode){ pendingNode.done=true; mapData.currentId=pendingNode.id; }
   pendingNode=null;
   if(wasBoss){
+    if(act===1) unlockAchievement('clear_act1');
     if(act>=MAX_ACT){ victory(); return; }
     act++; currentRow=0; genMap();
     showMap();
@@ -2744,6 +2991,7 @@ function addPotion(pot){
 function usePotion(i){
   const p=player.potions[i];
   if(!p) return;
+  runPotionUsed=true;
   p.use(player); sfx.pick();
   banner(p.icon+' '+p.name,'사용',1000);
   player.potions.splice(i,1); renderPotions(); updateHUD();
@@ -2925,11 +3173,12 @@ let relicAfter=null;
 function offerRelics(n,tag,sub,after){
   relicAfter=after||null;
   const owned=new Set(player.relics.map(r=>r.id));
-  const avail=RELICS.filter(r=>!owned.has(r.id));
-  const pool=avail.length>=n?avail:RELICS;
+  const avail=RELICS.filter(r=>!owned.has(r.id)&&isRelicUnlockedByAchievement(r.id));
+  const pool=avail;
   const picks=[];
   const tmp=pool.slice();
   for(let i=0;i<n && tmp.length;i++){ picks.push(weightedTake(tmp)); }
+  if(!picks.length){ if(relicAfter){ const a=relicAfter; relicAfter=null; a(); } return; }
   const cont=$('relicChoices');
   cont.innerHTML='';
   $('relicTag').textContent=tag||"유물 획득";
@@ -2977,7 +3226,7 @@ function openShop(after){
     buy:()=>{addPotion(pt);}}));
   // 유물 2종
   const owned=new Set(player.relics.map(r=>r.id));
-  const availR=RELICS.filter(r=>!owned.has(r.id));
+  const availR=RELICS.filter(r=>!owned.has(r.id)&&isRelicUnlockedByAchievement(r.id));
   const relicPicks=[]; for(let i=0;i<2 && availR.length;i++) relicPicks.push(weightedTake(availR));
   relicPicks.forEach(r=>items.push({kind:'relic',name:r.name,icon:r.icon,desc:r.desc,cost:Math.round((75+act*24+Math.random()*30)*relicTier(r).costMul*2.5),relic:r,
     buy:()=>{player.relics.push(r);r.apply(player);}}));
@@ -4311,7 +4560,7 @@ function skipCutscene(){
 // ---------- 오버레이 제어 ----------
 
 // ===== JS: Overlay state machine and UI wiring =====
-const overlays={title:'ovTitle',start:'ovStart',map:'ovMap',relic:'ovRelic',shop:'ovShop',event:'ovEvent',inv:'ovInv',level:'ovLevel',reward:'ovReward',end:'ovEnd',ranking:'ovRanking',help:'ovHelp',story:'ovStory',entrance:'ovEntrance',tierIntro:'ovTierIntro',taunt:'ovTaunt',campfire:'ovCampfire'};
+const overlays={title:'ovTitle',start:'ovStart',map:'ovMap',relic:'ovRelic',shop:'ovShop',event:'ovEvent',inv:'ovInv',level:'ovLevel',reward:'ovReward',end:'ovEnd',ranking:'ovRanking',achievements:'ovAchievements',help:'ovHelp',story:'ovStory',entrance:'ovEntrance',tierIntro:'ovTierIntro',taunt:'ovTaunt',campfire:'ovCampfire'};
 function hideAll(){ Object.values(overlays).forEach(id=>$(id).classList.add('hidden')); }
 function syncChrome(){ document.body.classList.toggle('title-mode', state==='title'||state==='start'); }
 function show(st){
@@ -4538,7 +4787,7 @@ function showEntrance(role,name,quip){
 function spStats(p){
   return [
     ['❤️ 최대체력', Math.round(p.maxhp), p.maxhp],
-    ['⚔️ 공격력', (p.dmg*p.dmgMul).toFixed(1), p.dmg*p.dmgMul],
+    ['⚔️ 공격력', (p.dmg*currentAttackMul(p)).toFixed(1), p.dmg*currentAttackMul(p)],
     ['🎯 치명타', Math.round(p.critChance*100)+'%', p.critChance],
     ['🔥 초당발사', ((1+p.fireAdd)/(0.35*p.fireMul)).toFixed(1)+'발', (1+p.fireAdd)/(0.35*p.fireMul)],
     ['➹ 투사체', p.shots+'발', p.shots],
@@ -4622,7 +4871,7 @@ function renderInventory(){
   const fr=((1+p.fireAdd)/(0.35*p.fireMul)).toFixed(1);
   const pc=v=>Math.round(v*100)+'%';
   const stats=[
-    ['공격력', (p.dmg*p.dmgMul).toFixed(1)],
+    ['공격력', (p.dmg*currentAttackMul(p)).toFixed(1)],
     ['치명타 확률', pc(p.critChance)],
     ['초당 발사', fr+'발'],
     ['투사체', p.shots+'발'],
@@ -4686,6 +4935,11 @@ function gameOver(win, killer){
   state='end'; syncChrome();
   // 승리 시에만 인트로로 전환 — 사망 시엔 죽은 막의 음악을 그대로 유지
   if(win){ runActive=false; roomIsBoss=false; roomIsMidboss=false; }
+  if(win){
+    unlockAchievement('clear_game');
+    if(diffSet&&diffSet.key==='hard') unlockAchievement('hard_clear');
+    if(!runPotionUsed) unlockAchievement('no_potion_clear');
+  }
   show('end');
   const canRetry = !win && (diffSet.maxRetries === Infinity || retries < diffSet.maxRetries);
   $('retryBtn').style.display = canRetry ? '' : 'none';
@@ -4727,6 +4981,9 @@ function newGame(){
   runActive=true;
   act=1; currentRow=0; kills=0; totalKills=0; gold=0; level=1; xp=0; xpNext=20; pendingLevels=0; retries=0; runHits=0; runStartedAt=performance.now(); treePoints=0; treeUnlocked=new Set(['hub']);
   resetPlayer();
+  runPotionUsed=false;
+  unlockAchievement('first_play');
+  applyStartBonuses();
   enemies=[];pBullets=[];eBullets=[];pickups=[];particles=[];boss=null;floatBubbles=[];lastKiller=null;
   pendingNode=null; roomCleared=true; tierIntroShown=false; shopIntroShown=false; eliteViewerSpawns=0;
   tutorial={active:true,moved:false,shot:false,dodged:false,tabbed:false,doneAt:0};
@@ -4760,6 +5017,9 @@ function newGameSkip(){
   runActive=true;
   act=1; currentRow=0; kills=0; totalKills=0; gold=0; level=1; xp=0; xpNext=20; pendingLevels=0; retries=0; runHits=0; runStartedAt=performance.now(); treePoints=0; treeUnlocked=new Set(['hub']);
   resetPlayer();
+  runPotionUsed=false;
+  unlockAchievement('first_play');
+  applyStartBonuses();
   enemies=[];pBullets=[];eBullets=[];pickups=[];particles=[];boss=null;floatBubbles=[];lastKiller=null;
   pendingNode=null; roomCleared=true; tierIntroShown=false; shopIntroShown=false; eliteViewerSpawns=0;
   tutorial={active:false,moved:true,shot:true,dodged:true,tabbed:true,doneAt:0};
@@ -4784,6 +5044,7 @@ function buildDiffButtons(){
   });
 }
 buildDiffButtons();
+loadUserProgress();
 // 스트리머 김봉식 아트 연결
 (function initStreamerArt(){
   const set=(id,src)=>{ const el=$(id); if(el&&src) el.src=src; };
@@ -4934,9 +5195,33 @@ function closeRankingTab(){
   refreshSidePanel();
   if(window.startTitleScene) window.startTitleScene();
 }
+function openAchievementsTab(){
+  hideAll();
+  $('ovTitle').classList.remove('hidden');
+  const ov=$('ovAchievements');
+  if(ov){ ov.classList.remove('hidden'); ov.dataset.tab=ov.dataset.tab||'achievements'; }
+  state='title';
+  syncChrome();
+  refreshSidePanel();
+  if(window.startTitleScene) window.startTitleScene();
+  renderAchievements();
+}
+function closeAchievementsTab(){
+  const ov=$('ovAchievements'); if(ov) ov.classList.add('hidden');
+  $('ovTitle').classList.remove('hidden');
+  state='title';
+  syncChrome();
+  refreshSidePanel();
+  if(window.startTitleScene) window.startTitleScene();
+}
 $('tmNew').onclick=openDifficultyTab;
 { const rb=$('tmRanking'); if(rb) rb.onclick=openRankingTab; }
+{ const ab=$('tmAchievements'); if(ab) ab.onclick=openAchievementsTab; }
 { const rc=$('rankingClose'); if(rc) rc.onclick=closeRankingTab; }
+{ const ac=$('achClose'); if(ac) ac.onclick=closeAchievementsTab; }
+document.querySelectorAll('.ach-tab').forEach(btn=>{
+  btn.onclick=()=>{ const ov=$('ovAchievements'); if(ov) ov.dataset.tab=btn.dataset.tab; renderAchievements(); };
+});
 document.querySelectorAll('.rank-tab').forEach(btn=>{
   btn.onclick=()=>{ setRankingDifficulty(btn.dataset.diff); renderRankingList(); };
 });
