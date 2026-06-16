@@ -753,6 +753,7 @@ let leaderboardApiPromise=null;
 let progressApiPromise=null;
 let progressLoadPromise=null;
 let progressSaveTimer=null;
+let progressRemoteDisabled=false;
 let scoreSubmitSeq=0;
 let rankingDifficulty='easy';
 const USER_PROGRESS_COLLECTION='user_progress';
@@ -891,6 +892,7 @@ function storeLocalProgress(){
   }catch(e){}
 }
 function ensureProgressApi(){
+  if(progressRemoteDisabled) return Promise.reject(new Error('Progress remote disabled'));
   if(!progressApiPromise){
     const firebaseConfig=getLeaderboardFirebaseConfig();
     if(!firebaseConfig) return Promise.reject(new Error('Firebase config missing'));
@@ -904,6 +906,7 @@ function ensureProgressApi(){
       if(!auth.currentUser) await authMod.signInAnonymously(auth);
       return {db:firestoreMod.getFirestore(app), fs:firestoreMod, auth, uid:auth.currentUser.uid};
     }).catch(err=>{
+      progressRemoteDisabled=true;
       progressApiPromise=null;
       throw err;
     });
@@ -926,7 +929,8 @@ async function loadUserProgress(){
       renderAchievements();
       return userProgress;
     }catch(e){
-      console.warn('progress load failed, using localStorage',e);
+      progressRemoteDisabled=true;
+      console.warn('progress load failed once, using localStorage only',e);
       userProgress.loaded=true;
       renderAchievements();
       return userProgress;
@@ -938,6 +942,10 @@ async function loadUserProgress(){
 async function saveUserProgress(force){
   userProgress.dirty=true;
   storeLocalProgress();
+  if(progressRemoteDisabled){
+    clearTimeout(progressSaveTimer);
+    return;
+  }
   if(!force){
     clearTimeout(progressSaveTimer);
     progressSaveTimer=setTimeout(()=>saveUserProgress(true),700);
@@ -958,7 +966,8 @@ async function saveUserProgress(force){
     userProgress.dirty=false;
     storeLocalProgress();
   }catch(e){
-    console.warn('progress save failed, localStorage backup kept',e);
+    progressRemoteDisabled=true;
+    console.warn('progress save failed once, localStorage only from now on',e);
   }
 }
 function achievementById(id){ return ACHIEVEMENTS.find(a=>a.id===id); }
