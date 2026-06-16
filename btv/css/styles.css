@@ -315,7 +315,7 @@
     filter:brightness(1.08);
   }
   #ovStart .diff-name{font-weight:bold;font-size:17px;letter-spacing:1px;text-shadow:0 0 10px currentColor;}
-  #ovStart .diff-desc{color:#b9b0cf;font-size:12px;margin-top:7px;word-break:keep-all;line-height:1.5;}
+  #ovStart .diff-desc{color:#b9b0cf;font-size:12px;margin-top:7px;word-break:keep-all;overflow-wrap:break-word;line-height:1.5;}
   @media (max-width:700px){
     #ovStart .panel-box{padding:26px 18px 22px;width:min(94vw,520px);}
     #ovStart .diffbtns{grid-template-columns:1fr;gap:10px;}
