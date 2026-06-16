@@ -278,7 +278,7 @@ function updateMusic(dt){
     const a=MUSIC.tracks[k]; if(!a) continue;
     const goal=(k===want)?baseVol:0;
     if(a.volume<goal) a.volume=Math.min(goal,a.volume+rate);
-    else if(a.volume>goal) a.volume=Math.max(goal,Math.max(0,a.volume-rate));
+    else if(a.volume>goal) a.volume=Math.max(0,Math.min(1,a.volume-rate));
     if(k===want){
       if(a.paused){ try{ const p=a.play(); if(p&&p.catch)p.catch(()=>{}); }catch(e){} }
     }else if(a.volume<=0.002 && !a.paused){
