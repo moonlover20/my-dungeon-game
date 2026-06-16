@@ -571,23 +571,55 @@ function relicCardHTML(r){
 // ===== JS: Input handling and runtime state =====
 const keys={};
 let mouseX=W/2, mouseY=H/2, mouseDown=false;
+function isOpen(id){
+  const el=$(id);
+  return !!(el && !el.classList.contains('hidden'));
+}
+function handleEscape(e){
+  if(e){
+    e.preventDefault();
+    e.stopPropagation();
+  }
+  if(isOpen('ovDatabase')){
+    closeDatabaseTab();
+    return true;
+  }
+  if(isOpen('ovSettings')){
+    closeSettings();
+    return true;
+  }
+  if(treeOpen || isOpen('ovTree')){
+    closeTree();
+    return true;
+  }
+  if(isOpen('ovPause')){
+    resumeGame();
+    return true;
+  }
+  if(state==='play'){
+    togglePause();
+    return true;
+  }
+  return false;
+}
 window.addEventListener('keydown',e=>{
   const k=e.key.toLowerCase();
   if(k==='escape'){
-    const db=$('ovDatabase');
-    if(db && !db.classList.contains('hidden')){ closeDatabaseTab(); e.preventDefault(); return; }
-    togglePause(); e.preventDefault(); return;
+    handleEscape(e);
+    return;
   }
   keys[k]=true;
   if([' ','arrowup','arrowdown','arrowleft','arrowright','tab'].includes(k)) e.preventDefault();
   // K키는 paused 여부와 관계없이 항상 처리 (트리 닫기)
   if((k==='k') && (state==='play'||state==='map')){
-    if(treeOpen) closeTree(); else openTree();
+    if(isOpen('ovSettings') || isOpen('ovDatabase') || isOpen('ovPause')) return;
+    if(treeOpen || isOpen('ovTree')) closeTree(); else openTree();
+    e.preventDefault();
     return;
   }
   if(paused) return;                 // 일시정지 중엔 게임 입력 무시
   if(state==='play'){ if(k==='1')usePotion(0); else if(k==='2')usePotion(1); else if(k==='3')usePotion(2); }
-});
+}, true);
 window.addEventListener('keyup',e=>{ keys[e.key.toLowerCase()]=false; });
 function canvasPos(e){
   const r=cvs.getBoundingClientRect();
@@ -5677,6 +5709,7 @@ function drawDmgNums(){
 /* ----- 열기/닫기 ----- */
 let _setPrevPaused=false;
 function openSettings(){
+  if(treeOpen || isOpen('ovTree')) return;
   reflectControls(); drawSettingsSky();
   mouseDown=false; autoFire=false;
   _setPrevPaused=paused;
@@ -5704,8 +5737,6 @@ function closeSettings(){
   on('setDone','click',closeSettings);
   on('setReset','click',()=>{ _SET=Object.assign({},SET_DEFAULTS); reflectControls(); commit(); });
   const ov=$('ovSettings'); if(ov) ov.addEventListener('click',e=>{ if(e.target===ov) closeSettings(); });
-  document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ const o=$('ovSettings'); if(o&&!o.classList.contains('hidden')){ e.stopPropagation(); closeSettings(); } } }, true);
-
   // SETTINGS / 소리 버튼들을 새 설정창으로 연결
   const tm=$('tmSettings'); if(tm) tm.onclick=openSettings;
   const mb=$('muteBtn'); if(mb) mb.onclick=openSettings;
@@ -5727,6 +5758,7 @@ applySettings(); reflectControls();
 // ============================================================
 let treePoints = 0;   // 레벨업마다 +1 적립
 let treeOpen   = false;
+let _treePrevPaused = false;
 
 // ---------- 트리 노드 데이터 ----------
 // branch: 'shot'|'status'|'gold'|'survive'|'speed'
@@ -5960,6 +5992,8 @@ let _treeCtx    = null;
 
 function openTree(){
   if(state!=='play' && state!=='map') return;
+  if(isOpen('ovSettings') || isOpen('ovDatabase') || isOpen('ovPause')) return;
+  _treePrevPaused = paused;
   treeOpen = true;
   $('ovTree').classList.remove('hidden');
   if(state==='play' && !paused){ paused=true; mouseDown=false; autoFire=false; }
@@ -5969,7 +6003,8 @@ function openTree(){
 function closeTree(){
   treeOpen = false;
   $('ovTree').classList.add('hidden');
-  if(state==='play' && paused){ paused=false; last=performance.now(); }
+  const tt=$('treeTooltip'); if(tt) tt.style.display='none';
+  if(state==='play' && !_treePrevPaused && paused){ paused=false; last=performance.now(); }
 }
 
 function renderTree(){
@@ -6412,8 +6447,10 @@ function updateTreePanel(){
 }
 function openTree(){
   if(state!=='play' && state!=='map') return;
+  if(isOpen('ovSettings') || isOpen('ovDatabase') || isOpen('ovPause')) return;
   ensureTreeChrome();
   initTreeEvents();
+  _treePrevPaused = paused;
   treeOpen = true;
   $('ovTree').classList.remove('hidden');
   updateTreePanel();
@@ -6424,7 +6461,7 @@ function closeTree(){
   treeOpen = false;
   const ov=$('ovTree'); if(ov) ov.classList.add('hidden');
   const tt=$('treeTooltip'); if(tt) tt.style.display='none';
-  if(state==='play' && paused){ paused=false; last=performance.now(); }
+  if(state==='play' && !_treePrevPaused && paused){ paused=false; last=performance.now(); }
 }
 function drawTreeBackground(c,W,H){
   const g=c.createRadialGradient(W*0.45,H*0.55,40,W*0.45,H*0.55,Math.max(W,H)*0.76);
