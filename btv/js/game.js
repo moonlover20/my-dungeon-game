@@ -380,9 +380,9 @@ let lastKiller=null; // 마지막으로 플레이어를 죽인 대상 이름
 let pendingLevels=0;
 // ---------- 난이도 ----------
 const DIFFS={
-  easy:  {key:'easy',  label:'쉬움',   hp:1.3, dmg:1.25,cnt:1.1, spd:1.00, eliteCount:2, col:'#5dff9b', desc:'키죠가 긁는 난이도 · 재도전 무제한', maxRetries:Infinity},
-  normal:{key:'normal',label:'보통',   hp:2.2, dmg:2.1, cnt:1.45,spd:1.13, eliteCount:3, col:'#ffd34d', desc:'박제인간이 \'아니\'하는 난이도 · 재도전 3회', maxRetries:3},
-  hard:  {key:'hard',  label:'어려움', hp:2.9, dmg:2.7, cnt:1.7, spd:1.22, eliteCount:5, col:'#ff4d6d', desc:'온스터가 스타 망쳤던 난이도 · 재도전 1회', maxRetries:1},
+  easy:  {key:'easy',  label:'쉬움',   hp:1.3, dmg:1.25,cnt:1.1, spd:1.00, eliteCount:2, col:'#5dff9b', desc:'적 체력 x1.3 · 공격 x1.25 · 수 x1.1 · 속도 x1.0 · 정예 2 · 재도전 무제한', maxRetries:Infinity},
+  normal:{key:'normal',label:'보통',   hp:2.2, dmg:2.1, cnt:1.45,spd:1.13, eliteCount:3, col:'#ffd34d', desc:'적 체력 x2.2 · 공격 x2.1 · 수 x1.45 · 속도 x1.13 · 정예 3 · 재도전 3회', maxRetries:3},
+  hard:  {key:'hard',  label:'어려움', hp:2.9, dmg:2.7, cnt:1.7, spd:1.22, eliteCount:5, col:'#ff4d6d', desc:'적 체력 x2.9 · 공격 x2.7 · 수 x1.7 · 속도 x1.22 · 정예 5 · 재도전 1회', maxRetries:1},
 };
 let diffSet=DIFFS.easy;
 let dodgeLatch=false;   // 회피 키 엣지 감지: 스페이스를 떼야 다음 회피 발동
