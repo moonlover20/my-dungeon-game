@@ -4893,7 +4893,8 @@ function openTree(){
   treeOpen = true;
   $('ovTree').classList.remove('hidden');
   if(state==='play' && !paused){ paused=true; mouseDown=false; autoFire=false; }
-  renderTree();
+  // display 전환이 브라우저에 반영된 뒤 렌더 (한 프레임 대기)
+  requestAnimationFrame(()=>requestAnimationFrame(renderTree));
 }
 function closeTree(){
   treeOpen = false;
@@ -4904,9 +4905,10 @@ function closeTree(){
 function renderTree(){
   const cvs = $('treeCanvas');
   if(!cvs) return;
-  // fixed 오버레이이므로 뷰포트 전체 크기 사용
-  const W = cvs.width  = cvs.parentElement ? cvs.parentElement.clientWidth  || window.innerWidth  : window.innerWidth;
-  const H = cvs.height = cvs.parentElement ? cvs.parentElement.clientHeight || window.innerHeight : window.innerHeight;
+  // 렌더 직전 실제 레이아웃 크기로 세팅 (getBoundingClientRect가 가장 정확)
+  const _rect = cvs.getBoundingClientRect();
+  const W = cvs.width  = Math.round(_rect.width)  || window.innerWidth;
+  const H = cvs.height = Math.round(_rect.height) || window.innerHeight;
   const c = cvs.getContext('2d');
   _treeCanvas = cvs; _treeCtx = c;
 
