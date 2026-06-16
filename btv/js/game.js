@@ -643,6 +643,7 @@ function updateHpHud(){
   $('hpFill').style.width=clamp(player.hp/player.maxhp*100,0,100)+"%";
 }
 function updateHUD(){
+  if((state==='title'||state==='start') && player.maxhp==null){ refreshSidePanel(); return; }
   { const rt=$('retryText'); if(rt){ const max=diffSet.maxRetries; const left=max===Infinity?'∞':Math.max(0,max-retries); rt.textContent=left; rt.style.color=(max!==Infinity&&left<=1)?'#ff4d6d':'var(--neon)'; } }
   updateHpHud();
   $('goldText').textContent=gold;
@@ -1831,7 +1832,7 @@ function selectNode(node){
   if(node.type==='event'){ startEvent(); return; }
   if(node.type==='campfire'){ openCampfire(()=>finishNode()); return; }
   startCombat(node.type==='boss'?'boss':node.type); // fight | midboss | boss
-  state='play';
+  state='play'; syncChrome();
 }
 
 // update()의 클리어 판정에서 호출
@@ -1892,7 +1893,7 @@ const EVENTS=[
    ]},
   {tag:'❓ 매복!',title:'함정이다',body:'어둠 속에서 적들이 우르르 튀어나온다!',
    choices:[
-     {t:'맞서 싸운다',f:()=>{hideAll();startCombat('fight');state='play';}},
+     {t:'맞서 싸운다',f:()=>{hideAll();startCombat('fight');state='play'; syncChrome();}},
    ]},
   {tag:'❓ 운명의 동전',title:'도박꾼의 동전',body:'동전을 던진다. 앞이면 대박, 뒤면 쪽박.',
    choices:[
@@ -1913,7 +1914,7 @@ const EVENTS=[
    ]},
   {tag:'😠 악성 안티 등장',title:'시비 거는 안티',body:'채팅을 도배하는 악성 안티. 밴을 때려 본보기를 보일까, 그냥 무시할까?',
    choices:[
-     {t:'밴 때린다 — 즉시 전투(클리어 시 골드 보너스)',f:()=>{nextCombatMods={rewardMul:1.6,banner:{big:'밴 해머!',small:'안티를 처단하라'}};hideAll();startCombat('fight');state='play';}},
+     {t:'밴 때린다 — 즉시 전투(클리어 시 골드 보너스)',f:()=>{nextCombatMods={rewardMul:1.6,banner:{big:'밴 해머!',small:'안티를 처단하라'}};hideAll();startCombat('fight');state='play'; syncChrome();}},
      {t:'무시한다 — 다음 전투 보상 골드 -25%',f:()=>{nextGoldPenalty=0.25;banner('채팅 분위기 하락','다음 골드 -25%',1400);finishNode();}},
    ]},
   {tag:'📢 협찬 제안',title:'광고 읽어주기',body:'"이 영양제 한 번만 읽어주세요!" 골드는 두둑하지만 시청자가 빠져나가 다음 전투가 거세진다.',
@@ -1959,7 +1960,7 @@ const EVENTS=[
    ]},
   {tag:'🎤 저격 (디스전)',title:'스트리머 디스전',body:'다른 스트리머가 저격 방송을 켰다. 받아치면 강화된 정예와 맞짱! 이기면 시청자를 뺏어온다.',
    choices:[
-     {t:'받아친다 — 강화 정예전(승리 시 유물)',f:()=>{nextCombatMods={hpMul:1.6,spdMul:1.1,rewardMul:1.5,banner:{big:'디스전 시작!',small:'정예를 박살내라'}};hideAll();startCombat('fight');state='play';}},
+     {t:'받아친다 — 강화 정예전(승리 시 유물)',f:()=>{nextCombatMods={hpMul:1.6,spdMul:1.1,rewardMul:1.5,banner:{big:'디스전 시작!',small:'정예를 박살내라'}};hideAll();startCombat('fight');state='play'; syncChrome();}},
      {t:'회피한다 — 골드 -25(체면 손상)',f:()=>{gold=Math.max(0,gold-25);updateHUD();banner('회피','체면이 깎였다 -25G',1300);finishNode();}},
    ]},
   {tag:'🎟️ 구독 알림',title:'시청자 선물',body:'"봉식님 구독 감사! 재도전권 하나 드릴게요~" 죽어도 다시 한 번 — 재도전 충전권을 받는다.',
@@ -2167,7 +2168,7 @@ function showLevelUp(){
 function pickLevelPerk(pk){
   pk.apply(player); sfx.pick(); banner(pk.icon+' '+pk.name,'특성 획득',1100);
   pendingLevels--; updateHUD();
-  if(pendingLevels>0) showLevelUp(); else { hideAll(); state='play'; }
+  if(pendingLevels>0) showLevelUp(); else { hideAll(); state='play'; syncChrome(); }
 }
 // ---------- 일반 전투 보상 ----------
 const SMALL_REWARDS=[
@@ -2228,7 +2229,7 @@ function takeRelic(r){
   sfx.pick(); banner(r.icon+" "+r.name,"["+relicTier(r).name+"] 획득!",1500);
   hideAll();
   const a=relicAfter; relicAfter=null;
-  if(a){ a(); } else { state='play'; }
+  if(a){ a(); } else { state='play'; syncChrome(); }
   updateHUD();
 }
 
@@ -2290,7 +2291,7 @@ function renderShop(items){
 $('shopLeave').onclick=()=>{
   hideAll();
   const a=shopAfter; shopAfter=null;
-  if(a) a(); else { state='play'; }
+  if(a) a(); else { state='play'; syncChrome(); }
 };
 
 // ---------- 렌더 ----------
@@ -3237,10 +3238,12 @@ function skipCutscene(){
 // ===== JS: Overlay state machine and UI wiring =====
 const overlays={title:'ovTitle',start:'ovStart',map:'ovMap',relic:'ovRelic',shop:'ovShop',event:'ovEvent',inv:'ovInv',level:'ovLevel',reward:'ovReward',end:'ovEnd',help:'ovHelp',story:'ovStory',entrance:'ovEntrance',tierIntro:'ovTierIntro',taunt:'ovTaunt',campfire:'ovCampfire'};
 function hideAll(){ Object.values(overlays).forEach(id=>$(id).classList.add('hidden')); }
+function syncChrome(){ document.body.classList.toggle('title-mode', state==='title'||state==='start'); }
 function show(st){
   hideAll();
   if(overlays[st]) $(overlays[st]).classList.remove('hidden');
   if(st!=='help') state=st;
+  syncChrome();
   refreshSidePanel();
 }
 function refreshSidePanel(){
@@ -3279,7 +3282,7 @@ function triggerGlitch(after){
 }
 // 보스의 비웃음 → 글리치 → 인트로
 function bossTaunt(diff, cb){
-  hideAll(); state='story';
+  hideAll(); state='story'; syncChrome();
   const ov=$('ovTaunt'); if(!ov){ cb&&cb(); return; }
   ov.classList.remove('hidden');
   const el=$('tauntText'); el.textContent='';
@@ -3420,7 +3423,7 @@ function runEndBroadcast(cb){
 
 // ===== JS: Story, intro, and title scenes =====
 function showStory(cb){
-  hideAll(); state='story';
+  hideAll(); state='story'; syncChrome();
   introFxReset();
   $('ovStory').classList.remove('hidden');
   // 방송 화면 + 김봉식 LIVE 명패 (도입: 깨끗한 송출)
@@ -3589,7 +3592,7 @@ function retryRoom(){
   player.buffs={rage:0,haste:0,shield:0};
   player.minion=null;
   pendingLevels=0;                   // 재도전 시 미처리 레벨업 초기화 (사망 직전 레벨업 중복 방지)
-  state='play';
+  state='play'; syncChrome();
   startCombat(lastRoomKind||'fight', false);   // fresh=false → 스냅샷 새로 찍지 않음
   player.iframes=1.2;
 }
@@ -3605,7 +3608,7 @@ const DEATH_LINES={
   '바닥 장판':{title:'바닥 장판에 녹았다', q:['채팅: 바닥 보고 다녀요 KEKW','채팅: 장판 회피 연습… Sadge','채팅: 그건 좀…']},
 };
 function gameOver(win, killer){
-  state='end';
+  state='end'; syncChrome();
   // 승리 시에만 인트로로 전환 — 사망 시엔 죽은 막의 음악을 그대로 유지
   if(win){ runActive=false; roomIsBoss=false; roomIsMidboss=false; }
   show('end');
@@ -3650,7 +3653,7 @@ function newGame(){
   startTutorial();
 }
 function startTutorial(){
-  tutorialMode=true; tutorialDoneFlag=false; state='play'; hideAll();
+  tutorialMode=true; tutorialDoneFlag=false; state='play'; syncChrome(); hideAll();
   arenaResponsive=true; fitField();
   { const _sb=$('skipTutBtn'); if(_sb) _sb.style.display='inline-block'; }
   enemies=[]; pBullets=[]; eBullets=[]; pickups=[]; particles=[]; boss=null;
@@ -3790,7 +3793,7 @@ $('helpClose').onclick=()=>{ $('ovHelp').classList.add('hidden'); if(prevState&&
 // ===== 타이틀 메뉴 버튼 =====
 $('tmNew').onclick=()=>{ show('start'); };
 // tmSettings는 wireSettings()에서 openSettings로 연결됨 (아래에서 재정의)
-$('tmExit').onclick=()=>{ const h=$('titleHint'); if(h) h.textContent='방송을 종료하려면 브라우저 탭을 닫아주세요'; try{ window.close(); }catch(e){} };
+$('tmExit').onclick=()=>{ try{ window.close(); }catch(e){} };
 $('diffBack').onclick=()=>{ show('title'); if(window.startTitleScene) window.startTitleScene(); };
 
 // 초기 채팅 잡담 미리 깔기
@@ -3800,6 +3803,7 @@ chatSys("스트리머가 곧 들어옵니다...");
 
 buildBackdrop(1);
 fitField();
+syncChrome();
 updateHUD();
 requestAnimationFrame(loop);
 
