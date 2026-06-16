@@ -1687,7 +1687,7 @@ function startCombat(kind, fresh){
         spawnEnemy('hyechul', W/2, 140, diff);
         const eb=enemies[enemies.length-1];
         eb.elite=true; eb.midboss=true; eb.label='혜철이'; eb.phase=1;
-        eb.summonT=30; eb.atkT=2.0; eb.atkN=0; eb.climaxT=0;
+        eb.summonT=12; eb.atkT=2.0; eb.atkN=0; eb.climaxT=0;
         banner("\uC911\uAC04\uBCF4\uC2A4 \u00B7 \uD61C\uCCA0\uC774","\uB465\uC9C0\uAC00 \uC6C0\uC9C1\uC778\uB2E4",1800);
         if(typeof sfx!=='undefined') sfx.boss();
         showEntrance("⚠️ 중간보스 등장","혜철이","해처리 — 저글링 군단");
@@ -1969,7 +1969,7 @@ function damageEnemy(e,dmg,crit,fromBullet){
 function hyechulNextPhase(e){
   e.phase=(e.phase||1)+1;
   e.hp=e.maxhp; e.hitT=0.2; e.stunT=0;
-  e.summonT=30; e.atkT=2.0; e.atkN=0; e.climaxT=0;
+  e.summonT=10; e.atkT=2.0; e.atkN=0; e.climaxT=0;
   const ph=e.phase, col=ph===2?'#c46bff':'#ff6a3a';
   screenShake=Math.max(screenShake||0,18);
   burst(e.x,e.y,col,34,440); burst(e.x,e.y,'#ffffff',12,280);
@@ -2786,10 +2786,10 @@ function update(dt){
           e.atkT=2.4;
         }
       } else {
-        e.summonT=(e.summonT==null?30:e.summonT)-dt;
+        e.summonT=(e.summonT==null?12:e.summonT)-dt;
         if(e.summonT<=0){
-          hyechulSpawnEgg(e,ph===1?'zergling':ph===2?'mutalisk':'ultra',5,20);
-          e.summonT=30;
+          hyechulSpawnEgg(e,ph===1?'zergling':ph===2?'mutalisk':'ultra',5,ph===1?12:ph===2?10:12);
+          e.summonT=ph===1?22:ph===2?20:18;
         }
         e.atkT=(e.atkT==null?1.6:e.atkT)-dt;
         if(e.atkT<=0){
@@ -5910,7 +5910,7 @@ function spawnSlowField(x,y,r,life){ hazards.push({kind:'slowfield',x:clamp(x,40
 // 저그 알: 일정 시간 뒤 부화. 부화 전에 깨면 유닛 안 나옴(경험치·골드 미지급)
 function spawnEgg(x,y,hatchType,hatchTime){
   markDiscovered('enemies', 'zerg_egg');
-  const d=ENEMY_TYPES.zerg_egg, hm=20;
+  const d=ENEMY_TYPES.zerg_egg, hm=Math.max(1,hatchTime||20);
   enemies.push({
     type:'zerg_egg',sprite:'zerg_egg',name:'저그 알',
     x:clamp(x,30,W-30),y:clamp(y,120,H-120),r:d.r,
@@ -5930,7 +5930,7 @@ function hyechulSpawnEgg(e,hatchType,count,hatchTime){
     const ang=rand(0,TAU), rr=rand(105,285);
     const x=clamp(player.x+Math.cos(ang)*rr+rand(-32,32),50,W-50);
     const y=clamp(player.y+Math.sin(ang)*rr+rand(-32,32),130,H-90);
-    spawnEgg(x,y,hatchType,20);
+    spawnEgg(x,y,hatchType,hatchTime);
     spawned++;
   }
   if(spawned>0){ banner('\uD83E\uDD5A \uC54C \uD22C\uCC99','\uC8FC\uBCC0\uC5D0 \uB5A8\uC5B4\uC9C4 \uC54C\uC744 \uBA3C\uC800 \uAE68\uBD80\uC154\uB77C',900); beep(150,0.18,'sawtooth',0.06); }
