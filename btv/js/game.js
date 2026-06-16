@@ -627,14 +627,20 @@ const ACHIEVEMENTS=[
   {id:'first_kill',name:'첫 처치',desc:'처음으로 시청자를 처치한다.',reward:'칭호: 초보사냥꾼'},
   {id:'kill_100',name:'100 처치',desc:'누적 처치 100회를 달성한다.',reward:'시작 골드 +20'},
   {id:'kill_1000',name:'1000 처치',desc:'누적 처치 1000회를 달성한다.',reward:'유물 해금: 시청자 학살자의 마이크'},
-  {id:'defeat_kijo',name:'키죠 격파',desc:'키죠를 쓰러뜨린다.',reward:'유물 해금: 키죠의 가면'},
+  {id:'defeat_kijo',name:'키죠 격파',desc:'키죠를 쓰러뜨린다.',reward:'유물 해금: 키죠의 가면',spoiler:true,spoilerTerms:['키죠'],hiddenName:'??? 격파',hiddenDesc:'???를 쓰러뜨린다.',hiddenRelicName:'???의 가면'},
   {id:'clear_act1',name:'1막 클리어',desc:'1막 보스를 격파한다.',reward:'시작 포션 +1'},
   {id:'clear_game',name:'게임 클리어',desc:'최종 보스를 쓰러뜨리고 방송을 지킨다.',reward:'칭호: 방송생존자'},
   {id:'hard_clear',name:'어려움 클리어',desc:'어려움 난이도로 게임을 클리어한다.',reward:'업적'},
   {id:'no_potion_clear',name:'무포션 클리어',desc:'포션을 사용하지 않고 게임을 클리어한다.',reward:'유물 해금: 금욕의 성배'},
   {id:'no_hit_boss',name:'노히트 보스',desc:'보스 전투를 한 대도 맞지 않고 클리어한다.',reward:'칭호: 노히트장인'},
 ];
-const TITLE_REWARDS={first_play:'첫방송',first_kill:'초보사냥꾼',clear_game:'방송생존자',no_hit_boss:'노히트장인'};
+const TITLE_REWARDS={
+  first_play:{id:'first_broadcast',name:'첫방송'},
+  first_kill:{id:'rookie_hunter',name:'초보사냥꾼'},
+  clear_game:{id:'broadcast_survivor',name:'방송생존자'},
+  no_hit_boss:{id:'nohit_master',name:'노히트장인'}
+};
+const TITLE_LIST=Object.values(TITLE_REWARDS);
 const RELIC_REWARDS={defeat_kijo:'kijo_mask',kill_1000:'viewer_slayer_mic',no_potion_clear:'abstinence_chalice'};
 let userProgress={
   uid:null,
@@ -647,6 +653,9 @@ let userProgress={
   dirty:false
 };
 let runPotionUsed=false;
+let achievementToastShowing=false;
+const achievementToastQueue=[];
+const achievementToastActiveIds=new Set();
 
 function ensureLeaderboardApi(){
   if(!leaderboardApiPromise){
@@ -663,17 +672,37 @@ function ensureLeaderboardApi(){
 function defaultProgress(){
   return {uid:null,achievements:{},titles:{},unlockedRelics:{},selectedTitle:'',stats:{totalKills:0},loaded:false,dirty:false};
 }
+function titleById(id){ return TITLE_LIST.find(t=>t.id===id)||null; }
+function titleByName(name){ return TITLE_LIST.find(t=>t.name===name)||null; }
+function normalizeTitleId(value){
+  value=String(value||'').trim();
+  if(!value) return '';
+  if(titleById(value)) return value;
+  const title=titleByName(value);
+  return title?title.id:'';
+}
+function normalizeTitleMap(titles){
+  const out={};
+  Object.keys(titles||{}).forEach(key=>{
+    if(!titles[key]) return;
+    const id=normalizeTitleId(key);
+    if(id) out[id]=true;
+  });
+  return out;
+}
 function normalizeProgress(data){
   const base=defaultProgress();
   data=data||{};
   base.uid=data.uid||null;
   base.achievements=Object.assign({},data.achievements||{});
-  base.titles=Object.assign({},data.titles||{});
+  base.titles=normalizeTitleMap(data.titles||{});
   base.unlockedRelics=Object.assign({},data.unlockedRelics||{});
-  base.selectedTitle=base.titles[data.selectedTitle]?data.selectedTitle:'';
+  base.selectedTitle=normalizeTitleId(data.selectedTitle);
+  if(base.selectedTitle&&!base.titles[base.selectedTitle]) base.selectedTitle='';
   base.stats=Object.assign({},base.stats,data.stats||{});
   base.stats.totalKills=Number(base.stats.totalKills)||0;
   base.loaded=!!data.loaded;
+  base.dirty=!!data.dirty;
   return base;
 }
 function mergeProgress(remote,local){
@@ -682,7 +711,7 @@ function mergeProgress(remote,local){
   remote.achievements=Object.assign({},remote.achievements,local.achievements);
   remote.titles=Object.assign({},remote.titles,local.titles);
   remote.unlockedRelics=Object.assign({},remote.unlockedRelics,local.unlockedRelics);
-  remote.selectedTitle=local.selectedTitle||remote.selectedTitle||'';
+  remote.selectedTitle=local.dirty?local.selectedTitle:(local.selectedTitle||remote.selectedTitle||'');
   if(remote.selectedTitle&&!remote.titles[remote.selectedTitle]) remote.selectedTitle='';
   remote.stats.totalKills=Math.max(Number(remote.stats.totalKills)||0,Number(local.stats.totalKills)||0);
   remote.loaded=true;
@@ -702,6 +731,7 @@ function storeLocalProgress(){
       unlockedRelics:userProgress.unlockedRelics||{},
       selectedTitle:userProgress.selectedTitle||'',
       stats:userProgress.stats||{totalKills:0},
+      dirty:!!userProgress.dirty,
       updatedAt:Date.now()
     }));
   }catch(e){}
@@ -777,8 +807,113 @@ function isAchievementUnlocked(id){ return !!(userProgress.achievements&&userPro
 function isRelicUnlockedByAchievement(id){
   return ACHIEVEMENT_RELIC_IDS.indexOf(id)<0 || !!(userProgress.unlockedRelics&&userProgress.unlockedRelics[id]);
 }
+function escapeRegExpText(text){ return String(text||'').replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
+function maskAchievementSpoilers(text,achievement){
+  text=String(text||'');
+  if(!achievement||!achievement.spoiler) return text;
+  (achievement.spoilerTerms||[]).forEach(term=>{
+    if(term) text=text.replace(new RegExp(escapeRegExpText(term),'g'),'???');
+  });
+  return text;
+}
+function formatAchievementName(id,revealed){
+  const a=achievementById(id);
+  if(!a) return '';
+  if(!revealed && a.spoiler) return a.hiddenName||maskAchievementSpoilers(a.name,a);
+  return a.name;
+}
+function formatAchievementDesc(id,revealed){
+  const a=achievementById(id);
+  if(!a) return '';
+  if(!revealed && a.spoiler) return a.hiddenDesc||maskAchievementSpoilers(a.desc,a);
+  return a.desc;
+}
+function achievementIdForRelic(relicId){
+  return Object.keys(RELIC_REWARDS).find(id=>RELIC_REWARDS[id]===relicId)||'';
+}
+function formatAchievementRelicName(relicId,revealed){
+  const r=RELICS.find(x=>x.id===relicId);
+  const achievement=achievementById(achievementIdForRelic(relicId));
+  if(!revealed && achievement&&achievement.spoiler) return achievement.hiddenRelicName||maskAchievementSpoilers(r&&r.name,achievement);
+  return r?r.name:'';
+}
+function formatAchievementReward(id,revealed){
+  const a=achievementById(id);
+  if(!a) return '';
+  if(TITLE_REWARDS[id]) return '칭호 ['+TITLE_REWARDS[id].name+']';
+  if(RELIC_REWARDS[id]) return '유물 ['+formatAchievementRelicName(RELIC_REWARDS[id],revealed)+']';
+  if(!a.reward || a.reward==='업적') return '';
+  if(!revealed && a.spoiler) return maskAchievementSpoilers(a.reward,a);
+  return a.reward;
+}
+function playAchievementToastSfx(){
+  try{
+    if(typeof sfx!=='undefined'&&sfx.pick) sfx.pick();
+    else if(typeof sfx!=='undefined'&&sfx.coin) sfx.coin();
+  }catch(e){}
+}
+function runAchievementToastQueue(){
+  if(achievementToastShowing) return;
+  const id=achievementToastQueue.shift();
+  if(!id) return;
+  const toast=$('achievementToast');
+  if(!toast){ achievementToastActiveIds.delete(id); runAchievementToastQueue(); return; }
+  achievementToastShowing=true;
+  const reward=formatAchievementReward(id,true);
+  const rewardEl=toast.querySelector('.ach-toast-reward');
+  toast.querySelector('.ach-toast-name').textContent=formatAchievementName(id,true);
+  if(rewardEl){
+    rewardEl.textContent=reward?'보상: '+reward:'';
+    rewardEl.classList.toggle('show',!!reward);
+  }
+  toast.classList.remove('hiding');
+  toast.classList.add('show');
+  playAchievementToastSfx();
+  clearTimeout(toast._hideT);
+  clearTimeout(toast._doneT);
+  toast._hideT=setTimeout(()=>{ toast.classList.add('hiding'); toast.classList.remove('show'); },2000);
+  toast._doneT=setTimeout(()=>{
+    achievementToastActiveIds.delete(id);
+    achievementToastShowing=false;
+    runAchievementToastQueue();
+  },2220);
+}
+function showAchievementToast(id){
+  if(!achievementById(id)||achievementToastActiveIds.has(id)||achievementToastQueue.indexOf(id)>=0) return;
+  achievementToastActiveIds.add(id);
+  achievementToastQueue.push(id);
+  runAchievementToastQueue();
+}
+function getSelectedTitle(){
+  const id=normalizeTitleId(userProgress&&userProgress.selectedTitle);
+  if(!id || !(userProgress.titles&&userProgress.titles[id])) return null;
+  return titleById(id);
+}
+function getSelectedTitleName(){
+  const title=getSelectedTitle();
+  return title?title.name:'';
+}
+function renderTitleDisplay(target,options){
+  options=options||{};
+  const name=getSelectedTitleName();
+  if(!target) return '🏆 '+(name||'칭호 없음');
+  const el=typeof target==='string'?$(target):target;
+  if(!el) return;
+  el.classList.toggle('empty',!name);
+  if(options.compact){
+    el.textContent='🏆 '+(name||'칭호 없음');
+    return;
+  }
+  el.innerHTML='<div class="title-display-label">🏆 현재 칭호</div><div class="title-display-name"></div>';
+  const nameEl=el.querySelector('.title-display-name');
+  if(nameEl) nameEl.textContent=name||'칭호 없음';
+}
+function refreshTitleDisplay(){
+  renderTitleDisplay('achCurrentTitle');
+  renderTitleDisplay('titleCurrentTitle',{compact:true});
+}
 function applyAchievementReward(id){
-  if(TITLE_REWARDS[id]) userProgress.titles[TITLE_REWARDS[id]]=true;
+  if(TITLE_REWARDS[id]) userProgress.titles[TITLE_REWARDS[id].id]=true;
   if(RELIC_REWARDS[id]) userProgress.unlockedRelics[RELIC_REWARDS[id]]=true;
 }
 function unlockAchievement(id){
@@ -786,15 +921,16 @@ function unlockAchievement(id){
   if(userProgress.achievements[id]) return false;
   userProgress.achievements[id]={at:Date.now()};
   applyAchievementReward(id);
-  const a=achievementById(id);
-  if(a) banner('🏆 업적 달성',a.name,1800);
+  showAchievementToast(id);
   renderAchievements();
   saveUserProgress();
   return true;
 }
 function selectTitle(title){
-  if(title && !(userProgress.titles&&userProgress.titles[title])) return;
-  userProgress.selectedTitle=title||'';
+  const titleId=normalizeTitleId(title);
+  if(titleId && !(userProgress.titles&&userProgress.titles[titleId])) return;
+  userProgress.selectedTitle=titleId||'';
+  refreshTitleDisplay();
   renderAchievements();
   saveUserProgress();
 }
@@ -809,6 +945,8 @@ function currentAttackMul(p){
 function visibleLeaderboardName(name,title){
   name=cleanLeaderboardName(name);
   title=String(title||'').trim();
+  const titleDef=titleById(title)||titleByName(title);
+  if(titleDef) title=titleDef.name;
   return title?'['+title+'] '+name:name;
 }
 function renderAchievements(){
@@ -816,6 +954,7 @@ function renderAchievements(){
   const done=ACHIEVEMENTS.filter(a=>isAchievementUnlocked(a.id)).length;
   const rate=Math.round(done/ACHIEVEMENTS.length*100);
   const rateEl=$('achRate'); if(rateEl) rateEl.textContent=done+' / '+ACHIEVEMENTS.length+' ('+rate+'%)';
+  refreshTitleDisplay();
   document.querySelectorAll('.ach-tab').forEach(btn=>btn.classList.toggle('active',btn.dataset.tab===(ov.dataset.tab||'achievements')));
   const body=$('achBody'); if(!body) return;
   const tab=ov.dataset.tab||'achievements';
@@ -825,19 +964,20 @@ function renderAchievements(){
       const unlocked=isAchievementUnlocked(a.id);
       const row=document.createElement('div');
       row.className='ach-row'+(unlocked?' unlocked':'');
-      row.innerHTML='<div class="ach-medal">'+(unlocked?'🏆':'🔒')+'</div><div><b>'+a.name+'</b><span>'+a.desc+'</span><small>'+a.reward+'</small></div>';
+      const reward=formatAchievementReward(a.id,unlocked);
+      row.innerHTML='<div class="ach-medal">'+(unlocked?'🏆':'🔒')+'</div><div><b>'+formatAchievementName(a.id,unlocked)+'</b><span>'+formatAchievementDesc(a.id,unlocked)+'</span><small>'+(reward?'보상: '+reward:'')+'</small></div>';
       body.appendChild(row);
     });
   }else if(tab==='titles'){
-    const titles=Object.values(TITLE_REWARDS);
+    const titles=TITLE_LIST;
     titles.forEach(t=>{
-      const owned=!!(userProgress.titles&&userProgress.titles[t]);
-      const selected=userProgress.selectedTitle===t;
+      const owned=!!(userProgress.titles&&userProgress.titles[t.id]);
+      const selected=userProgress.selectedTitle===t.id;
       const row=document.createElement('button');
       row.className='ach-row title-pick'+(owned?' unlocked':'')+(selected?' selected':'');
       row.disabled=!owned;
-      row.innerHTML='<div class="ach-medal">'+(selected?'✓':owned?'🎖️':'🔒')+'</div><div><b>'+t+'</b><span>'+(owned?(selected?'장착 중':'클릭해서 장착'):'아직 해금되지 않음')+'</span></div>';
-      row.onclick=()=>selectTitle(selected?'':t);
+      row.innerHTML='<div class="ach-medal">'+(selected?'✓':owned?'🎖️':'🔒')+'</div><div><b>'+t.name+'</b><span>'+(owned?(selected?'장착 중':'클릭해서 장착'):'아직 해금되지 않음')+'</span></div>';
+      row.onclick=()=>selectTitle(selected?'':t.id);
       body.appendChild(row);
     });
     const clear=document.createElement('button');
@@ -852,7 +992,7 @@ function renderAchievements(){
       const owned=isRelicUnlockedByAchievement(id);
       const row=document.createElement('div');
       row.className='ach-row relic-'+(TIER_OF[id]||'rare')+(owned?' unlocked':'');
-      row.innerHTML='<div class="ach-medal">'+(owned?relicIconHTML(r,'relic-pix-lg'):'🔒')+'</div><div><b>'+r.name+'</b><span>'+r.desc+'</span><small>'+(owned?'유물 풀에 등장 가능':'관련 업적 달성 시 해금')+'</small></div>';
+      row.innerHTML='<div class="ach-medal">'+(owned?relicIconHTML(r,'relic-pix-lg'):'🔒')+'</div><div><b>'+formatAchievementRelicName(id,owned)+'</b><span>'+(owned?r.desc:'관련 업적 달성 시 해금')+'</span><small>'+(owned?'유물 풀에 등장 가능':'미달성 업적 보상')+'</small></div>';
       body.appendChild(row);
     });
   }
@@ -932,7 +1072,7 @@ async function saveRunScore(win,killer,scoreData,name){
       elapsedSec:Math.round(scoreData.elapsedSec),
       win:!!win,
       killer:killer||lastKiller||'',
-      title:userProgress.selectedTitle||'',
+      title:getSelectedTitleName(),
       difficultyKey,
       difficulty:diffSet&&diffSet.label?diffSet.label:'',
       createdAt:api.fs.serverTimestamp()
@@ -4577,6 +4717,7 @@ function show(st){
   if(overlays[st]) $(overlays[st]).classList.remove('hidden');
   if(st!=='help') state=st;
   syncChrome();
+  refreshTitleDisplay();
   refreshSidePanel();
 }
 function refreshSidePanel(){
@@ -5226,6 +5367,7 @@ function openDifficultyTab(){
   $('ovStart').classList.remove('hidden');
   state='start';
   syncChrome();
+  refreshTitleDisplay();
   refreshSidePanel();
   if(window.startTitleScene) window.startTitleScene();
 }
@@ -5233,6 +5375,7 @@ function closeDifficultyTab(){
   $('ovStart').classList.add('hidden');
   state='title';
   syncChrome();
+  refreshTitleDisplay();
   refreshSidePanel();
   if(window.startTitleScene) window.startTitleScene();
 }
@@ -5243,6 +5386,7 @@ function openRankingTab(){
   setRankingDifficulty(diffSet&&diffSet.key?diffSet.key:rankingDifficulty);
   state='title';
   syncChrome();
+  refreshTitleDisplay();
   refreshSidePanel();
   if(window.startTitleScene) window.startTitleScene();
   renderRankingList();
@@ -5252,6 +5396,7 @@ function closeRankingTab(){
   $('ovTitle').classList.remove('hidden');
   state='title';
   syncChrome();
+  refreshTitleDisplay();
   refreshSidePanel();
   if(window.startTitleScene) window.startTitleScene();
 }
@@ -5262,6 +5407,7 @@ function openAchievementsTab(){
   if(ov){ ov.classList.remove('hidden'); ov.dataset.tab=ov.dataset.tab||'achievements'; }
   state='title';
   syncChrome();
+  refreshTitleDisplay();
   refreshSidePanel();
   if(window.startTitleScene) window.startTitleScene();
   renderAchievements();
@@ -5271,6 +5417,7 @@ function closeAchievementsTab(){
   $('ovTitle').classList.remove('hidden');
   state='title';
   syncChrome();
+  refreshTitleDisplay();
   refreshSidePanel();
   if(window.startTitleScene) window.startTitleScene();
 }
