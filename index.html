@@ -145,6 +145,7 @@
 
           <div class="title-menu">
             <button class="title-item" id="tmNew">NEW GAME</button>
+            <button class="title-item" id="tmAchievements">ACHIEVEMENTS</button>
             <button class="title-item" id="tmRanking">RANKING</button>
             <button class="title-item" id="tmSettings">SETTINGS</button>
             <button class="title-item" id="tmExit" style="font-size:clamp(15px,2.5vw,21px);color:#9b8fc4">EXIT</button>
@@ -355,6 +356,26 @@
             </div>
           </div>
           <button class="btn ghost" id="rankingClose" onclick="if(typeof closeRankingTab==='function') closeRankingTab()">닫기</button>
+        </div>
+      </div>
+
+      <!-- ACHIEVEMENTS -->
+      <div class="overlay hidden" id="ovAchievements" data-tab="achievements">
+        <div class="panel-box achievement-panel">
+          <div class="ach-head">
+            <div>
+              <div class="tag">🏆 업적</div>
+              <h2>업적</h2>
+            </div>
+            <div class="ach-rate" id="achRate">0 / 10 (0%)</div>
+          </div>
+          <div class="achievement-tabs">
+            <button class="ach-tab active" data-tab="achievements">업적</button>
+            <button class="ach-tab" data-tab="titles">칭호</button>
+            <button class="ach-tab" data-tab="relics">해금 유물</button>
+          </div>
+          <div class="achievement-list" id="achBody"></div>
+          <button class="btn ghost" id="achClose">닫기</button>
         </div>
       </div>
 
