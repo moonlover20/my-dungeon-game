@@ -659,3 +659,171 @@
   80%  { transform: scale(1.2); }
   100% { transform: scale(1); }
 }
+
+#ovTree {
+  background:
+    radial-gradient(circle at 45% 55%, rgba(67, 52, 32, 0.18), transparent 38%),
+    linear-gradient(180deg, #0b0d10, #030407) !important;
+}
+
+#ovTree .tree-topbar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  z-index: 4;
+  height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 72px;
+  border-bottom: 1px solid rgba(216, 194, 138, 0.35) !important;
+  background: linear-gradient(180deg, rgba(40, 36, 26, 0.96), rgba(14, 13, 11, 0.9));
+  box-shadow: 0 10px 30px rgba(0,0,0,.55);
+}
+
+#ovTree .tree-topbar span:first-child {
+  color: #f3d98b !important;
+  font-size: 15px !important;
+  letter-spacing: 5px;
+  text-shadow: 0 0 10px rgba(243,217,139,.45) !important;
+}
+
+#ovTree .tree-topbar span:last-child {
+  position: absolute;
+  right: 84px;
+  color: rgba(232,216,164,.62) !important;
+}
+
+#treeCanvas {
+  height: 100%;
+  min-height: 0;
+}
+
+.tree-info-panel {
+  position: absolute;
+  z-index: 5;
+  right: 18px;
+  top: 74px;
+  width: min(300px, calc(100vw - 36px));
+  border: 1px solid rgba(216, 194, 138, 0.42);
+  background: linear-gradient(180deg, rgba(20,18,14,.96), rgba(7,8,10,.94));
+  box-shadow: 0 18px 42px rgba(0,0,0,.65), inset 0 0 0 1px rgba(255,255,255,.04);
+  padding: 16px;
+  font-family: "Courier New", monospace;
+  color: #e8d8a4;
+}
+
+.tree-panel-kicker {
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: rgba(232,216,164,.58);
+  margin-bottom: 8px;
+}
+
+.tree-panel-name {
+  color: #fff3c0;
+  font-family: inherit;
+  font-size: 18px;
+  font-weight: bold;
+  line-height: 1.25;
+  text-shadow: 0 0 12px rgba(243,217,139,.3);
+}
+
+.tree-panel-branch {
+  margin-top: 6px;
+  font-size: 11px;
+  letter-spacing: 2px;
+  font-weight: bold;
+}
+
+.tree-panel-desc {
+  margin-top: 14px;
+  color: #c8b98f;
+  font-size: 12px;
+  line-height: 1.55;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+.tree-panel-state {
+  margin-top: 14px;
+  min-height: 16px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.tree-unlock-btn {
+  width: 100%;
+  margin-top: 14px;
+  padding: 11px 12px;
+  border: 1px solid #d8c28a;
+  background: linear-gradient(180deg, #3d3320, #1d170f);
+  color: #fff3c0;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: bold;
+  letter-spacing: 2px;
+  cursor: pointer;
+  box-shadow: 0 0 18px rgba(216,194,138,.16);
+}
+
+.tree-unlock-btn:disabled {
+  cursor: default;
+  opacity: .45;
+  border-color: rgba(216,194,138,.24);
+  background: #101010;
+  color: #817662;
+  box-shadow: none;
+}
+
+.tree-help {
+  margin-top: 12px;
+  color: rgba(232,216,164,.48);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.tree-close-btn {
+  position: absolute;
+  z-index: 6;
+  top: 12px;
+  right: 20px;
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(216,194,138,.42);
+  background: rgba(8,8,9,.72);
+  color: #e8d8a4;
+  font-family: "Courier New", monospace;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.tree-close-btn:hover {
+  border-color: #f3d98b;
+  color: #fff3c0;
+  box-shadow: 0 0 14px rgba(243,217,139,.3);
+}
+
+@media (max-width: 760px) {
+  .tree-info-panel {
+    left: 12px;
+    right: 12px;
+    top: auto;
+    bottom: 14px;
+    width: auto;
+    padding: 12px;
+  }
+  #ovTree .tree-topbar {
+    justify-content: flex-start;
+    padding: 0 58px 0 16px;
+  }
+  #ovTree .tree-topbar span:first-child {
+    font-size: 12px !important;
+    letter-spacing: 2px;
+  }
+  #ovTree .tree-topbar span:last-child {
+    display: none;
+  }
+}
