@@ -338,9 +338,9 @@ const ENEMY_TYPES={
   goblin_archer  :{name:"대파",  r:14, hp:18, spd:50, dmg:6,  color:"#7bbf5a", xp:10, ai:"shooter", range:340, cool:1.25, label:"대파"},
   goblin_shaman  :{name:"까치",  r:15, hp:24, spd:66, dmg:7,  color:"#8a6fb0", xp:12, ai:"orbit",   range:240, cool:1.05, label:"까치"},
   goblin_bomber  :{name:"블페러", r:15, hp:22, spd:100, dmg:6,  color:"#9aa83f", xp:11, ai:"chase", explode:true, label:"블페러"},
-  rhino_beetle   :{name:"자잘자",   r:24, hp:90, spd:60, dmg:15, color:"#3a2418", xp:14, ai:"charge", label:"자잘자"},
+  rhino_beetle   :{name:"자잘자",   r:24, hp:75, spd:60, dmg:12, color:"#3a2418", xp:14, ai:"charge", label:"자잘자"},
   earthworm      :{name:"지렁이", r:12, hp:10, spd:74, dmg:6, color:"#e87a8a", xp:4, ai:"erratic", label:"지렁이"},
-  hyechul        :{name:"혜철이", r:52, hp:200, spd:42, dmg:18, color:"#c0392b", xp:150, ai:"hyechul", label:"혜철이"},
+  hyechul        :{name:"혜철이", r:52, hp:170, spd:42, dmg:15, color:"#c0392b", xp:150, ai:"hyechul", label:"혜철이"},
   zergling       :{name:"저글링", r:14, hp:12, spd:120, dmg:7, color:"#c98bff", xp:3, ai:"charge", label:"저글링"},
   mutalisk       :{name:"뮤탈", r:16, hp:16, spd:130, dmg:8, color:"#b97a4a", xp:5, ai:"chase", label:"뮤탈"},
   ultra          :{name:"울트라", r:26, hp:95, spd:52, dmg:20, color:"#8a6f4a", xp:12, ai:"chase", armor:0.25, label:"울트라"},
@@ -361,13 +361,13 @@ const ENEMY_TYPES={
   elf_melee   :{name:"엘프 검사",  r:14,hp:26,spd:82,dmg:11,color:"#bfe3a0",xp:11,ai:"chase"},
   elf_ranged  :{name:"엘프 궁수",  r:14,hp:22,spd:54,dmg:0, color:"#a8d98a",xp:12,ai:"shooter",range:360,cool:1.3},
   // === 2막 (봉식 월드): 광천김 소굴 ===
-  gwangcheon_gim:{name:"광천김", r:18, hp:55,  spd:40, dmg:9,  color:"#3f7a34", xp:11, ai:"shooter", range:330, cool:1.6, label:"광천김"},
-  reura         :{name:"러라",   r:15, hp:44,  spd:96, dmg:13, color:"#ffd166", xp:9,  ai:"chase", lunge:true, label:"러라"},
-  namu          :{name:"나무",   r:22, hp:130, spd:30, dmg:17, color:"#5fa84a", xp:14, ai:"chase",   label:"나무"},
-  pobear        :{name:"포베어", r:24, hp:100, spd:58, dmg:16, color:"#c8884a", xp:13, ai:"charge",  label:"포베어"},
-  yanggaeng     :{name:"박제인간", r:54, hp:1218, spd:44, dmg:18, color:"#111111", xp:150, ai:"bagjein", cool:2, label:"박제인간"},
+  gwangcheon_gim:{name:"광천김", r:18, hp:45,  spd:40, dmg:7,  color:"#3f7a34", xp:11, ai:"shooter", range:330, cool:1.6, label:"광천김"},
+  reura         :{name:"러라",   r:15, hp:36,  spd:90, dmg:10, color:"#ffd166", xp:9,  ai:"chase", lunge:true, label:"러라"},
+  namu          :{name:"나무",   r:22, hp:95,  spd:30, dmg:13, color:"#5fa84a", xp:14, ai:"chase",   label:"나무"},
+  pobear        :{name:"포베어", r:24, hp:82,  spd:54, dmg:13, color:"#c8884a", xp:13, ai:"charge",  label:"포베어"},
+  yanggaeng     :{name:"박제인간", r:54, hp:900, spd:44, dmg:14, color:"#111111", xp:150, ai:"bagjein", cool:2, label:"박제인간"},
   // === 2막 엘리트: 양갱 (3페이즈) ===
-  kkotchung     :{name:"양갱", r:32, hp:320, spd:50, dmg:14, color:"#f7a8d0", xp:90,  ai:"kkotchung", cool:1.4, label:"미주"},
+  kkotchung     :{name:"양갱", r:32, hp:240, spd:50, dmg:11, color:"#f7a8d0", xp:90,  ai:"kkotchung", cool:1.4, label:"미주"},
 };
 const ACT_POOLS=[
   { normal:["goblin_warrior","goblin_archer","goblin_shaman","goblin_bomber"], elite:["rhino_beetle"] },
@@ -390,13 +390,13 @@ let diffSet=DIFFS.easy;
 let dodgeLatch=false;   // 회피 키 엣지 감지: 스페이스를 떼야 다음 회피 발동
 
 const BOSSES=[
-  {key:"kijo",sprite:"kijo",name:"키죠",title:"1막 보스 · 가면의 마귀",r:70,hp:2400,color:"#c0392b",spd:46,
+  {key:"kijo",sprite:"kijo",name:"키죠",title:"1막 보스 · 가면의 마귀",r:70,hp:2200,color:"#c0392b",spd:46,
    quip:"이 가면 뒤가 보이느냐?",pattern:"summon"},
   {key:"steel_lord",sprite:"steel_lord",name:"강철 군주",title:"2막 보스 · 흑철의 망령",r:58,hp:900,color:"#5a5a6e",spd:52,
    quip:"무릎 꿇어라, 필멸자여.",pattern:"spiral"},
   {key:"bear",sprite:"bear",name:"거대 곰",title:"3막 보스 · 숲의 지배자",r:64,hp:1250,color:"#9c6b43",spd:58,
    quip:"크아아아앙!!",pattern:"split"},
-  {key:"seungwoo",sprite:"seungwoo",name:"승우",title:"2막 보스 · 시스템 침식",r:64,hp:2850,color:"#9146ff",spd:56,
+  {key:"seungwoo",sprite:"seungwoo",name:"승우",title:"2막 보스 · 시스템 침식",r:64,hp:2450,color:"#9146ff",spd:56,
    quip:"…봉식님. 이 게임, 제가 좀 만져도 되겠습니까.",pattern:"glitch"},
 ];
 
@@ -2160,7 +2160,7 @@ function rollNodeType(row){
   const bag=[];
   for(let i=0;i<34;i++) bag.push('fight');   // 전투 비중 ↓
   for(let i=0;i<32;i++) bag.push('event');    // 미지(❓) 비중 ↑
-  if(row>=1) for(let i=0;i<5;i++) bag.push('shop');
+  if(row>=1) for(let i=0;i<7;i++) bag.push('shop');
   if(row>=2) for(let i=0;i<6;i++) bag.push('campfire');
   return pick(bag);
 }
@@ -2410,9 +2410,15 @@ const TRAIN_OPTS=[
 ];
 function openCampfire(cb){
   const rest=$('cfRest'), train=$('cfTrain');
-  const finish=(msg)=>{ rest.onclick=null; train.onclick=null; hideAll(); banner('🔥 모닷불', msg, 1500); updateHUD(); cb&&cb(); };
+  const finish=(msg, ms)=>{ rest.onclick=null; train.onclick=null; hideAll(); banner('🔥 모닥불', msg, ms||1500); updateHUD(); cb&&cb(); };
   rest.onclick=()=>{ player.hp=player.maxhp; try{sfx.coin&&sfx.coin();}catch(e){} finish('휴식 — 체력 완전 회복'); };
-  train.onclick=()=>{ const t=pick(TRAIN_OPTS); t.f(); try{sfx.vote&&sfx.vote();}catch(e){} finish('단련 — '+t.label); };
+  train.onclick=()=>{
+    const t=pick(TRAIN_OPTS);
+    t.f();
+    try{sfx.vote&&sfx.vote();}catch(e){}
+    chatSys('🔥 모닥불 단련: '+t.label);
+    finish('단련 완료 — '+t.label, 2400);
+  };
   show('campfire');
 }
 
@@ -2481,16 +2487,16 @@ const LEVEL_PERKS=[
   {g:'epic',icon:'⚔️',name:'맹공',desc:'공격력 +2',apply:p=>{p.dmg+=2;}},
   {g:'epic',icon:'💣',name:'연쇄 폭발',desc:'처치 시 주변 폭발',apply:p=>{p.explodeKill+=24;}},
   {g:'epic',icon:'🧛',name:'흡혈귀',desc:'흡혈 확률 +15%',apply:p=>{p.lifesteal+=0.15;}},
-  {g:'epic',icon:'🌀',name:'그림자 보법',desc:'베인Q 쿵 -40%',apply:p=>{p.dodgeCdMul*=0.6;}},
+  {g:'epic',icon:'🌀',name:'그림자 보법',desc:'베인Q 쿨 -40%',apply:p=>{p.dodgeCdMul*=0.6;}},
   {g:'epic',icon:'🔙',name:'쌍방향 사격',desc:'뒤로도 한 발 발사 + 공격력 +1',skip:p=>p.backShot,apply:p=>{p.backShot=true;p.dmg+=1;}},
   {g:'epic',icon:'🔫',name:'더블탭',desc:'25% 확률로 한 번에 2발',apply:p=>{p.doubleTap+=0.25;}},
   {g:'epic',icon:'🩹',name:'막판 정신력',desc:'1회 체력1로 버티기',skip:p=>p.lastStand,apply:p=>{p.lastStand=true;}},
   {g:'epic',icon:'🆘',name:'저체력 폭주',desc:'체력 30%↓일 때 공격력 대폭↑',apply:p=>{p.lowHpMul+=0.5;}},
-  {g:'epic',icon:'🌪️',name:'처단',desc:'베인Q 시 주변 폭발+강한 더백(범위·밀치기 1.5배)',apply:p=>{p.dodgeBlast+=18;}},
+  {g:'epic',icon:'🌪️',name:'처단',desc:'베인Q 시 주변 폭발+강한 넉백(범위·밀치기 1.5배)',apply:p=>{p.dodgeBlast+=18;}},
   {g:'epic',icon:'😤',name:'분노',desc:'적 1마리당 공격력+3%(최대10마리)',apply:p=>{p.crowdRage+=0.03;}},
   {g:'epic',icon:'💉',name:'치명 흡혈',desc:'치명타 적중 시 체력 +5 회복',apply:p=>{p.critHeal+=5;}},
   {g:'epic',icon:'⚡',name:'감전 연쇄',desc:'명중 시 근처 적에게 연쇄 번개(피해 50%)',apply:p=>{p.chainLightning+=1;}},
-  {g:'epic',icon:'✂️',name:'클립 박제',desc:'체력 15% 이하 잡목 즉시 처치 (보스 제외)',apply:p=>{p.execThreshold=Math.max(p.execThreshold,0.15);}},
+  {g:'epic',icon:'✂️',name:'클립 박제',desc:'체력 15% 이하 잡몹 즉시 처치 (보스 제외)',apply:p=>{p.execThreshold=Math.max(p.execThreshold,0.15);}},
   // ===== 전설 Legend =====
   {g:'legend',icon:'✨',name:'치명 일격',desc:'치명타 +20%, 치명타 피해 +50%',apply:p=>{p.critChance+=0.20;p.critMult+=0.5;}},
   {g:'legend',icon:'💀',name:'폭주',desc:'공격력 +4',apply:p=>{p.dmg+=4;}},
@@ -5180,6 +5186,7 @@ let treeAtlasPan = {x:0, y:0};
 let treeAtlasZoom = 1.08;
 let treeAtlasDrag = null;
 let treeAtlasMoved = false;
+let treeEventsReady = false;
 
 function treeNodeById(id){ return TREE_NODES.find(n=>n.id===id) || TREE_NODES[0]; }
 function treeCanReach(node){ return !treeUnlocked.has(node.id) && (node.req||[]).every(r=>treeUnlocked.has(r)); }
@@ -5257,6 +5264,7 @@ function updateTreePanel(){
 function openTree(){
   if(state!=='play' && state!=='map') return;
   ensureTreeChrome();
+  initTreeEvents();
   treeOpen = true;
   $('ovTree').classList.remove('hidden');
   updateTreePanel();
@@ -5406,6 +5414,8 @@ function updateTreeTooltip(node,cx,cy){
 }
 function initTreeEvents(){
   const cvs=$('treeCanvas'); if(!cvs) return;
+  if(treeEventsReady) return;
+  treeEventsReady = true;
   cvs.addEventListener('mousemove',e=>{
     if(!treeOpen) return;
     const r=cvs.getBoundingClientRect();
