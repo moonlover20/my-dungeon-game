@@ -365,7 +365,7 @@ const ENEMY_TYPES={
   reura         :{name:"러라",   r:15, hp:44,  spd:96, dmg:13, color:"#ffd166", xp:9,  ai:"chase", lunge:true, label:"러라"},
   namu          :{name:"나무",   r:22, hp:130, spd:30, dmg:17, color:"#5fa84a", xp:14, ai:"chase",   label:"나무"},
   pobear        :{name:"포베어", r:24, hp:100, spd:58, dmg:16, color:"#c8884a", xp:13, ai:"charge",  label:"포베어"},
-  yanggaeng     :{name:"박제인간", r:54, hp:440, spd:44, dmg:18, color:"#111111", xp:150, ai:"bagjein", cool:2, label:"박제인간"},
+  yanggaeng     :{name:"박제인간", r:54, hp:1218, spd:44, dmg:18, color:"#111111", xp:150, ai:"bagjein", cool:2, label:"박제인간"},
   // === 2막 엘리트: 양갱 (3페이즈) ===
   kkotchung     :{name:"양갱", r:32, hp:320, spd:50, dmg:14, color:"#f7a8d0", xp:90,  ai:"kkotchung", cool:1.4, label:"미주"},
 };
@@ -570,11 +570,17 @@ const keys={};
 let mouseX=W/2, mouseY=H/2, mouseDown=false;
 window.addEventListener('keydown',e=>{
   const k=e.key.toLowerCase();
-  if(k==='escape'){ togglePause(); e.preventDefault(); return; }
+  if(k==='escape'){
+    if(treeOpen){ closeTree(); e.preventDefault(); return; }
+    togglePause(); e.preventDefault(); return;
+  }
   keys[k]=true;
   if([' ','arrowup','arrowdown','arrowleft','arrowright','tab'].includes(k)) e.preventDefault();
   if(paused) return;                 // 일시정지 중엔 게임 입력 무시
   if(state==='play'){ if(k==='1')usePotion(0); else if(k==='2')usePotion(1); else if(k==='3')usePotion(2); }
+  if((k==='k') && (state==='play'||state==='map')){
+    if(treeOpen) closeTree(); else openTree();
+  }
 });
 window.addEventListener('keyup',e=>{ keys[e.key.toLowerCase()]=false; });
 function canvasPos(e){
@@ -655,6 +661,19 @@ function updateHUD(){
   $('xpFill').style.width=clamp(xp/xpNext*100,0,100)+"%";
   renderPotions();
   refreshSidePanel();
+  // 트리 버튼 갱신
+  const treeBadge=$('treeBtnPts');
+  const treeBtn=$('treeBtnHud');
+  if(treeBadge && treeBtn){
+    if(treePoints>0){
+      treeBadge.style.display='inline-block';
+      treeBadge.textContent=treePoints;
+      treeBtn.classList.add('tree-btn-glow');
+    } else {
+      treeBadge.style.display='none';
+      treeBtn.classList.remove('tree-btn-glow');
+    }
+  }
 }
 function renderPotions(){
   const cont=$('potionSlots');
@@ -687,6 +706,7 @@ let roomEntrySnap=null;
 function snapshotProgress(){
   roomEntrySnap={
     xp, level, xpNext, pendingLevels, gold, totalKills,
+    treePoints, treeUnlocked: new Set(treeUnlocked),
     player:Object.assign({}, player, {
       relics:player.relics.slice(),
       potions:player.potions.slice(),
@@ -698,6 +718,7 @@ function snapshotProgress(){
 function restoreProgress(){
   const s=roomEntrySnap; if(!s) return;
   xp=s.xp; level=s.level; xpNext=s.xpNext; pendingLevels=s.pendingLevels; gold=s.gold; totalKills=s.totalKills;
+  if(s.treePoints!=null){ treePoints=s.treePoints; treeUnlocked=new Set(s.treeUnlocked); }
   Object.assign(player, s.player, {
     relics:s.player.relics.slice(),
     potions:s.player.potions.slice(),
@@ -1017,6 +1038,8 @@ function gainXP(n){
     player.dmgMul*=1.03;                            // 공격력 소폭 증가 (세지는 기분)
     player.hp=Math.min(player.maxhp,player.hp+11);  // 회복 + 늘어난 최대체력만큼
     pendingLevels++; sfx.pick();
+    treePoints++;   // 트리 포인트 +1
+    if(player._levelHeal) player.hp = Math.min(player.maxhp, player.hp + player._levelHeal);
   }
   updateHUD();
   if(pendingLevels>0 && state==='play') showLevelUp();
@@ -4277,7 +4300,7 @@ function victory(){ gameOver(true); }
 function newGame(){
   startBGM();
   runActive=true;
-  act=1; currentRow=0; kills=0; totalKills=0; gold=0; level=1; xp=0; xpNext=20; pendingLevels=0; retries=0;
+  act=1; currentRow=0; kills=0; totalKills=0; gold=0; level=1; xp=0; xpNext=20; pendingLevels=0; retries=0; treePoints=0; treeUnlocked=new Set(['hub']);
   resetPlayer();
   enemies=[];pBullets=[];eBullets=[];pickups=[];particles=[];boss=null;floatBubbles=[];lastKiller=null;
   pendingNode=null; roomCleared=true; tierIntroShown=false; shopIntroShown=false; eliteViewerSpawns=0;
@@ -4310,7 +4333,7 @@ function finishTutorial(){
 function newGameSkip(){
   startBGM();
   runActive=true;
-  act=1; currentRow=0; kills=0; totalKills=0; gold=0; level=1; xp=0; xpNext=20; pendingLevels=0; retries=0;
+  act=1; currentRow=0; kills=0; totalKills=0; gold=0; level=1; xp=0; xpNext=20; pendingLevels=0; retries=0; treePoints=0; treeUnlocked=new Set(['hub']);
   resetPlayer();
   enemies=[];pBullets=[];eBullets=[];pickups=[];particles=[];boss=null;floatBubbles=[];lastKiller=null;
   pendingNode=null; roomCleared=true; tierIntroShown=false; shopIntroShown=false; eliteViewerSpawns=0;
@@ -4481,6 +4504,7 @@ buildBackdrop(1);
 fitField();
 syncChrome();
 updateHUD();
+initTreeEvents();
 requestAnimationFrame(loop);
 
 /* ============================================================
@@ -4629,3 +4653,490 @@ window.addEventListener('blur',()=>{ if(GS.autoPause && state==='play' && !pause
 
 // 시작 시 저장된 설정 적용
 applySettings(); reflectControls();
+
+// ============================================================
+// 📡 방송국 패시브 트리
+// ============================================================
+let treePoints = 0;   // 레벨업마다 +1 적립
+let treeOpen   = false;
+
+// ---------- 트리 노드 데이터 ----------
+// branch: 'shot'|'status'|'gold'|'survive'|'speed'
+// req: 선행 노드 id 배열 (비어있으면 시작노드)
+// cost: 포인트 비용 (기본 1)
+// once: true면 중복 찍기 불가 (기본 true)
+// apply(p): 플레이어에 즉시 적용
+const TREE_NODES = [
+  // ── 중앙 허브 (무료, 항상 해금) ──
+  { id:'hub', name:'방송 시작', icon:'📡', branch:'hub', req:[], cost:0,
+    desc:'모든 갈래의 시작점', apply:()=>{} },
+
+  // ══════════════════════════════════
+  // 🔱 화력 라인 — "다중 사격"
+  // ══════════════════════════════════
+  { id:'s_speed1', name:'탄속 강화 I', icon:'⚡', branch:'shot', req:['hub'], cost:1,
+    desc:'투사체 속도 +15%', apply:p=>{ p.bulletSpeedMul*=1.15; } },
+  { id:'s_size1',  name:'대구경 I',    icon:'🔵', branch:'shot', req:['hub'], cost:1,
+    desc:'투사체 크기 +12%', apply:p=>{ p.bulletSize*=1.12; } },
+  { id:'s_speed2', name:'탄속 강화 II',icon:'⚡', branch:'shot', req:['s_speed1'], cost:1,
+    desc:'투사체 속도 추가 +15%', apply:p=>{ p.bulletSpeedMul*=1.15; } },
+  { id:'s_size2',  name:'대구경 II',   icon:'🔵', branch:'shot', req:['s_size1'], cost:1,
+    desc:'투사체 크기 추가 +12%', apply:p=>{ p.bulletSize*=1.12; } },
+  { id:'s_spread', name:'집탄 조정',   icon:'🎯', branch:'shot', req:['s_speed1','s_size1'], cost:1,
+    desc:'다발 사격 시 탄 퍼짐 -30%', apply:p=>{ p._spreadMul=(p._spreadMul||1)*0.7; } },
+  { id:'s_shots1', name:'다중 사격 I', icon:'🔱', branch:'shot', req:['s_spread'], cost:2,
+    desc:'투사체 +1발', apply:p=>{ p.shots+=1; } },
+  { id:'s_back',   name:'후방 사격',   icon:'🔙', branch:'shot', req:['s_shots1'], cost:1,
+    desc:'뒤로도 한 발 발사', once:true, skip:p=>p.backShot,
+    apply:p=>{ p.backShot=true; } },
+  { id:'s_shots2', name:'다중 사격 II',icon:'🔱', branch:'shot', req:['s_shots1','s_size2'], cost:3,
+    desc:'투사체 추가 +1발', apply:p=>{ p.shots+=1; } },
+
+  // ══════════════════════════════════
+  // 🔥 상태이상 라인 — "도배 방송"
+  // ══════════════════════════════════
+  { id:'t_burn1',   name:'화상 코팅 I',  icon:'🔥', branch:'status', req:['hub'], cost:1,
+    desc:'명중 시 화상 +3 (지속 피해)', apply:p=>{ p.burn+=3; } },
+  { id:'t_poison1', name:'독침 I',        icon:'🟢', branch:'status', req:['hub'], cost:1,
+    desc:'명중 시 독 +2 (중첩)', apply:p=>{ p.poison+=2; } },
+  { id:'t_burn2',   name:'화상 코팅 II', icon:'🔥', branch:'status', req:['t_burn1'], cost:1,
+    desc:'화상 추가 +3', apply:p=>{ p.burn+=3; } },
+  { id:'t_poison2', name:'독침 II',       icon:'🟢', branch:'status', req:['t_poison1'], cost:1,
+    desc:'독 추가 +2', apply:p=>{ p.poison+=2; } },
+  { id:'t_chill',   name:'빙결탄',        icon:'❄️', branch:'status', req:['t_poison1'], cost:1,
+    desc:'명중 시 적 이동속도 둔화', once:true, skip:p=>p.chill>0,
+    apply:p=>{ p.chill+=1; } },
+  { id:'t_dmg',     name:'상태이상 강화', icon:'🧨', branch:'status', req:['t_burn2','t_poison2'], cost:2,
+    desc:'상태이상 걸린 적에게 피해 +20%', apply:p=>{ p.statusDmgMul+=0.20; } },
+  { id:'t_stun',    name:'기절 코팅',     icon:'🔔', branch:'status', req:['t_chill','t_dmg'], cost:2,
+    desc:'명중 시 기절 확률 +15%', apply:p=>{ p.stunChance+=0.15; } },
+  { id:'t_spread',  name:'도배왕',        icon:'🌋', branch:'status', req:['t_stun'], cost:3,
+    desc:'상태이상 적 처치 시 주변 전파 + 피해 추가 +20%', once:true, skip:p=>p.statusSpread,
+    apply:p=>{ p.statusSpread=true; p.statusDmgMul+=0.20; } },
+
+  // ══════════════════════════════════
+  // 💰 골드 라인 — "슈퍼챗 부자"
+  // ══════════════════════════════════
+  { id:'g_gold1', name:'골드 수집 I',  icon:'💰', branch:'gold', req:['hub'], cost:1,
+    desc:'골드 획득 +12%', apply:p=>{ p.goldMul*=1.12; } },
+  { id:'g_xp1',   name:'경험치 가속 I',icon:'📈', branch:'gold', req:['hub'], cost:1,
+    desc:'경험치 획득 +12%', apply:p=>{ p.xpMul*=1.12; } },
+  { id:'g_gold2', name:'골드 수집 II', icon:'💰', branch:'gold', req:['g_gold1'], cost:1,
+    desc:'골드 획득 추가 +12%', apply:p=>{ p.goldMul*=1.12; } },
+  { id:'g_xp2',   name:'경험치 가속 II',icon:'📈',branch:'gold', req:['g_xp1'], cost:1,
+    desc:'경험치 획득 추가 +12%', apply:p=>{ p.xpMul*=1.12; } },
+  { id:'g_donate',name:'도네 알림 강화',icon:'💸', branch:'gold', req:['g_gold1'], cost:1,
+    desc:'처치 시 골드 폭탄 확률 +8%', apply:p=>{ p.donateChance+=0.08; } },
+  { id:'g_power', name:'현질의 힘',    icon:'💳', branch:'gold', req:['g_gold2','g_xp2'], cost:2,
+    desc:'보유 골드 100당 공격력 +2% (최대+30%)', apply:p=>{ p.goldPower+=0.02; } },
+  { id:'g_magnet',name:'초강력 자석',  icon:'🧲', branch:'gold', req:['g_donate','g_power'], cost:2,
+    desc:'흡수 범위 2배 + 골드 +20%', apply:p=>{ p.magnet*=2; p.goldMul*=1.2; } },
+  { id:'g_jackpot',name:'대박 도네',   icon:'🎰', branch:'gold', req:['g_magnet'], cost:3,
+    desc:'골드 폭탄 확률 2배 + 레벨업 시 체력 +8 회복', once:true,
+    apply:p=>{ p.donateChance*=2; p._levelHeal=(p._levelHeal||0)+8; } },
+
+  // ══════════════════════════════════
+  // 🛡️ 생존 라인 — "불사 스트리머"
+  // ══════════════════════════════════
+  { id:'v_hp1',   name:'체력 강화 I',  icon:'❤️', branch:'survive', req:['hub'], cost:1,
+    desc:'최대 체력 +20', apply:p=>{ p.maxhp+=20; p.hp+=20; } },
+  { id:'v_armor1',name:'방어 강화 I',  icon:'🛡️', branch:'survive', req:['hub'], cost:1,
+    desc:'받는 피해 -5%', apply:p=>{ p.armor+=0.05; } },
+  { id:'v_hp2',   name:'체력 강화 II', icon:'❤️', branch:'survive', req:['v_hp1'], cost:1,
+    desc:'최대 체력 추가 +20', apply:p=>{ p.maxhp+=20; p.hp+=20; } },
+  { id:'v_armor2',name:'방어 강화 II', icon:'🛡️', branch:'survive', req:['v_armor1'], cost:1,
+    desc:'받는 피해 추가 -5%', apply:p=>{ p.armor+=0.05; } },
+  { id:'v_regen', name:'재생 I',       icon:'🌿', branch:'survive', req:['v_hp1'], cost:1,
+    desc:'초당 체력 +0.8 재생', apply:p=>{ p.regen+=0.8; } },
+  { id:'v_steal', name:'흡혈 코팅',    icon:'🩸', branch:'survive', req:['v_regen','v_armor2'], cost:2,
+    desc:'흡혈 확률 +8%', apply:p=>{ p.lifesteal+=0.08; } },
+  { id:'v_thorns',name:'가시 갑옷',    icon:'🌵', branch:'survive', req:['v_armor2'], cost:2,
+    desc:'접촉 적에게 반사 피해 +12', apply:p=>{ p.thorns+=12; } },
+  { id:'v_undead',name:'불사 스트리머',icon:'💀', branch:'survive', req:['v_steal','v_thorns'], cost:3,
+    desc:'1회 체력1로 버티기', once:true, skip:p=>p.lastStand,
+    apply:p=>{ p.lastStand=true; } },
+
+  // ══════════════════════════════════
+  // ⚡ 기동 라인 — "신나는 방송"
+  // ══════════════════════════════════
+  { id:'m_spd1',  name:'민첩 강화 I',  icon:'🥾', branch:'speed', req:['hub'], cost:1,
+    desc:'이동 속도 +15', apply:p=>{ p.spd+=15; } },
+  { id:'m_fire1', name:'연사 강화 I',  icon:'🔫', branch:'speed', req:['hub'], cost:1,
+    desc:'발사 속도 +10%', apply:p=>{ p.fireAdd+=0.10; } },
+  { id:'m_spd2',  name:'민첩 강화 II', icon:'🥾', branch:'speed', req:['m_spd1'], cost:1,
+    desc:'이동 속도 추가 +15', apply:p=>{ p.spd+=15; } },
+  { id:'m_fire2', name:'연사 강화 II', icon:'🔫', branch:'speed', req:['m_fire1'], cost:1,
+    desc:'발사 속도 추가 +10%', apply:p=>{ p.fireAdd+=0.10; } },
+  { id:'m_dodge', name:'회피 숙련',    icon:'🌀', branch:'speed', req:['m_spd1'], cost:1,
+    desc:'베인Q 쿨다운 -20%', apply:p=>{ p.dodgeCdMul*=0.80; } },
+  { id:'m_dtap',  name:'더블탭',       icon:'🎯', branch:'speed', req:['m_fire2','m_dodge'], cost:2,
+    desc:'25% 확률로 즉시 1발 추가', apply:p=>{ p.doubleTap+=0.25; } },
+  { id:'m_charge2',name:'회피 2충전',  icon:'🔵', branch:'speed', req:['m_dodge'], cost:2,
+    desc:'베인Q 2회 충전', once:true, skip:p=>p.dodgeMaxCharges>=2,
+    apply:p=>{ p.dodgeMaxCharges=2; p.dodgeCharges=2; } },
+  { id:'m_blitz', name:'질풍 방송',    icon:'⚡', branch:'speed', req:['m_dtap','m_charge2'], cost:3,
+    desc:'회피 후 2초간 발사속도 +30% + 회피 폭발', once:true,
+    apply:p=>{ p.dodgeHaste=true; p.dodgeBlast+=14; } },
+];
+
+// 찍힌 노드 id Set
+let treeUnlocked = new Set(['hub']);
+
+// ---------- 트리 조건 체크 ----------
+function treeCanUnlock(node){
+  if(treeUnlocked.has(node.id)) return false;
+  if(node.skip && node.skip(player)) return false;
+  if(node.req.length > 0 && !node.req.every(r => treeUnlocked.has(r))) return false;
+  if(treePoints < (node.cost||1)) return false;
+  return true;
+}
+function treeUnlockNode(node){
+  if(!treeCanUnlock(node)) return false;
+  treeUnlocked.add(node.id);
+  treePoints -= (node.cost||1);
+  node.apply(player);
+  updateHUD();
+  return true;
+}
+
+// ---------- 트리 레이아웃 (캔버스 좌표) ----------
+// 각 노드의 화면 위치를 미리 계산
+function getTreeLayout(W, H){
+  // 5갈래를 부채꼴로 배치
+  // hub 중앙
+  const cx = W/2, cy = H/2 + 20;
+  const BRANCH_ANGLES = {
+    shot:    -Math.PI*0.75,  // 좌상
+    status:  -Math.PI*0.25,  // 우상
+    gold:     Math.PI*0.25,  // 우하
+    survive:  Math.PI*0.75,  // 좌하
+    speed:   -Math.PI*0.5,   // 정상단 (중앙 위)
+  };
+  // 각 브랜치별 노드 순서 (허브에서 먼 순으로)
+  const BRANCH_ORDER = {
+    shot:    ['s_speed1','s_size1','s_speed2','s_size2','s_spread','s_shots1','s_back','s_shots2'],
+    status:  ['t_burn1','t_poison1','t_burn2','t_poison2','t_chill','t_dmg','t_stun','t_spread'],
+    gold:    ['g_gold1','g_xp1','g_gold2','g_xp2','g_donate','g_power','g_magnet','g_jackpot'],
+    survive: ['v_hp1','v_armor1','v_hp2','v_armor2','v_regen','v_steal','v_thorns','v_undead'],
+    speed:   ['m_spd1','m_fire1','m_spd2','m_fire2','m_dodge','m_dtap','m_charge2','m_blitz'],
+  };
+  const STEP = Math.min(W, H) * 0.095;
+  const pos = { hub: {x:cx, y:cy} };
+
+  for(const [branch, angle] of Object.entries(BRANCH_ANGLES)){
+    const ids = BRANCH_ORDER[branch];
+    // 두 갈래로 나뉘는 레이아웃 (좌/우 오프셋)
+    // 1~2번째: 부채꼴 시작
+    // 이후: 선행 노드 위치 기반으로 배치
+    const nodeMap = {};
+    ids.forEach((id,i) => {
+      const node = TREE_NODES.find(n=>n.id===id);
+      if(!node) return;
+      let x, y;
+      if(node.req.length===0 || node.req[0]==='hub'){
+        // 1단계: hub에서 직접 연결, 약간 옆으로 벌림
+        const sideOff = (ids.indexOf(id)%2===0 ? -0.28 : 0.28);
+        x = cx + Math.cos(angle + sideOff) * STEP;
+        y = cy + Math.sin(angle + sideOff) * STEP;
+      } else {
+        // 부모 위치 평균에서 뻗어나감
+        const parents = node.req.filter(r=>r!=='hub');
+        const px = parents.reduce((s,r)=>(pos[r]||{x:cx}).x+s,0)/Math.max(1,parents.length);
+        const py = parents.reduce((s,r)=>(pos[r]||{y:cy}).y+s,0)/Math.max(1,parents.length);
+        const dist = Math.hypot(px-cx, py-cy);
+        const nAngle = Math.atan2(py-cy, px-cx);
+        const spread = parents.length > 1 ? 0 : (ids.indexOf(id) % 2 === 0 ? -0.18 : 0.18);
+        x = cx + Math.cos(nAngle + spread) * (dist + STEP);
+        y = cy + Math.sin(nAngle + spread) * (dist + STEP);
+      }
+      pos[id] = {x, y};
+      nodeMap[id] = {x, y};
+    });
+  }
+  return pos;
+}
+
+// ---------- 트리 오버레이 렌더링 ----------
+const BRANCH_COL = {
+  hub:     '#38e8ff',
+  shot:    '#ff9f43',
+  status:  '#5dff9b',
+  gold:    '#ffd34d',
+  survive: '#ff6b9d',
+  speed:   '#c98bff',
+};
+const BRANCH_LABEL = {
+  shot:'🔱 다중 사격', status:'🔥 도배 방송',
+  gold:'💰 슈퍼챗', survive:'🛡️ 불사', speed:'⚡ 질풍',
+};
+
+let _treeLayout = null;
+let _treeHover  = null;   // 현재 마우스 호버 노드 id
+let _treeCanvas = null;
+let _treeCtx    = null;
+
+function openTree(){
+  if(state!=='play' && state!=='map') return;
+  treeOpen = true;
+  $('ovTree').classList.remove('hidden');
+  renderTree();
+}
+function closeTree(){
+  treeOpen = false;
+  $('ovTree').classList.add('hidden');
+}
+
+function renderTree(){
+  const cvs = $('treeCanvas');
+  if(!cvs) return;
+  const W = cvs.width  = cvs.offsetWidth  || 900;
+  const H = cvs.height = cvs.offsetHeight || 600;
+  const c = cvs.getContext('2d');
+  _treeCanvas = cvs; _treeCtx = c;
+
+  // 배경
+  c.fillStyle = '#05030a';
+  c.fillRect(0,0,W,H);
+
+  // 픽셀 격자 느낌 (8px 도트)
+  c.strokeStyle = 'rgba(56,232,255,0.03)';
+  c.lineWidth = 1;
+  for(let x=0;x<W;x+=8){ c.beginPath(); c.moveTo(x,0); c.lineTo(x,H); c.stroke(); }
+  for(let y=0;y<H;y+=8){ c.beginPath(); c.moveTo(0,y); c.lineTo(W,y); c.stroke(); }
+
+  _treeLayout = getTreeLayout(W, H);
+  const pos = _treeLayout;
+
+  // ── 엣지(선) 그리기 ──
+  for(const node of TREE_NODES){
+    if(!pos[node.id]) continue;
+    for(const reqId of node.req){
+      if(!pos[reqId]) continue;
+      const unlocked = treeUnlocked.has(node.id) && treeUnlocked.has(reqId);
+      const available = treeUnlocked.has(reqId) && !treeUnlocked.has(node.id);
+      c.save();
+      c.strokeStyle = unlocked ? BRANCH_COL[node.branch]
+                    : available ? 'rgba(255,255,255,0.25)'
+                    : 'rgba(255,255,255,0.08)';
+      c.lineWidth = unlocked ? 2 : 1;
+      if(!unlocked) c.setLineDash([4,4]);
+      c.shadowColor = unlocked ? BRANCH_COL[node.branch] : 'none';
+      c.shadowBlur  = unlocked ? 8 : 0;
+      c.beginPath();
+      c.moveTo(pos[reqId].x, pos[reqId].y);
+      c.lineTo(pos[node.id].x, pos[node.id].y);
+      c.stroke();
+      c.setLineDash([]);
+      c.restore();
+    }
+  }
+
+  // ── 노드 그리기 ──
+  const R = Math.min(W,H)*0.036;  // 노드 반지름
+  for(const node of TREE_NODES){
+    const p = pos[node.id]; if(!p) continue;
+    const unlocked  = treeUnlocked.has(node.id);
+    const canUnlock = treeCanUnlock(node);
+    const hover     = _treeHover === node.id;
+    const col       = BRANCH_COL[node.branch] || '#fff';
+
+    c.save();
+
+    // 글로우
+    if(unlocked || hover){
+      c.shadowColor = col;
+      c.shadowBlur  = hover ? 24 : 16;
+    }
+
+    // 노드 배경 (픽셀 느낌: 정사각형 + 둥근 모서리 없이)
+    const nr = R * (hover ? 1.15 : 1);
+    if(unlocked){
+      c.fillStyle = col;
+    } else if(canUnlock){
+      c.fillStyle = '#1a1030';
+      c.strokeStyle = col;
+      c.lineWidth = 2;
+    } else {
+      c.fillStyle = '#0d0820';
+      c.strokeStyle = 'rgba(255,255,255,0.12)';
+      c.lineWidth = 1;
+    }
+
+    // 픽셀아트 스타일 8각형 (정팔각형 근사)
+    c.beginPath();
+    const sides = 8;
+    for(let i=0;i<sides;i++){
+      const a = (i/sides)*Math.PI*2 - Math.PI/8;
+      i===0 ? c.moveTo(p.x+Math.cos(a)*nr, p.y+Math.sin(a)*nr)
+             : c.lineTo(p.x+Math.cos(a)*nr, p.y+Math.sin(a)*nr);
+    }
+    c.closePath();
+    c.fill();
+    if(!unlocked) c.stroke();
+    c.restore();
+
+    // 비용 뱃지 (미해금 노드에만)
+    if(!unlocked && (node.cost||1) > 1){
+      c.save();
+      c.font = `bold ${Math.round(R*0.55)}px "Courier New"`;
+      c.textAlign = 'right'; c.textBaseline = 'top';
+      c.fillStyle = canUnlock ? '#ffd34d' : '#555';
+      c.fillText((node.cost||1)+'P', p.x+nr*0.9, p.y-nr*0.9);
+      c.restore();
+    }
+
+    // 아이콘 (이모지)
+    c.save();
+    c.font = `${Math.round(R*0.9)}px sans-serif`;
+    c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.globalAlpha = unlocked ? 1 : canUnlock ? 0.8 : 0.3;
+    c.fillText(node.icon, p.x, p.y + R*0.05);
+    c.restore();
+
+    // 노드 이름
+    if(hover || unlocked){
+      c.save();
+      c.font = `bold ${Math.round(R*0.55)}px "Courier New"`;
+      c.textAlign = 'center'; c.textBaseline = 'top';
+      c.fillStyle = unlocked ? col : '#ccc';
+      c.shadowColor = col; c.shadowBlur = 6;
+      c.fillText(node.name, p.x, p.y + nr + 2);
+      c.restore();
+    }
+  }
+
+  // ── 우상단 포인트 표시 ──
+  c.save();
+  c.font = 'bold 15px "Courier New"';
+  c.textAlign = 'right'; c.textBaseline = 'top';
+  c.fillStyle = '#38e8ff';
+  c.shadowColor = '#38e8ff'; c.shadowBlur = 10;
+  c.fillText(`SKILL POINTS : ${treePoints}`, W-16, 16);
+  c.restore();
+
+  // ── 브랜치 레이블 ──
+  const branchFirst = {};
+  for(const node of TREE_NODES){
+    if(node.branch==='hub' || branchFirst[node.branch]) continue;
+    if(node.req.includes('hub') && pos[node.id]){
+      branchFirst[node.branch] = pos[node.id];
+    }
+  }
+  for(const [branch, bpos] of Object.entries(branchFirst)){
+    if(!bpos) continue;
+    const col = BRANCH_COL[branch];
+    const lbl = BRANCH_LABEL[branch];
+    const cx2 = pos.hub.x, cy2 = pos.hub.y;
+    const mid = { x:(bpos.x+cx2)/2, y:(bpos.y+cy2)/2-18 };
+    c.save();
+    c.font = 'bold 11px "Courier New"';
+    c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillStyle = col; c.globalAlpha = 0.7;
+    c.shadowColor = col; c.shadowBlur = 6;
+    c.fillText(lbl, mid.x, mid.y);
+    c.restore();
+  }
+
+  // ── 호버 툴팁 ──
+  if(_treeHover){
+    const node = TREE_NODES.find(n=>n.id===_treeHover);
+    const p2 = pos[_treeHover];
+    if(node && p2){
+      const col   = BRANCH_COL[node.branch];
+      const unlocked  = treeUnlocked.has(node.id);
+      const canUnlock = treeCanUnlock(node);
+      const ttW = 180, ttH = 72;
+      let tx = p2.x + R*1.3, ty = p2.y - ttH/2;
+      if(tx + ttW > W - 8) tx = p2.x - R*1.3 - ttW;
+      if(ty < 4) ty = 4;
+      if(ty + ttH > H - 4) ty = H - ttH - 4;
+
+      // 툴팁 배경
+      c.save();
+      c.fillStyle = '#0d0820';
+      c.strokeStyle = col;
+      c.lineWidth = 2;
+      c.shadowColor = col; c.shadowBlur = 16;
+      // 픽셀아트 스타일: 모서리 잘린 직사각형
+      c.beginPath();
+      c.moveTo(tx+6, ty);
+      c.lineTo(tx+ttW-6, ty);
+      c.lineTo(tx+ttW, ty+6);
+      c.lineTo(tx+ttW, ty+ttH-6);
+      c.lineTo(tx+ttW-6, ty+ttH);
+      c.lineTo(tx+6, ty+ttH);
+      c.lineTo(tx, ty+ttH-6);
+      c.lineTo(tx, ty+6);
+      c.closePath();
+      c.fill(); c.stroke();
+      c.restore();
+
+      // 툴팁 텍스트
+      c.save();
+      c.font = `bold 11px "Courier New"`;
+      c.fillStyle = col; c.textAlign = 'left'; c.textBaseline = 'top';
+      c.fillText(node.name, tx+8, ty+8);
+      c.font = `10px "Courier New"`;
+      c.fillStyle = '#ccc';
+      // 줄바꿈 처리
+      const words = node.desc.split(' ');
+      let line='', lY=ty+24;
+      for(const w of words){
+        const test = line+w+' ';
+        if(c.measureText(test).width > ttW-16 && line){
+          c.fillText(line.trim(), tx+8, lY); lY+=14; line=w+' ';
+        } else line=test;
+      }
+      if(line.trim()) c.fillText(line.trim(), tx+8, lY); lY+=14;
+
+      // 비용/상태
+      c.font = `bold 10px "Courier New"`;
+      if(unlocked){
+        c.fillStyle = '#5dff9b'; c.fillText('✓ 획득 완료', tx+8, lY);
+      } else if(canUnlock){
+        c.fillStyle = '#ffd34d'; c.fillText(`[${node.cost||1}P] 클릭하여 획득`, tx+8, lY);
+      } else {
+        c.fillStyle = '#666';
+        const missing = node.req.filter(r=>!treeUnlocked.has(r));
+        c.fillText(missing.length ? '선행 노드 필요' : `포인트 부족 (${node.cost||1}P)`, tx+8, lY);
+      }
+      c.restore();
+    }
+  }
+}
+
+// ---------- 트리 마우스 이벤트 ----------
+function treeNodeAt(mx, my, W, H){
+  if(!_treeLayout) return null;
+  const R = Math.min(W,H)*0.036 * 1.2;
+  for(const node of TREE_NODES){
+    const p = _treeLayout[node.id];
+    if(!p) continue;
+    if(Math.hypot(mx-p.x, my-p.y) < R) return node;
+  }
+  return null;
+}
+function initTreeEvents(){
+  const cvs = $('treeCanvas');
+  if(!cvs) return;
+  cvs.addEventListener('mousemove', e=>{
+    if(!treeOpen) return;
+    const r  = cvs.getBoundingClientRect();
+    const mx = (e.clientX - r.left) * (cvs.width  / r.width);
+    const my = (e.clientY - r.top)  * (cvs.height / r.height);
+    const node = treeNodeAt(mx, my, cvs.width, cvs.height);
+    const newHover = node ? node.id : null;
+    if(newHover !== _treeHover){ _treeHover = newHover; renderTree(); }
+  });
+  cvs.addEventListener('click', e=>{
+    if(!treeOpen) return;
+    const r  = cvs.getBoundingClientRect();
+    const mx = (e.clientX - r.left) * (cvs.width  / r.width);
+    const my = (e.clientY - r.top)  * (cvs.height / r.height);
+    const node = treeNodeAt(mx, my, cvs.width, cvs.height);
+    if(node && treeUnlockNode(node)){
+      banner(node.icon+' '+node.name, '트리 노드 획득!', 1100);
+      renderTree();
+    }
+  });
+}
