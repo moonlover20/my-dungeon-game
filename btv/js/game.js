@@ -4802,56 +4802,68 @@ function treeUnlockNode(node){
 // ---------- 트리 레이아웃 (캔버스 좌표) ----------
 // 각 노드의 화면 위치를 미리 계산
 function getTreeLayout(W, H){
-  // 5갈래를 부채꼴로 배치
-  // hub 중앙
-  const cx = W/2, cy = H/2 + 20;
-  const BRANCH_ANGLES = {
-    shot:    -Math.PI*0.75,  // 좌상
-    status:  -Math.PI*0.25,  // 우상
-    gold:     Math.PI*0.25,  // 우하
-    survive:  Math.PI*0.75,  // 좌하
-    speed:   -Math.PI*0.5,   // 정상단 (중앙 위)
-  };
-  // 각 브랜치별 노드 순서 (허브에서 먼 순으로)
-  const BRANCH_ORDER = {
-    shot:    ['s_speed1','s_size1','s_speed2','s_size2','s_spread','s_shots1','s_back','s_shots2'],
-    status:  ['t_burn1','t_poison1','t_burn2','t_poison2','t_chill','t_dmg','t_stun','t_spread'],
-    gold:    ['g_gold1','g_xp1','g_gold2','g_xp2','g_donate','g_power','g_magnet','g_jackpot'],
-    survive: ['v_hp1','v_armor1','v_hp2','v_armor2','v_regen','v_steal','v_thorns','v_undead'],
-    speed:   ['m_spd1','m_fire1','m_spd2','m_fire2','m_dodge','m_dtap','m_charge2','m_blitz'],
-  };
-  const STEP = Math.min(W, H) * 0.095;
-  const pos = { hub: {x:cx, y:cy} };
+  const cx = W/2, cy = H/2 + 10;
 
-  for(const [branch, angle] of Object.entries(BRANCH_ANGLES)){
-    const ids = BRANCH_ORDER[branch];
-    // 두 갈래로 나뉘는 레이아웃 (좌/우 오프셋)
-    // 1~2번째: 부채꼴 시작
-    // 이후: 선행 노드 위치 기반으로 배치
-    const nodeMap = {};
-    ids.forEach((id,i) => {
-      const node = TREE_NODES.find(n=>n.id===id);
-      if(!node) return;
-      let x, y;
-      if(node.req.length===0 || node.req[0]==='hub'){
-        // 1단계: hub에서 직접 연결, 약간 옆으로 벌림
-        const sideOff = (ids.indexOf(id)%2===0 ? -0.28 : 0.28);
-        x = cx + Math.cos(angle + sideOff) * STEP;
-        y = cy + Math.sin(angle + sideOff) * STEP;
-      } else {
-        // 부모 위치 평균에서 뻗어나감
-        const parents = node.req.filter(r=>r!=='hub');
-        const px = parents.reduce((s,r)=>(pos[r]||{x:cx}).x+s,0)/Math.max(1,parents.length);
-        const py = parents.reduce((s,r)=>(pos[r]||{y:cy}).y+s,0)/Math.max(1,parents.length);
-        const dist = Math.hypot(px-cx, py-cy);
-        const nAngle = Math.atan2(py-cy, px-cx);
-        const spread = parents.length > 1 ? 0 : (ids.indexOf(id) % 2 === 0 ? -0.18 : 0.18);
-        x = cx + Math.cos(nAngle + spread) * (dist + STEP);
-        y = cy + Math.sin(nAngle + spread) * (dist + STEP);
-      }
-      pos[id] = {x, y};
-      nodeMap[id] = {x, y};
-    });
+  // 5개 갈래 기준 방향 (라디안)
+  const BRANCH_ANGLES = {
+    speed:    -Math.PI/2,
+    shot:     -Math.PI/2 - Math.PI*0.38,
+    survive:  -Math.PI/2 + Math.PI*0.38,
+    status:   -Math.PI/2 - Math.PI*0.76,
+    gold:     -Math.PI/2 + Math.PI*0.76,
+  };
+
+  const STEP = Math.min(W*0.44, H*0.40);
+  const LAYER_DIST = [0, 0.22, 0.42, 0.60, 0.75, 0.88, 1.0];
+
+  // [깊이, 좌우오프셋(라디안)]
+  const NODE_POS = {
+    m_spd1:   [1, -0.22], m_fire1:  [1,  0.22],
+    m_spd2:   [2, -0.22], m_fire2:  [2,  0.22],
+    m_dodge:  [3,  0],
+    m_dtap:   [4, -0.22], m_charge2:[4,  0.22],
+    m_blitz:  [5,  0],
+
+    s_speed1: [1, -0.20], s_size1:  [1,  0.20],
+    s_speed2: [2, -0.20], s_size2:  [2,  0.20],
+    s_spread: [3,  0],
+    s_shots1: [4, -0.20], s_back:   [4,  0.20],
+    s_shots2: [5,  0],
+
+    v_hp1:    [1, -0.20], v_armor1: [1,  0.20],
+    v_hp2:    [2, -0.20], v_armor2: [2,  0.20],
+    v_regen:  [3, -0.20],
+    v_steal:  [4, -0.20], v_thorns: [4,  0.20],
+    v_undead: [5,  0],
+
+    t_burn1:  [1, -0.20], t_poison1:[1,  0.20],
+    t_burn2:  [2, -0.20], t_poison2:[2,  0.20],
+    t_chill:  [3,  0.20], t_dmg:    [3, -0.20],
+    t_stun:   [4,  0],
+    t_spread: [5,  0],
+
+    g_gold1:  [1, -0.20], g_xp1:    [1,  0.20],
+    g_gold2:  [2, -0.20], g_xp2:    [2,  0.20],
+    g_donate: [3,  0.20], g_power:  [3, -0.20],
+    g_magnet: [4,  0],
+    g_jackpot:[5,  0],
+  };
+
+  const NODE_BRANCH = {};
+  TREE_NODES.forEach(n=>{ if(n.branch!=='hub') NODE_BRANCH[n.id]=n.branch; });
+
+  const pos = { hub:{x:cx, y:cy} };
+
+  for(const [id, [depth, off]] of Object.entries(NODE_POS)){
+    const branch = NODE_BRANCH[id];
+    if(!branch) continue;
+    const baseAngle = BRANCH_ANGLES[branch];
+    const angle = baseAngle + off;
+    const dist  = LAYER_DIST[depth] * STEP;
+    pos[id] = {
+      x: cx + Math.cos(angle) * dist,
+      y: cy + Math.sin(angle) * dist,
+    };
   }
   return pos;
 }
@@ -4879,11 +4891,13 @@ function openTree(){
   if(state!=='play' && state!=='map') return;
   treeOpen = true;
   $('ovTree').classList.remove('hidden');
+  if(state==='play' && !paused){ paused=true; mouseDown=false; autoFire=false; }
   renderTree();
 }
 function closeTree(){
   treeOpen = false;
   $('ovTree').classList.add('hidden');
+  if(state==='play' && paused){ paused=false; last=performance.now(); }
 }
 
 function renderTree(){
