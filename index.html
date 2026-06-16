@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>시청자를 막아라</title>
-<link rel="stylesheet" href="btv/css/styles.css?v=1.0.3">
+<link rel="stylesheet" href="btv/css/styles.css?v=1.0.5">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%2315101f'/%3E%3Crect x='5' y='1' width='6' height='1' fill='%239b8fc4'/%3E%3Crect x='3' y='2' width='10' height='1' fill='%239b8fc4'/%3E%3Crect x='2' y='3' width='12' height='1' fill='%239b8fc4'/%3E%3Crect x='2' y='4' width='12' height='1' fill='%239b8fc4'/%3E%3Crect x='2' y='5' width='12' height='1' fill='%239b8fc4'/%3E%3Crect x='3' y='4' width='3' height='3' fill='%2315101f'/%3E%3Crect x='10' y='4' width='3' height='3' fill='%2315101f'/%3E%3Crect x='3' y='4' width='3' height='3' fill='%23a02080'/%3E%3Crect x='10' y='4' width='3' height='3' fill='%23a02080'/%3E%3Crect x='2' y='6' width='12' height='1' fill='%239b8fc4'/%3E%3Crect x='2' y='7' width='12' height='1' fill='%239b8fc4'/%3E%3Crect x='3' y='8' width='10' height='1' fill='%239b8fc4'/%3E%3Crect x='4' y='9' width='8' height='1' fill='%239b8fc4'/%3E%3Crect x='4' y='10' width='3' height='1' fill='%239b8fc4'/%3E%3Crect x='9' y='10' width='3' height='1' fill='%239b8fc4'/%3E%3Crect x='4' y='11' width='3' height='3' fill='%239b8fc4'/%3E%3Crect x='9' y='11' width='3' height='3' fill='%239b8fc4'/%3E%3C/svg%3E">
 </head>
 <body>
@@ -151,7 +151,7 @@
             <button class="title-item" id="tmExit" style="font-size:clamp(15px,2.5vw,21px);color:#9b8fc4">EXIT</button>
           </div>
         </div>
-        <div style="position:fixed;bottom:12px;right:16px;font-family:'Courier New',monospace;font-size:11px;color:#3a2f50;letter-spacing:2px;pointer-events:none;z-index:1;" id="verTag">v1.0.3</div>
+        <div style="position:fixed;bottom:12px;right:16px;font-family:'Courier New',monospace;font-size:11px;color:#3a2f50;letter-spacing:2px;pointer-events:none;z-index:1;" id="verTag">v1.0.4</div>
       </div>
 
       <!-- START (난이도 선택) -->
@@ -322,6 +322,11 @@
           <div class="score-card" id="endScoreCard">
             <div class="score-label">SCORE</div>
             <div class="score-value" id="endScore">0</div>
+            <div class="end-rank-form">
+              <label for="endRankName">닉네임:</label>
+              <input id="endRankName" type="text" maxlength="16" autocomplete="off" spellcheck="false" />
+              <button class="btn" id="endRankSubmit" type="button">랭킹 등록</button>
+            </div>
             <div class="score-save" id="endScoreSave">ranking standby</div>
           </div>
           <p class="sub" id="endQuip" style="color:var(--magenta)"></p>
@@ -404,7 +409,7 @@
 
 
 <!-- ===== JS: Game runtime ===== -->
-<script src="btv/js/game.js?v=1.0.3"></script>
+<script src="btv/js/game.js?v=1.0.5"></script>
 
       <!-- PASSIVE TREE -->
       <div class="hidden" id="ovTree" style="position:fixed;inset:0;z-index:500;background:rgba(5,3,10,0.97);display:flex;flex-direction:column;align-items:stretch;">
