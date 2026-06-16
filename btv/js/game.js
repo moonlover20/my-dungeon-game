@@ -248,6 +248,9 @@ const MUSIC = {
     act1:    'act1.mp3',
     midboss: 'midboss.mp3',
     boss:    'boss.mp3'
+  },
+  tightLoops:{
+    midboss:{start:0.02,endPad:0.28}
   }
 };
 (function initMusic(){
@@ -292,6 +295,10 @@ function updateMusic(dt){
     if(a.volume<goal) a.volume=Math.min(goal,a.volume+rate);
     else if(a.volume>goal) a.volume=Math.max(0,Math.min(1,a.volume-rate));
     if(k===want){
+      const lp=MUSIC.tightLoops&&MUSIC.tightLoops[k];
+      if(lp && isFinite(a.duration) && a.duration>1 && a.currentTime>=a.duration-(lp.endPad||0)){
+        try{ a.currentTime=lp.start||0; }catch(e){}
+      }
       if(a.paused){ try{ const p=a.play(); if(p&&p.catch)p.catch(()=>{}); }catch(e){} }
     }else if(a.volume<=0.002 && !a.paused){
       try{ a.pause(); }catch(e){}
@@ -356,7 +363,7 @@ const ENEMY_TYPES={
   zergling       :{name:"저글링", r:14, hp:12, spd:120, dmg:7, color:"#c98bff", xp:0, ai:"charge", label:"저글링"},
   mutalisk       :{name:"뮤탈", r:16, hp:16, spd:130, dmg:8, color:"#b97a4a", xp:0, ai:"chase", label:"뮤탈"},
   ultra          :{name:"울트라", r:26, hp:95, spd:52, dmg:20, color:"#8a6f4a", xp:0, ai:"chase", armor:0.25, label:"울트라"},
-  zerg_egg       :{name:"저그 알", r:18, hp:24, spd:0, dmg:0, color:"#b8772a", xp:0, ai:"egg", label:"알"},
+  zerg_egg       :{name:"저그 알", r:18, hp:9, spd:0, dmg:0, color:"#b8772a", xp:0, ai:"egg", label:"알"},
   // === 2막: 망자의 폐허 ===
   skeleton_warrior:{name:"스켈레톤 워리어",r:15,hp:30, spd:64,dmg:11,color:"#e8e3d2",xp:9,  ai:"chase"},
   skeleton_archer :{name:"스켈레톤 아처", r:14,hp:20, spd:48,dmg:0, color:"#d9d2bf",xp:11, ai:"shooter",range:340,cool:1.4},
@@ -2780,7 +2787,7 @@ function update(dt){
         e.climaxT-=dt; e.wob+=dt*18;
         if(Math.random()<0.6) burst(e.x+rand(-e.r,e.r),e.y+rand(-e.r,e.r),'#ff5a2a',2,220);
         if(e.climaxT<=0){
-          for(let ring=0;ring<3;ring++){ const k=22+ring*5, sp=150+ring*55; for(let i=0;i<k;i++){ const a2=i/k*TAU+ring*0.22; eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*sp,vy:Math.sin(a2)*sp,r:8,dmg:11,life:4.2,spore:true}); } }
+          for(let ring=0;ring<3;ring++){ const k=18+ring*4, sp=150+ring*55; for(let i=0;i<k;i++){ const a2=i/k*TAU+ring*0.22; eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*sp,vy:Math.sin(a2)*sp,r:8,dmg:11,life:4.2,spore:true}); } }
           spawnCreep(e.x,e.y); screenShake=Math.max(screenShake||0,16);
           banner('💥 과부하 폭발!','',800); beep(60,0.5,'sawtooth',0.09);
           e.atkT=2.4;
@@ -2788,14 +2795,14 @@ function update(dt){
       } else {
         e.summonT=(e.summonT==null?12:e.summonT)-dt;
         if(e.summonT<=0){
-          hyechulSpawnEgg(e,ph===1?'zergling':ph===2?'mutalisk':'ultra',5,ph===1?12:ph===2?10:12);
+          hyechulSpawnEgg(e,ph===1?'zergling':ph===2?'mutalisk':'ultra',ph===3?4:5,ph===1?12:ph===2?10:12);
           e.summonT=ph===1?22:ph===2?20:18;
         }
         e.atkT=(e.atkT==null?1.6:e.atkT)-dt;
         if(e.atkT<=0){
           const pa=Math.atan2(player.y-e.y,player.x-e.x);
           const slot=(e.atkN=(e.atkN||0))%5; e.atkN++;
-          const base=ph===1?1.8:ph===2?1.5:1.3;  // 페이즈 올라갈수록 빠르게
+          const base=ph===1?1.8:ph===2?1.5:1.45;  // 페이즈 올라갈수록 빠르게
           if(ph===1){
             if(slot===0){
               // 포자탄 5발 부채꼴 연사 (기존 3발→5발)
@@ -2862,8 +2869,8 @@ function update(dt){
             }
           } else {
             if(slot===0){
-              // 버로우 가시 + 점막 - 최종페이즈 맵 15곳 이상
-              const pillarsN=15+irand(0,5);
+              // 버로우 가시 + 점막 - 최종페이즈 맵 12곳 이상
+              const pillarsN=12+irand(0,4);
               spawnFirePillar(player.x,player.y);
               for(let i=0;i<pillarsN;i++) spawnFirePillar(rand(40,W-40),rand(100,H-70));
               spawnCreep(e.x,e.y+30);
@@ -2871,22 +2878,22 @@ function update(dt){
               banner('🔥🦴 버로우+점막 지옥','바닥이 전부 위험!',1000);
               e.atkT=base+0.3;
             } else if(slot===1){
-              // 산성침 9발 + 포자탄 링 동시
-              for(let i=-4;i<=4;i++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa+i*0.16)*260,vy:Math.sin(pa+i*0.16)*260,r:9,dmg:11,life:3,spore:true,home:1.8});
-              for(let i=0;i<14;i++){ const a2=i/14*TAU+e.atkN*0.4; eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*190,vy:Math.sin(a2)*190,r:8,dmg:9,life:3,spore:true}); }
+              // 산성침 7발 + 포자탄 링 동시
+              for(let i=-3;i<=3;i++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa+i*0.17)*260,vy:Math.sin(pa+i*0.17)*260,r:9,dmg:11,life:3,spore:true,home:1.8});
+              for(let i=0;i<12;i++){ const a2=i/12*TAU+e.atkN*0.4; eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*190,vy:Math.sin(a2)*190,r:8,dmg:9,life:3,spore:true}); }
               banner('💥 산성침+포자탄 폭격','최강 공격!',700);
               e.atkT=base;
             } else if(slot===2){
-              // 산성비 엄청난 대량 낙하 (3막 최강)
-              const rainN=38+irand(0,10);
+              // 산성비 대량 낙하 (3막)
+              const rainN=28+irand(0,8);
               for(let i=0;i<rainN;i++){ const fx=rand(10,W-10); eBullets.push({x:fx,y:-12,vx:rand(-25,25),vy:rand(185,240),r:9,dmg:10,life:4.8,spore:true}); }
-              for(let i=0;i<8;i++){ eBullets.push({x:-10,y:rand(80,H-80),vx:rand(150,200),vy:rand(-25,25),r:7,dmg:9,life:4,spore:true}); eBullets.push({x:W+10,y:rand(80,H-80),vx:-rand(150,200),vy:rand(-25,25),r:7,dmg:9,life:4,spore:true}); }
+              for(let i=0;i<5;i++){ eBullets.push({x:-10,y:rand(80,H-80),vx:rand(150,200),vy:rand(-25,25),r:7,dmg:9,life:4,spore:true}); eBullets.push({x:W+10,y:rand(80,H-80),vx:-rand(150,200),vy:rand(-25,25),r:7,dmg:9,life:4,spore:true}); }
               banner('☠️ 산성비 지옥','하늘과 사방이 무너진다!',900);
               e.atkT=base+0.2;
             } else if(slot===3){
               spawnSlowField(player.x,player.y,104,7);
               spawnSlowField(rand(120,W-120),rand(180,H-120),90,7);
-              hyechulEggBomb(e); hyechulCreepBloom(e,4);
+              hyechulEggBomb(e); hyechulCreepBloom(e,3);
               banner('🕸️ 점막 늪','이동이 느려진다',800);
               e.atkT=base;
             } else {
@@ -5921,7 +5928,7 @@ function spawnEgg(x,y,hatchType,hatchTime){
   burst(x,y,'#8a3f6f',10,140);
 }
 function hyechulSpawnEgg(e,hatchType,count,hatchTime){
-  const cap=hatchType==='ultra'?6:14;
+  const cap=hatchType==='ultra'?4:(hatchType==='mutalisk'?10:12);
   const pending=enemies.filter(x=>x.type==='zerg_egg'&&x.hatchType===hatchType).length;
   const live=enemies.filter(x=>x.type===hatchType).length;
   const n=Math.max(0,Math.min(count+irand(0,1),cap-live-pending));
