@@ -3736,15 +3736,25 @@ $('helpClose').onclick=()=>{ $('ovHelp').classList.add('hidden'); if(prevState&&
 (function titleScene(){
   const cv=$('titleCanvas'); if(!cv) return;
   const c=cv.getContext('2d');
-  const W=cv.width, H=cv.height, GROUND=H-13;
-  const stars=[];
-  for(let i=0;i<66;i++) stars.push({x:(Math.random()*W)|0,y:(Math.random()*(GROUND-16))|0,ph:Math.random()*6.28,sp:.5+Math.random()*1.8,b:Math.random()<.15});
+  let W=0, H=112, GROUND=103, sceneKey='';
+  const stars=[], clouds=[];
+  function seedTitleScene(){
+    const r=cv.getBoundingClientRect();
+    const aspect=r.height?Math.max(.58,Math.min(2.05,r.width/r.height)):1.6;
+    const nextH=112, nextW=Math.max(72,Math.round(nextH*aspect));
+    const key=nextW+'x'+nextH;
+    if(key===sceneKey) return;
+    sceneKey=key; W=nextW; H=nextH; GROUND=H-9; cv.width=W; cv.height=H;
+    stars.length=0;
+    for(let i=0;i<72;i++) stars.push({x:(Math.random()*W)|0,y:(Math.random()*(GROUND-18))|0,ph:Math.random()*6.28,sp:.5+Math.random()*1.8,b:Math.random()<.14});
+    clouds.length=0;
+    clouds.push(
+      {x:W*.12,y:24,s:0.92,v:2.0,sh:cloudShape(),col:'#344465'},
+      {x:W*.72,y:41,s:0.76,v:1.35,sh:cloudShape(),col:'#2d3b59'},
+      {x:W*.34,y:25,s:0.9,v:2.8,sh:cloudShape(),col:'#405276'}
+    );
+  }
   function cloudShape(){ return [{dx:0,dy:0,r:6},{dx:7,dy:1,r:8},{dx:16,dy:0,r:7},{dx:9,dy:-4,r:6},{dx:23,dy:2,r:5}]; }
-  const clouds=[
-    {x:30,y:24,s:1.0,v:2.2,sh:cloudShape(),col:'#36456a'},
-    {x:120,y:42,s:0.8,v:1.4,sh:cloudShape(),col:'#2e3c5a'},
-    {x:80,y:14,s:1.2,v:3.1,sh:cloudShape(),col:'#42547a'},
-  ];
   function blob(x,y,r,col){ c.fillStyle=col; c.beginPath(); c.arc(x,y,r,0,6.283); c.fill(); }
   function drawCloud(cl){
     for(const b of cl.sh) blob(cl.x+b.dx*cl.s, cl.y+b.dy*cl.s, b.r*cl.s, cl.col);
@@ -3753,17 +3763,21 @@ $('helpClose').onclick=()=>{ $('ovHelp').classList.add('hidden'); if(prevState&&
   function ruins(){
     c.fillStyle='#0d1322'; c.fillRect(0,GROUND,W,H-GROUND);
     c.fillStyle='#141c2f';
-    for(const[tx,th,tw] of [[12,18,8],[24,30,9],[150,26,10],[166,16,7],[64,12,8]]) c.fillRect(tx,GROUND-th,tw,th);
+    for(const[px,th,tw] of [[.07,18,8],[.16,28,9],[.80,22,10],[.91,15,7],[.36,12,8]]) c.fillRect((W*px)|0,GROUND-th,tw,th);
     // 부서진 모니터
     c.fillStyle='#10172a'; c.fillRect(40,GROUND-14,18,14);
-    c.fillStyle='#1b2740'; c.fillRect(42,GROUND-12,14,9);
-    c.fillStyle='#0c1120'; c.fillRect(48,GROUND-12,1,9);
+    const mx=(W*.25)|0;
+    c.fillStyle='#10172a'; c.fillRect(mx,GROUND-14,18,14);
+    c.fillStyle='#1b2740'; c.fillRect(mx+2,GROUND-12,14,9);
+    c.fillStyle='#0c1120'; c.fillRect(mx+8,GROUND-12,1,9);
     // 서버 랙
-    c.fillStyle='#141c2f'; c.fillRect(134,GROUND-20,12,20);
-    c.fillStyle='#243250'; for(let i=0;i<5;i++) c.fillRect(136,GROUND-18+i*4,8,2);
+    c.fillStyle='#141c2f'; c.fillRect(134,GROUND-18,12,18);
+    const sx=(W*.71)|0;
+    c.fillStyle='#141c2f'; c.fillRect(sx,GROUND-18,12,18);
+    c.fillStyle='#263654'; for(let i=0;i<4;i++) c.fillRect(sx+2,GROUND-16+i*4,8,2);
   }
   function mascot(t){
-    const bob=Math.sin(t*1.6)*1.4, cx=112, cy=GROUND-11+bob;
+    const bob=Math.sin(t*1.6)*1.2, cx=(W*.62)|0, cy=GROUND-12+bob;
     const g=c.createRadialGradient(cx,cy-4,2,cx,cy-4,26);
     g.addColorStop(0,'rgba(120,220,255,0.32)'); g.addColorStop(1,'rgba(120,220,255,0)');
     c.fillStyle=g; c.fillRect(cx-28,cy-32,56,46);
@@ -3777,6 +3791,7 @@ $('helpClose').onclick=()=>{ $('ovHelp').classList.add('hidden'); if(prevState&&
   }
   let raf=null,t0=performance.now();
   function draw(t){
+    seedTitleScene();
     const sky=c.createLinearGradient(0,0,0,GROUND);
     sky.addColorStop(0,'#10162c'); sky.addColorStop(0.5,'#172244'); sky.addColorStop(1,'#22305a');
     c.fillStyle=sky; c.fillRect(0,0,W,GROUND);
