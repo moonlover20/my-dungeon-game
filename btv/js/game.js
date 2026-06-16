@@ -4905,10 +4905,11 @@ function closeTree(){
 function renderTree(){
   const cvs = $('treeCanvas');
   if(!cvs) return;
-  // 렌더 직전 실제 레이아웃 크기로 세팅 (getBoundingClientRect가 가장 정확)
+  // 렌더 직전 실제 레이아웃 크기로 세팅
   const _rect = cvs.getBoundingClientRect();
-  const W = cvs.width  = Math.round(_rect.width)  || window.innerWidth;
-  const H = cvs.height = Math.round(_rect.height) || window.innerHeight;
+  const W = cvs.width  = Math.round(_rect.width)  || window.innerWidth  || 1280;
+  const H = cvs.height = Math.round(_rect.height) || window.innerHeight || 720;
+  console.log('[Tree] canvas size:', W, H, 'rect:', _rect.width, _rect.height, 'inner:', window.innerWidth, window.innerHeight);
   const c = cvs.getContext('2d');
   _treeCanvas = cvs; _treeCtx = c;
 
