@@ -1521,8 +1521,9 @@ function update(dt){
     e.coolT-=dt; e.wob+=dt*3;
     if(e._spd0==null) e._spd0=e.spd;
     const _chl=(e.chillT=(e.chillT||0))>0; if(_chl) e.chillT-=dt; e.spd=_chl? e._spd0*0.5 : e._spd0;
-    if((e.burnT=(e.burnT||0))>0){ e.burnT-=dt; e.hp-=(e.burnDmg||0)*dt; e.hitT=Math.max(e.hitT,0.04); if(e.hp<=0){ if(e.type==='hyechul'&&(e.phase||1)<3) hyechulNextPhase(e); else if(e.type==='kkotchung'&&(e.phase||1)<3) kkotNextPhase(e); else killEnemy(e); continue; } }
-    if((e.psT=(e.psT||0))>0){ e.psT-=dt; e.hp-=(e.psStacks||0)*(e.psDmg||0)*dt; e.hitT=Math.max(e.hitT,0.04); if(e.hp<=0){ if(e.type==='hyechul'&&(e.phase||1)<3) hyechulNextPhase(e); else if(e.type==='kkotchung'&&(e.phase||1)<3) kkotNextPhase(e); else killEnemy(e); continue; } } else { e.psStacks=0; }
+    if((e.burnT=(e.burnT||0))>0){ e.burnT-=dt; const bdmg=(e.burnDmg||0)*dt; e.hp-=bdmg; e.hitT=Math.max(e.hitT,0.04); e._burnPopT=(e._burnPopT||0)-dt; if(e._burnPopT<=0){ e._burnPopT=0.35; if(GS.dmgNum&&typeof spawnDmgNum==='function') spawnDmgNum(e.x,e.y-e.r-4,Math.max(1,Math.round((e.burnDmg||0)*0.35)),false,'burn'); } if(e.hp<=0){ if(e.type==='hyechul'&&(e.phase||1)<3) hyechulNextPhase(e); else if(e.type==='kkotchung'&&(e.phase||1)<3) kkotNextPhase(e); else killEnemy(e); continue; } }
+    else { e._burnPopT=0; }
+    if((e.psT=(e.psT||0))>0){ e.psT-=dt; const pdmg=(e.psStacks||0)*(e.psDmg||0)*dt; e.hp-=pdmg; e.hitT=Math.max(e.hitT,0.04); e._psPopT=(e._psPopT||0)-dt; if(e._psPopT<=0){ e._psPopT=0.35; if(GS.dmgNum&&typeof spawnDmgNum==='function') spawnDmgNum(e.x,e.y-e.r-4,Math.max(1,Math.round((e.psStacks||0)*(e.psDmg||0)*0.35)),false,'poison'); } if(e.hp<=0){ if(e.type==='hyechul'&&(e.phase||1)<3) hyechulNextPhase(e); else if(e.type==='kkotchung'&&(e.phase||1)<3) kkotNextPhase(e); else killEnemy(e); continue; } } else { e.psStacks=0; e._psPopT=0; }
     const a=Math.atan2(player.y-e.y,player.x-e.x);
     const d=Math.hypot(player.x-e.x,player.y-e.y);
     if((e.stunT=(e.stunT||0))>0){ e.stunT-=dt; }
@@ -3606,6 +3607,47 @@ const SPRITES={
   },
 };
 
+// ── 상태이상 뱃지 아이콘 (HP바 위쪽) ──────────────────────────
+function drawStatusBadges(e){
+  const active=[];
+  if((e.burnT ||0)>0) active.push({key:'fire',  dur:e.burnT, max:3  });
+  if((e.chillT||0)>0) active.push({key:'frost', dur:e.chillT,max:2.5});
+  if((e.psT   ||0)>0) active.push({key:'poison',dur:e.psT,   max:4  });
+  if((e.stunT ||0)>0) active.push({key:'bell',  dur:e.stunT, max:0.6});
+  if(!active.length) return;
+
+  const CELL=1.6;
+  const ICON_W=9*CELL;
+  const GAP=3;
+  const total=active.length*(ICON_W+GAP)-GAP;
+  const startX=e.x-total/2;
+  const baseY=e.y-e.r-20;
+
+  ctx.save();
+  ctx.imageSmoothingEnabled=false;
+  for(let i=0;i<active.length;i++){
+    const {key,dur,max}=active[i];
+    const pat=TREE_PIXEL_PATTERNS[key];
+    if(!pat) continue;
+    const alpha=0.55+0.45*(dur/max);
+    const ix=Math.round(startX+i*(ICON_W+GAP));
+    const iy=Math.round(baseY-ICON_W/2);
+    ctx.globalAlpha=alpha*0.72;
+    ctx.fillStyle='#0a0612';
+    ctx.fillRect(ix-1,iy-1,ICON_W+2,ICON_W+2);
+    ctx.globalAlpha=alpha;
+    for(let row=0;row<pat.p.length;row++){
+      for(let col=0;col<pat.p[row].length;col++){
+        const k=pat.p[row][col];
+        if(k==='.') continue;
+        ctx.fillStyle=pat.c[k]||'#fff';
+        ctx.fillRect(Math.round(ix+col*CELL),Math.round(iy+row*CELL),Math.ceil(CELL),Math.ceil(CELL));
+      }
+    }
+  }
+  ctx.restore();
+}
+// ─────────────────────────────────────────────────────────────
 function drawEnemy(e){
   ctx.save();
   ctx.translate(e.x,e.y);
@@ -3630,6 +3672,11 @@ function drawEnemy(e){
     ctx.beginPath(); ctx.arc(0,0,e.r+12+4*Math.sin(e.wob*2),0,TAU); ctx.stroke(); ctx.restore();
   }
   if(e.hitT>0){ ctx.globalAlpha=0.6; circle(0,0,e.r+1,'#fff'); ctx.globalAlpha=1; }
+  // ── 상태이상 몸통 오버레이 ──
+  if((e.burnT||0)>0){  ctx.save(); ctx.globalAlpha=0.28+0.08*Math.abs(Math.sin(e.wob*3)); ctx.fillStyle='#ff6a20'; ctx.beginPath(); ctx.arc(0,0,e.r,0,TAU); ctx.fill(); ctx.restore(); }
+  if((e.chillT||0)>0){ ctx.save(); ctx.globalAlpha=0.30+0.07*Math.abs(Math.sin(e.wob*2)); ctx.fillStyle='#5af0ff'; ctx.beginPath(); ctx.arc(0,0,e.r,0,TAU); ctx.fill(); ctx.restore(); }
+  if((e.psT||0)>0){    ctx.save(); ctx.globalAlpha=0.26+0.07*Math.abs(Math.sin(e.wob*2.5)); ctx.fillStyle='#3dff8a'; ctx.beginPath(); ctx.arc(0,0,e.r,0,TAU); ctx.fill(); ctx.restore(); }
+  if((e.stunT||0)>0){  ctx.save(); ctx.globalAlpha=0.32+0.10*Math.abs(Math.sin(e.wob*4)); ctx.fillStyle='#ffe060'; ctx.beginPath(); ctx.arc(0,0,e.r,0,TAU); ctx.fill(); ctx.restore(); }
   if(e.elite){ ctx.lineWidth=2.5; ctx.strokeStyle='#ffd34d'; circle(0,0,e.r+6,null,'#ffd34d'); }
   ctx.restore();
   if(e.hp<e.maxhp && !e.midboss && !e.eliteViewer){
@@ -3637,6 +3684,7 @@ function drawEnemy(e){
     ctx.fillStyle='#0008'; ctx.fillRect(e.x-w/2,e.y-e.r-12,w,4);
     ctx.fillStyle=e.color; ctx.fillRect(e.x-w/2,e.y-e.r-12,w*clamp(e.hp/e.maxhp,0,1),4);
   }
+  drawStatusBadges(e);
   if(e.label){
     ctx.save();
     ctx.font=(e.eliteViewer?'bold 13px ':'bold 11px ')+'sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
@@ -4818,10 +4866,10 @@ function drawFpsOverlay(){
 
 /* ----- 데미지 숫자 ----- */
 let dmgNums=[];
-function spawnDmgNum(x,y,amt,crit){
+function spawnDmgNum(x,y,amt,crit,kind){
   if(amt<=0) return;
   if(dmgNums.length>60) dmgNums.shift();
-  dmgNums.push({x:x+rand(-5,5),y:y,amt:amt,crit:crit,t:0,max:crit?0.75:0.6,vy:crit?-46:-38});
+  dmgNums.push({x:x+rand(-5,5),y:y,amt:amt,crit:crit,kind:kind||'normal',t:0,max:crit?0.75:0.6,vy:crit?-46:-38});
 }
 function updateDmgNums(dt){
   for(let i=dmgNums.length-1;i>=0;i--){ const d=dmgNums[i]; d.t+=dt; d.y+=d.vy*dt; d.vy*=0.90; if(d.t>=d.max) dmgNums.splice(i,1); }
@@ -4833,8 +4881,12 @@ function drawDmgNums(){
     const a=clamp(1-d.t/d.max,0,1);
     ctx.globalAlpha=a;
     ctx.font=(d.crit?'bold 18px':'bold 13px')+' Courier New';
-    ctx.fillStyle=d.crit?'#ffd34d':'#ffffff';
-    const txt=(d.crit?'⚡':'')+d.amt;
+    let col='#ffffff', prefix='';
+    if(d.crit){ col='#ffd34d'; prefix='⚡'; }
+    else if(d.kind==='burn'){   col='#ff8c3a'; prefix='🔥'; }
+    else if(d.kind==='poison'){ col='#3dff8a'; prefix='☠'; }
+    ctx.fillStyle=col;
+    const txt=prefix+d.amt;
     ctx.strokeText(txt,d.x,d.y); ctx.fillText(txt,d.x,d.y);
   }
   ctx.globalAlpha=1; ctx.restore(); ctx.textAlign='left';
