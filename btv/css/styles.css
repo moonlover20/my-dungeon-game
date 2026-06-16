@@ -160,7 +160,7 @@
   /* toast / floating banner */
   #banner{
     position:absolute;left:50%;top:14%;transform:translateX(-50%);
-    pointer-events:none;text-align:center;opacity:0;transition:opacity .2s;
+    z-index:150;pointer-events:none;text-align:center;opacity:0;transition:opacity .2s;
   }
   #banner.show{opacity:1;}
   #banner .big{font-size:34px;font-weight:bold;color:#fff;text-shadow:0 0 18px var(--magenta);letter-spacing:2px;}
