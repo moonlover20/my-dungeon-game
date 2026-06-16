@@ -4902,9 +4902,9 @@ function closeTree(){
 function renderTree(){
   const cvs = $('treeCanvas');
   if(!cvs) return;
-  // hidden 상태에서도 실제 뷰포트 크기로 세팅
-  const W = cvs.width  = window.innerWidth  || 1280;
-  const H = cvs.height = window.innerHeight || 720;
+  // fixed 오버레이이므로 뷰포트 전체 크기 사용
+  const W = cvs.width  = cvs.parentElement ? cvs.parentElement.clientWidth  || window.innerWidth  : window.innerWidth;
+  const H = cvs.height = cvs.parentElement ? cvs.parentElement.clientHeight || window.innerHeight : window.innerHeight;
   const c = cvs.getContext('2d');
   _treeCanvas = cvs; _treeCtx = c;
 
@@ -5051,72 +5051,7 @@ function renderTree(){
     c.restore();
   }
 
-  // ── 호버 툴팁 ──
-  if(_treeHover){
-    const node = TREE_NODES.find(n=>n.id===_treeHover);
-    const p2 = pos[_treeHover];
-    if(node && p2){
-      const col   = BRANCH_COL[node.branch];
-      const unlocked  = treeUnlocked.has(node.id);
-      const canUnlock = treeCanUnlock(node);
-      const ttW = 180, ttH = 72;
-      let tx = p2.x + R*1.3, ty = p2.y - ttH/2;
-      if(tx + ttW > W - 8) tx = p2.x - R*1.3 - ttW;
-      if(ty < 4) ty = 4;
-      if(ty + ttH > H - 4) ty = H - ttH - 4;
-
-      // 툴팁 배경
-      c.save();
-      c.fillStyle = '#0d0820';
-      c.strokeStyle = col;
-      c.lineWidth = 2;
-      c.shadowColor = col; c.shadowBlur = 16;
-      // 픽셀아트 스타일: 모서리 잘린 직사각형
-      c.beginPath();
-      c.moveTo(tx+6, ty);
-      c.lineTo(tx+ttW-6, ty);
-      c.lineTo(tx+ttW, ty+6);
-      c.lineTo(tx+ttW, ty+ttH-6);
-      c.lineTo(tx+ttW-6, ty+ttH);
-      c.lineTo(tx+6, ty+ttH);
-      c.lineTo(tx, ty+ttH-6);
-      c.lineTo(tx, ty+6);
-      c.closePath();
-      c.fill(); c.stroke();
-      c.restore();
-
-      // 툴팁 텍스트
-      c.save();
-      c.font = `bold 11px "Courier New"`;
-      c.fillStyle = col; c.textAlign = 'left'; c.textBaseline = 'top';
-      c.fillText(node.name, tx+8, ty+8);
-      c.font = `10px "Courier New"`;
-      c.fillStyle = '#ccc';
-      // 줄바꿈 처리
-      const words = node.desc.split(' ');
-      let line='', lY=ty+24;
-      for(const w of words){
-        const test = line+w+' ';
-        if(c.measureText(test).width > ttW-16 && line){
-          c.fillText(line.trim(), tx+8, lY); lY+=14; line=w+' ';
-        } else line=test;
-      }
-      if(line.trim()) c.fillText(line.trim(), tx+8, lY); lY+=14;
-
-      // 비용/상태
-      c.font = `bold 10px "Courier New"`;
-      if(unlocked){
-        c.fillStyle = '#5dff9b'; c.fillText('✓ 획득 완료', tx+8, lY);
-      } else if(canUnlock){
-        c.fillStyle = '#ffd34d'; c.fillText(`[${node.cost||1}P] 클릭하여 획득`, tx+8, lY);
-      } else {
-        c.fillStyle = '#666';
-        const missing = node.req.filter(r=>!treeUnlocked.has(r));
-        c.fillText(missing.length ? '선행 노드 필요' : `포인트 부족 (${node.cost||1}P)`, tx+8, lY);
-      }
-      c.restore();
-    }
-  }
+  // 툴팁은 HTML div로 처리 (renderTreeTooltip 별도 호출)
 }
 
 // ---------- 트리 마우스 이벤트 ----------
@@ -5130,6 +5065,45 @@ function treeNodeAt(mx, my, W, H){
   }
   return null;
 }
+function updateTreeTooltip(node, cx, cy){
+  const tt = $('treeTooltip');
+  if(!tt) return;
+  if(!node){ tt.style.display='none'; return; }
+
+  const col = BRANCH_COL[node.branch] || '#38e8ff';
+  const unlocked  = treeUnlocked.has(node.id);
+  const canUnlock = treeCanUnlock(node);
+
+  $('ttName').textContent  = node.icon + ' ' + node.name;
+  $('ttName').style.color  = col;
+  $('ttDesc').textContent  = node.desc;
+  tt.style.borderColor     = col;
+  tt.style.boxShadow       = '0 0 18px ' + col + '55';
+
+  const stEl = $('ttState');
+  if(unlocked){
+    stEl.textContent = '✓ 획득 완료';
+    stEl.style.color = '#5dff9b';
+  } else if(canUnlock){
+    stEl.textContent = '[' + (node.cost||1) + 'P] 클릭하여 획득';
+    stEl.style.color = '#ffd34d';
+  } else {
+    const missing = (node.req||[]).filter(r=>!treeUnlocked.has(r));
+    stEl.textContent = missing.length ? '선행 노드 필요' : '포인트 부족 (' + (node.cost||1) + 'P)';
+    stEl.style.color = '#666';
+  }
+
+  // 화면 경계 벗어나지 않게 위치 조정
+  const W = window.innerWidth, H = window.innerHeight;
+  const ttW = 260, ttH = 110;
+  let tx = cx + 16, ty = cy + 16;
+  if(tx + ttW > W - 8) tx = cx - ttW - 8;
+  if(ty + ttH > H - 8) ty = cy - ttH - 8;
+  tt.style.left    = tx + 'px';
+  tt.style.top     = ty + 'px';
+  tt.style.display = 'block';
+}
+
 function initTreeEvents(){
   const cvs = $('treeCanvas');
   if(!cvs) return;
@@ -5141,7 +5115,9 @@ function initTreeEvents(){
     const node = treeNodeAt(mx, my, cvs.width, cvs.height);
     const newHover = node ? node.id : null;
     if(newHover !== _treeHover){ _treeHover = newHover; renderTree(); }
+    updateTreeTooltip(node, e.clientX, e.clientY);
   });
+  cvs.addEventListener('mouseleave', ()=>{ updateTreeTooltip(null,0,0); });
   cvs.addEventListener('click', e=>{
     if(!treeOpen) return;
     const r  = cvs.getBoundingClientRect();
