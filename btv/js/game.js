@@ -352,7 +352,7 @@ const ENEMY_TYPES={
   goblin_bomber  :{name:"블페러", r:15, hp:22, spd:100, dmg:6,  color:"#9aa83f", xp:11, ai:"chase", explode:true, label:"블페러"},
   rhino_beetle   :{name:"자잘자",   r:24, hp:75, spd:60, dmg:12, color:"#3a2418", xp:14, ai:"charge", label:"자잘자"},
   earthworm      :{name:"지렁이", r:12, hp:10, spd:74, dmg:6, color:"#e87a8a", xp:0, ai:"erratic", label:"지렁이"},
-  hyechul        :{name:"혜철이", r:52, hp:170, spd:42, dmg:15, color:"#c0392b", xp:150, ai:"hyechul", label:"혜철이"},
+  hyechul        :{name:"혜철이", r:52, hp:300, spd:42, dmg:15, color:"#c0392b", xp:150, ai:"hyechul", label:"혜철이"},
   zergling       :{name:"저글링", r:14, hp:12, spd:120, dmg:7, color:"#c98bff", xp:0, ai:"charge", label:"저글링"},
   mutalisk       :{name:"뮤탈", r:16, hp:16, spd:130, dmg:8, color:"#b97a4a", xp:0, ai:"chase", label:"뮤탈"},
   ultra          :{name:"울트라", r:26, hp:95, spd:52, dmg:20, color:"#8a6f4a", xp:0, ai:"chase", armor:0.25, label:"울트라"},
@@ -377,7 +377,7 @@ const ENEMY_TYPES={
   reura         :{name:"러라",   r:15, hp:36,  spd:90, dmg:10, color:"#ffd166", xp:72,  ai:"chase", lunge:true, label:"러라"},
   namu          :{name:"나무",   r:22, hp:95,  spd:30, dmg:13, color:"#5fa84a", xp:112, ai:"chase",   label:"나무"},
   pobear        :{name:"포베어", r:24, hp:82,  spd:54, dmg:13, color:"#c8884a", xp:104, ai:"charge",  label:"포베어"},
-  yanggaeng     :{name:"박제인간", r:54, hp:900, spd:44, dmg:14, color:"#111111", xp:1800, ai:"bagjein", cool:2, label:"박제인간"},
+  yanggaeng     :{name:"박제인간", r:54, hp:1000, spd:44, dmg:14, color:"#111111", xp:1800, ai:"bagjein", cool:2, label:"박제인간"},
   // === 2막 엘리트: 양갱 (3페이즈) ===
   kkotchung     :{name:"양갱", r:32, hp:240, spd:50, dmg:11, color:"#f7a8d0", xp:900,  ai:"kkotchung", cool:1.4, label:"미주"},
 };
@@ -3351,7 +3351,7 @@ function update(dt){
     }else{ pk.x+=pk.vx*dt; pk.y+=pk.vy*dt; pk.vy+=200*dt; pk.vx*=0.96; if(pk.y>H-20){pk.y=H-20;pk.vy*=-0.4;} }
     if(d<player.r+pk.r){
       if(pk.type==='gold'){ gold+=pk.amt; sfx.coin(); }
-      else if(pk.type==='heart'){ healPlayer(pk.amt,player.x,player.y); sfx.pick(); }
+      else if(pk.type==='heart'){ healPlayer(pk.amt); sfx.pick(); }
       pickups.splice(i,1); updateHUD(); continue;
     }
     if(pk.life<=0) pickups.splice(i,1);
