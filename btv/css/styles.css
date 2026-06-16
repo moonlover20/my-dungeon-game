@@ -49,6 +49,9 @@
   #hud{
     display:flex;gap:10px;align-items:stretch;flex-wrap:wrap;
   }
+  body.title-mode #hud{display:none;}
+  body.title-mode #gameCol{height:100vh;}
+  body.title-mode #stageWrap{min-height:100vh;}
   .hud-card{
     background:linear-gradient(180deg,var(--panel2),var(--panel));
     border:2px solid var(--line);
@@ -436,15 +439,17 @@
   .title-item:hover:not(.disabled)::after{content:"";position:absolute;left:0;right:0;bottom:-3px;height:2px;
     background:#38e8ff;box-shadow:0 0 8px #38e8ff;}
   .title-item.disabled{color:#5a5570;cursor:default;text-shadow:none;}
-  .title-live{position:absolute;right:6%;top:29%;text-align:right;font-size:clamp(11px,1.5vw,14px);
-    letter-spacing:2px;color:#ff6680;font-weight:bold;text-shadow:0 0 10px #ff4d6d88;line-height:1.6;}
+  .title-live{position:absolute;right:5.8%;top:28%;text-align:right;font-size:clamp(12px,1.45vw,15px);
+    letter-spacing:1.6px;color:#ff748b;font-weight:bold;line-height:1.7;padding:10px 12px;
+    background:rgba(8,7,18,.46);border:1px solid rgba(205,187,242,.24);box-shadow:0 0 22px rgba(145,70,255,.18);
+    text-shadow:0 2px 0 rgba(0,0,0,.55),0 0 10px rgba(255,77,109,.55);backdrop-filter:blur(2px);}
   .title-live .ld{display:inline-block;width:9px;height:9px;border-radius:50%;background:#ff4d6d;
     box-shadow:0 0 8px #ff4d6d;animation:liveblink 1.4s infinite;vertical-align:1px;margin-right:5px;}
-  .title-hint{position:absolute;left:0;right:0;bottom:5%;text-align:center;font-size:11px;color:#8190ad;letter-spacing:2px;}
+  .title-live .credit{color:#d8c8ff!important;font-size:clamp(9px,1vw,11px)!important;letter-spacing:1.2px!important;line-height:1.9!important;opacity:.88;}
   #ovStart .backToTitle{display:inline-block;margin-bottom:6px;color:var(--muted);font-size:11px;letter-spacing:1px;
     background:none;border:none;font-family:inherit;cursor:pointer;}
   #ovStart .backToTitle:hover{color:var(--neon);}
-  @media (max-width:560px){ .title-menu{top:45%;} .title-live{top:24%;} }
+  @media (max-width:560px){ .title-menu{top:45%;} .title-live{top:24%;right:5%;max-width:48%;} }
 
 /* Extracted style block 2 */
 #ovSettings{z-index:200;}
