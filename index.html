@@ -359,6 +359,23 @@
           <span style="font-family:'Courier New',monospace;font-size:11px;color:#9b8fc4;">[ K ] 닫기</span>
         </div>
         <canvas id="treeCanvas" style="flex:1;width:100%;cursor:pointer;image-rendering:pixelated;"></canvas>
+        <div id="treeTooltip" style="
+          display:none;
+          position:fixed;
+          z-index:600;
+          pointer-events:none;
+          background:#0d0820;
+          border:2px solid #38e8ff;
+          padding:10px 14px;
+          min-width:200px;
+          max-width:260px;
+          font-family:'Courier New',monospace;
+          box-shadow:0 0 18px rgba(56,232,255,0.3);
+        ">
+          <div id="ttName"  style="font-size:13px;font-weight:bold;margin-bottom:6px;"></div>
+          <div id="ttDesc"  style="font-size:11px;color:#bbb;line-height:1.5;margin-bottom:8px;"></div>
+          <div id="ttState" style="font-size:11px;font-weight:bold;"></div>
+        </div>
       </div>
 </body>
 </html>
