@@ -145,7 +145,7 @@
 
           <div class="title-menu">
             <button class="title-item" id="tmNew">NEW GAME</button>
-            <button class="title-item disabled" id="tmLoad" tabindex="-1">LOAD</button>
+            <button class="title-item" id="tmRanking">RANKING</button>
             <button class="title-item" id="tmSettings">SETTINGS</button>
             <button class="title-item" id="tmExit" style="font-size:clamp(15px,2.5vw,21px);color:#9b8fc4">EXIT</button>
           </div>
@@ -318,10 +318,43 @@
           <div class="tag" id="endTag">방송 종료</div>
           <h1 id="endTitle">GG</h1>
           <p class="sub" id="endStats"></p>
+          <div class="score-card" id="endScoreCard">
+            <div class="score-label">SCORE</div>
+            <div class="score-value" id="endScore">0</div>
+            <div class="score-save" id="endScoreSave">ranking standby</div>
+          </div>
           <p class="sub" id="endQuip" style="color:var(--magenta)"></p>
           <button class="btn" id="retryBtn" style="background:#3a2a52;border-color:#c98bff">↺ 재도전하기</button>
           <button class="btn" id="restartBtn">다시 시작하기</button>
           <button class="btn ghost" id="titleBtn">시작화면으로</button>
+        </div>
+      </div>
+
+      <!-- RANKING -->
+      <div class="overlay hidden" id="ovRanking">
+        <div class="panel-box ranking-panel">
+          <div class="ranking-sky" aria-hidden="true">
+            <i class="rs-star s1"></i><i class="rs-star s2"></i><i class="rs-star s3"></i>
+            <i class="rs-tower t1"></i><i class="rs-tower t2"></i><i class="rs-tower t3"></i>
+          </div>
+          <div class="ranking-head">
+            <div>
+              <div class="tag">WORLD RANKING</div>
+              <h2>랭킹 보드</h2>
+            </div>
+            <div class="ranking-live"><span></span>LIVE</div>
+          </div>
+          <div class="ranking-tabs" id="rankingTabs">
+            <button class="rank-tab" data-diff="easy">쉬움</button>
+            <button class="rank-tab" data-diff="normal">보통</button>
+            <button class="rank-tab" data-diff="hard">어려움</button>
+          </div>
+          <div class="ranking-screen">
+            <div class="ranking-list" id="rankingList">
+              <div class="rank-empty">기록을 불러오는 중...</div>
+            </div>
+          </div>
+          <button class="btn ghost" id="rankingClose" onclick="if(typeof closeRankingTab==='function') closeRankingTab()">닫기</button>
         </div>
       </div>
 
