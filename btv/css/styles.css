@@ -325,7 +325,7 @@
   .db-x{background:none;border:none;color:#cbb8f0;font-family:inherit;font-size:24px;font-weight:900;line-height:1;cursor:pointer;text-shadow:0 2px 0 #000;}
   .db-x:hover{color:#fff;text-shadow:0 0 10px var(--neon);}
   .database-tools{margin:14px 0 10px;display:grid;grid-template-columns:minmax(0,1fr) minmax(180px,240px);gap:10px;align-items:center;}
-  .database-tabs{display:grid;grid-template-columns:repeat(4,minmax(62px,1fr));gap:8px;}
+  .database-tabs{display:grid;grid-template-columns:repeat(5,minmax(54px,1fr));gap:8px;}
   .db-tab{
     min-height:36px;
     border:2px solid #594b87;
@@ -529,9 +529,182 @@
   .mapnode.reach:hover{transform:scale(1.12);transform-box:fill-box;transform-origin:center;}
   .maplegend{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-top:10px;font-size:11px;color:var(--muted);}
   .maplegend span b{color:var(--ink);}
-  /* 이벤트 */
-  #ovEvent .panel-box{max-width:560px;}
-  #eventBody{color:var(--muted);font-size:13px;line-height:1.7;margin:6px 0 4px;text-align:left;}
+  /* ================================================================
+     EventPanel v2 — 미지 이벤트 스토리 씬 UI
+     ================================================================ */
+  #ovEvent{align-items:center;justify-content:center;}
+
+  /* 패널 래퍼 */
+  .ev-panel{
+    position:relative;overflow:hidden;
+    width:clamp(300px,90vw,560px);
+    max-height:90vh;
+    background:#0a0814;
+    border:1px solid #2a1a40;
+    box-shadow:0 0 0 1px #1a1030,0 24px 64px rgba(0,0,0,.85);
+    display:flex;flex-direction:column;
+    animation:evPanelIn .28s cubic-bezier(.22,.9,.44,1) both;
+  }
+  @keyframes evPanelIn{
+    from{opacity:0;transform:translateY(12px) scale(.97);}
+    to  {opacity:1;transform:translateY(0)   scale(1);}
+  }
+
+  /* 테마 배경 — JS에서 radial-gradient 주입 */
+  .ev-theme-bg{
+    position:absolute;inset:0;pointer-events:none;z-index:0;
+    transition:background .35s ease;
+  }
+
+  /* 픽셀 애니메이션 레이어 — canvas 또는 absolute div 포함 */
+  .ev-anim-layer{
+    position:absolute;inset:0;pointer-events:none;z-index:1;
+  }
+
+  /* 헤더 */
+  .ev-panel-header{
+    position:relative;z-index:2;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:8px 14px 6px;
+    border-bottom:1px solid #1e1530;
+    background:rgba(0,0,0,.18);
+  }
+  .ev-panel-eyebrow{
+    font-size:9px;letter-spacing:3px;color:#5a4878;
+    font-family:'Courier New',monospace;
+  }
+  .ev-panel-tags{display:flex;gap:5px;flex-wrap:wrap;}
+  .ev-tag-badge{
+    font-size:9px;letter-spacing:1px;font-weight:bold;
+    padding:2px 8px;border-radius:1px;
+    font-family:'Courier New',monospace;
+    border:1px solid transparent;
+  }
+
+  /* 씬 + 텍스트 */
+  .ev-panel-body{
+    position:relative;z-index:2;
+    display:grid;grid-template-columns:100px 1fr;
+    border-bottom:1px solid #1e1530;
+    min-height:108px;
+  }
+  .ev-scene-wrap{
+    position:relative;
+    border-right:1px solid #1e1530;
+    display:flex;flex-direction:column;align-items:center;
+    justify-content:flex-end;
+    padding-bottom:6px;
+    background:rgba(0,0,0,.2);
+    overflow:hidden;
+  }
+  .ev-scene-canvas{
+    image-rendering:pixelated;
+    width:100px;height:88px;
+    display:block;
+  }
+  .ev-scene-label{
+    font-size:8px;letter-spacing:2px;
+    color:#3a2860;text-align:center;
+    margin-top:2px;font-family:'Courier New',monospace;
+  }
+  .ev-text-wrap{
+    padding:12px 14px;
+    display:flex;flex-direction:column;justify-content:center;
+  }
+  .ev-title{
+    font-size:14px;font-weight:bold;
+    color:#e8deff;line-height:1.25;
+    margin:0 0 6px;letter-spacing:.5px;
+    font-family:'Courier New',monospace;
+  }
+  .ev-desc{
+    font-size:11px;line-height:1.68;
+    color:#8a7ab0;margin:0;text-align:left;
+    font-family:'Courier New',monospace;
+  }
+
+  /* 구분선 — 테마 색 accent */
+  .ev-divider{
+    position:relative;z-index:2;
+    height:1px;background:#1e1530;
+    transition:background .35s;
+  }
+  .ev-divider::after{
+    content:'';display:block;height:1px;
+    background:linear-gradient(90deg,transparent,var(--ev-accent,#8060c0),transparent);
+  }
+
+  /* 선택지 */
+  .ev-choices{
+    position:relative;z-index:2;
+    padding:8px 12px 12px;
+    display:flex;flex-direction:column;gap:5px;
+  }
+  /* ev-choice는 기존 .choice를 확장하지 않고 독립 클래스로 */
+  .ev-choices .choice{
+    position:relative;overflow:hidden;
+    border-left:2px solid var(--ev-accent,#3a2a50);
+    transition:border-left-color .2s,background .15s,transform .07s;
+  }
+  .ev-choices .choice:not(:disabled):hover{
+    border-left-color:var(--ev-accent,#8060c0);
+    background:#1a1030;
+  }
+  .ev-choices .choice:not(:disabled):active{transform:translateY(1px);}
+  .ev-choices .choice .ttl{font-size:12px;}
+
+  /* ── 씬별 CSS 애니메이션 키프레임 ─────────────────────── */
+  @keyframes evCandleFlicker{
+    0%,100%{opacity:.8;transform:scaleY(1) scaleX(1) translateX(0);}
+    25%{opacity:1;transform:scaleY(1.12) scaleX(.88) translateX(-1px);}
+    60%{opacity:.72;transform:scaleY(.93) scaleX(1.06) translateX(1px);}
+  }
+  @keyframes evSoulFloat{
+    0%,100%{transform:translateY(0) rotate(-3deg);}
+    50%{transform:translateY(-7px) rotate(3deg);}
+  }
+  @keyframes evChestPulse{
+    0%,100%{box-shadow:0 0 0 0 rgba(120,40,220,.0);}
+    50%{box-shadow:0 0 18px 4px rgba(120,40,220,.45);}
+  }
+  @keyframes evScanLight{
+    0%{left:-30%;}100%{left:130%;}
+  }
+  @keyframes evLightning{
+    0%,88%,100%{opacity:0;}
+    90%,96%{opacity:1;}
+    93%,99%{opacity:0;}
+  }
+  @keyframes evPageWave{
+    0%,100%{transform:skewX(0deg);}
+    40%{transform:skewX(-2.5deg);}
+    70%{transform:skewX(1.5deg);}
+  }
+  @keyframes evGoldShimmer{
+    0%,100%{opacity:.55;}50%{opacity:1;}
+  }
+  @keyframes evDiceWobble{
+    0%,100%{transform:rotate(0deg);}
+    25%{transform:rotate(-6deg);}
+    75%{transform:rotate(6deg);}
+  }
+  @keyframes evSparkle{
+    0%,100%{opacity:.15;transform:scale(.8);}
+    50%{opacity:1;transform:scale(1.2);}
+  }
+  @keyframes evRoulettePin{
+    0%{transform:rotate(0deg);}100%{transform:rotate(360deg);}
+  }
+  @keyframes evFireFlicker{
+    0%,100%{transform:scaleY(1);}
+    33%{transform:scaleY(1.15) scaleX(.9);}
+    66%{transform:scaleY(.92) scaleX(1.06);}
+  }
+  @keyframes evPotionBubble{
+    0%{transform:translateY(0);opacity:0;}
+    20%{opacity:.9;}
+    100%{transform:translateY(-28px);opacity:0;}
+  }
   .diffbtns{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px;}
   .invgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px;}
   #ovInv .panel-box{max-height:90vh;overflow-y:auto;}
