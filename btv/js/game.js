@@ -571,7 +571,6 @@ let mouseX=W/2, mouseY=H/2, mouseDown=false;
 window.addEventListener('keydown',e=>{
   const k=e.key.toLowerCase();
   if(k==='escape'){
-    if(treeOpen){ closeTree(); e.preventDefault(); return; }
     togglePause(); e.preventDefault(); return;
   }
   keys[k]=true;
@@ -4813,8 +4812,8 @@ function getTreeLayout(W, H){
     gold:     -Math.PI/2 + Math.PI*0.76,
   };
 
-  const STEP = Math.min(W*0.44, H*0.40);
-  const LAYER_DIST = [0, 0.22, 0.42, 0.60, 0.75, 0.88, 1.0];
+  const STEP = Math.min(W*0.40, H*0.38);
+  const LAYER_DIST = [0, 0.20, 0.38, 0.56, 0.72, 0.86, 1.0];
 
   // [깊이, 좌우오프셋(라디안)]
   const NODE_POS = {
@@ -4903,8 +4902,9 @@ function closeTree(){
 function renderTree(){
   const cvs = $('treeCanvas');
   if(!cvs) return;
-  const W = cvs.width  = cvs.offsetWidth  || 900;
-  const H = cvs.height = cvs.offsetHeight || 600;
+  // hidden 상태에서도 실제 뷰포트 크기로 세팅
+  const W = cvs.width  = window.innerWidth  || 1280;
+  const H = cvs.height = window.innerHeight || 720;
   const c = cvs.getContext('2d');
   _treeCanvas = cvs; _treeCtx = c;
 
