@@ -337,7 +337,7 @@ const ENEMY_TYPES={
   goblin_warrior :{name:"러부엉",  r:16, hp:28, spd:78, dmg:11, color:"#6fae4e", xp:8,  ai:"chase", lunge:true, label:"러부엉"},
   goblin_archer  :{name:"대파",  r:14, hp:18, spd:50, dmg:6,  color:"#7bbf5a", xp:10, ai:"shooter", range:340, cool:1.25, label:"대파"},
   goblin_shaman  :{name:"까치",  r:15, hp:24, spd:66, dmg:7,  color:"#8a6fb0", xp:12, ai:"orbit",   range:240, cool:1.05, label:"까치"},
-  goblin_bomber  :{name:"블페러", r:15, hp:22, spd:114, dmg:8,  color:"#9aa83f", xp:11, ai:"chase", explode:true, label:"블페러"},
+  goblin_bomber  :{name:"블페러", r:15, hp:22, spd:100, dmg:6,  color:"#9aa83f", xp:11, ai:"chase", explode:true, label:"블페러"},
   rhino_beetle   :{name:"자잘자",   r:24, hp:90, spd:60, dmg:15, color:"#3a2418", xp:14, ai:"charge", label:"자잘자"},
   earthworm      :{name:"지렁이", r:12, hp:10, spd:74, dmg:6, color:"#e87a8a", xp:4, ai:"erratic", label:"지렁이"},
   hyechul        :{name:"혜철이", r:52, hp:200, spd:42, dmg:18, color:"#c0392b", xp:150, ai:"hyechul", label:"혜철이"},
@@ -1341,7 +1341,7 @@ function update(dt){
           e._wingT=rand(2.2,3.4);
         }
       }
-      if(e.type==='goblin_bomber'){ if(d<175){ e.x+=Math.cos(a)*e.spd*0.95*dt; e.y+=Math.sin(a)*e.spd*0.95*dt; if(!e._fuse){ e._fuse=true; burst(e.x,e.y,'#ff4d4d',6,150); if(typeof beep==='function')beep(90,0.05,'square',0.05); } } else { e._fuse=false; } }
+      if(e.type==='goblin_bomber'){ if(d<175){ e._fuseT=(e._fuseT||0)+dt; const brake=d<55?1.45:0.45; e.x-=Math.cos(a)*e.spd*brake*dt; e.y-=Math.sin(a)*e.spd*brake*dt; if(!e._fuse){ e._fuse=true; burst(e.x,e.y,'#ff4d4d',6,150); if(typeof beep==='function')beep(90,0.05,'square',0.05); } } else { e._fuse=false; e._fuseT=0; } }
       // 나무 피격 방어력 버프 타이머 감소
       if(e._armorBuff>0){ e._armorBuff-=dt; if(e._armorBuff<=0){ e._armorBuff=0; e.armor=Math.max((e.armor||0)-0.12,0); } }
       if(e._namuBuffT>0) e._namuBuffT-=dt;
@@ -1638,7 +1638,9 @@ function update(dt){
     e.x=clamp(e.x,e.r,W-e.r); e.y=clamp(e.y,e.r,H-e.r);
     // 접촉 데미지
     if(e.dmg>0 && dist2(e.x,e.y,player.x,player.y)<(e.r+player.r)**2){
+      const canContactHit=player.iframes<=0&&player.dodging<=0&&player.buffs.shield<=0;
       hurtPlayer(e.dmg, e.name||e.label||'시청자');
+      if(e.type==='goblin_bomber'&&canContactHit){ const ka=Math.atan2(e.y-player.y,e.x-player.x); e.x=clamp(e.x+Math.cos(ka)*86,e.r,W-e.r); e.y=clamp(e.y+Math.sin(ka)*86,e.r,H-e.r); e.stunT=Math.max(e.stunT||0,0.28); e._fuse=false; e._fuseT=0; }
     }
   }
 
@@ -1900,8 +1902,8 @@ const EVENTS=[
   // ===== 신규 이벤트 =====
   {tag:'⚠️ 방송 사고',title:'송출 오류 발생',body:'장비에 문제가 생겼다. 무리하게 밀어붙이면 한쪽이 강해지고 다른 쪽이 약해진다.',
    choices:[
-     {t:'화력에 올인 — 공격력 +10%, 받는 피해 +5%',f:()=>{player.dmgMul+=0.10;player.armor-=0.05;banner('공격 +10% / 방어 -5%','영구',1400);updateHUD();finishNode();}},
-     {t:'안전제일 — 받는 피해 -8%, 공격력 -5%',f:()=>{player.armor+=0.08;player.dmgMul=Math.max(0.4,player.dmgMul-0.05);banner('방어↑ / 공격↓','영구',1400);updateHUD();finishNode();}},
+     {t:'화력에 올인 — 공격력 +10%, 받는 피해 +5%',f:()=>{player.dmg+=1;player.armor-=0.05;banner('공격력 +1 / 방어 -5%','영구',1400);updateHUD();finishNode();}},
+     {t:'안전제일 — 받는 피해 -8%, 공격력 -5%',f:()=>{player.armor+=0.08;player.dmg=Math.max(1,player.dmg-0.5);banner('방어↑ / 공격력 -0.5','영구',1400);updateHUD();finishNode();}},
      {t:'기동 강화 — 이동 +12%, 최대체력 -8%',f:()=>{player.spd+=20;player.maxhp=Math.round(player.maxhp*0.92);player.hp=Math.min(player.hp,player.maxhp);banner('이동↑ / 체력↓','영구',1400);updateHUD();finishNode();}},
    ]},
   {tag:'🚨 도네 협박',title:'정체불명의 후원',body:'"골드 안 보내면 스왓 부른다." 무시하면 그만이지만, 응하면 가끔 답례가 온다.',
@@ -1990,7 +1992,7 @@ function startEvent(){
 // ========================================================
 const TRAIN_OPTS=[
   {label:'최대 체력 +16', f:()=>{ player.maxhp+=16; player.hp=Math.min(player.maxhp,player.hp+16); }},
-  {label:'공격력 +12%',   f:()=>{ player.dmgMul+=0.12; }},
+  {label:'공격력 +1.2',   f:()=>{ player.dmg+=1.2; }},
   {label:'발사 속도 +10%', f:()=>{ player.fireAdd+=0.10; }},
   {label:'이동 속도 +14',  f:()=>{ player.spd+=14; }},
   {label:'방어 +6%',       f:()=>{ player.armor=Math.min(0.85, player.armor+0.06); }},
@@ -2035,7 +2037,7 @@ const PERK_TIERS={
 const PERK_ICONS={"공격 특화":"btv/assets/asset-031-ae9039d98c.png","속사 특화":"btv/assets/asset-032-bfe2caed63.png","민첩 특화":"btv/assets/asset-033-e918978065.png","활력":"btv/assets/asset-034-56af33bbb6.png","방어 특화":"btv/assets/asset-035-f6e8be3ed5.png","광부":"btv/assets/asset-036-43798a2b09.png","대구경":"btv/assets/asset-037-a9d64b9689.png","재생":"btv/assets/asset-038-4746fa1204.png","경험치 부스트":"btv/assets/asset-039-88b1c0dbbe.png","도네 알림":"btv/assets/asset-040-cd1043c117.png","정밀 조준":"btv/assets/asset-041-05dcac0760.png","흡혈":"btv/assets/asset-042-f5a4bea336.png","충격파":"btv/assets/asset-043-9d9658dacd.png","관통":"btv/assets/asset-044-01948011af.png","반사":"btv/assets/asset-045-7621967172.png","연사":"btv/assets/asset-046-e68f91aaca.png","강철 체력":"btv/assets/asset-047-e0c650b661.png","거인 사냥":"btv/assets/asset-048-b6639c1f84.png","고속탄":"btv/assets/asset-049-92535813ed.png","화염탄":"btv/assets/asset-050-045d77fc4d.png","빙결탄":"btv/assets/asset-051-64010bc748.png","독침":"btv/assets/asset-052-d0c547eb8c.png","가시 갑옷":"btv/assets/asset-053-0db346b7c5.png","흡성":"btv/assets/asset-054-8b0a2a1723.png","추진력":"btv/assets/asset-055-3728ea6cff.png","잔상":"btv/assets/asset-056-698506bda6.png","맹공":"btv/assets/asset-057-c012209117.png","유도의 눈":"btv/assets/asset-058-05b6a83b89.png","연쇄 폭발":"btv/assets/asset-059-907ab157cf.png","흡혈귀":"btv/assets/asset-060-89ca5a31a0.png","그림자 보법":"btv/assets/asset-061-6ec81227e2.png","쌍방향 사격":"btv/assets/asset-062-90c3808337.png","더블탭":"btv/assets/asset-063-3a82467274.png","막판 정신력":"btv/assets/asset-064-2a1779ad5a.png","저체력 폭주":"btv/assets/asset-065-8ff4412553.png","처단":"btv/assets/asset-066-ed78891301.png","분노":"btv/assets/asset-067-871c1d2406.png","불사":"btv/assets/asset-068-5ce5921aad.png","치명 일격":"btv/assets/asset-069-5861e7f2e5.png","폭주":"btv/assets/asset-070-b47b63302a.png","작렬탄":"btv/assets/asset-071-239f04c3d8.png","이중 도약":"btv/assets/asset-072-f42df54136.png","재충전 보호막":"btv/assets/asset-073-b3d22fea42.png","다중 사격":"btv/assets/asset-074-86dfa25e6d.png","차지샷":"btv/assets/asset-075-abd2932133.png","유리 대포":"btv/assets/asset-076-a90164b8c5.png","구독자 소환":"btv/assets/asset-077-0df9827940.png"};
 const LEVEL_PERKS=[
   // ===== 일반 Common =====
-  {g:'common',icon:'⚔️',name:'공격 특화',desc:'공격력 +10%',apply:p=>{p.dmgMul+=0.10;}},
+  {g:'common',icon:'⚔️',name:'공격 특화',desc:'공격력 +1',apply:p=>{p.dmg+=1;}},
   {g:'common',icon:'⚡',name:'속사 특화',desc:'발사 속도 +8%',apply:p=>{p.fireAdd+=0.08;}},
   {g:'common',icon:'🥾',name:'민첩 특화',desc:'이동 속도 +10',apply:p=>{p.spd+=10;}},
   {g:'common',icon:'❤️',name:'활력',desc:'최대 체력 +15, 10 회복',apply:p=>{p.maxhp+=15;p.hp=Math.min(p.maxhp,p.hp+10);}},
@@ -2065,11 +2067,11 @@ const LEVEL_PERKS=[
   {g:'rare',icon:'🧨',name:'점화',desc:'상태이상 걸린 적에게 주는 피해 +20%',apply:p=>{p.statusDmgMul+=0.20;}},
   {g:'rare',icon:'💸',name:'현질의 힘',desc:'보유 골드 100당 공격력 +2% (최대 +30%)',apply:p=>{p.goldPower+=0.02;}},
   // ===== 영웅 Epic =====
-  {g:'epic',icon:'⚔️',name:'맹공',desc:'공격력 +20%',apply:p=>{p.dmgMul+=0.20;}},
+  {g:'epic',icon:'⚔️',name:'맹공',desc:'공격력 +2',apply:p=>{p.dmg+=2;}},
   {g:'epic',icon:'💣',name:'연쇄 폭발',desc:'처치 시 주변 폭발',apply:p=>{p.explodeKill+=24;}},
   {g:'epic',icon:'🧛',name:'흡혈귀',desc:'흡혈 확률 +15%',apply:p=>{p.lifesteal+=0.15;}},
   {g:'epic',icon:'🌀',name:'그림자 보법',desc:'베인Q 쿵 -40%',apply:p=>{p.dodgeCdMul*=0.6;}},
-  {g:'epic',icon:'🔙',name:'쌍방향 사격',desc:'뒤로도 한 발 발사 + 공격력 +10%',skip:p=>p.backShot,apply:p=>{p.backShot=true;p.dmgMul+=0.10;}},
+  {g:'epic',icon:'🔙',name:'쌍방향 사격',desc:'뒤로도 한 발 발사 + 공격력 +1',skip:p=>p.backShot,apply:p=>{p.backShot=true;p.dmg+=1;}},
   {g:'epic',icon:'🔫',name:'더블탭',desc:'25% 확률로 한 번에 2발',apply:p=>{p.doubleTap+=0.25;}},
   {g:'epic',icon:'🩹',name:'막판 정신력',desc:'1회 체력1로 버티기',skip:p=>p.lastStand,apply:p=>{p.lastStand=true;}},
   {g:'epic',icon:'🆘',name:'저체력 폭주',desc:'체력 30%↓일 때 공격력 대폭↑',apply:p=>{p.lowHpMul+=0.5;}},
@@ -2080,7 +2082,7 @@ const LEVEL_PERKS=[
   {g:'epic',icon:'✂️',name:'클립 박제',desc:'체력 15% 이하 잡목 즉시 처치 (보스 제외)',apply:p=>{p.execThreshold=Math.max(p.execThreshold,0.15);}},
   // ===== 전설 Legend =====
   {g:'legend',icon:'✨',name:'치명 일격',desc:'치명타 +20%, 치명타 피해 +50%',apply:p=>{p.critChance+=0.20;p.critMult+=0.5;}},
-  {g:'legend',icon:'💀',name:'폭주',desc:'공격력 +40%',apply:p=>{p.dmgMul+=0.40;}},
+  {g:'legend',icon:'💀',name:'폭주',desc:'공격력 +4',apply:p=>{p.dmg+=4;}},
   {g:'legend',icon:'💢',name:'작렬탄',desc:'명중 시 폭발(범위 피해)',apply:p=>{p.bulletExplode+=12;}},
   {g:'legend',icon:'🌀',name:'이중 도약',desc:'베인Q 2회 충전',skip:p=>p.dodgeMaxCharges>=2,apply:p=>{p.dodgeMaxCharges=2;p.dodgeCharges=2;}},
   {g:'legend',icon:'🔵',name:'재충전 보호막',desc:'10초마다 1회 피격 무효',skip:p=>p.shieldRegen>0,apply:p=>{p.shieldRegen=10;}},
@@ -2090,7 +2092,7 @@ const LEVEL_PERKS=[
   {g:'mythic',icon:'🔱',name:'다중 사격',desc:'투사체 +1발',apply:p=>{p.shots+=1;}},
   {g:'mythic',icon:'👁️',name:'유도의 눈',desc:'투사체가 적을 강하게 추적',skip:p=>p.homing>0,apply:p=>{p.homing=12;}},
   {g:'mythic',icon:'🔆',name:'차지샷',desc:'잠깐 안 쏘면 다음 탄 3배',skip:p=>p.chargeShot,apply:p=>{p.chargeShot=true;}},
-  {g:'mythic',icon:'🍷',name:'유리 대포',desc:'공격력 +50%, 받는 피해 +30%',skip:p=>p.glassCannon,apply:p=>{p.glassCannon=true;p.dmgMul+=0.50;p.armor-=0.3;}},
+  {g:'mythic',icon:'🍷',name:'유리 대포',desc:'공격력 +5, 받는 피해 +30%',skip:p=>p.glassCannon,apply:p=>{p.glassCannon=true;p.dmg+=5;p.armor-=0.3;}},
   {g:'mythic',icon:'🤝',name:'구독자 소환',desc:'따라다니며 자동 공격하는 구독자',skip:p=>!!p.minion,apply:p=>{p.minion={ang:0,fireT:0,x:p.x,y:p.y};}},
 ];
 const PERK_COUNTS={}; LEVEL_PERKS.forEach(p=>{PERK_COUNTS[p.g]=(PERK_COUNTS[p.g]||0)+1;});
@@ -2172,7 +2174,7 @@ const SMALL_REWARDS=[
   {icon:'💰',name:'골드 한 줌',desc:'골드를 줍는다',apply:()=>{const g=irand(15,30)+act*6;gold+=g;banner('골드 +'+g,'',1000);}},
   {icon:'❤️',name:'응급 처치',desc:'체력 30 회복',apply:()=>{player.hp=Math.min(player.maxhp,player.hp+30);banner('체력 +30','',1000);}},
   {icon:'🧪',name:'물약 보급',desc:'랜덤 포션 1개',apply:()=>{ if(player.potions.length<3) addPotion(pick(POTIONS)); else { gold+=20; banner('포션 가득 → 골드 +20','',1000);} }},
-  {icon:'⚔️',name:'무기 손질',desc:'공격력 +2%',apply:()=>{player.dmgMul+=0.02;banner('공격력 +2%','',1000);}},
+  {icon:'⚔️',name:'무기 손질',desc:'공격력 +0.3',apply:()=>{player.dmg+=0.3;banner('공격력 +0.3','',1000);}},
   {icon:'⚡',name:'방아쇠 정비',desc:'발사 속도 +2%',apply:()=>{player.fireAdd+=0.02;banner('발사 속도 +2%','',1000);}},
   {icon:'🥾',name:'가벼운 발놀림',desc:'이동 속도 +8',apply:()=>{player.spd+=8;banner('이동 속도 +8','',1000);}},
   {icon:'🛡️',name:'방어구 정비',desc:'받는 피해 -3%',apply:()=>{player.armor=Math.min(0.85,player.armor+0.03);banner('받는 피해 -3%','',1000);}},
