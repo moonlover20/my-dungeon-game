@@ -575,11 +575,13 @@ window.addEventListener('keydown',e=>{
   }
   keys[k]=true;
   if([' ','arrowup','arrowdown','arrowleft','arrowright','tab'].includes(k)) e.preventDefault();
-  if(paused) return;                 // 일시정지 중엔 게임 입력 무시
-  if(state==='play'){ if(k==='1')usePotion(0); else if(k==='2')usePotion(1); else if(k==='3')usePotion(2); }
+  // K키는 paused 여부와 관계없이 항상 처리 (트리 닫기)
   if((k==='k') && (state==='play'||state==='map')){
     if(treeOpen) closeTree(); else openTree();
+    return;
   }
+  if(paused) return;                 // 일시정지 중엔 게임 입력 무시
+  if(state==='play'){ if(k==='1')usePotion(0); else if(k==='2')usePotion(1); else if(k==='3')usePotion(2); }
 });
 window.addEventListener('keyup',e=>{ keys[e.key.toLowerCase()]=false; });
 function canvasPos(e){
