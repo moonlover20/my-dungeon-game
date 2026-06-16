@@ -1653,6 +1653,119 @@ function restoreProgress(){
   recalcPotionBuffs(player);
 }
 
+// ---------- 로컬 이어하기 체크포인트 ----------
+const RUN_SAVE_KEY='btvRunCheckpoint';
+const RUN_SAVE_VERSION=1;
+function clonePlain(obj){ return JSON.parse(JSON.stringify(obj)); }
+function serializeMapData(md){
+  if(!md) return null;
+  return {
+    nm:clonePlain(md.nm||{}),
+    nodes:clonePlain(md.nodes||[]),
+    edges:(md.edges||[]).slice(),
+    startIds:(md.startIds||[]).slice(),
+    currentId:md.currentId||null,
+    reach:[...(md.reach||new Set())]
+  };
+}
+function restoreMapData(data){
+  if(!data||!data.nm||!data.nodes) return null;
+  const nm=data.nm;
+  return {
+    nm,
+    nodes:Object.values(nm),
+    edges:(data.edges||[]).slice(),
+    startIds:(data.startIds||[]).slice(),
+    currentId:data.currentId||null,
+    reach:new Set(data.reach||data.startIds||[])
+  };
+}
+function serializePlayerForSave(){
+  const p=clonePlain(player);
+  p.relicIds=(player.relics||[]).map(r=>r.id).filter(Boolean);
+  p.potionIds=(player.potions||[]).map(pt=>pt.id).filter(Boolean);
+  p.hasMinion=!!player.minion;
+  delete p.relics; delete p.potions; delete p.minion;
+  return p;
+}
+function restorePlayerFromSave(data){
+  resetPlayer();
+  const p=Object.assign({},data||{});
+  const relicIds=p.relicIds||[];
+  const potionIds=p.potionIds||[];
+  const hasMinion=!!p.hasMinion;
+  delete p.relicIds; delete p.potionIds; delete p.hasMinion;
+  Object.assign(player,p);
+  player.relics=relicIds.map(id=>RELICS.find(r=>r.id===id)).filter(Boolean);
+  player.potions=potionIds.map(id=>POTIONS.find(pt=>pt.id===id)).filter(Boolean);
+  player.buffs=Object.assign({rage:0,haste:0,shield:0},player.buffs||{});
+  player.potionBuffs=(player.potionBuffs||[]).map(b=>Object.assign({},b));
+  player.minion=hasMinion?{ang:0,fireT:0,x:player.x,y:player.y}:null;
+  recalcPotionBuffs(player);
+}
+function hasRunCheckpoint(){
+  try{ return !!localStorage.getItem(RUN_SAVE_KEY); }catch(e){ return false; }
+}
+function refreshLoadButton(){
+  const b=$('tmLoad'); if(!b) return;
+  const ok=hasRunCheckpoint();
+  b.disabled=!ok;
+  b.style.opacity=ok?'1':'0.38';
+  b.style.cursor=ok?'pointer':'not-allowed';
+}
+function clearRunCheckpoint(){
+  try{ localStorage.removeItem(RUN_SAVE_KEY); }catch(e){}
+  refreshLoadButton();
+}
+function saveRunCheckpoint(){
+  if(!runActive || tutorialMode || !mapData || state!=='map') return;
+  try{
+    const elapsed=Math.max(0,(performance.now()-runStartedAt)||0);
+    const data={
+      version:RUN_SAVE_VERSION,
+      savedAt:Date.now(),
+      diffKey:diffSet&&diffSet.key?diffSet.key:'easy',
+      act,currentRow,kills,totalKills,gold,level,xp,xpNext,pendingLevels,retries,runHits,elapsed,
+      runPotionUsed,eliteViewerSpawns,tierIntroShown,shopIntroShown,
+      treePoints,treeUnlocked:[...treeUnlocked],
+      nextCombatMods:nextCombatMods?clonePlain(nextCombatMods):null,
+      combatRewardMul,nextShopDiscount,nextGoldPenalty,
+      mapData:serializeMapData(mapData),
+      player:serializePlayerForSave()
+    };
+    localStorage.setItem(RUN_SAVE_KEY,JSON.stringify(data));
+    refreshLoadButton();
+  }catch(e){ console.warn('run checkpoint save failed',e); }
+}
+function loadRunCheckpoint(){
+  let data=null;
+  try{ data=JSON.parse(localStorage.getItem(RUN_SAVE_KEY)||'null'); }catch(e){}
+  if(!data || data.version!==RUN_SAVE_VERSION || !data.mapData){ banner('불러오기 실패','저장된 런이 없다',1200); refreshLoadButton(); return false; }
+  try{
+    diffSet=DIFFS[data.diffKey]||DIFFS.easy;
+    act=data.act||1; currentRow=data.currentRow||0; kills=0; totalKills=data.totalKills||0;
+    gold=data.gold||0; level=data.level||1; xp=data.xp||0; xpNext=data.xpNext||20; pendingLevels=data.pendingLevels||0;
+    retries=data.retries||0; runHits=data.runHits||0; runStartedAt=performance.now()-(data.elapsed||0);
+    runPotionUsed=!!data.runPotionUsed; eliteViewerSpawns=data.eliteViewerSpawns||0;
+    tierIntroShown=!!data.tierIntroShown; shopIntroShown=!!data.shopIntroShown;
+    treePoints=data.treePoints||0; treeUnlocked=new Set(data.treeUnlocked&&data.treeUnlocked.length?data.treeUnlocked:['hub']);
+    nextCombatMods=data.nextCombatMods||null; combatRewardMul=data.combatRewardMul||1; nextShopDiscount=data.nextShopDiscount||0; nextGoldPenalty=data.nextGoldPenalty||0;
+    restorePlayerFromSave(data.player);
+    mapData=restoreMapData(data.mapData);
+    if(!mapData) throw new Error('map restore failed');
+    buildBackdrop(act);
+    enemies=[]; pBullets=[]; eBullets=[]; pickups=[]; particles=[]; hazards=[]; floatBubbles=[]; kijoMasks=[]; kijoGazes=[]; kijoParades=[];
+    boss=null; pendingNode=null; roomCleared=true; roomIsBoss=false; roomIsMidboss=false; roomHadElite=false; bossBanner=0; bossEvolve=null; cutsceneT=0;
+    tutorialMode=false; tutorialDoneFlag=true; paused=false; mouseDown=false; autoFire=false; runActive=true; state='map';
+    hideAll(); startBGM(); showMap(); banner('이어하기','저장된 진행을 불러왔다',1400);
+    return true;
+  }catch(e){
+    console.warn('run checkpoint load failed',e);
+    banner('불러오기 실패','저장 데이터가 손상됐다',1400);
+    return false;
+  }
+}
+
 // ===== JS: Combat flow =====
 function startCombat(kind, fresh){
   if(fresh===undefined) fresh=true;
@@ -3496,6 +3609,7 @@ function showMap(){
   $('mapTitle').textContent='길을 골라라';
   show('map');
   updateHUD();
+  saveRunCheckpoint();
 }
 function mapNum(v){ return Math.round(v*10)/10; }
 function mapEdgePath(a,b){
@@ -6737,7 +6851,7 @@ async function submitEndRankScore(){
 function gameOver(win, killer){
   state='end'; syncChrome();
   // 승리 시에만 인트로로 전환 — 사망 시엔 죽은 막의 음악을 그대로 유지
-  if(win){ runActive=false; roomIsBoss=false; roomIsMidboss=false; }
+  if(win){ runActive=false; roomIsBoss=false; roomIsMidboss=false; clearRunCheckpoint(); }
   if(win){
     unlockAchievement('clear_game');
     if(diffSet&&diffSet.key==='hard') unlockAchievement('hard_clear');
@@ -6783,6 +6897,7 @@ function victory(){ gameOver(true); }
 
 // ---------- 시작/재시작 ----------
 function newGame(){
+  clearRunCheckpoint();
   startBGM();
   runActive=true;
   act=1; currentRow=0; kills=0; totalKills=0; gold=0; level=1; xp=0; xpNext=20; pendingLevels=0; retries=0; runHits=0; runStartedAt=performance.now(); treePoints=0; treeUnlocked=new Set(['hub']);
@@ -6820,6 +6935,7 @@ function finishTutorial(){
 }
 // 다시시작 전용: 연출/튜토리얼 스킵 → 곧장 1막 지도
 function newGameSkip(){
+  clearRunCheckpoint();
   startBGM();
   runActive=true;
   act=1; currentRow=0; kills=0; totalKills=0; gold=0; level=1; xp=0; xpNext=20; pendingLevels=0; retries=0; runHits=0; runStartedAt=performance.now(); treePoints=0; treeUnlocked=new Set(['hub']);
@@ -6852,6 +6968,7 @@ function buildDiffButtons(){
   });
 }
 buildDiffButtons();
+refreshLoadButton();
 loadUserProgress();
 // 스트리머 김봉식 아트 연결
 (function initStreamerArt(){
@@ -6866,6 +6983,7 @@ function returnToTitleScreen(){
   const po=$('ovPause'); if(po) po.classList.add('hidden');
   hideAll();
   show('title');
+  refreshLoadButton();
   if(window.startTitleScene) window.startTitleScene();
   startBGM();
 }
@@ -7188,12 +7306,14 @@ function closeDatabaseTab(){
   if(window.startTitleScene) window.startTitleScene();
 }
 $('tmNew').onclick=openDifficultyTab;
+{ const lb=$('tmLoad'); if(lb) lb.onclick=()=>{ if(!lb.disabled) loadRunCheckpoint(); }; }
 { const rb=$('tmRanking'); if(rb) rb.onclick=openRankingTab; }
 { const ab=$('tmAchievements'); if(ab) ab.onclick=openAchievementsTab; }
 { const db=$('tmDatabase'); if(db) db.onclick=openDatabaseTab; }
 { const rc=$('rankingClose'); if(rc) rc.onclick=closeRankingTab; }
 { const ac=$('achClose'); if(ac) ac.onclick=closeAchievementsTab; }
 { const dc=$('databaseClose'); if(dc) dc.onclick=closeDatabaseTab; }
+window.addEventListener('beforeunload',()=>{ if(state==='map') saveRunCheckpoint(); });
 document.querySelectorAll('.ach-tab').forEach(btn=>{
   btn.onclick=()=>{ const ov=$('ovAchievements'); if(ov) ov.dataset.tab=btn.dataset.tab; renderAchievements(); };
 });
