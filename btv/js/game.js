@@ -574,6 +574,8 @@ let mouseX=W/2, mouseY=H/2, mouseDown=false;
 window.addEventListener('keydown',e=>{
   const k=e.key.toLowerCase();
   if(k==='escape'){
+    const db=$('ovDatabase');
+    if(db && !db.classList.contains('hidden')){ closeDatabaseTab(); e.preventDefault(); return; }
     togglePause(); e.preventDefault(); return;
   }
   keys[k]=true;
@@ -4709,7 +4711,7 @@ function skipCutscene(){
 // ---------- 오버레이 제어 ----------
 
 // ===== JS: Overlay state machine and UI wiring =====
-const overlays={title:'ovTitle',start:'ovStart',map:'ovMap',relic:'ovRelic',shop:'ovShop',event:'ovEvent',inv:'ovInv',level:'ovLevel',reward:'ovReward',end:'ovEnd',ranking:'ovRanking',achievements:'ovAchievements',help:'ovHelp',story:'ovStory',entrance:'ovEntrance',tierIntro:'ovTierIntro',taunt:'ovTaunt',campfire:'ovCampfire'};
+const overlays={title:'ovTitle',start:'ovStart',map:'ovMap',relic:'ovRelic',shop:'ovShop',event:'ovEvent',inv:'ovInv',level:'ovLevel',reward:'ovReward',end:'ovEnd',ranking:'ovRanking',achievements:'ovAchievements',database:'ovDatabase',help:'ovHelp',story:'ovStory',entrance:'ovEntrance',tierIntro:'ovTierIntro',taunt:'ovTaunt',campfire:'ovCampfire'};
 function hideAll(){ Object.values(overlays).forEach(id=>$(id).classList.add('hidden')); }
 function syncChrome(){ document.body.classList.toggle('title-mode', state==='title'||state==='start'); }
 function show(st){
@@ -5421,14 +5423,92 @@ function closeAchievementsTab(){
   refreshSidePanel();
   if(window.startTitleScene) window.startTitleScene();
 }
+function dbText(v){ return String(v==null?'':v).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
+function databaseRows(){
+  const ov=$('ovDatabase');
+  const tab=ov?(ov.dataset.tab||'relics'):'relics';
+  if(tab==='perks'){
+    return LEVEL_PERKS.map(pk=>{
+      const t=PERK_TIERS[pk.g]||{};
+      return {
+        cls:'',
+        icon:PERK_ICONS[pk.name]?'<img class="pk-img" src="'+dbText(PERK_ICONS[pk.name])+'" alt="">':dbText(pk.icon||''),
+        name:pk.name,
+        desc:pk.desc,
+        meta:(t.name||pk.g||'')+' 특성'
+      };
+    });
+  }
+  if(tab==='potions'){
+    return POTIONS.map(p=>({
+      cls:'',
+      icon:dbText(p.icon||'🧪'),
+      name:p.name,
+      desc:p.desc,
+      meta:'사용 키: 포션 슬롯 1 / 2 / 3'
+    }));
+  }
+  return RELICS.map(r=>({
+    cls:r.cls||'',
+    icon:relicIconHTML(r,'relic-pix-lg'),
+    name:r.name,
+    desc:r.desc,
+    meta:(r.cls==='curse'?'저주':'축복')+' · '+(relicTier(r).name||'유물')
+  }));
+}
+function renderDatabase(){
+  const ov=$('ovDatabase'); if(!ov || ov.classList.contains('hidden')) return;
+  const body=$('databaseBody'); if(!body) return;
+  const q=String(($('databaseSearch')&&$('databaseSearch').value)||'').trim().toLowerCase();
+  document.querySelectorAll('.db-tab').forEach(btn=>btn.classList.toggle('active',btn.dataset.tab===(ov.dataset.tab||'relics')));
+  body.innerHTML='';
+  const rows=databaseRows().filter(row=>{
+    if(!q) return true;
+    return String(row.name||'').toLowerCase().includes(q) || String(row.desc||'').toLowerCase().includes(q) || String(row.meta||'').toLowerCase().includes(q);
+  });
+  if(!rows.length){ body.innerHTML='<div class="db-empty">검색 결과가 없습니다.</div>'; return; }
+  rows.forEach(row=>{
+    const el=document.createElement('div');
+    el.className='db-row '+(row.cls||'');
+    el.innerHTML='<div class="db-icon">'+row.icon+'</div><div><b>'+dbText(row.name)+'</b><span>'+dbText(row.desc)+'</span><small>'+dbText(row.meta)+'</small></div>';
+    body.appendChild(el);
+  });
+}
+function openDatabaseTab(){
+  hideAll();
+  $('ovTitle').classList.remove('hidden');
+  const ov=$('ovDatabase');
+  if(ov){ ov.classList.remove('hidden'); ov.dataset.tab=ov.dataset.tab||'relics'; }
+  state='title';
+  syncChrome();
+  refreshTitleDisplay();
+  refreshSidePanel();
+  if(window.startTitleScene) window.startTitleScene();
+  renderDatabase();
+}
+function closeDatabaseTab(){
+  const ov=$('ovDatabase'); if(ov) ov.classList.add('hidden');
+  $('ovTitle').classList.remove('hidden');
+  state='title';
+  syncChrome();
+  refreshTitleDisplay();
+  refreshSidePanel();
+  if(window.startTitleScene) window.startTitleScene();
+}
 $('tmNew').onclick=openDifficultyTab;
 { const rb=$('tmRanking'); if(rb) rb.onclick=openRankingTab; }
 { const ab=$('tmAchievements'); if(ab) ab.onclick=openAchievementsTab; }
+{ const db=$('tmDatabase'); if(db) db.onclick=openDatabaseTab; }
 { const rc=$('rankingClose'); if(rc) rc.onclick=closeRankingTab; }
 { const ac=$('achClose'); if(ac) ac.onclick=closeAchievementsTab; }
+{ const dc=$('databaseClose'); if(dc) dc.onclick=closeDatabaseTab; }
 document.querySelectorAll('.ach-tab').forEach(btn=>{
   btn.onclick=()=>{ const ov=$('ovAchievements'); if(ov) ov.dataset.tab=btn.dataset.tab; renderAchievements(); };
 });
+document.querySelectorAll('.db-tab').forEach(btn=>{
+  btn.onclick=()=>{ const ov=$('ovDatabase'); if(ov) ov.dataset.tab=btn.dataset.tab; renderDatabase(); };
+});
+{ const ds=$('databaseSearch'); if(ds) ds.addEventListener('input',renderDatabase); }
 document.querySelectorAll('.rank-tab').forEach(btn=>{
   btn.onclick=()=>{ setRankingDifficulty(btn.dataset.diff); renderRankingList(); };
 });
