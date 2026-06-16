@@ -4642,61 +4642,113 @@ function takeRelic(r){
 }
 
 // ---------- 상점 ----------
+const SHOP_QUOTES=[
+  '오늘 방송각은 네 골드가 만든다.',
+  '전설 뜨면 클립 딴다. 신화면 풀영상이다.',
+  '채팅은 싸다고 했고, 나는 아니라고 했다.',
+  '수상한 상자는 늘 수상해서 좋은 법이지.',
+  '초반 대박 런? 여기서 시작할 수도 있다.'
+];
+let currentShopItems=[];
+function shopPrice(base){ return Math.round(base*(player.shopCostMul||1)); }
+function shopRelicPrice(r){
+  return shopPrice((88+act*20+Math.random()*20)*relicTier(r).costMul*2.5);
+}
+function rollShopChestRelic(){
+  const owned=new Set(player.relics.map(r=>r.id));
+  const candidates=RELICS.filter(r=>!owned.has(r.id)&&isRelicUnlockedByAchievement(r.id)&&['epic','legend','mythic'].includes(TIER_OF[r.id]||'rare'));
+  if(!candidates.length) return null;
+  const roll=Math.random();
+  const target=roll<0.65?'epic':roll<0.90?'legend':'mythic';
+  let pool=candidates.filter(r=>(TIER_OF[r.id]||'rare')===target);
+  if(!pool.length) pool=candidates.slice();
+  return pick(pool);
+}
+function grantShopRelic(r){
+  if(!r) return false;
+  player.relics.push(r);
+  markDiscovered('relics', r.id);
+  r.apply(player);
+  return true;
+}
 function openShop(after){
   shopAfter=after||null;
   if(!shopIntroShown){ shopIntroShown=true; banner('💡 포션 사용법','구매한 포션은 1·2·3 키로 사용!',2800); }
   const items=[];
-  items.push({kind:'heal',name:"치유 서비스",icon:"🧪",desc:"체력 45 회복",cost:Math.round((28+act*10)*2.5),
-    buy:()=>{healPlayer(45,player.x,player.y);}});
-  // 재도전 충전권 — 횟수 제한 난이도(보통·어려움)에서만 등장
-  if(diffSet.maxRetries !== Infinity){
-    const retryCost = diffSet.key==='hard' ? 225 : 138;
-    items.push({kind:'retry',name:"재도전 충전권",icon:"🎟️",
-      desc:"이번 런에서 재도전 횟수 +1회. (현재 남은 횟수: "+(Math.max(0,diffSet.maxRetries-retries))+"회)",
-      cost:retryCost,
-      buy:()=>{ diffSet=Object.assign({},diffSet,{maxRetries:diffSet.maxRetries+1}); banner('🎟️ 재도전 +1','한 번 더 기회!',1400); updateHUD(); }
-    });
-  }
-  // 포션 2종
-  const ptn=rollShopPotions(2);
-  ptn.forEach(pt=>items.push({kind:'potion',name:pt.name,icon:pt.icon,desc:pt.desc+" · 포션",cost:Math.round((32+act*8)*2.5*(player.shopCostMul||1)),potion:pt,
-    buy:()=>{addPotion(pt);}}));
-  // 유물 2종
   const owned=new Set(player.relics.map(r=>r.id));
   const availR=RELICS.filter(r=>!owned.has(r.id)&&isRelicUnlockedByAchievement(r.id));
-  const relicPicks=[]; for(let i=0;i<2 && availR.length;i++) relicPicks.push(weightedTake(availR));
-  relicPicks.forEach(r=>items.push({kind:'relic',name:r.name,icon:r.icon,desc:r.desc,cost:Math.round((75+act*24+Math.random()*30)*relicTier(r).costMul*2.5*(player.shopCostMul||1)),relic:r,
-    buy:()=>{player.relics.push(r);markDiscovered('relics', r.id);r.apply(player);}}));
+  const relicPicks=[]; for(let i=0;i<3 && availR.length;i++) relicPicks.push(weightedTake(availR));
+  relicPicks.forEach(r=>items.push({kind:'relic',name:r.name,icon:r.icon,desc:r.desc,cost:shopRelicPrice(r),relic:r,
+    buy:()=>grantShopRelic(r)}));
+  const ptn=rollShopPotions(3);
+  ptn.forEach(pt=>items.push({kind:'potion',name:pt.name,icon:pt.icon,desc:pt.desc,cost:shopPrice(40+act*5+Math.random()*14),potion:pt,
+    buy:()=>addPotion(pt)}));
+  items.push({kind:'special',name:'체력 강화',icon:'❤️',desc:'최대 체력 +15 / 현재 체력 +15',cost:shopPrice(220),
+    buy:()=>{player.maxhp+=15;healPlayer(15,player.x,player.y);}});
+  items.push({kind:'special',name:'경험치 북',icon:'📚',desc:'현재 레벨 필요 경험치의 35% 획득',cost:shopPrice(180),
+    buy:()=>{gainXP(xpNext*0.35);}});
+  items.push({kind:'special',name:'수상한 상자',icon:'🎁',desc:'영웅 이상 유물 랜덤 획득',cost:shopPrice(360),grade:{name:'영웅+',col:'#c98bff'},
+    buy:()=>{const r=rollShopChestRelic(); if(!r){ banner('상자 비어 있음','획득 가능한 유물이 없다',1200); return false; } grantShopRelic(r); banner(r.icon+' '+r.name,'상자에서 유물 획득!',1500); return true; }});
+  currentShopItems=items;
+  const ov=$('ovShop'); if(ov){ ov.classList.remove('shop-enter'); void ov.offsetWidth; ov.classList.add('shop-enter'); }
   renderShop(items);
   show('shop');
 }
 let shopAfter=null;
 function renderShop(items){
-  $('shopGold').textContent="(보유 "+gold+"G)";
+  $('shopGold').textContent=gold+'G';
+  const quote=$('shopQuote'); if(quote) quote.textContent=pick(SHOP_QUOTES);
   const cont=$('shopChoices');
   cont.innerHTML='';
-  items.forEach(it=>{
-    const el=document.createElement('button');
-    const afford=gold>=it.cost;
-    const rt=it.relic?relicTier(it.relic):null;
-    const pt=it.potion?POTION_RARITIES[it.potion.rarity]:null;
-    const grade=rt||pt;
-    el.className='choice '+(it.relic?'relic-'+(TIER_OF[it.relic.id]||'rare'):'');
-    if(grade) el.style.borderColor=grade.col;
-    el.style.opacity=afford?'1':'0.5';
-    el.innerHTML='<div class="ttl"><span class="icon">'+(it.relic?relicIconHTML(it.relic,'relic-pix'):it.icon)+'</span>'+it.name+
-      (grade?' <span class="grade" style="color:'+grade.col+'">['+grade.name+']</span>':'')+
-      ' <span style="color:var(--gold);float:right">'+it.cost+'G</span></div>'+
-      '<div class="desc">'+it.desc+'</div>';
-    el.onclick=()=>{
-      if(it.kind==='potion' && player.potions.length>=3){ banner("포션 가득","3개까지만",900); return; }
-      if(gold<it.cost){ banner("골드 부족","",900); return; }
-      gold-=it.cost; it.buy(); sfx.coin();
-      banner(it.icon+" 구매!","",1000);
-      it.bought=true; updateHUD(); renderShop(items.filter(x=>!x.bought));
-    };
-    cont.appendChild(el);
+  const sections=[
+    {key:'relic',label:'유물',items:items.filter(it=>it.kind==='relic')},
+    {key:'potion',label:'포션',items:items.filter(it=>it.kind==='potion')},
+    {key:'special',label:'특별 상품',items:items.filter(it=>it.kind==='special')}
+  ];
+  sections.forEach(sec=>{
+    const wrap=document.createElement('div');
+    wrap.className='shop-section shop-section-'+sec.key;
+    wrap.innerHTML='<div class="shop-section-title">'+sec.label+'</div><div class="shop-grid"></div>';
+    const grid=wrap.querySelector('.shop-grid');
+    sec.items.forEach((it,idx)=>grid.appendChild(shopCard(it,items,idx)));
+    cont.appendChild(wrap);
   });
+}
+function shopCard(it,items,idx){
+  const el=document.createElement('button');
+  const rt=it.relic?relicTier(it.relic):null;
+  const pt=it.potion?POTION_RARITIES[it.potion.rarity]:null;
+  const grade=rt||pt||it.grade||null;
+  const relicOwned=it.relic&&player.relics.some(r=>r.id===it.relic.id);
+  const potionFull=it.kind==='potion' && player.potions.length>=3;
+  const afford=gold>=it.cost;
+  const sold=it.bought||relicOwned;
+  const disabled=sold||!afford||potionFull;
+  el.className='shop-card '+it.kind+(sold?' sold':'')+(disabled&&!sold?' disabled':'')+(it.relic?' relic-'+(TIER_OF[it.relic.id]||'rare'):'');
+  el.style.setProperty('--shop-border',grade?grade.col:'#7e6cb0');
+  el.style.animationDelay=(idx*55)+'ms';
+  const icon=it.relic?relicIconHTML(it.relic,'relic-pix-lg'):it.icon;
+  el.innerHTML=
+    '<span class="shop-price">'+it.cost+'G</span>'+
+    (sold?'<span class="shop-sold">품절</span>':'')+
+    '<div class="shop-icon">'+icon+'</div>'+
+    '<div class="shop-name">'+it.name+'</div>'+
+    (grade?'<div class="shop-grade" style="color:'+grade.col+'">['+grade.name+']</div>':'<div class="shop-grade">&nbsp;</div>')+
+    '<div class="shop-desc">'+it.desc+'</div>';
+  el.onclick=()=>{
+    if(sold) return;
+    if(potionFull){ banner('포션 가득','3개까지만',900); return; }
+    if(gold<it.cost){ banner('골드 부족','',900); return; }
+    gold-=it.cost;
+    const ok=it.buy();
+    if(ok===false){ gold+=it.cost; updateHUD(); renderShop(items); return; }
+    it.bought=true;
+    sfx.coin();
+    banner(it.icon+' 구매!','',1000);
+    updateHUD();
+    renderShop(items);
+  };
+  return el;
 }
 $('shopLeave').onclick=()=>{
   hideAll();
