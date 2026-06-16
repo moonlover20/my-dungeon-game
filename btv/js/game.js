@@ -862,28 +862,30 @@ function cleanLeaderboardName(name){
   return v || 'PLAYER';
 }
 function getLeaderboardName(){
-  const saved=cleanLeaderboardName(localStorage.getItem('btvLeaderboardName')||'');
-  let name=saved;
   try{
-    const typed=prompt('랭킹에 남길 닉네임을 입력하세요.', saved);
-    if(typed!==null) name=cleanLeaderboardName(typed);
+    return cleanLeaderboardName(localStorage.getItem('btvLeaderboardName')||'');
   }catch(e){}
-  try{ localStorage.setItem('btvLeaderboardName', name); }catch(e){}
-  return name;
+  return cleanLeaderboardName('');
 }
 function calcRunScore(win){
   const reachedFloor=Math.max(1,currentRow+1);
   const progressScore=Math.max(0,act-1)*9000 + reachedFloor*1200;
   const killScore=totalKills*120;
   const levelScore=Math.max(0,level-1)*800;
+  const earnedScore=progressScore+killScore+levelScore;
   const clearBonus=win?30000:0;
   const elapsedSec=runStartedAt>0?Math.max(0,(performance.now()-runStartedAt)/1000):0;
   const timeBonus=win?Math.max(0,Math.round((900-elapsedSec)*20)):0;
   const hitPenalty=runHits*HIT_SCORE_PENALTY;
   const retryPenalty=retries*RETRY_SCORE_PENALTY;
-  const rawScore=Math.round(progressScore+killScore+levelScore+clearBonus+timeBonus-hitPenalty-retryPenalty);
-  const score=clamp(Math.max(0,rawScore),0,SCORE_MAX);
-  return {score,reachedFloor,progressScore,killScore,levelScore,clearBonus,timeBonus,hitPenalty,retryPenalty,elapsedSec};
+  const bonusScore=clearBonus+timeBonus;
+  const penaltyScore=hitPenalty+retryPenalty;
+  const grossScore=earnedScore+bonusScore;
+  const penaltyCap=Math.floor(grossScore*0.85);
+  const appliedPenalty=Math.min(penaltyScore,penaltyCap);
+  const rawScore=Math.round(grossScore-penaltyScore);
+  const score=clamp(Math.max(1,Math.round(grossScore-appliedPenalty)),0,SCORE_MAX);
+  return {score,reachedFloor,progressScore,killScore,levelScore,earnedScore,clearBonus,timeBonus,hitPenalty,retryPenalty,penaltyScore,appliedPenalty,rawScore,elapsedSec};
 }
 function fmtScore(n){ return Number(n||0).toLocaleString('ko-KR'); }
 function fmtTime(sec){
@@ -905,18 +907,22 @@ function rankingReachedText(data){
   const h=Number(data.hits||0), r=Number(data.retries||0), t=fmtTime(data.elapsedSec);
   return a+'막 '+f+'층 · Lv.'+lv+' · 처치 '+k+' · 피격 '+h+' · 재도전 '+r+' · '+t;
 }
-async function saveRunScore(win,killer,scoreData){
+async function saveRunScore(win,killer,scoreData,name){
   const token=++scoreSubmitSeq;
   const saveEl=$('endScoreSave');
   if(saveEl) saveEl.textContent='ranking save...';
   try{
-    const name=getLeaderboardName();
+    scoreData=scoreData||calcRunScore(win);
+    const scoreToSave=clamp(Math.round(Number(scoreData&&scoreData.score)||0),0,SCORE_MAX);
+    if(scoreData) scoreData.score=scoreToSave;
+    console.info('ranking scoreData before Firestore save', scoreData);
+    const saveName=cleanLeaderboardName(name||getLeaderboardName());
     const api=await ensureLeaderboardApi();
-    if(token!==scoreSubmitSeq) return;
+    if(token!==scoreSubmitSeq) return false;
     const difficultyKey=diffSet&&diffSet.key?diffSet.key:'easy';
     await api.fs.addDoc(api.fs.collection(api.db,leaderboardCollectionFor(difficultyKey)),{
-      name,
-      score:Number(scoreData.score),
+      name:saveName,
+      score:scoreToSave,
       kills:totalKills,
       level,
       act,
@@ -931,10 +937,12 @@ async function saveRunScore(win,killer,scoreData){
       difficulty:diffSet&&diffSet.label?diffSet.label:'',
       createdAt:api.fs.serverTimestamp()
     });
-    if(saveEl) saveEl.textContent='ranking saved as '+name;
+    if(saveEl) saveEl.textContent='ranking saved';
+    return true;
   }catch(e){
     console.warn('ranking save failed',e);
     if(saveEl) saveEl.textContent='ranking save failed';
+    return false;
   }
 }
 async function renderRankingList(){
@@ -970,6 +978,7 @@ const player={};
 let enemies=[], pBullets=[], eBullets=[], pickups=[], particles=[];
 let totalKills=0, kills=0, gold=0, level=1, xp=0, xpNext=20;
 let runStartedAt=0, runHits=0;
+let pendingScoreData=null, pendingScoreWin=false, pendingScoreKiller='', pendingScoreSaved=false;
 let roomCleared=false, roomIsBoss=false, boss=null, bossBanner=0, roomHadElite=false;
 let eliteViewerSpawns=0;   // 자잘자(엘리트 시청자) 런 전체 출몰 횟수 — 최대 1회로 제한
 let roomIsMidboss=false, runActive=false;   // 음악 컨텍스트용 플래그
@@ -4931,6 +4940,54 @@ const DEATH_LINES={
   '울트라':{title:'울트라에게 깔렸다', q:['채팅: 울트라 컨트롤 ㄷㄷ','울트라: 쿠어어','채팅: 저글링부터 잡지 그랬어']},
   '바닥 장판':{title:'바닥 장판에 녹았다', q:['채팅: 바닥 보고 다녀요 KEKW','채팅: 장판 회피 연습… Sadge','채팅: 그건 좀…']},
 };
+function resetEndRankForm(){
+  pendingScoreSaved=false;
+  const input=$('endRankName');
+  const submit=$('endRankSubmit');
+  const saveEl=$('endScoreSave');
+  if(input) input.value=getLeaderboardName();
+  if(submit){
+    submit.disabled=false;
+    submit.textContent='랭킹 등록';
+  }
+  if(saveEl) saveEl.textContent='ranking standby';
+}
+async function submitEndRankScore(){
+  const submit=$('endRankSubmit');
+  const input=$('endRankName');
+  const saveEl=$('endScoreSave');
+  if(pendingScoreSaved){
+    if(submit) submit.disabled=true;
+    return;
+  }
+  if(!pendingScoreData){
+    if(saveEl) saveEl.textContent='ranking save failed';
+    return;
+  }
+  const name=cleanLeaderboardName(input?input.value:'');
+  if(input) input.value=name;
+  try{ localStorage.setItem('btvLeaderboardName', name); }catch(e){}
+  if(submit){
+    submit.disabled=true;
+    submit.textContent='등록 중...';
+  }
+  if(saveEl) saveEl.textContent='ranking save...';
+  const saved=await saveRunScore(pendingScoreWin,pendingScoreKiller,pendingScoreData,name);
+  if(saved){
+    pendingScoreSaved=true;
+    if(submit){
+      submit.disabled=true;
+      submit.textContent='등록 완료';
+    }
+    if(saveEl) saveEl.textContent='ranking saved';
+  }else{
+    if(submit){
+      submit.disabled=false;
+      submit.textContent='랭킹 등록';
+    }
+    if(saveEl) saveEl.textContent='ranking save failed';
+  }
+}
 function gameOver(win, killer){
   state='end'; syncChrome();
   // 승리 시에만 인트로로 전환 — 사망 시엔 죽은 막의 음악을 그대로 유지
@@ -4968,8 +5025,10 @@ function gameOver(win, killer){
     "피격: <b>"+runHits+"</b> · 시간: <b>"+fmtTime(scoreData.elapsedSec)+"</b> · 재도전 감점: <b style='color:#ff748b'>-"+fmtScore(scoreData.retryPenalty)+"</b><br>"+
     "골드: <b style='color:#ffd34d'>"+gold+"</b> · 유물: <b>"+player.relics.length+"개</b> · 난이도: <b style='color:"+diffSet.col+"'>"+diffSet.label+"</b>";
   const scoreEl=$('endScore'); if(scoreEl) scoreEl.textContent=fmtScore(scoreData.score);
-  const saveEl=$('endScoreSave'); if(saveEl) saveEl.textContent='ranking standby';
-  saveRunScore(win,k,scoreData);
+  pendingScoreData=scoreData;
+  pendingScoreWin=!!win;
+  pendingScoreKiller=k;
+  resetEndRankForm();
   $('endQuip').textContent='채팅: "'+quip+'"';
   chatSys(win?"🎉🎉 클리어!! 채팅 축제":"☠ 사망 ("+k+") — 채팅: "+pick(["GG","한판더","아깝다 Sadge","리트 ㄱㄱ"]));
 }
@@ -5065,6 +5124,7 @@ $('retryBtn').onclick=()=>{
   if(diffSet.maxRetries !== Infinity && retries >= diffSet.maxRetries){ banner('재도전 불가','횟수를 모두 소진했습니다',1400); return; }
   retryRoom();
 };
+{ const rb=$('endRankSubmit'); if(rb) rb.onclick=submitEndRankScore; }
 $('restartBtn').onclick=()=>{
   introFxReset(); stopBGM(); hideAll();
   try{ if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)(); if(audioCtx.state==='suspended')audioCtx.resume(); }catch(e){}
