@@ -136,13 +136,13 @@
       <div class="overlay" id="ovTitle">
         <canvas id="titleCanvas" width="180" height="112"></canvas>
         <div id="titleVignette"></div>
-        <div class="title-wrap" style="position:relative;">
+        <div class="title-wrap">
           <div class="title-logo">
             <h1>시청자를 막아라</h1>
             <div class="sub">Block the Viewers</div>
           </div>
           <div class="title-live"><span class="ld"></span>LIVE<br><span style="color:#cdbbf2">스트리머 김봉식</span><br><span class="credit">Developer: 달좋아해요<br>Music: 케터<br>Beta Tester: 키죠, 킬조이, 러라, 타포</span></div>
-          <div style="position:absolute;bottom:10px;right:14px;font-family:'Courier New',monospace;font-size:11px;color:#4a3f60;letter-spacing:1px;user-select:none;">v1.0.0</div>
+
           <div class="title-menu">
             <button class="title-item" id="tmNew">NEW GAME</button>
             <button class="title-item disabled" id="tmLoad" tabindex="-1">LOAD</button>
@@ -150,6 +150,7 @@
             <button class="title-item" id="tmExit" style="font-size:clamp(15px,2.5vw,21px);color:#9b8fc4">EXIT</button>
           </div>
         </div>
+        <div style="position:fixed;bottom:12px;right:16px;font-family:'Courier New',monospace;font-size:11px;color:#3a2f50;letter-spacing:2px;pointer-events:none;z-index:1;" id="verTag">v1.0.0</div>
       </div>
 
       <!-- START (난이도 선택) -->
