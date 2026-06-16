@@ -650,7 +650,7 @@ let userProgress={
   titles:{},
   unlockedRelics:{},
   selectedTitle:'',
-  stats:{totalKills:0},
+  stats:{totalKills:0,bestScore:0,playCount:0,bestWave:0},
   loaded:false,
   dirty:false
 };
@@ -672,7 +672,16 @@ function ensureLeaderboardApi(){
   return leaderboardApiPromise;
 }
 function defaultProgress(){
-  return {uid:null,achievements:{},titles:{},unlockedRelics:{},selectedTitle:'',stats:{totalKills:0},loaded:false,dirty:false};
+  return {uid:null,achievements:{},titles:{},unlockedRelics:{},selectedTitle:'',stats:normalizeProgressStats(),loaded:false,dirty:false};
+}
+function normalizeProgressStats(stats){
+  stats=stats||{};
+  return {
+    totalKills:Number(stats.totalKills)||0,
+    bestScore:Number(stats.bestScore)||0,
+    playCount:Number(stats.playCount)||0,
+    bestWave:Number(stats.bestWave)||0
+  };
 }
 function titleById(id){ return TITLE_LIST.find(t=>t.id===id)||null; }
 function titleByName(name){ return TITLE_LIST.find(t=>t.name===name)||null; }
@@ -701,8 +710,7 @@ function normalizeProgress(data){
   base.unlockedRelics=Object.assign({},data.unlockedRelics||{});
   base.selectedTitle=normalizeTitleId(data.selectedTitle);
   if(base.selectedTitle&&!base.titles[base.selectedTitle]) base.selectedTitle='';
-  base.stats=Object.assign({},base.stats,data.stats||{});
-  base.stats.totalKills=Number(base.stats.totalKills)||0;
+  base.stats=normalizeProgressStats(data.stats);
   base.loaded=!!data.loaded;
   base.dirty=!!data.dirty;
   return base;
@@ -715,7 +723,12 @@ function mergeProgress(remote,local){
   remote.unlockedRelics=Object.assign({},remote.unlockedRelics,local.unlockedRelics);
   remote.selectedTitle=local.dirty?local.selectedTitle:(local.selectedTitle||remote.selectedTitle||'');
   if(remote.selectedTitle&&!remote.titles[remote.selectedTitle]) remote.selectedTitle='';
-  remote.stats.totalKills=Math.max(Number(remote.stats.totalKills)||0,Number(local.stats.totalKills)||0);
+  remote.stats=normalizeProgressStats(remote.stats);
+  local.stats=normalizeProgressStats(local.stats);
+  remote.stats.totalKills=Math.max(remote.stats.totalKills,local.stats.totalKills);
+  remote.stats.bestScore=Math.max(remote.stats.bestScore,local.stats.bestScore);
+  remote.stats.playCount=Math.max(remote.stats.playCount,local.stats.playCount);
+  remote.stats.bestWave=Math.max(remote.stats.bestWave,local.stats.bestWave);
   remote.loaded=true;
   remote.dirty=!!local.dirty;
   return remote;
@@ -732,7 +745,7 @@ function storeLocalProgress(){
       titles:userProgress.titles||{},
       unlockedRelics:userProgress.unlockedRelics||{},
       selectedTitle:userProgress.selectedTitle||'',
-      stats:userProgress.stats||{totalKills:0},
+      stats:normalizeProgressStats(userProgress.stats),
       dirty:!!userProgress.dirty,
       updatedAt:Date.now()
     }));
@@ -795,7 +808,7 @@ async function saveUserProgress(force){
       titles:userProgress.titles||{},
       unlockedRelics:userProgress.unlockedRelics||{},
       selectedTitle:userProgress.selectedTitle||'',
-      stats:userProgress.stats||{totalKills:0},
+      stats:normalizeProgressStats(userProgress.stats),
       updatedAt:api.fs.serverTimestamp()
     },{merge:true});
     userProgress.dirty=false;
@@ -895,6 +908,16 @@ function getSelectedTitleName(){
   const title=getSelectedTitle();
   return title?title.name:'';
 }
+function setTitleStat(id,value){
+  const el=$(id);
+  if(el) el.textContent=value;
+}
+function refreshTitleInfoStats(){
+  const stats=normalizeProgressStats(userProgress&&userProgress.stats);
+  setTitleStat('titleBestScore',fmtScore(stats.bestScore));
+  setTitleStat('titlePlayCount',fmtScore(stats.playCount)+'회');
+  setTitleStat('titleBestWave',fmtScore(stats.bestWave));
+}
 function renderTitleDisplay(target,options){
   options=options||{};
   const name=getSelectedTitleName();
@@ -913,6 +936,7 @@ function renderTitleDisplay(target,options){
 function refreshTitleDisplay(){
   renderTitleDisplay('achCurrentTitle');
   renderTitleDisplay('titleCurrentTitle',{compact:true});
+  refreshTitleInfoStats();
 }
 function applyAchievementReward(id){
   if(TITLE_REWARDS[id]) userProgress.titles[TITLE_REWARDS[id].id]=true;
@@ -939,6 +963,22 @@ function selectTitle(title){
 function applyStartBonuses(){
   if(isAchievementUnlocked('kill_100')) gold+=20;
   if(isAchievementUnlocked('clear_act1')) addPotion(pick(POTIONS));
+}
+function recordPlayStarted(){
+  userProgress.stats=normalizeProgressStats(userProgress&&userProgress.stats);
+  userProgress.stats.playCount+=1;
+  refreshTitleInfoStats();
+  saveUserProgress();
+}
+function recordRunResult(scoreData){
+  userProgress.stats=normalizeProgressStats(userProgress&&userProgress.stats);
+  const score=Math.round(Number(scoreData&&scoreData.score)||0);
+  const floor=Math.max(1,Number(scoreData&&scoreData.reachedFloor)||1);
+  const wave=(Math.max(1,Number(act)||1)-1)*(MAP_ROWS+1)+floor;
+  userProgress.stats.bestScore=Math.max(userProgress.stats.bestScore,score);
+  userProgress.stats.bestWave=Math.max(userProgress.stats.bestWave,wave);
+  refreshTitleInfoStats();
+  saveUserProgress();
 }
 function currentAttackMul(p){
   p=p||player;
@@ -5163,6 +5203,7 @@ function gameOver(win, killer){
   $('endTitle').textContent=title;
   $('endTitle').style.color=win?'#5dff9b':'#ff4d6d';
   const scoreData=calcRunScore(win);
+  recordRunResult(scoreData);
   $('endStats').innerHTML=
     "도달: <b>"+act+"막 "+scoreData.reachedFloor+"층</b> · 처치: <b>"+totalKills+"</b> · 레벨: <b>"+level+"</b><br>"+
     "피격: <b>"+runHits+"</b> · 시간: <b>"+fmtTime(scoreData.elapsedSec)+"</b> · 재도전 감점: <b style='color:#ff748b'>-"+fmtScore(scoreData.retryPenalty)+"</b><br>"+
@@ -5184,6 +5225,7 @@ function newGame(){
   act=1; currentRow=0; kills=0; totalKills=0; gold=0; level=1; xp=0; xpNext=20; pendingLevels=0; retries=0; runHits=0; runStartedAt=performance.now(); treePoints=0; treeUnlocked=new Set(['hub']);
   resetPlayer();
   runPotionUsed=false;
+  recordPlayStarted();
   unlockAchievement('first_play');
   applyStartBonuses();
   enemies=[];pBullets=[];eBullets=[];pickups=[];particles=[];boss=null;floatBubbles=[];lastKiller=null;
@@ -5220,6 +5262,7 @@ function newGameSkip(){
   act=1; currentRow=0; kills=0; totalKills=0; gold=0; level=1; xp=0; xpNext=20; pendingLevels=0; retries=0; runHits=0; runStartedAt=performance.now(); treePoints=0; treeUnlocked=new Set(['hub']);
   resetPlayer();
   runPotionUsed=false;
+  recordPlayStarted();
   unlockAchievement('first_play');
   applyStartBonuses();
   enemies=[];pBullets=[];eBullets=[];pickups=[];particles=[];boss=null;floatBubbles=[];lastKiller=null;
