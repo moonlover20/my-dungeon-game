@@ -4803,9 +4803,9 @@ function treeUnlockNode(node){
 // ---------- 트리 레이아웃 (캔버스 좌표) ----------
 // 각 노드의 화면 위치를 미리 계산
 function getTreeLayout(W, H){
-  const cx = W/2, cy = H/2 + 10;
+  // 허브를 화면 중앙보다 살짝 위에
+  const cx = W/2, cy = H * 0.48;
 
-  // 5개 갈래 기준 방향 (라디안)
   const BRANCH_ANGLES = {
     speed:    -Math.PI/2,
     shot:     -Math.PI/2 - Math.PI*0.38,
@@ -4814,40 +4814,44 @@ function getTreeLayout(W, H){
     gold:     -Math.PI/2 + Math.PI*0.76,
   };
 
-  const STEP = Math.min(W*0.40, H*0.38);
-  const LAYER_DIST = [0, 0.20, 0.38, 0.56, 0.72, 0.86, 1.0];
+  // 화면 크기에 비례한 절대 픽셀 간격
+  const BASE = Math.min(W, H) * 0.09;   // 허브~1단계
+  const GAP  = Math.min(W, H) * 0.085;  // 단계 간격
+
+  // depth → 거리(px)
+  function dist(d){ return BASE + GAP*(d-1); }
 
   // [깊이, 좌우오프셋(라디안)]
   const NODE_POS = {
-    m_spd1:   [1, -0.22], m_fire1:  [1,  0.22],
-    m_spd2:   [2, -0.22], m_fire2:  [2,  0.22],
-    m_dodge:  [3,  0],
-    m_dtap:   [4, -0.22], m_charge2:[4,  0.22],
-    m_blitz:  [5,  0],
+    m_spd1:   [1,-0.22], m_fire1:  [1, 0.22],
+    m_spd2:   [2,-0.22], m_fire2:  [2, 0.22],
+    m_dodge:  [3, 0],
+    m_dtap:   [4,-0.22], m_charge2:[4, 0.22],
+    m_blitz:  [5, 0],
 
-    s_speed1: [1, -0.20], s_size1:  [1,  0.20],
-    s_speed2: [2, -0.20], s_size2:  [2,  0.20],
-    s_spread: [3,  0],
-    s_shots1: [4, -0.20], s_back:   [4,  0.20],
-    s_shots2: [5,  0],
+    s_speed1: [1,-0.20], s_size1:  [1, 0.20],
+    s_speed2: [2,-0.20], s_size2:  [2, 0.20],
+    s_spread: [3, 0],
+    s_shots1: [4,-0.20], s_back:   [4, 0.20],
+    s_shots2: [5, 0],
 
-    v_hp1:    [1, -0.20], v_armor1: [1,  0.20],
-    v_hp2:    [2, -0.20], v_armor2: [2,  0.20],
-    v_regen:  [3, -0.20],
-    v_steal:  [4, -0.20], v_thorns: [4,  0.20],
-    v_undead: [5,  0],
+    v_hp1:    [1,-0.20], v_armor1: [1, 0.20],
+    v_hp2:    [2,-0.20], v_armor2: [2, 0.20],
+    v_regen:  [3,-0.20],
+    v_steal:  [4,-0.20], v_thorns: [4, 0.20],
+    v_undead: [5, 0],
 
-    t_burn1:  [1, -0.20], t_poison1:[1,  0.20],
-    t_burn2:  [2, -0.20], t_poison2:[2,  0.20],
-    t_chill:  [3,  0.20], t_dmg:    [3, -0.20],
-    t_stun:   [4,  0],
-    t_spread: [5,  0],
+    t_burn1:  [1,-0.20], t_poison1:[1, 0.20],
+    t_burn2:  [2,-0.20], t_poison2:[2, 0.20],
+    t_chill:  [3, 0.20], t_dmg:    [3,-0.20],
+    t_stun:   [4, 0],
+    t_spread: [5, 0],
 
-    g_gold1:  [1, -0.20], g_xp1:    [1,  0.20],
-    g_gold2:  [2, -0.20], g_xp2:    [2,  0.20],
-    g_donate: [3,  0.20], g_power:  [3, -0.20],
-    g_magnet: [4,  0],
-    g_jackpot:[5,  0],
+    g_gold1:  [1,-0.20], g_xp1:    [1, 0.20],
+    g_gold2:  [2,-0.20], g_xp2:    [2, 0.20],
+    g_donate: [3, 0.20], g_power:  [3,-0.20],
+    g_magnet: [4, 0],
+    g_jackpot:[5, 0],
   };
 
   const NODE_BRANCH = {};
@@ -4858,12 +4862,11 @@ function getTreeLayout(W, H){
   for(const [id, [depth, off]] of Object.entries(NODE_POS)){
     const branch = NODE_BRANCH[id];
     if(!branch) continue;
-    const baseAngle = BRANCH_ANGLES[branch];
-    const angle = baseAngle + off;
-    const dist  = LAYER_DIST[depth] * STEP;
+    const angle = BRANCH_ANGLES[branch] + off;
+    const d     = dist(depth);
     pos[id] = {
-      x: cx + Math.cos(angle) * dist,
-      y: cy + Math.sin(angle) * dist,
+      x: cx + Math.cos(angle) * d,
+      y: cy + Math.sin(angle) * d,
     };
   }
   return pos;
@@ -4909,7 +4912,6 @@ function renderTree(){
   const _rect = cvs.getBoundingClientRect();
   const W = cvs.width  = Math.round(_rect.width)  || window.innerWidth  || 1280;
   const H = cvs.height = Math.round(_rect.height) || window.innerHeight || 720;
-  console.log('[Tree] canvas size:', W, H, 'rect:', _rect.width, _rect.height, 'inner:', window.innerWidth, window.innerHeight);
   const c = cvs.getContext('2d');
   _treeCanvas = cvs; _treeCtx = c;
 
