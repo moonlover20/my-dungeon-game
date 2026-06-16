@@ -203,12 +203,64 @@
   .rank-meta{color:#9db5d8;font-size:10px;line-height:1.4;}
   .rank-score{color:#ffd34d;font-weight:900;text-align:right;text-shadow:0 0 10px rgba(255,211,77,.35);}
   .rank-empty{padding:22px 12px;color:#9db5d8;text-align:center;border:2px dashed #304c7c;background:#0d1530;}
+  #ovAchievements{z-index:9;background:rgba(8,10,24,.42);backdrop-filter:none;}
+  .achievement-panel{
+    position:relative;
+    max-width:720px;
+    max-height:88vh;
+    overflow:hidden;
+    padding:20px 20px 18px;
+    background:linear-gradient(180deg,#15102c 0%,#1d2443 58%,#0b0f22 100%);
+    border:3px solid #6f5db8;
+    box-shadow:0 8px 0 #050714,0 0 0 3px #130b24,0 0 38px rgba(201,139,255,.22);
+  }
+  .ach-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;text-align:left;}
+  .ach-head h2{margin:3px 0 0;color:#f7f2ff;letter-spacing:4px;text-shadow:0 0 14px rgba(201,139,255,.72);}
+  .ach-rate{color:#ffd34d;font-weight:900;font-family:"Courier New",monospace;text-shadow:0 0 10px rgba(255,211,77,.35);}
+  .achievement-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0 10px;}
+  .ach-tab{
+    min-height:36px;
+    border:2px solid #594b87;
+    background:#120d25;
+    color:#d8cbff;
+    font-family:inherit;
+    font-weight:900;
+    cursor:pointer;
+    box-shadow:0 4px 0 #050714;
+  }
+  .ach-tab.active{color:#130b24;background:#c98bff;border-color:#efe0ff;box-shadow:0 4px 0 #633f8b,0 0 16px rgba(201,139,255,.5);}
+  .achievement-list{display:flex;flex-direction:column;gap:8px;max-height:52vh;overflow-y:auto;text-align:left;padding-right:3px;}
+  .ach-row{
+    display:grid;
+    grid-template-columns:44px minmax(0,1fr);
+    gap:10px;
+    align-items:center;
+    padding:10px 12px;
+    background:linear-gradient(180deg,#17122c,#111936);
+    border:2px solid #3a315d;
+    box-shadow:0 3px 0 #050714;
+    color:#9db5d8;
+    font-family:inherit;
+    text-align:left;
+  }
+  button.ach-row{width:100%;cursor:pointer;}
+  button.ach-row:disabled{cursor:default;opacity:.68;}
+  .ach-row.unlocked{border-color:#8be8ff;color:#eaf8ff;}
+  .ach-row.selected{border-color:#ffd34d;box-shadow:0 3px 0 #050714,0 0 14px rgba(255,211,77,.32);}
+  .ach-medal{font-size:24px;text-align:center;}
+  .ach-row b{display:block;color:#fff;font-size:14px;margin-bottom:3px;}
+  .ach-row span{display:block;color:#9db5d8;font-size:12px;line-height:1.35;}
+  .ach-row small{display:block;margin-top:4px;color:#ffd34d;font-size:11px;}
+  .ach-clear-title{margin-top:8px;}
   @media (max-width:560px){
     .ranking-panel{padding:16px 12px 14px;}
     .ranking-head{align-items:center;}
     .ranking-tabs{gap:6px;}
     .rank-row{grid-template-columns:34px minmax(0,1fr);gap:8px;}
     .rank-score{grid-column:2;text-align:left;}
+    .achievement-panel{padding:16px 12px 14px;}
+    .ach-head{align-items:center;}
+    .achievement-tabs{gap:6px;}
   }
   .keycaps{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:12px 0;}
   .cap{background:#0e0a18;border:2px solid var(--line);border-bottom-width:4px;padding:6px 10px;font-size:12px;color:var(--ink);}
