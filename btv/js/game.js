@@ -5137,3 +5137,330 @@ function initTreeEvents(){
     }
   });
 }
+
+// ---------- POE-style passive tree overlay v2 ----------
+const TREE_BRANCH_COL = {
+  hub: '#e8d8a4',
+  shot: '#d79b4b',
+  status: '#74b879',
+  gold: '#d7b657',
+  survive: '#b56a86',
+  speed: '#8fb7d9',
+};
+const TREE_BRANCH_LABEL = {
+  shot: 'PROJECTILES',
+  status: 'STATUS',
+  gold: 'FORTUNE',
+  survive: 'SURVIVAL',
+  speed: 'MOTION',
+  hub: 'ORIGIN',
+};
+const TREE_BRANCH_ANGLE = {
+  speed: -Math.PI / 2,
+  shot: -Math.PI / 2 - Math.PI * 0.43,
+  survive: -Math.PI / 2 + Math.PI * 0.43,
+  status: -Math.PI / 2 - Math.PI * 0.84,
+  gold: -Math.PI / 2 + Math.PI * 0.84,
+};
+const TREE_NODE_POS2 = {
+  m_spd1:[1,-0.25], m_fire1:[1,0.25], m_spd2:[2,-0.22], m_fire2:[2,0.22],
+  m_dodge:[3,0], m_dtap:[4,-0.25], m_charge2:[4,0.25], m_blitz:[5,0],
+  s_speed1:[1,-0.22], s_size1:[1,0.22], s_speed2:[2,-0.22], s_size2:[2,0.22],
+  s_spread:[3,0], s_shots1:[4,-0.24], s_back:[4,0.24], s_shots2:[5,0],
+  v_hp1:[1,-0.22], v_armor1:[1,0.22], v_hp2:[2,-0.22], v_armor2:[2,0.22],
+  v_regen:[3,-0.22], v_steal:[4,-0.24], v_thorns:[4,0.24], v_undead:[5,0],
+  t_burn1:[1,-0.22], t_poison1:[1,0.22], t_burn2:[2,-0.22], t_poison2:[2,0.22],
+  t_chill:[3,0.22], t_dmg:[3,-0.22], t_stun:[4,0], t_spread:[5,0],
+  g_gold1:[1,-0.22], g_xp1:[1,0.22], g_gold2:[2,-0.22], g_xp2:[2,0.22],
+  g_donate:[3,0.22], g_power:[3,-0.22], g_magnet:[4,0], g_jackpot:[5,0],
+};
+
+let treeAtlasSelected = 'hub';
+let treeAtlasPan = {x:0, y:0};
+let treeAtlasZoom = 1.08;
+let treeAtlasDrag = null;
+let treeAtlasMoved = false;
+
+function treeNodeById(id){ return TREE_NODES.find(n=>n.id===id) || TREE_NODES[0]; }
+function treeCanReach(node){ return !treeUnlocked.has(node.id) && (node.req||[]).every(r=>treeUnlocked.has(r)); }
+function treeStatusText(node){
+  if(treeUnlocked.has(node.id)) return 'Acquired';
+  if(treeCanUnlock(node)) return 'Ready to allocate';
+  if(!treeCanReach(node)) return 'Requires linked passive';
+  return 'Need ' + (node.cost||1) + ' skill point' + ((node.cost||1)>1?'s':'');
+}
+function treeToScreen2(x,y,W,H){
+  return {x:W*0.45 + treeAtlasPan.x + x*treeAtlasZoom, y:H*0.55 + treeAtlasPan.y + y*treeAtlasZoom};
+}
+function screenToTree2(x,y,W,H){
+  return {x:(x - W*0.45 - treeAtlasPan.x)/treeAtlasZoom, y:(y - H*0.55 - treeAtlasPan.y)/treeAtlasZoom};
+}
+function getTreeLayout(W,H){
+  const branchOf = {};
+  TREE_NODES.forEach(n=>{ if(n.branch!=='hub') branchOf[n.id]=n.branch; });
+  const pos = {hub:{x:0,y:0}};
+  for(const id in TREE_NODE_POS2){
+    const branch = branchOf[id]; if(!branch) continue;
+    const depth = TREE_NODE_POS2[id][0], off = TREE_NODE_POS2[id][1];
+    const angle = TREE_BRANCH_ANGLE[branch] + off;
+    const d = 132 + (depth-1)*120;
+    pos[id] = {x:Math.cos(angle)*d, y:Math.sin(angle)*d};
+  }
+  return pos;
+}
+function ensureTreeChrome(){
+  const ov=$('ovTree'); if(!ov || ov.dataset.treeChrome==='2') return;
+  ov.dataset.treeChrome='2';
+  const head=ov.querySelector(':scope > div');
+  if(head){
+    head.className='tree-topbar';
+    const spans=head.querySelectorAll('span');
+    if(spans[0]) spans[0].textContent='PASSIVES';
+    if(spans[1]) spans[1].textContent='[ K ] CLOSE';
+  }
+  const panel=document.createElement('div');
+  panel.id='treeInfoPanel';
+  panel.className='tree-info-panel';
+  panel.innerHTML='<div class="tree-panel-kicker">PASSIVE</div><div id="treePanelName" class="tree-panel-name"></div><div id="treePanelBranch" class="tree-panel-branch"></div><div id="treePanelDesc" class="tree-panel-desc"></div><div id="treePanelState" class="tree-panel-state"></div><button id="treeUnlockBtn" class="tree-unlock-btn">ALLOCATE</button><div class="tree-help">Drag to move · Wheel to zoom · K / ESC to close</div>';
+  ov.appendChild(panel);
+  const close=document.createElement('button');
+  close.id='treeCloseBtn';
+  close.className='tree-close-btn';
+  close.textContent='x';
+  close.onclick=closeTree;
+  ov.appendChild(close);
+}
+function updateTreePanel(){
+  const node=treeNodeById(treeAtlasSelected);
+  const col=TREE_BRANCH_COL[node.branch]||TREE_BRANCH_COL.hub;
+  const set=(id,val)=>{ const el=$(id); if(el) el.textContent=val; };
+  set('treePanelName',(node.icon?node.icon+' ':'')+node.name);
+  set('treePanelBranch',TREE_BRANCH_LABEL[node.branch]||'ORIGIN');
+  set('treePanelDesc',node.desc||'');
+  set('treePanelState',treeStatusText(node));
+  const stateEl=$('treePanelState'); if(stateEl) stateEl.style.color=treeCanUnlock(node)?'#f3d98b':treeUnlocked.has(node.id)?'#89e0a1':'#9a8d76';
+  const branchEl=$('treePanelBranch'); if(branchEl) branchEl.style.color=col;
+  const btn=$('treeUnlockBtn');
+  if(btn){
+    btn.disabled=!treeCanUnlock(node);
+    btn.textContent=treeUnlocked.has(node.id)?'ALLOCATED':('ALLOCATE ' + (node.cost||1) + 'P');
+    btn.onclick=function(){
+      if(treeUnlockNode(node)){
+        try{sfx.pick&&sfx.pick();}catch(e){}
+        banner(node.name,'Passive allocated',1000);
+        updateTreePanel();
+        renderTree();
+      }
+    };
+  }
+}
+function openTree(){
+  if(state!=='play' && state!=='map') return;
+  ensureTreeChrome();
+  treeOpen = true;
+  $('ovTree').classList.remove('hidden');
+  updateTreePanel();
+  if(state==='play' && !paused){ paused=true; mouseDown=false; autoFire=false; }
+  requestAnimationFrame(()=>requestAnimationFrame(renderTree));
+}
+function closeTree(){
+  treeOpen = false;
+  const ov=$('ovTree'); if(ov) ov.classList.add('hidden');
+  const tt=$('treeTooltip'); if(tt) tt.style.display='none';
+  if(state==='play' && paused){ paused=false; last=performance.now(); }
+}
+function drawTreeBackground(c,W,H){
+  const g=c.createRadialGradient(W*0.45,H*0.55,40,W*0.45,H*0.55,Math.max(W,H)*0.76);
+  g.addColorStop(0,'#151319');
+  g.addColorStop(0.58,'#070a10');
+  g.addColorStop(1,'#030407');
+  c.fillStyle=g; c.fillRect(0,0,W,H);
+  c.strokeStyle='rgba(189,167,105,0.055)';
+  c.lineWidth=1;
+  for(let x=((treeAtlasPan.x%32)+32)%32;x<W;x+=32){ c.beginPath(); c.moveTo(x,0); c.lineTo(x,H); c.stroke(); }
+  for(let y=((treeAtlasPan.y%32)+32)%32;y<H;y+=32){ c.beginPath(); c.moveTo(0,y); c.lineTo(W,y); c.stroke(); }
+  c.fillStyle='#fff0b8';
+  for(let i=0;i<90;i++){
+    const x=(i*157+treeAtlasPan.x*0.13)%W, y=(i*91+treeAtlasPan.y*0.09)%H;
+    c.globalAlpha=0.045+(i%7)*0.012;
+    c.fillRect((x+W)%W,(y+H)%H,1,1);
+  }
+  c.globalAlpha=1;
+}
+function drawTreeNode2(c,node,p,W,H){
+  const sp=treeToScreen2(p.x,p.y,W,H);
+  const unlocked=treeUnlocked.has(node.id), can=treeCanUnlock(node), reach=treeCanReach(node);
+  const hover=_treeHover===node.id, selected=treeAtlasSelected===node.id;
+  const col=TREE_BRANCH_COL[node.branch]||TREE_BRANCH_COL.hub;
+  const major=node.id==='hub' || (node.cost||1)>=3;
+  const r=(major?18:12)*(hover||selected?1.18:1);
+  c.save();
+  c.globalAlpha=unlocked?1:(can?0.96:(reach?0.48:0.22));
+  c.shadowColor=unlocked||can||selected?col:'transparent';
+  c.shadowBlur=selected?28:(unlocked?18:(can?12:0));
+  c.beginPath();
+  c.arc(sp.x,sp.y,r+5,0,TAU);
+  c.fillStyle=selected?'rgba(244,217,139,0.22)':(unlocked?col+'33':'rgba(6,8,12,0.72)');
+  c.fill();
+  c.shadowBlur=0;
+  c.beginPath();
+  c.arc(sp.x,sp.y,r,0,TAU);
+  c.fillStyle=unlocked?'#17120b':'#090b11';
+  c.fill();
+  c.lineWidth=major?3:2;
+  c.strokeStyle=unlocked?col:(can?'#f3d98b':(reach?'#5a554b':'#2c2b30'));
+  c.stroke();
+  if(can && !unlocked){
+    c.beginPath();
+    c.arc(sp.x,sp.y,r+7,0,TAU);
+    c.strokeStyle='rgba(243,217,139,0.55)';
+    c.lineWidth=1;
+    c.stroke();
+  }
+  c.font=(major?'18px':'14px')+' sans-serif';
+  c.textAlign='center';
+  c.textBaseline='middle';
+  c.fillStyle=unlocked?'#fff3c0':(can?'#f3d98b':'#756d62');
+  c.fillText(node.icon||'*',sp.x,sp.y+1);
+  if((node.cost||1)>1 && !unlocked){
+    c.font='bold 11px Courier New';
+    c.fillStyle=can?'#f3d98b':'#6f6658';
+    c.fillText((node.cost||1)+'P',sp.x+r*0.88,sp.y-r*0.88);
+  }
+  c.restore();
+}
+function renderTree(){
+  const cvs=$('treeCanvas'); if(!cvs) return;
+  const rect=cvs.getBoundingClientRect();
+  const W=cvs.width=Math.round(rect.width)||window.innerWidth||1280;
+  const H=cvs.height=Math.round(rect.height)||window.innerHeight||720;
+  const c=cvs.getContext('2d');
+  drawTreeBackground(c,W,H);
+  _treeLayout=getTreeLayout(W,H);
+  for(const node of TREE_NODES){
+    const p=_treeLayout[node.id]; if(!p) continue;
+    for(const reqId of node.req||[]){
+      const q=_treeLayout[reqId]; if(!q) continue;
+      const a=treeToScreen2(q.x,q.y,W,H), b=treeToScreen2(p.x,p.y,W,H);
+      const unlocked=treeUnlocked.has(node.id)&&treeUnlocked.has(reqId);
+      const available=treeUnlocked.has(reqId)&&!treeUnlocked.has(node.id);
+      c.save();
+      c.strokeStyle=unlocked?(TREE_BRANCH_COL[node.branch]||'#d8c28a'):(available?'rgba(243,217,139,0.48)':'rgba(120,116,105,0.22)');
+      c.lineWidth=unlocked?3:1.5;
+      if(!unlocked) c.setLineDash([5,7]);
+      c.shadowColor=unlocked?(TREE_BRANCH_COL[node.branch]||'#d8c28a'):'transparent';
+      c.shadowBlur=unlocked?10:0;
+      c.beginPath();
+      c.moveTo(a.x,a.y);
+      c.lineTo(b.x,b.y);
+      c.stroke();
+      c.restore();
+    }
+  }
+  for(const node of TREE_NODES){ const p=_treeLayout[node.id]; if(p) drawTreeNode2(c,node,p,W,H); }
+  c.save();
+  c.font='bold 16px Courier New';
+  c.textAlign='left';
+  c.textBaseline='top';
+  c.fillStyle='#f3d98b';
+  c.shadowColor='#c8a958';
+  c.shadowBlur=10;
+  c.fillText('SKILL POINTS  '+treePoints,22,18);
+  c.font='12px Courier New';
+  c.shadowBlur=0;
+  c.fillStyle='rgba(232,216,164,0.72)';
+  c.fillText('Zoom '+Math.round(treeAtlasZoom*100)+'%',22,42);
+  c.restore();
+  updateTreePanel();
+}
+function treeNodeAt(sx,sy,W,H){
+  if(!_treeLayout) return null;
+  let best=null, bestD=9999;
+  for(const node of TREE_NODES){
+    const p=_treeLayout[node.id]; if(!p) continue;
+    const sp=treeToScreen2(p.x,p.y,W,H);
+    const r=(node.id==='hub'||(node.cost||1)>=3?27:22);
+    const d=Math.hypot(sx-sp.x,sy-sp.y);
+    if(d<r && d<bestD){ best=node; bestD=d; }
+  }
+  return best;
+}
+function updateTreeTooltip(node,cx,cy){
+  const tt=$('treeTooltip'); if(!tt) return;
+  if(!node){ tt.style.display='none'; return; }
+  const col=TREE_BRANCH_COL[node.branch]||TREE_BRANCH_COL.hub;
+  $('ttName').textContent=(node.icon?node.icon+' ':'')+node.name;
+  $('ttName').style.color=col;
+  $('ttDesc').textContent=node.desc||'';
+  $('ttState').textContent=treeStatusText(node);
+  $('ttState').style.color=treeCanUnlock(node)?'#f3d98b':treeUnlocked.has(node.id)?'#89e0a1':'#9a8d76';
+  tt.style.borderColor=col;
+  tt.style.boxShadow='0 0 22px '+col+'55';
+  const W=window.innerWidth,H=window.innerHeight,tw=280,th=118;
+  let tx=cx+18,ty=cy+18;
+  if(tx+tw>W-8) tx=cx-tw-12;
+  if(ty+th>H-8) ty=cy-th-12;
+  tt.style.left=tx+'px';
+  tt.style.top=ty+'px';
+  tt.style.display='block';
+}
+function initTreeEvents(){
+  const cvs=$('treeCanvas'); if(!cvs) return;
+  cvs.addEventListener('mousemove',e=>{
+    if(!treeOpen) return;
+    const r=cvs.getBoundingClientRect();
+    const sx=(e.clientX-r.left)*(cvs.width/r.width), sy=(e.clientY-r.top)*(cvs.height/r.height);
+    if(treeAtlasDrag){
+      const dx=e.clientX-treeAtlasDrag.x, dy=e.clientY-treeAtlasDrag.y;
+      if(Math.abs(dx)+Math.abs(dy)>2) treeAtlasMoved=true;
+      treeAtlasPan.x=treeAtlasDrag.px+dx;
+      treeAtlasPan.y=treeAtlasDrag.py+dy;
+      renderTree();
+      return;
+    }
+    const node=treeNodeAt(sx,sy,cvs.width,cvs.height);
+    const id=node?node.id:null;
+    if(id!==_treeHover){ _treeHover=id; renderTree(); }
+    updateTreeTooltip(node,e.clientX,e.clientY);
+  });
+  cvs.addEventListener('mouseleave',()=>{
+    _treeHover=null;
+    treeAtlasDrag=null;
+    updateTreeTooltip(null,0,0);
+    if(treeOpen) renderTree();
+  });
+  cvs.addEventListener('mousedown',e=>{
+    if(!treeOpen) return;
+    treeAtlasDrag={x:e.clientX,y:e.clientY,px:treeAtlasPan.x,py:treeAtlasPan.y};
+    treeAtlasMoved=false;
+  });
+  window.addEventListener('mouseup',()=>{ treeAtlasDrag=null; });
+  cvs.addEventListener('click',e=>{
+    if(!treeOpen || treeAtlasMoved) return;
+    const r=cvs.getBoundingClientRect();
+    const sx=(e.clientX-r.left)*(cvs.width/r.width), sy=(e.clientY-r.top)*(cvs.height/r.height);
+    const node=treeNodeAt(sx,sy,cvs.width,cvs.height);
+    if(!node) return;
+    treeAtlasSelected=node.id;
+    if(treeCanUnlock(node)){
+      treeUnlockNode(node);
+      try{sfx.pick&&sfx.pick();}catch(err){}
+      banner(node.name,'Passive allocated',1000);
+    }
+    updateTreePanel();
+    renderTree();
+  });
+  cvs.addEventListener('wheel',e=>{
+    if(!treeOpen) return;
+    e.preventDefault();
+    const r=cvs.getBoundingClientRect();
+    const sx=(e.clientX-r.left)*(cvs.width/r.width), sy=(e.clientY-r.top)*(cvs.height/r.height);
+    const before=screenToTree2(sx,sy,cvs.width,cvs.height);
+    const old=treeAtlasZoom;
+    treeAtlasZoom=clamp(treeAtlasZoom*(e.deltaY<0?1.1:0.9),0.65,1.9);
+    const after=screenToTree2(sx,sy,cvs.width,cvs.height);
+    treeAtlasPan.x+=(after.x-before.x)*treeAtlasZoom;
+    treeAtlasPan.y+=(after.y-before.y)*treeAtlasZoom;
+    if(old!==treeAtlasZoom) renderTree();
+  },{passive:false});
+}
