@@ -306,10 +306,13 @@
   .ach-row span{display:block;color:#9db5d8;font-size:12px;line-height:1.35;}
   .ach-row small{display:block;margin-top:4px;color:#ffd34d;font-size:11px;}
   .ach-clear-title{margin-top:8px;}
+  #ovDatabase{
+    z-index:20;
+  }
   .database-panel{
     position:relative;
     max-width:760px;
-    max-height:88vh;
+    max-height:86vh;
     overflow:hidden;
     padding:20px 20px 18px;
     background:linear-gradient(180deg,#15102c 0%,#1d2443 58%,#0b0f22 100%);
@@ -318,6 +321,7 @@
   }
   .database-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;text-align:left;}
   .database-head h2{margin:3px 0 0;color:#f7f2ff;letter-spacing:3px;text-shadow:0 0 14px rgba(56,232,255,.54);}
+  #databaseClose{pointer-events:auto;cursor:pointer;}
   .db-x{background:none;border:none;color:#cbb8f0;font-family:inherit;font-size:24px;font-weight:900;line-height:1;cursor:pointer;text-shadow:0 2px 0 #000;}
   .db-x:hover{color:#fff;text-shadow:0 0 10px var(--neon);}
   .database-tools{margin:14px 0 10px;display:grid;grid-template-columns:minmax(0,1fr) minmax(180px,240px);gap:10px;align-items:center;}
@@ -346,7 +350,8 @@
     outline:none;
   }
   .database-search:focus{border-color:#8be8ff;box-shadow:0 4px 0 #050714,0 0 14px rgba(139,232,255,.38);}
-  .database-list{display:flex;flex-direction:column;gap:8px;max-height:54vh;overflow-y:auto;text-align:left;padding-right:3px;}
+  #databaseBody{max-height:58vh;overflow-y:auto;overscroll-behavior:contain;}
+  .database-list{display:flex;flex-direction:column;gap:8px;max-height:58vh;overflow-y:auto;text-align:left;padding-right:3px;}
   .db-row{
     display:grid;
     grid-template-columns:44px minmax(0,1fr);
