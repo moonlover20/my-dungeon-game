@@ -1513,8 +1513,9 @@ let kijoMasks=[], kijoGazes=[], kijoParades=[];
 let tierIntroShown=false;
 let screenShake=0, hitFlash=0;
 // ── 이벤트 → 다음 전투/보상에 적용되는 모디파이어 ──
-let nextCombatMods=null;      // {hpMul,spdMul,cntMul,fireHandicap,rewardMul,ally,challenge,specialReward,banner}
+let nextCombatMods=null;      // {hpMul,spdMul,atkMul,cntMul,fireHandicap,rewardMul,ally,challenge,specialReward,banner}
 let combatRewardMul=1;        // 이번 전투 보상 배수
+let nextShopDiscount=0;       // 다음 상점 1회성 할인 (0~1, 예: 0.1 = 10% 할인)
 let combatChallenge=null;     // 'nohit' 등 도전 조건
 let combatSpecialReward=null; // 전투 승리 후 일반 보상 대신 실행할 콜백
 let combatTookHit=false;      // 이번 전투 피격 여부
@@ -1724,7 +1725,7 @@ function startCombat(kind, fresh){
   if(nextCombatMods){
     const M=nextCombatMods; nextCombatMods=null;
     if(M.cntMul && enemies.length){ const extra=Math.round(enemies.length*(M.cntMul-1)); for(let i=0;i<extra;i++){ const P2=ACT_POOLS[Math.min(act-1,ACT_POOLS.length-1)]; spawnEnemy(pick(P2.normal), rand(60,W-60), rand(60,H-180), diff); } }
-    if(M.hpMul||M.spdMul){ enemies.forEach(o=>{ if(!o.midboss){ if(M.hpMul){o.hp*=M.hpMul;o.maxhp*=M.hpMul;} if(M.spdMul){o.spd*=M.spdMul; if(o._spd0!=null)o._spd0*=M.spdMul;} } }); }
+    if(M.hpMul||M.spdMul||M.atkMul){ enemies.forEach(o=>{ if(!o.midboss){ if(M.hpMul){o.hp*=M.hpMul;o.maxhp*=M.hpMul;} if(M.spdMul){o.spd*=M.spdMul; if(o._spd0!=null)o._spd0*=M.spdMul;} if(M.atkMul){o.dmg=Math.round((o.dmg||0)*M.atkMul);} } }); }
     if(M.fireHandicap) player._fireHandicap=M.fireHandicap;
     if(M.rewardMul) combatRewardMul=M.rewardMul;
     if(M.challenge) combatChallenge=M.challenge;
@@ -3853,6 +3854,15 @@ const EVENT_THEMES = {
   // ── 검투장 보상 (offerGladiatorReward) ───────────────────────
   '⚔ 검투장 보상':    {scene:'gladiator',accent:'#cc6622', bg:'radial-gradient(ellipse at 50% 92%,#1a0808 0%,#0a0814 60%)', tags:[{t:'전투',c:'#ff8840',bg:'rgba(60,20,0,.55)'},{t:'유물',c:'#cc88cc',bg:'rgba(60,0,70,.55)'}]},
   '🩸 제단의 응답':   {scene:'altar',   accent:'#cc2222', bg:'radial-gradient(ellipse at 50% 85%,#2a0808 0%,#0a0814 60%)', tags:[{t:'유물',c:'#cc88cc',bg:'rgba(60,0,70,.55)'}]},
+  // ── 신규 8종 테마 ─────────────────────────────────────────────
+  '🏋 부서진 훈련장': {scene:'gladiator',accent:'#888840', bg:'radial-gradient(ellipse at 50% 80%,#141208 0%,#0a0814 60%)', tags:[{t:'경험치',c:'#aadd40',bg:'rgba(30,50,0,.55)'},{t:'위험',c:'#ff5050',bg:'rgba(80,0,0,.55)'}]},
+  '🍲 수상한 요리사': {scene:'potion',  accent:'#cc8830', bg:'radial-gradient(ellipse at 50% 55%,#181008 0%,#0a0814 60%)', tags:[{t:'도박',c:'#ffaa00',bg:'rgba(55,35,0,.55)'},{t:'회복',c:'#40ee80',bg:'rgba(0,50,20,.55)'}]},
+  '🗺 낡은 지도':     {scene:'book',    accent:'#aa8830', bg:'radial-gradient(ellipse at 40% 50%,#140e04 0%,#0a0814 60%)', tags:[{t:'거래',c:'#ffcc30',bg:'rgba(60,45,0,.55)'},{t:'도박',c:'#ffaa00',bg:'rgba(55,35,0,.55)'}]},
+  '🩸 피 묻은 우물':  {scene:'well',    accent:'#cc3333', bg:'radial-gradient(ellipse at 50% 65%,#1a0808 0%,#0a0814 60%)', tags:[{t:'회복',c:'#40ee80',bg:'rgba(0,50,20,.55)'},{t:'위험',c:'#ff5050',bg:'rgba(80,0,0,.55)'}]},
+  '🧭 길 잃은 모험가':{scene:'collector',accent:'#5599cc', bg:'radial-gradient(ellipse at 40% 50%,#080e18 0%,#0a0814 60%)', tags:[{t:'경험치',c:'#aadd40',bg:'rgba(30,50,0,.55)'},{t:'거래',c:'#ffcc30',bg:'rgba(60,45,0,.55)'}]},
+  '🌫 검은 안개':     {scene:'mirror',  accent:'#668899', bg:'radial-gradient(ellipse at 50% 50%,#06080e 0%,#0a0814 60%)', tags:[{t:'도박',c:'#ffaa00',bg:'rgba(55,35,0,.55)'},{t:'혼돈',c:'#ff44cc',bg:'rgba(60,0,40,.55)'}]},
+  '📦 고장난 보급 상자':{scene:'chest', accent:'#886644', bg:'radial-gradient(ellipse at 50% 65%,#120e08 0%,#0a0814 60%)', tags:[{t:'도박',c:'#ffaa00',bg:'rgba(55,35,0,.55)'}]},
+  '⏳ 시간의 균열':   {scene:'storm',   accent:'#6688cc', bg:'radial-gradient(ellipse at 50% 30%,#080c18 0%,#0a0814 60%)', tags:[{t:'경험치',c:'#aadd40',bg:'rgba(30,50,0,.55)'},{t:'도박',c:'#ffaa00',bg:'rgba(55,35,0,.55)'}]},
 };
 
 // ── 씬 씬 씬: 픽셀아트 캔버스 렌더러 ──────────────────────────
@@ -4417,6 +4427,108 @@ const EVENTS=[
      {t:'골드 전부 포기 → 체력 완전 회복',disabled:()=>gold<=0,f:()=>{const spent=gold;gold=0;player.hp=player.maxhp;banner('탐욕 정화','골드 -'+spent+' / 체력 완전 회복',1600);updateHUD();finishNode();}},
      {t:'떠난다',f:()=>finishNode()},
    ]},
+  // ====================================================
+  //  신규 미지 이벤트 8종 — 비유물 보상 (골드/XP/체력/포션/전투변수)
+  //  추가 후 총 EVENTS: 21종 / 유물 가능: 9종 (약 43%)
+  // ====================================================
+  {tag:'🏋 부서진 훈련장',title:'낡은 훈련장',body:'먼지가 쌓인 더미와 기계들이 여전히 돌아가고 있다. 무너질 것 같지만, 쓸 수는 있다.',
+   choices:[
+     {t:'혹독한 훈련 — 체력 12% 감소, 경험치 +35',f:()=>{eventHpCostPct(0.12);gainXP(35);banner('혹독한 훈련','경험치 +35',1400);finishNode();}},
+     {t:'방어 훈련 — 현재 체력 -8, 최대 체력 +4',f:()=>{player.hp=Math.max(1,player.hp-8);player.maxhp+=4;player.hp=Math.min(player.hp,player.maxhp);banner('방어 훈련','최대 체력 +4',1400);updateHUD();finishNode();}},
+     {t:'그냥 지나간다',f:()=>finishNode()},
+   ]},
+  {tag:'🍲 수상한 요리사',title:'이상한 냄새의 요리',body:'웃는 얼굴의 요리사가 김이 모락모락 나는 냄비를 내민다. 뭘 넣었는지는 묻지 않는 게 나을 것 같다.',
+   choices:[
+     {t:'먹는다 — 50% 체력 25% 회복 / 30% 최대체력 +3 / 20% 체력 15% 감소',f:()=>{
+       const r=Math.random();
+       if(r<0.50){healPlayer(Math.max(20,Math.round(player.maxhp*0.25)),player.x,player.y);banner('묘한 맛','뭔가 회복됐다',1400);}
+       else if(r<0.80){player.maxhp+=3;player.hp=Math.min(player.hp,player.maxhp);banner('묘한 맛','몸이 단단해진 것 같다 +3',1400);updateHUD();}
+       else{const loss=Math.max(1,Math.round(player.maxhp*0.15));player.hp=Math.max(1,player.hp-loss);banner('묘한 맛','속이 이상하다… -'+loss,1400);updateHUD();}
+       finishNode();}},
+     {t:'포장해 간다 — 골드 40 지불, 랜덤 포션 1개',disabled:()=>gold<40,f:()=>{gold-=40;updateHUD();const pot=rollPotion();if(!addPotion(pot)){gold+=30;updateHUD();banner('포장 완료','가방이 꽉 찼다 — 골드 일부 환불',1200);}else{banner('포장 완료',pot.name+' 획득',1300);}finishNode();}},
+     {t:'거절한다',f:()=>finishNode()},
+   ]},
+  {tag:'🗺 낡은 지도',title:'뜯긴 모퉁이의 지도',body:'피로 그린 것처럼 붉게 바랜 지도. 앞 길이 희미하게 보인다.',
+   choices:[
+     {t:'지도를 해독한다 — 골드 30 지불, 다음 전투 보상 골드 +25%',disabled:()=>gold<30,f:()=>{gold-=30;updateHUD();combatRewardMul=Math.max(combatRewardMul,1.25);banner('지도 해독','다음 보상 골드 +25%',1400);finishNode();}},
+     {t:'지도를 판다 — 골드 +45',f:()=>{gold+=45;try{sfx.coin&&sfx.coin();}catch(e){}banner('지도 판매','골드 +45',1300);updateHUD();finishNode();}},
+     {t:'찢긴 길을 따른다 — 다음 전투 보상 +50% / 적 체력 +20%',f:()=>{combatRewardMul=Math.max(combatRewardMul,1.5);nextCombatMods={hpMul:1.20,banner:{big:'험한 길',small:'적이 질겨졌다 / 보상 +50%'}};banner('험한 길','보상 +50% · 적 체력 +20%',1500);finishNode();}},
+   ]},
+  {tag:'🩸 피 묻은 우물',title:'찜찜한 우물',body:'우물 바닥에서 뭔가 붉은 것이 비쳐 올라온다. 마실 수도 씻을 수도 있다. 그게 뭔지는 몰라도.',
+   choices:[
+     {t:'물을 마신다 — 체력 35% 회복, 다음 전투 적 공격력 +15%',f:()=>{
+       healPlayer(Math.max(20,Math.round(player.maxhp*0.35)),player.x,player.y);
+       nextCombatMods={atkMul:1.15,banner:{big:'찜찜한 회복',small:'뭔가 안 좋은 것 마신 것 같다…'}};
+       banner('꿀꺽','체력 회복 / 다음 전투 적 강화',1400);finishNode();}},
+     {t:'몸을 씻는다 — 체력 10% 감소, 저주 1개 제거(없으면 체력 15% 회복)',f:()=>{
+       const cursedRelics=player.relics.filter(r=>r.cls==='curse');
+       if(cursedRelics.length){
+         const i=player.relics.indexOf(cursedRelics[0]);
+         player.relics.splice(i,1);
+         const loss=Math.max(1,Math.round(player.maxhp*0.10));
+         player.hp=Math.max(1,player.hp-loss);
+         banner('정화 완료',cursedRelics[0].name+' 저주 해제',1600);
+       } else {
+         healPlayer(Math.max(10,Math.round(player.maxhp*0.15)),player.x,player.y);
+         banner('개운하다','해제할 저주 없음 — 대신 체력 회복',1400);
+       }
+       updateHUD();finishNode();}},
+     {t:'동전을 던진다 — 골드 25 지불, 50% 최대체력 +2 / 50% 꽝',disabled:()=>gold<25,f:()=>{
+       gold-=25;updateHUD();
+       if(Math.random()<0.50){player.maxhp+=2;player.hp=Math.min(player.hp,player.maxhp);banner('동전 앞면','최대 체력 +2',1300);updateHUD();}
+       else{banner('동전 뒷면','아무 일도 없었다',1300);}
+       finishNode();}},
+   ]},
+  {tag:'🧭 길 잃은 모험가',title:'지쳐 쓰러진 모험가',body:'길가에 쓰러진 모험가. 아직 살아있다. 도울지 빼앗을지, 무시할지.',
+   choices:[
+     {t:'도와준다 — 골드 50 지불, 경험치 +50, 다음 상점 10% 할인',disabled:()=>gold<50,f:()=>{
+       gold-=50;updateHUD();gainXP(50);nextShopDiscount=0.10;
+       banner('모험가 구조','경험치 +50 / 다음 상점 10% 할인',1600);finishNode();}},
+     {t:'물자를 빼앗는다 — 골드 +80, 현재 체력 10% 감소',f:()=>{
+       gold+=80;try{sfx.coin&&sfx.coin();}catch(e){}
+       const loss=Math.max(1,Math.round(player.maxhp*0.10));
+       player.hp=Math.max(1,player.hp-loss);
+       banner('노획','골드 +80 / 체력 -'+loss,1400);updateHUD();finishNode();}},
+     {t:'무시한다',f:()=>finishNode()},
+   ]},
+  {tag:'🌫 검은 안개',title:'알 수 없는 안개',body:'한치 앞도 보이지 않는 안개. 들어가면 뭐가 있을지 아무도 모른다.',
+   choices:[
+     {t:'안으로 들어간다 — 40% 경험치 +80 / 40% 골드 +100 / 20% 체력 25% 감소',f:()=>{
+       const r=Math.random();
+       if(r<0.40){gainXP(80);banner('안개 속 발견','경험치 +80',1400);}
+       else if(r<0.80){gold+=100;try{sfx.coin&&sfx.coin();}catch(e){}banner('안개 속 발견','골드 +100',1400);updateHUD();}
+       else{const loss=Math.max(1,Math.round(player.maxhp*0.25));player.hp=Math.max(1,player.hp-loss);banner('안개의 함정','체력 -'+loss,1400);updateHUD();}
+       finishNode();}},
+     {t:'횃불을 밝힌다 — 골드 30 지불, 경험치 +35 확정',disabled:()=>gold<30,f:()=>{
+       gold-=30;updateHUD();gainXP(35);banner('안전하게','경험치 +35',1400);finishNode();}},
+     {t:'돌아간다',f:()=>finishNode()},
+   ]},
+  {tag:'📦 고장난 보급 상자',title:'잠긴 보급 상자',body:'군용 표식이 찍힌 낡은 상자. 자물쇠가 망가져 억지로 열어야 할 것 같다.',
+   choices:[
+     {t:'부순다 — 체력 8% 감소, 50% 포션 / 50% 골드 +50',f:()=>{
+       const loss=Math.max(1,Math.round(player.maxhp*0.08));
+       player.hp=Math.max(1,player.hp-loss);
+       if(Math.random()<0.50){const pot=rollPotion();if(!addPotion(pot)){gold+=40;updateHUD();banner('상자 파괴','포션 슬롯 가득 — 골드 +40 대체',1300);}else{banner('상자 파괴',pot.name+' 획득',1300);}}
+       else{gold+=50;try{sfx.coin&&sfx.coin();}catch(e){}banner('상자 파괴','골드 +50',1300);updateHUD();}
+       updateHUD();finishNode();}},
+     {t:'조심히 연다 — 50% 포션 / 50% 꽝',f:()=>{
+       if(Math.random()<0.50){const pot=rollPotion();if(!addPotion(pot)){gold+=30;updateHUD();banner('빈손','포션 슬롯 가득 — 골드 +30',1300);}else{banner('개봉 성공',pot.name+' 획득',1300);}}
+       else{banner('빈 상자','아무것도 없었다',1300);}
+       finishNode();}},
+     {t:'그냥 판다 — 골드 +35',f:()=>{gold+=35;try{sfx.coin&&sfx.coin();}catch(e){}banner('상자 통째로 판매','골드 +35',1300);updateHUD();finishNode();}},
+   ]},
+  {tag:'⏳ 시간의 균열',title:'뒤틀린 시공간',body:'공기가 일렁인다. 시간이 이곳에서 잘못 흐르고 있다.',
+   choices:[
+     {t:'상처를 되감는다 — 골드 40 지불, 체력 20% 회복',disabled:()=>gold<40,f:()=>{
+       gold-=40;updateHUD();healPlayer(Math.max(20,Math.round(player.maxhp*0.20)),player.x,player.y);
+       banner('시간 역행','체력 20% 회복',1400);finishNode();}},
+     {t:'성장을 앞당긴다 — 체력 12% 감소, 경험치 +60',f:()=>{
+       eventHpCostPct(0.12);gainXP(60);banner('시간 가속','경험치 +60',1400);finishNode();}},
+     {t:'운명을 흔든다 — 다음 보상 골드/경험치 +30% / 적 체력 +15%',f:()=>{
+       combatRewardMul=Math.max(combatRewardMul,1.30);
+       nextCombatMods={hpMul:1.15,banner:{big:'균열의 도박',small:'보상 +30% / 적 체력 +15%'}};
+       banner('시간 도박','보상 +30% · 적 체력 +15%',1500);finishNode();}},
+   ]},
 ];
 function startEvent(){
   const pool=EVENTS.filter(ev=>!ev.filter||ev.filter());
@@ -4725,7 +4837,10 @@ const SHOP_QUOTES=[
   '초반 대박 런? 여기서 시작할 수도 있다.'
 ];
 let currentShopItems=[];
-function shopPrice(base){ return Math.round(base*(player.shopCostMul||1)); }
+function shopPrice(base){
+  const disc=nextShopDiscount>0?Math.max(0,1-nextShopDiscount):1;
+  return Math.round(base*(player.shopCostMul||1)*disc);
+}
 function shopRelicPrice(r){
   return shopPrice((88+act*20+Math.random()*20)*relicTier(r).costMul*2.5);
 }
@@ -4748,6 +4863,8 @@ function grantShopRelic(r){
 }
 function openShop(after){
   shopAfter=after||null;
+  // 1회성 상점 할인 소비 (shopPrice가 이미 적용하고 있으므로, 진입 시 알림 후 초기화)
+  if(nextShopDiscount>0){ banner('상점 할인',`전품목 ${Math.round(nextShopDiscount*100)}% 할인 적용!`,1800); nextShopDiscount=0; }
   if(!shopIntroShown){ shopIntroShown=true; banner('💡 포션 사용법','구매한 포션은 1·2·3 키로 사용!',2800); }
   const items=[];
   const owned=new Set(player.relics.map(r=>r.id));
