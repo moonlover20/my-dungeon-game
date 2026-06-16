@@ -724,6 +724,9 @@ function startCombat(kind, fresh){
   enemies=[]; pBullets=[]; eBullets=[]; pickups=[]; particles=[]; hazards=[]; floatBubbles=[];
   player.x=W/2; player.y=H-90;
   roomCleared=false; roomIsBoss=(kind==='boss'); roomIsMidboss=(kind==='midboss'); kills=0; boss=null; roomHadElite=false; eliteIntro=null; timeScale=1; slowmoT=0;
+  // GL/gView 리셋 (승우 외 보스전 잔여 효과 제거)
+  if(typeof GL!=='undefined'){ for(const k in GL) GL[k]=0; }
+  if(typeof gView!=='undefined'){ gView.rot=0;gView.rotT=0;gView.fx=1;gView.fy=1;gView.fxT=1;gView.fyT=1; }
   const row=currentRow;
   const diff=1+(act-1)*0.6+row*0.08;
   minionPool=ACT_POOLS[Math.min(act-1,ACT_POOLS.length-1)].normal;
@@ -1809,81 +1812,96 @@ function update(dt){
     }
     else if(e.ai==='bagjein'){
       // === 박제인간: 레코드판 중간보스 ===
-      e.spinAng=(e.spinAng||0)+dt*(e.enr?3.8:2.2);
+      e.spinAng=(e.spinAng||0)+dt*(e.enr?4.5:2.4);
+
+      // GL 카운트다운 직접 관리 (승우 아닌 박제인간 전용)
+      if(!roomIsBoss && roomIsMidboss){
+        if(typeof GL!=='undefined'){
+          for(const k of ['keyRev','rotActive']) if(GL[k]>0) GL[k]-=dt;
+        }
+        if(typeof gView!=='undefined'){
+          if((typeof GL==='undefined'||GL.rotActive<=0)){ gView.rotT=0; gView.fxT=1; gView.fyT=1; }
+          gView.rot+=(gView.rotT-gView.rot)*Math.min(1,dt*5);
+          gView.fx+=(gView.fxT-gView.fx)*Math.min(1,dt*5);
+          gView.fy+=(gView.fyT-gView.fy)*Math.min(1,dt*5);
+        }
+      }
 
       // 격노: HP 40% 이하
       if(!e.enr && e.hp<e.maxhp*0.4){
-        e.enr=true; e.spd*=1.35;
+        e.enr=true; e.spd*=1.4;
         banner('💿 박제인간 격노','B면이 시작된다!',950);
         if(typeof sfx!=='undefined'&&sfx.boss) sfx.boss();
-        screenShake=Math.max(screenShake||0,10);
-        // 격노 진입 시 방향키 반전 기습
-        if(typeof GL!=='undefined') GL.keyRev=3.5;
+        screenShake=Math.max(screenShake||0,12);
+        if(typeof GL!=='undefined') GL.keyRev=4.0;
         banner('⮃ 조작이 반전됐다!','B면 — 되감을 수 없다',1200);
       }
 
-      // 이동: 일정 거리 유지하며 공전
-      const want=e.enr?180:250;
+      // 이동
+      const want=e.enr?160:240;
       if(d<want-30){ e.x-=Math.cos(a)*e.spd*dt; e.y-=Math.sin(a)*e.spd*dt; }
       else if(d>want+40){ e.x+=Math.cos(a)*e.spd*0.9*dt; e.y+=Math.sin(a)*e.spd*0.9*dt; }
-      e.x+=Math.cos(a+Math.PI/2)*e.spd*(e.enr?0.72:0.48)*dt;
-      e.y+=Math.sin(a+Math.PI/2)*e.spd*(e.enr?0.72:0.48)*dt;
+      e.x+=Math.cos(a+Math.PI/2)*e.spd*(e.enr?0.78:0.50)*dt;
+      e.y+=Math.sin(a+Math.PI/2)*e.spd*(e.enr?0.78:0.50)*dt;
 
-      // ── 특수 타이머들 ──
+      // ── 특수 타이머 ──
 
-      // [특수1] 레코드 긁힘 — 슬로우+전방위 폭발 (격노 후 8초마다)
+      // [특수1] 레코드 긁힘 — 슬로우+전방위 폭발 (격노 후 7초마다)
       if(e.enr){
-        e.scratchT=(e.scratchT==null?8:e.scratchT)-dt;
+        e.scratchT=(e.scratchT==null?7:e.scratchT)-dt;
         if(e.scratchT<=0){
-          e.scratchT=8;
-          slowmoT=2.0; timeScale=0.22;
-          const k=28; for(let i=0;i<k;i++){
+          e.scratchT=7;
+          // 탄 먼저 발사
+          const k=32; for(let i=0;i<k;i++){
             const a2=i/k*TAU+e.spinAng;
-            eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*275,vy:Math.sin(a2)*275,r:7,dmg:10,life:4.2,srcName:'박제인간'});
+            eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*285,vy:Math.sin(a2)*285,r:7,dmg:11,life:4.8,srcName:'박제인간'});
           }
-          banner('💿 레코드 긁힘!','시간이 멈춘다…',1100);
-          beep(40,0.7,'sawtooth',0.1); screenShake=Math.max(screenShake||0,14);
+          banner('💿 레코드 긁힘!','…',700);
+          beep(40,0.5,'sawtooth',0.08); screenShake=Math.max(screenShake||0,10);
+          // 0.45초 뒤 슬로우 — 탄이 날아오는 도중에 걸림
+          setTimeout(()=>{
+            slowmoT=2.8; timeScale=0.18;
+            banner('💿 긁힘','시간이 멈춘다…',1200);
+            beep(30,0.8,'sawtooth',0.12); screenShake=Math.max(screenShake||0,14);
+          }, 450);
         }
       }
 
-      // [특수2] B면 플레이 — 격노 전, 12초마다 속도 교차 (초고속→초저속→복귀)
+      // [특수2] B면 플레이 — 격노 전 11초마다
       if(!e.enr){
-        e.bfaceT=(e.bfaceT==null?12:e.bfaceT)-dt;
+        e.bfaceT=(e.bfaceT==null?11:e.bfaceT)-dt;
         if(e.bfaceT<=0){
-          e.bfaceT=12;
-          // 0.4초 초고속(플레이어가 이동 못 쫓아옴) → 1.0초 초저속(탄이 느리게 옴) → 복귀
-          timeScale=3.2; // 고속
+          e.bfaceT=11;
+          timeScale=3.5;
           banner('💿 B면 플레이','속도가 달라진다!',600);
           beep(440,0.08,'square',0.04);
-          setTimeout(()=>{ timeScale=0.28; banner('💿 …','',400); beep(100,0.06,'sine',0.04); }, 420);
-          setTimeout(()=>{ timeScale=1; }, 1400);
-          // 고속 구간에 탄 발사 (눈에 잘 안 보임)
+          setTimeout(()=>{ timeScale=0.25; banner('💿 …','',400); beep(100,0.06,'sine',0.04); }, 380);
+          setTimeout(()=>{ timeScale=1; }, 1350);
           const pa2=Math.atan2(player.y-e.y,player.x-e.x);
-          for(let i=-2;i<=2;i++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa2+i*0.2)*260,vy:Math.sin(pa2+i*0.2)*260,r:8,dmg:10,life:3.5,srcName:'박제인간'});
+          for(let i=-2;i<=2;i++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa2+i*0.2)*265,vy:Math.sin(pa2+i*0.2)*265,r:8,dmg:10,life:3.5,srcName:'박제인간'});
         }
       }
 
-      // [특수3] 화면 회전 — 격노 후 10초마다
+      // [특수3] 화면 회전 — 격노 후 9초마다
       if(e.enr){
-        e.rotHackT=(e.rotHackT==null?10:e.rotHackT)-dt;
+        e.rotHackT=(e.rotHackT==null?9:e.rotHackT)-dt;
         if(e.rotHackT<=0){
-          e.rotHackT=10;
+          e.rotHackT=9;
           if(typeof gView!=='undefined'){
             gView.rotT=Math.PI/2*(Math.random()<0.5?1:-1);
-            if(typeof GL!=='undefined') GL.rotActive=5;
           }
+          if(typeof GL!=='undefined') GL.rotActive=5.5;
           banner('↻ 판이 돌아간다','화면이 기울었다!',900);
           beep(80,0.15,'sawtooth',0.06);
-          // 링 탄 동시 발사
-          const k=12; for(let i=0;i<k;i++){
+          const k=14; for(let i=0;i<k;i++){
             const a2=i/k*TAU+e.spinAng;
-            eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*215,vy:Math.sin(a2)*215,r:8,dmg:9,life:3.8,srcName:'박제인간'});
+            eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*220,vy:Math.sin(a2)*220,r:8,dmg:9,life:3.8,srcName:'박제인간'});
           }
         }
       }
 
       // ── 일반 패턴 순환 (7종) ──
-      e.atkT=(e.atkT==null?1.8:e.atkT)-dt;
+      e.atkT=(e.atkT==null?1.7:e.atkT)-dt;
       if(e.atkT<=0){
         e.atkN=(e.atkN||0)+1;
         const pa=Math.atan2(player.y-e.y,player.x-e.x);
@@ -1891,95 +1909,100 @@ function update(dt){
 
         if(ph===0){
           // 소용돌이 링
-          const k=en?14:9;
+          const k=en?16:10;
           for(let i=0;i<k;i++){
             const a2=i/k*TAU+e.spinAng+(e.atkN*0.42);
-            eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*235,vy:Math.sin(a2)*235,r:8,dmg:10,life:3.5,srcName:'박제인간'});
+            eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*240,vy:Math.sin(a2)*240,r:8,dmg:10,life:3.5,srcName:'박제인간'});
           }
           banner('💿 소용돌이','',500);
           beep(200,0.06,'sine',0.04);
-          e.atkT=en?1.3:1.9;
+          e.atkT=en?1.1:1.7;
 
         } else if(ph===1){
-          // 바늘 쐐기탄 (조준 부채꼴)
-          const k=en?7:5;
+          // 바늘 쐐기탄
+          const k=en?8:5;
           for(let i=0;i<k;i++){
-            const a2=pa+(i-(k-1)/2)*0.18;
-            eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*255,vy:Math.sin(a2)*255,r:9,dmg:11,life:3.2,srcName:'박제인간'});
+            const a2=pa+(i-(k-1)/2)*0.17;
+            eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*260,vy:Math.sin(a2)*260,r:9,dmg:11,life:3.2,srcName:'박제인간'});
           }
           banner('🎵 바늘 쐐기탄','',550);
-          e.atkT=en?1.2:1.8;
+          e.atkT=en?1.0:1.7;
 
         } else if(ph===2){
-          // 동심원 링 파동 (딜레이 3겹)
-          for(let ring=0;ring<(en?3:2);ring++){
-            const k=10+ring*4, sp=175+ring*55;
+          // 동심원 링 파동 — 격노 시 4겹
+          const rings=en?4:2;
+          for(let ring=0;ring<rings;ring++){
+            const k=10+ring*4, sp=170+ring*52;
             setTimeout(()=>{
               if(!enemies.includes(e)) return;
               for(let i=0;i<k;i++){
                 const a2=i/k*TAU+e.spinAng+ring*0.3;
                 eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*sp,vy:Math.sin(a2)*sp,r:8,dmg:9,life:3.8,srcName:'박제인간'});
               }
-            }, ring*280);
+            }, ring*260);
           }
           banner('💿 링 파동','동심원 확장!',700);
           beep(90,0.12,'triangle',0.05);
-          e.atkT=en?1.6:2.2;
+          e.atkT=en?1.5:2.1;
 
         } else if(ph===3){
-          // 바늘 낙하 (위에서 수직 + 플레이어 조준)
-          const cols=en?8:5;
+          // 바늘 낙하
+          const cols=en?9:5;
           for(let i=0;i<cols;i++){
-            const fx=W*(i+0.5)/cols+rand(-20,20);
-            eBullets.push({x:fx,y:-12,vx:rand(-12,12),vy:rand(200,245),r:8,dmg:10,life:4.2,srcName:'박제인간'});
+            const fx=W*(i+0.5)/cols+rand(-18,18);
+            eBullets.push({x:fx,y:-12,vx:rand(-12,12),vy:rand(205,250),r:8,dmg:10,life:4.2,srcName:'박제인간'});
           }
-          eBullets.push({x:player.x+rand(-30,30),y:-12,vx:rand(-8,8),vy:240,r:10,dmg:12,life:4,srcName:'박제인간'});
+          eBullets.push({x:player.x+rand(-25,25),y:-12,vx:rand(-8,8),vy:245,r:10,dmg:13,life:4,srcName:'박제인간'});
+          if(en){
+            // 격노 시 측면에서도
+            for(let i=0;i<3;i++){ eBullets.push({x:-10,y:rand(80,H-80),vx:rand(170,210),vy:rand(-15,15),r:7,dmg:9,life:4,srcName:'박제인간'}); eBullets.push({x:W+10,y:rand(80,H-80),vx:-rand(170,210),vy:rand(-15,15),r:7,dmg:9,life:4,srcName:'박제인간'}); }
+          }
           banner('🎵 바늘 낙하','위에서 쏟아진다!',700);
-          e.atkT=en?1.3:1.9;
+          e.atkT=en?1.1:1.8;
 
         } else if(ph===4){
-          // RPM 가속 — 탄속이 점점 빨라지는 연속 발사 (레코드 가속)
-          const steps=en?10:6;
+          // RPM 가속
+          const steps=en?12:7;
           for(let i=0;i<steps;i++){
             setTimeout(()=>{
               if(!enemies.includes(e)) return;
-              const spd=160+i*28; // 160→ 최대 432
+              const spd=155+i*30;
               const a2=e.spinAng+i*(TAU/steps)*0.7;
               eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*spd,vy:Math.sin(a2)*spd,r:7+Math.floor(i/3),dmg:9,life:3.6,srcName:'박제인간'});
-            }, i*110);
+            }, i*100);
           }
           banner('💿 RPM 가속','점점 빨라진다!',750);
           beep(150,0.08,'sawtooth',0.04);
-          e.atkT=en?1.5:2.1;
+          e.atkT=en?1.3:1.9;
 
         } else if(ph===5){
-          // 방향키 반전 + 조준탄 (격노 전에도 1회 가능)
-          if(typeof GL!=='undefined') GL.keyRev=en?5.0:3.0;
-          const k=en?5:3;
+          // 방향키 반전 + 조준탄
+          if(typeof GL!=='undefined') GL.keyRev=en?5.5:3.5;
+          const k=en?6:3;
           for(let i=0;i<k;i++){
-            const a2=pa+(i-(k-1)/2)*0.22;
-            eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*245,vy:Math.sin(a2)*245,r:8,dmg:10,life:3.4,srcName:'박제인간'});
+            const a2=pa+(i-(k-1)/2)*0.20;
+            eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*250,vy:Math.sin(a2)*250,r:8,dmg:10,life:3.4,srcName:'박제인간'});
           }
           banner('⮃ 방향키 반전!','조작이 뒤집혔다',950);
           beep(300,0.1,'square',0.05);
-          e.atkT=en?1.4:2.0;
+          e.atkT=en?1.2:1.8;
 
         } else {
-          // 고속 회전 연속 스파이럴 (격노 전: 3발 산탄 / 격노 후: 12발)
+          // 고속 스파이럴 (격노 전 3발 / 격노 후 14발)
           if(!en){
-            for(let i=-1;i<=1;i++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa+i*0.32)*240,vy:Math.sin(pa+i*0.32)*240,r:8,dmg:10,life:3.4,srcName:'박제인간'});
+            for(let i=-1;i<=1;i++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa+i*0.30)*245,vy:Math.sin(pa+i*0.30)*245,r:8,dmg:10,life:3.4,srcName:'박제인간'});
           } else {
-            for(let i=0;i<12;i++){
+            for(let i=0;i<14;i++){
               setTimeout(()=>{
                 if(!enemies.includes(e)) return;
-                const a2=e.spinAng+i*(TAU/12);
-                eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*250,vy:Math.sin(a2)*250,r:7,dmg:9,life:3.6,srcName:'박제인간'});
-              }, i*55);
+                const a2=e.spinAng+i*(TAU/14);
+                eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*255,vy:Math.sin(a2)*255,r:7,dmg:9,life:3.6,srcName:'박제인간'});
+              }, i*50);
             }
             banner('💿 고속 회전','','600');
           }
           beep(130,0.1,'sawtooth',0.05);
-          e.atkT=en?1.4:2.0;
+          e.atkT=en?1.2:1.9;
         }
       }
     }
