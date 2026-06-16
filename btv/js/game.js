@@ -597,9 +597,147 @@ cvs.addEventListener('contextmenu',e=>e.preventDefault());
 // ---------- 게임 상태 ----------
 let state='title'; // title, start, play, door, relic, shop, vote, end, help
 let prevState='play';
+const LEADERBOARD_FIREBASE_CONFIG={
+  apiKey:"AIzaSyCkOwVjreuNFq3QKVTGYtpcw_acmJfMh08",
+  authDomain:"mydungeongame.firebaseapp.com",
+  projectId:"mydungeongame",
+  storageBucket:"mydungeongame.firebasestorage.app",
+  messagingSenderId:"816226458104",
+  appId:"1:816226458104:web:6f6fcb21b1664e34ee9e0d"
+};
+const SCORE_MAX=9999999;
+const NAME_MAX_LEN=12;
+const RETRY_SCORE_PENALTY=2500;
+const HIT_SCORE_PENALTY=450;
+const LEADERBOARD_COLLECTIONS={easy:'scores_easy',normal:'scores_normal',hard:'scores_hard'};
+let leaderboardApiPromise=null;
+let scoreSubmitSeq=0;
+let rankingDifficulty='easy';
+
+function ensureLeaderboardApi(){
+  if(!leaderboardApiPromise){
+    leaderboardApiPromise=Promise.all([
+      import('https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js'),
+      import('https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js')
+    ]).then(([appMod,firestoreMod])=>{
+      const app=appMod.getApps().length?appMod.getApps()[0]:appMod.initializeApp(LEADERBOARD_FIREBASE_CONFIG);
+      return {db:firestoreMod.getFirestore(app), fs:firestoreMod};
+    });
+  }
+  return leaderboardApiPromise;
+}
+function cleanLeaderboardName(name){
+  const v=String(name||'').trim().replace(/\s+/g,' ').slice(0,NAME_MAX_LEN);
+  return v || 'PLAYER';
+}
+function getLeaderboardName(){
+  const saved=cleanLeaderboardName(localStorage.getItem('btvLeaderboardName')||'');
+  let name=saved;
+  try{
+    const typed=prompt('랭킹에 남길 닉네임을 입력하세요.', saved);
+    if(typed!==null) name=cleanLeaderboardName(typed);
+  }catch(e){}
+  try{ localStorage.setItem('btvLeaderboardName', name); }catch(e){}
+  return name;
+}
+function calcRunScore(win){
+  const reachedFloor=Math.max(1,currentRow+1);
+  const progressScore=Math.max(0,act-1)*9000 + reachedFloor*1200;
+  const killScore=totalKills*120;
+  const levelScore=Math.max(0,level-1)*800;
+  const clearBonus=win?30000:0;
+  const elapsedSec=runStartedAt>0?Math.max(0,(performance.now()-runStartedAt)/1000):0;
+  const timeBonus=win?Math.max(0,Math.round((900-elapsedSec)*20)):0;
+  const hitPenalty=runHits*HIT_SCORE_PENALTY;
+  const retryPenalty=retries*RETRY_SCORE_PENALTY;
+  const rawScore=Math.round(progressScore+killScore+levelScore+clearBonus+timeBonus-hitPenalty-retryPenalty);
+  const score=clamp(Math.max(0,rawScore),0,SCORE_MAX);
+  return {score,reachedFloor,progressScore,killScore,levelScore,clearBonus,timeBonus,hitPenalty,retryPenalty,elapsedSec};
+}
+function fmtScore(n){ return Number(n||0).toLocaleString('ko-KR'); }
+function fmtTime(sec){
+  sec=Math.max(0,Math.round(Number(sec)||0));
+  const m=Math.floor(sec/60), s=sec%60;
+  return m+':'+String(s).padStart(2,'0');
+}
+function leaderboardCollectionFor(key){
+  return LEADERBOARD_COLLECTIONS[key]||LEADERBOARD_COLLECTIONS.easy;
+}
+function setRankingDifficulty(key){
+  rankingDifficulty=LEADERBOARD_COLLECTIONS[key]?key:'easy';
+  document.querySelectorAll('.rank-tab').forEach(btn=>{
+    btn.classList.toggle('active',btn.dataset.diff===rankingDifficulty);
+  });
+}
+function rankingReachedText(data){
+  const a=Number(data.act||0), f=Number(data.floor||0), lv=Number(data.level||0), k=Number(data.kills||0);
+  const h=Number(data.hits||0), r=Number(data.retries||0), t=fmtTime(data.elapsedSec);
+  return a+'막 '+f+'층 · Lv.'+lv+' · 처치 '+k+' · 피격 '+h+' · 재도전 '+r+' · '+t;
+}
+async function saveRunScore(win,killer,scoreData){
+  const token=++scoreSubmitSeq;
+  const saveEl=$('endScoreSave');
+  if(saveEl) saveEl.textContent='ranking save...';
+  try{
+    const name=getLeaderboardName();
+    const api=await ensureLeaderboardApi();
+    if(token!==scoreSubmitSeq) return;
+    const difficultyKey=diffSet&&diffSet.key?diffSet.key:'easy';
+    await api.fs.addDoc(api.fs.collection(api.db,leaderboardCollectionFor(difficultyKey)),{
+      name,
+      score:Number(scoreData.score),
+      kills:totalKills,
+      level,
+      act,
+      floor:scoreData.reachedFloor,
+      hits:runHits,
+      retries,
+      elapsedSec:Math.round(scoreData.elapsedSec),
+      win:!!win,
+      killer:killer||lastKiller||'',
+      difficultyKey,
+      difficulty:diffSet&&diffSet.label?diffSet.label:'',
+      createdAt:api.fs.serverTimestamp()
+    });
+    if(saveEl) saveEl.textContent='ranking saved as '+name;
+  }catch(e){
+    console.warn('ranking save failed',e);
+    if(saveEl) saveEl.textContent='ranking save failed';
+  }
+}
+async function renderRankingList(){
+  const list=$('rankingList'); if(!list) return;
+  list.innerHTML='<div class="rank-empty">기록을 불러오는 중...</div>';
+  setRankingDifficulty(rankingDifficulty);
+  try{
+    const api=await ensureLeaderboardApi();
+    const q=api.fs.query(api.fs.collection(api.db,leaderboardCollectionFor(rankingDifficulty)),api.fs.orderBy('score','desc'),api.fs.limit(10));
+    const snap=await api.fs.getDocs(q);
+    if(snap.empty){ list.innerHTML='<div class="rank-empty">아직 기록이 없습니다.</div>'; return; }
+    list.innerHTML='';
+    let rank=1;
+    snap.forEach(doc=>{
+      const d=doc.data();
+      const row=document.createElement('div');
+      row.className='rank-row';
+      row.innerHTML=
+        '<div class="rank-no">#'+rank+'</div>'+
+        '<div><div class="rank-name"></div><div class="rank-meta"></div></div>'+
+        '<div class="rank-score">'+fmtScore(Number(d.score)||0)+'</div>';
+      row.querySelector('.rank-name').textContent=cleanLeaderboardName(d.name);
+      row.querySelector('.rank-meta').textContent=rankingReachedText(d);
+      list.appendChild(row);
+      rank++;
+    });
+  }catch(e){
+    console.warn('ranking load failed',e);
+    list.innerHTML='<div class="rank-empty">랭킹을 불러오지 못했습니다.</div>';
+  }
+}
 const player={};
 let enemies=[], pBullets=[], eBullets=[], pickups=[], particles=[];
 let totalKills=0, kills=0, gold=0, level=1, xp=0, xpNext=20;
+let runStartedAt=0, runHits=0;
 let roomCleared=false, roomIsBoss=false, boss=null, bossBanner=0, roomHadElite=false;
 let eliteViewerSpawns=0;   // 자잘자(엘리트 시청자) 런 전체 출몰 횟수 — 최대 1회로 제한
 let roomIsMidboss=false, runActive=false;   // 음악 컨텍스트용 플래그
@@ -911,7 +1049,7 @@ function hurtPlayer(dmg, src){
   if(player.hitShield>0){ player.hitShield--; player.iframes=0.6; burst(player.x,player.y,'#8be8ff',16,200); return; }
   if(src) lastKiller=src;
   dmg=dmg*(1-player.armor)*diffSet.dmg;
-  player.hp-=dmg; player.iframes=0.5; hitFlash=0.25; screenShake=Math.max(screenShake,8); combatTookHit=true;
+  player.hp-=dmg; player.iframes=0.5; hitFlash=0.25; screenShake=Math.max(screenShake,8); combatTookHit=true; runHits++;
   if(player.thorns>0){ enemies.slice().forEach(o=>{ if(dist2(o.x,o.y,player.x,player.y)<12100){ o.hp-=player.thorns; o.hitT=0.1; if(o.hp<=0){ if(o.type==='hyechul'&&(o.phase||1)<3) hyechulNextPhase(o); else killEnemy(o);} } }); }
   sfx.hurt();
   if(Math.random()<0.5) chatRandom(pick(["아야 Sadge","왜맞음 KEKW","집중!","체력 ㄷㄷ","구르기!!","발컨 ㅋㅋㅋ"]));
@@ -1283,7 +1421,7 @@ function glAim(){ // 화면→월드 (회전/반전 역변환된 마우스 좌�
 function glDamage(dmg){ // 장판/격벽 환경 피해 (회피·실드 시 무시)
   if(player.iframes>0||player.dodging>0||player.buffs.shield>0) return;
   dmg=dmg*(1-player.armor)*diffSet.dmg;
-  player.hp-=dmg; hitFlash=Math.max(hitFlash,0.14); combatTookHit=true; lastKiller='승우';
+  player.hp-=dmg; hitFlash=Math.max(hitFlash,0.14); combatTookHit=true; runHits++; lastKiller='승우';
   if(player.hp<=0){
     if(player.reviveOnce&&!player.usedRevive){player.usedRevive=true;player.hp=Math.round(player.maxhp*0.35);player.iframes=1.3;}
     else if(player.lastStand&&!player.usedLastStand){player.usedLastStand=true;player.hp=1;player.iframes=1.3;}
@@ -4173,7 +4311,7 @@ function skipCutscene(){
 // ---------- 오버레이 제어 ----------
 
 // ===== JS: Overlay state machine and UI wiring =====
-const overlays={title:'ovTitle',start:'ovStart',map:'ovMap',relic:'ovRelic',shop:'ovShop',event:'ovEvent',inv:'ovInv',level:'ovLevel',reward:'ovReward',end:'ovEnd',help:'ovHelp',story:'ovStory',entrance:'ovEntrance',tierIntro:'ovTierIntro',taunt:'ovTaunt',campfire:'ovCampfire'};
+const overlays={title:'ovTitle',start:'ovStart',map:'ovMap',relic:'ovRelic',shop:'ovShop',event:'ovEvent',inv:'ovInv',level:'ovLevel',reward:'ovReward',end:'ovEnd',ranking:'ovRanking',help:'ovHelp',story:'ovStory',entrance:'ovEntrance',tierIntro:'ovTierIntro',taunt:'ovTaunt',campfire:'ovCampfire'};
 function hideAll(){ Object.values(overlays).forEach(id=>$(id).classList.add('hidden')); }
 function syncChrome(){ document.body.classList.toggle('title-mode', state==='title'||state==='start'); }
 function show(st){
@@ -4570,9 +4708,14 @@ function gameOver(win, killer){
   }
   $('endTitle').textContent=title;
   $('endTitle').style.color=win?'#5dff9b':'#ff4d6d';
+  const scoreData=calcRunScore(win);
   $('endStats').innerHTML=
-    "도달: <b>"+act+"막</b> · 처치: <b>"+totalKills+"</b> · 레벨: <b>"+level+"</b><br>"+
+    "도달: <b>"+act+"막 "+scoreData.reachedFloor+"층</b> · 처치: <b>"+totalKills+"</b> · 레벨: <b>"+level+"</b><br>"+
+    "피격: <b>"+runHits+"</b> · 시간: <b>"+fmtTime(scoreData.elapsedSec)+"</b> · 재도전 감점: <b style='color:#ff748b'>-"+fmtScore(scoreData.retryPenalty)+"</b><br>"+
     "골드: <b style='color:#ffd34d'>"+gold+"</b> · 유물: <b>"+player.relics.length+"개</b> · 난이도: <b style='color:"+diffSet.col+"'>"+diffSet.label+"</b>";
+  const scoreEl=$('endScore'); if(scoreEl) scoreEl.textContent=fmtScore(scoreData.score);
+  const saveEl=$('endScoreSave'); if(saveEl) saveEl.textContent='ranking standby';
+  saveRunScore(win,k,scoreData);
   $('endQuip').textContent='채팅: "'+quip+'"';
   chatSys(win?"🎉🎉 클리어!! 채팅 축제":"☠ 사망 ("+k+") — 채팅: "+pick(["GG","한판더","아깝다 Sadge","리트 ㄱㄱ"]));
 }
@@ -4582,7 +4725,7 @@ function victory(){ gameOver(true); }
 function newGame(){
   startBGM();
   runActive=true;
-  act=1; currentRow=0; kills=0; totalKills=0; gold=0; level=1; xp=0; xpNext=20; pendingLevels=0; retries=0; treePoints=0; treeUnlocked=new Set(['hub']);
+  act=1; currentRow=0; kills=0; totalKills=0; gold=0; level=1; xp=0; xpNext=20; pendingLevels=0; retries=0; runHits=0; runStartedAt=performance.now(); treePoints=0; treeUnlocked=new Set(['hub']);
   resetPlayer();
   enemies=[];pBullets=[];eBullets=[];pickups=[];particles=[];boss=null;floatBubbles=[];lastKiller=null;
   pendingNode=null; roomCleared=true; tierIntroShown=false; shopIntroShown=false; eliteViewerSpawns=0;
@@ -4615,7 +4758,7 @@ function finishTutorial(){
 function newGameSkip(){
   startBGM();
   runActive=true;
-  act=1; currentRow=0; kills=0; totalKills=0; gold=0; level=1; xp=0; xpNext=20; pendingLevels=0; retries=0; treePoints=0; treeUnlocked=new Set(['hub']);
+  act=1; currentRow=0; kills=0; totalKills=0; gold=0; level=1; xp=0; xpNext=20; pendingLevels=0; retries=0; runHits=0; runStartedAt=performance.now(); treePoints=0; treeUnlocked=new Set(['hub']);
   resetPlayer();
   enemies=[];pBullets=[];eBullets=[];pickups=[];particles=[];boss=null;floatBubbles=[];lastKiller=null;
   pendingNode=null; roomCleared=true; tierIntroShown=false; shopIntroShown=false; eliteViewerSpawns=0;
@@ -4772,7 +4915,31 @@ function closeDifficultyTab(){
   refreshSidePanel();
   if(window.startTitleScene) window.startTitleScene();
 }
+function openRankingTab(){
+  hideAll();
+  $('ovTitle').classList.remove('hidden');
+  $('ovRanking').classList.remove('hidden');
+  setRankingDifficulty(diffSet&&diffSet.key?diffSet.key:rankingDifficulty);
+  state='title';
+  syncChrome();
+  refreshSidePanel();
+  if(window.startTitleScene) window.startTitleScene();
+  renderRankingList();
+}
+function closeRankingTab(){
+  $('ovRanking').classList.add('hidden');
+  $('ovTitle').classList.remove('hidden');
+  state='title';
+  syncChrome();
+  refreshSidePanel();
+  if(window.startTitleScene) window.startTitleScene();
+}
 $('tmNew').onclick=openDifficultyTab;
+{ const rb=$('tmRanking'); if(rb) rb.onclick=openRankingTab; }
+{ const rc=$('rankingClose'); if(rc) rc.onclick=closeRankingTab; }
+document.querySelectorAll('.rank-tab').forEach(btn=>{
+  btn.onclick=()=>{ setRankingDifficulty(btn.dataset.diff); renderRankingList(); };
+});
 // tmSettings는 wireSettings()에서 openSettings로 연결됨 (아래에서 재정의)
 $('tmExit').onclick=()=>{ try{ window.close(); }catch(e){} };
 $('diffBack').onclick=closeDifficultyTab;
