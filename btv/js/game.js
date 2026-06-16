@@ -634,14 +634,11 @@ cvs.addEventListener('contextmenu',e=>e.preventDefault());
 // ---------- 게임 상태 ----------
 let state='title'; // title, start, play, door, relic, shop, vote, end, help
 let prevState='play';
-const LEADERBOARD_FIREBASE_CONFIG={
-  apiKey:"AIzaSyCkOwVjreuNFq3QKVTGYtpcw_acmJfMh08",
-  authDomain:"mydungeongame.firebaseapp.com",
-  projectId:"mydungeongame",
-  storageBucket:"mydungeongame.firebasestorage.app",
-  messagingSenderId:"816226458104",
-  appId:"1:816226458104:web:6f6fcb21b1664e34ee9e0d"
-};
+const LEADERBOARD_FIREBASE_CONFIG=null;
+function getLeaderboardFirebaseConfig(){
+  const cfg=window.LEADERBOARD_FIREBASE_CONFIG||LEADERBOARD_FIREBASE_CONFIG;
+  return cfg&&cfg.apiKey?cfg:null;
+}
 const SCORE_MAX=9999999;
 const NAME_MAX_LEN=12;
 const RETRY_SCORE_PENALTY=2500;
@@ -693,12 +690,17 @@ const achievementToastActiveIds=new Set();
 
 function ensureLeaderboardApi(){
   if(!leaderboardApiPromise){
+    const firebaseConfig=getLeaderboardFirebaseConfig();
+    if(!firebaseConfig) return Promise.reject(new Error('Firebase config missing'));
     leaderboardApiPromise=Promise.all([
       import('https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js'),
       import('https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js')
     ]).then(([appMod,firestoreMod])=>{
-      const app=appMod.getApps().length?appMod.getApps()[0]:appMod.initializeApp(LEADERBOARD_FIREBASE_CONFIG);
+      const app=appMod.getApps().length?appMod.getApps()[0]:appMod.initializeApp(firebaseConfig);
       return {db:firestoreMod.getFirestore(app), fs:firestoreMod};
+    }).catch(err=>{
+      leaderboardApiPromise=null;
+      throw err;
     });
   }
   return leaderboardApiPromise;
@@ -785,15 +787,20 @@ function storeLocalProgress(){
 }
 function ensureProgressApi(){
   if(!progressApiPromise){
+    const firebaseConfig=getLeaderboardFirebaseConfig();
+    if(!firebaseConfig) return Promise.reject(new Error('Firebase config missing'));
     progressApiPromise=Promise.all([
       import('https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js'),
       import('https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js'),
       import('https://www.gstatic.com/firebasejs/12.14.0/firebase-auth.js')
     ]).then(async([appMod,firestoreMod,authMod])=>{
-      const app=appMod.getApps().length?appMod.getApps()[0]:appMod.initializeApp(LEADERBOARD_FIREBASE_CONFIG);
+      const app=appMod.getApps().length?appMod.getApps()[0]:appMod.initializeApp(firebaseConfig);
       const auth=authMod.getAuth(app);
       if(!auth.currentUser) await authMod.signInAnonymously(auth);
       return {db:firestoreMod.getFirestore(app), fs:firestoreMod, auth, uid:auth.currentUser.uid};
+    }).catch(err=>{
+      progressApiPromise=null;
+      throw err;
     });
   }
   return progressApiPromise;
