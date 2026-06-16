@@ -396,7 +396,7 @@ const BOSSES=[
    quip:"무릎 꿇어라, 필멸자여.",pattern:"spiral"},
   {key:"bear",sprite:"bear",name:"거대 곰",title:"3막 보스 · 숲의 지배자",r:64,hp:1250,color:"#9c6b43",spd:58,
    quip:"크아아아앙!!",pattern:"split"},
-  {key:"seungwoo",sprite:"seungwoo",name:"승우",title:"2막 보스 · 시스템 침식",r:64,hp:2450,color:"#9146ff",spd:56,
+  {key:"seungwoo",sprite:"seungwoo",name:"승우",title:"2막 보스 · 시스템 침식",r:64,hp:3831,color:"#9146ff",spd:56,
    quip:"…봉식님. 이 게임, 제가 좀 만져도 되겠습니까.",pattern:"glitch"},
 ];
 
@@ -2821,11 +2821,11 @@ function openShop(after){
   shopAfter=after||null;
   if(!shopIntroShown){ shopIntroShown=true; banner('💡 포션 사용법','구매한 포션은 1·2·3 키로 사용!',2800); }
   const items=[];
-  items.push({kind:'heal',name:"치유 서비스",icon:"🧪",desc:"체력 45 회복",cost:Math.round(28+act*10),
+  items.push({kind:'heal',name:"치유 서비스",icon:"🧪",desc:"체력 45 회복",cost:Math.round((28+act*10)*2.5),
     buy:()=>{player.hp=Math.min(player.maxhp,player.hp+45);}});
   // 재도전 충전권 — 횟수 제한 난이도(보통·어려움)에서만 등장
   if(diffSet.maxRetries !== Infinity){
-    const retryCost = diffSet.key==='hard' ? 90 : 55;
+    const retryCost = diffSet.key==='hard' ? 225 : 138;
     items.push({kind:'retry',name:"재도전 충전권",icon:"🎟️",
       desc:"이번 런에서 재도전 횟수 +1회. (현재 남은 횟수: "+(Math.max(0,diffSet.maxRetries-retries))+"회)",
       cost:retryCost,
@@ -2834,13 +2834,13 @@ function openShop(after){
   }
   // 포션 2종
   const ptn=POTIONS.slice().sort(()=>Math.random()-0.5).slice(0,2);
-  ptn.forEach(pt=>items.push({kind:'potion',name:pt.name,icon:pt.icon,desc:pt.desc+" · 포션",cost:Math.round(32+act*8),potion:pt,
+  ptn.forEach(pt=>items.push({kind:'potion',name:pt.name,icon:pt.icon,desc:pt.desc+" · 포션",cost:Math.round((32+act*8)*2.5),potion:pt,
     buy:()=>{addPotion(pt);}}));
   // 유물 2종
   const owned=new Set(player.relics.map(r=>r.id));
   const availR=RELICS.filter(r=>!owned.has(r.id));
   const relicPicks=[]; for(let i=0;i<2 && availR.length;i++) relicPicks.push(weightedTake(availR));
-  relicPicks.forEach(r=>items.push({kind:'relic',name:r.name,icon:r.icon,desc:r.desc,cost:Math.round((75+act*24+Math.random()*30)*relicTier(r).costMul),relic:r,
+  relicPicks.forEach(r=>items.push({kind:'relic',name:r.name,icon:r.icon,desc:r.desc,cost:Math.round((75+act*24+Math.random()*30)*relicTier(r).costMul*2.5),relic:r,
     buy:()=>{player.relics.push(r);r.apply(player);}}));
   renderShop(items);
   show('shop');
