@@ -366,10 +366,12 @@ const ENEMY_TYPES={
   namu          :{name:"나무",   r:22, hp:130, spd:30, dmg:17, color:"#5fa84a", xp:14, ai:"chase",   label:"나무"},
   pobear        :{name:"포베어", r:24, hp:100, spd:58, dmg:16, color:"#c8884a", xp:13, ai:"charge",  label:"포베어"},
   yanggaeng     :{name:"양갱",   r:50, hp:380, spd:46, dmg:19, color:"#d4843a", xp:150, ai:"yanggaeng", cool:2, label:"양갱"},
+  // === 2막 엘리트: 미주 ===
+  kkotchung     :{name:"미주", r:26, hp:260, spd:52, dmg:14, color:"#f7d4e8", xp:90,  ai:"kkotchung", cool:1.4, label:"미주"},
 };
 const ACT_POOLS=[
   { normal:["goblin_warrior","goblin_archer","goblin_shaman","goblin_bomber"], elite:["rhino_beetle"] },
-  { normal:["gwangcheon_gim","reura","namu","pobear"], elite:["pobear","namu"] },
+  { normal:["gwangcheon_gim","reura","namu","pobear"], elite:["kkotchung"] },
   { normal:["slime_green","slime_red","slime_yellow","elf_melee","elf_ranged"], elite:["giant_golem","eldritch"] },
 ];
 let minionPool=null;
@@ -760,13 +762,25 @@ function startCombat(kind, fresh){
       // 자잘자 정예전 — 전용 엘리트 노드에서만 등장 (잡몹 소수 + 자잘자)
       const minions=clamp(Math.round(count*0.6),1,6);
       for(let i=0;i<minions;i++) spawnEnemy(pick(P.normal), rand(60,W-60), rand(60,H-180), diff);
-      spawnEnemy('rhino_beetle', W/2, 120, diff);
-      const ze=enemies[enemies.length-1]; roomHadElite=true;
-      ze.elite=true; ze.eliteViewer=true; ze.label='자잘자';
-      ze.hp*=1.75; ze.maxhp*=1.75; ze.dmg=Math.round(ze.dmg*1.4); ze.r+=4; ze.xp=80; ze.coolT=1.0;
-      ze.x=W/2; ze.y=190; ze.intro=true; ze.introScale=0; ze.stunT=4; ze.tauntedHalf=false;
-      eliteIntro={t:0, ze:ze, warn:null, landed:false, banner:0, tensionDone:false};
-      beep(330,0.5,'triangle',0.05); beep(440,0.55,'sine',0.035); // "징—"
+      if(act===2){
+        // 2막 엘리트: 미주
+        spawnEnemy('kkotchung', W/2, 140, diff);
+        const ze=enemies[enemies.length-1]; roomHadElite=true;
+        ze.elite=true; ze.eliteViewer=true; ze.label='미주';
+        ze.hp*=1.75; ze.maxhp*=1.75; ze.dmg=Math.round(ze.dmg*1.4); ze.r+=5; ze.xp=90; ze.coolT=1.0;
+        ze.x=W/2; ze.y=190; ze.intro=true; ze.introScale=0; ze.stunT=4; ze.tauntedHalf=false;
+        ze.atkT=1.8; ze.atkN=0; ze.enr=false; ze.enrShown=false;
+        eliteIntro={t:0, ze:ze, warn:null, landed:false, banner:0, tensionDone:false};
+        beep(523,0.3,'sine',0.05); beep(392,0.5,'sine',0.035); // 달콤한 척 하는 음
+      } else {
+        spawnEnemy('rhino_beetle', W/2, 120, diff);
+        const ze=enemies[enemies.length-1]; roomHadElite=true;
+        ze.elite=true; ze.eliteViewer=true; ze.label='자잘자';
+        ze.hp*=1.75; ze.maxhp*=1.75; ze.dmg=Math.round(ze.dmg*1.4); ze.r+=4; ze.xp=80; ze.coolT=1.0;
+        ze.x=W/2; ze.y=190; ze.intro=true; ze.introScale=0; ze.stunT=4; ze.tauntedHalf=false;
+        eliteIntro={t:0, ze:ze, warn:null, landed:false, banner:0, tensionDone:false};
+        beep(330,0.5,'triangle',0.05); beep(440,0.55,'sine',0.035); // "징—"
+      }
     }else{
       for(let i=0;i<count;i++) spawnEnemy(pick(P.normal), rand(60,W-60), rand(60,H-180), diff);
     }
@@ -1619,6 +1633,53 @@ function update(dt){
         if(e.csT<=0 && !e._bounced){ e._bounced=false; e.cs='rest'; e.csT=0.6; e.coolT=1.7; }
         if(e.csT<=0 && e._bounced){ e._bounced=false; e.cs='rest'; e.csT=0.6; e.coolT=1.7; }
       } else { e.csT-=dt; if(e.csT<=0) e.cs='approach'; }
+    }
+    else if(e.ai==='kkotchung'){
+      // === 미주: 2막 엘리트 ===
+      // 격노(체력 50% 이하): 얼굴 늘어짐 + 패턴 강화
+      if(!e.enr && e.hp<e.maxhp*0.5){
+        e.enr=true; e.spd*=1.35;
+        if(!e.enrShown){ e.enrShown=true; banner('🌸 미주 각성','귀여운 척 끝났다.',1000); if(typeof beep==='function'){beep(200,0.25,'sawtooth',0.07);beep(160,0.35,'sawtooth',0.06);} screenShake=Math.max(screenShake||0,6); }
+      }
+      // 이동: 일정 거리 유지하며 공전 (정상) → 격노 시 추격
+      const kkWant=e.enr?140:220;
+      if(d<kkWant-30){ e.x-=Math.cos(a)*e.spd*dt; e.y-=Math.sin(a)*e.spd*dt; }
+      else if(d>kkWant+30){ e.x+=Math.cos(a)*e.spd*dt; e.y+=Math.sin(a)*e.spd*dt; }
+      e.x+=Math.cos(a+Math.PI/2)*e.spd*(e.enr?0.7:0.5)*dt;
+      e.y+=Math.sin(a+Math.PI/2)*e.spd*(e.enr?0.7:0.5)*dt;
+      // 공격
+      e.atkT=(e.atkT==null?1.8:e.atkT)-dt;
+      if(e.atkT<=0){
+        e.atkN=(e.atkN||0)+1;
+        const pa=Math.atan2(player.y-e.y,player.x-e.x);
+        const en=e.enr, ph=e.atkN%3;
+        if(ph===0){
+          // 꽃잎 방사탄: 8방향 원형 (격노 시 16발)
+          const k=en?16:8;
+          for(let i=0;i<k;i++){
+            const a2=i/k*TAU+(e.atkN*0.3);
+            eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*220,vy:Math.sin(a2)*220,r:8,dmg:9,life:3.2,srcName:'미주',kkot:true});
+          }
+          if(typeof beep==='function') beep(880,0.06,'sine',0.04);
+        } else if(ph===1){
+          // 조준 3연사 (격노 시 5연사)
+          const k2=en?5:3;
+          for(let i=0;i<k2;i++){
+            setTimeout(()=>{ if(enemies.includes(e)){ const a2=Math.atan2(player.y-e.y,player.x-e.x); eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*270,vy:Math.sin(a2)*270,r:7,dmg:10,life:3.0,srcName:'미주',kkot:true}); } }, i*120);
+          }
+        } else {
+          // 격노 전: 3발 부채꼴 / 격노 후: 더블 링
+          if(!en){
+            for(let i=-1;i<=1;i++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa+i*0.28)*240,vy:Math.sin(pa+i*0.28)*240,r:9,dmg:10,life:3.5,srcName:'미주',kkot:true});
+          } else {
+            const k3=12;
+            for(let i=0;i<k3;i++){ const a2=i/k3*TAU; eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*195,vy:Math.sin(a2)*195,r:8,dmg:9,life:3.8,srcName:'미주',kkot:true}); }
+            for(let i=0;i<k3;i++){ const a2=i/k3*TAU+Math.PI/k3; eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*235,vy:Math.sin(a2)*235,r:7,dmg:8,life:3.4,srcName:'미주',kkot:true}); }
+          }
+          if(typeof beep==='function') beep(440,0.1,'triangle',0.05);
+        }
+        e.atkT=en?1.2:1.8;
+      }
     }
     else if(e.ai==='yanggaeng'){
       const want=240;
@@ -2753,6 +2814,84 @@ const SPRITES={
     ctx.fillStyle='#7a1f1f'; ctx.font='bold '+Math.round(r*0.52)+'px Courier New'; ctx.textAlign='center'; ctx.fillText('갱',0,r*0.2); ctx.textAlign='left';
     const eye=en?'#ff3b3b':'#2a1a10'; circle(-r*0.56,-r*0.06,r*0.08,eye,false); circle(r*0.56,-r*0.06,r*0.08,eye,false);
   },
+  kkotchung:(r,e)=>{
+    // 미주: 귀여운 꽃 → 격노 시 얼굴이 늘어지고 눈이 뒤집히는 징그러운 모습
+    const en=e&&e.enr;
+    const t=performance.now()/1000;
+    _so(r);
+    // 줄기
+    ctx.strokeStyle='#4a8a2a'; ctx.lineWidth=Math.max(2,r*0.15);
+    ctx.beginPath(); ctx.moveTo(0,r*0.7); ctx.lineTo(0,r*1.1); ctx.stroke();
+    // 잎사귀 2개
+    ctx.fillStyle='#5fc83a'; ctx.strokeStyle='#3a7a20'; ctx.lineWidth=Math.max(1.5,r*0.08);
+    ctx.beginPath(); ctx.ellipse(-r*0.5,r*0.85,r*0.32,r*0.12,-0.6,0,TAU); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(r*0.5,r*0.95,r*0.32,r*0.12,0.6,0,TAU); ctx.fill(); ctx.stroke();
+    // 꽃잎 8장 (격노 시 색이 검붉게 변하고 뒤틀림)
+    const petalCol=en?'#c03060':'#f7a8d0';
+    const petalEdge=en?'#7a0030':'#e06090';
+    ctx.fillStyle=petalCol; ctx.strokeStyle=petalEdge; ctx.lineWidth=Math.max(1.5,r*0.07);
+    for(let i=0;i<8;i++){
+      const pa=i/8*TAU;
+      const pr=en?(r*0.48+Math.sin(t*3+i)*r*0.12):r*0.45; // 격노 시 꽃잎 흔들림
+      const px=Math.cos(pa)*pr, py=Math.sin(pa)*pr;
+      ctx.save(); ctx.translate(px,py); ctx.rotate(pa);
+      ctx.beginPath(); ctx.ellipse(0,0,r*(en?0.32:0.28),r*(en?0.18:0.16),0,0,TAU);
+      ctx.fill(); ctx.stroke(); ctx.restore();
+    }
+    // 얼굴 (중앙 원)
+    const faceCol=en?'#d4683a':'#fff8c0';
+    const faceH=en?(r*0.72+Math.sin(t*5)*r*0.07):r*0.72; // 격노 시 얼굴 진동
+    ctx.fillStyle=faceCol; ctx.strokeStyle=en?'#7a2010':'#e8c860'; ctx.lineWidth=Math.max(2,r*0.1);
+    ctx.beginPath();
+    if(en){
+      // 격노: 얼굴이 타원형으로 늘어남 (가로 납작 / 세로 길쭉)
+      const stretch=0.5+0.3*Math.abs(Math.sin(t*4));
+      ctx.ellipse(0,r*0.05*(1+stretch),faceH*(1-stretch*0.3),faceH*(1+stretch*0.4),0,0,TAU);
+    } else {
+      ctx.arc(0,0,faceH,0,TAU);
+    }
+    ctx.fill(); ctx.stroke();
+    // 눈
+    if(!en){
+      // 평상시: 동그랗고 귀여운 눈 + 미소
+      ctx.fillStyle='#2a1a10';
+      _fc(-r*0.26,-r*0.12,r*0.11,'#2a1a10',false); _fc(r*0.26,-r*0.12,r*0.11,'#2a1a10',false);
+      ctx.fillStyle='#fff'; _fc(-r*0.30,-r*0.16,r*0.04,'#fff',false); _fc(r*0.22,-r*0.16,r*0.04,'#fff',false);
+      // 미소
+      ctx.strokeStyle='#7a4a10'; ctx.lineWidth=Math.max(1.5,r*0.08);
+      ctx.beginPath(); ctx.arc(0,r*0.1,r*0.22,0.2,Math.PI-0.2); ctx.stroke();
+      // 볼 홍조
+      ctx.fillStyle='rgba(255,160,180,0.45)';
+      ctx.beginPath(); ctx.ellipse(-r*0.4,r*0.08,r*0.14,r*0.08,0,0,TAU); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(r*0.4,r*0.08,r*0.14,r*0.08,0,0,TAU); ctx.fill();
+    } else {
+      // 격노: 눈이 뒤집히고 세로로 찢어짐 (X자 눈, 검붉음)
+      const eyeStretch=0.3+0.2*Math.abs(Math.sin(t*6));
+      const eyeY=r*0.08+r*0.12*eyeStretch; // 격노 시 눈이 아래로 늘어짐
+      // X자 눈 (왼쪽)
+      ctx.strokeStyle='#ff2040'; ctx.lineWidth=Math.max(2.5,r*0.12); ctx.lineCap='round';
+      ctx.beginPath(); ctx.moveTo(-r*0.38,-r*0.05-eyeY); ctx.lineTo(-r*0.16,-r*0.05+eyeY); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-r*0.16,-r*0.05-eyeY); ctx.lineTo(-r*0.38,-r*0.05+eyeY); ctx.stroke();
+      // X자 눈 (오른쪽)
+      ctx.beginPath(); ctx.moveTo(r*0.16,-r*0.05-eyeY); ctx.lineTo(r*0.38,-r*0.05+eyeY); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(r*0.38,-r*0.05-eyeY); ctx.lineTo(r*0.16,-r*0.05+eyeY); ctx.stroke();
+      // 늘어진 입 (이빨 드러냄)
+      const mouthOpen=0.28+0.15*Math.abs(Math.sin(t*3.5));
+      ctx.fillStyle='#1a0508';
+      ctx.beginPath(); ctx.ellipse(0,r*(0.28+eyeStretch*0.5),r*0.38,r*mouthOpen,0,0,TAU); ctx.fill();
+      // 삐죽삐죽 이빨
+      ctx.fillStyle='#fffaf0'; ctx.strokeStyle='#c8b080'; ctx.lineWidth=1;
+      for(let i=-2;i<=2;i++){
+        const tx2=i*r*0.14, ty2=r*(0.28+eyeStretch*0.5)-r*mouthOpen+r*0.04;
+        ctx.beginPath(); ctx.moveTo(tx2-r*0.055,ty2); ctx.lineTo(tx2,ty2-r*0.12); ctx.lineTo(tx2+r*0.055,ty2); ctx.closePath(); ctx.fill(); ctx.stroke();
+      }
+      // 격노 글로우 오라 (핑크→붉음)
+      ctx.save(); ctx.globalAlpha=0.18+0.12*Math.abs(Math.sin(t*5));
+      ctx.fillStyle='#ff2060';
+      ctx.beginPath(); ctx.arc(0,0,r*1.15,0,TAU); ctx.fill();
+      ctx.restore();
+    }
+  },
   skeleton_warrior:(r)=>_skull(r,{weapon:'sword'}),
   skeleton_archer:(r)=>_skull(r,{weapon:'bow'}),
   skeleton_shaman:(r)=>_skull(r,{hood:'#7a6aa0',weapon:'staff',weaponCol:'#c98bff',glow:'#c98bff'}),
@@ -2938,13 +3077,14 @@ function drawEliteIntro(){
   if(vig>0){ const g=ctx.createRadialGradient(W/2,H/2,H*0.22,W/2,H/2,H*0.72); g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(1,'rgba(12,0,4,'+vig+')'); ctx.fillStyle=g; ctx.fillRect(0,0,W,H); }
   if(E.warn!=null){ const r=18+E.warn*80; ctx.save(); ctx.lineWidth=4; ctx.strokeStyle='rgba(255,60,60,'+(0.85*(1-E.warn))+')'; ctx.beginPath(); ctx.arc(ze.x,ze.y+ze.r+4,r,0,TAU); ctx.stroke(); ctx.fillStyle='rgba(255,40,40,'+(0.16*(1-E.warn))+')'; ctx.beginPath(); ctx.arc(ze.x,ze.y+ze.r+4,r,0,TAU); ctx.fill(); ctx.restore(); }
   if(E.banner>0){
-    const col='#c46bff', bw=470,bh=74,bx=(W-bw)/2, by=62-(1-E.banner)*72;
+    const isKkot=(E.ze&&E.ze.type==='kkotchung');
+    const col=isKkot?'#ff7ab0':'#c46bff', bw=470,bh=74,bx=(W-bw)/2, by=62-(1-E.banner)*72;
     ctx.save(); ctx.globalAlpha=Math.min(1,E.banner*1.25);
     ctx.fillStyle='rgba(14,9,22,0.93)'; ctx.fillRect(bx,by,bw,bh);
     ctx.shadowColor=col; ctx.shadowBlur=16; ctx.lineWidth=3; ctx.strokeStyle=col; ctx.strokeRect(bx,by,bw,bh); ctx.shadowBlur=0;
     ctx.textAlign='center';
-    ctx.fillStyle=col; ctx.font='bold 14px sans-serif'; ctx.fillText('⚠ 자잘자', W/2, by+25);
-    ctx.fillStyle='#fff'; ctx.font='bold 19px sans-serif'; ctx.fillText('"나는야 너무 멋진 장수풍뎅이"', W/2, by+52);
+    ctx.fillStyle=col; ctx.font='bold 14px sans-serif'; ctx.fillText(isKkot?'🌸 미주':'⚠ 자잘자', W/2, by+25);
+    ctx.fillStyle='#fff'; ctx.font='bold 19px sans-serif'; ctx.fillText(isKkot?'"꽃이라고 얕봤지? 이제 진짜야."':'"나는야 너무 멋진 장수풍뎅이"', W/2, by+52);
     ctx.restore();
   }
 }
@@ -3105,7 +3245,7 @@ function drawEliteBar(e){
   ctx.fillStyle=grad; ctx.fillRect(bx,by,bw*f,bh);
   ctx.strokeStyle='#ff5a5a'; ctx.lineWidth=2; ctx.strokeRect(bx,by,bw,bh);
   ctx.fillStyle='#fff'; ctx.font='bold 12px sans-serif'; ctx.textAlign='center';
-  ctx.fillText('⚔️ 자잘자', W/2, by-8); ctx.textAlign='left';
+  ctx.fillText(e.type==='kkotchung'?'🌸 미주':'⚔️ 자잘자', W/2, by-8); ctx.textAlign='left';
   ctx.restore();
 }
 function drawMidbossBar(e){
@@ -3146,6 +3286,19 @@ function draw(){
   // 탄
   for(const b of eBullets){
     if(b.foodImg && b.foodImg.complete){ const S=b.r*2.7; ctx.save(); ctx.translate(b.x,b.y); ctx.rotate(b.spin||0); ctx.drawImage(b.foodImg,-S/2,-S/2,S,S); ctx.restore(); }
+    else if(b.kkot){
+      // 미주 탄환: 작은 꽃잎 모양
+      ctx.save(); ctx.translate(b.x,b.y);
+      const kkAngle=Math.atan2(b.vy,b.vx);
+      ctx.rotate(kkAngle);
+      ctx.fillStyle='#ff5090'; ctx.strokeStyle='#8a0030'; ctx.lineWidth=1.5;
+      for(let pi=0;pi<5;pi++){
+        const pa=pi/5*TAU;
+        ctx.beginPath(); ctx.ellipse(Math.cos(pa)*b.r*0.55,Math.sin(pa)*b.r*0.55,b.r*0.48,b.r*0.28,pa,0,TAU); ctx.fill(); ctx.stroke();
+      }
+      ctx.fillStyle='#ffe0f0'; ctx.beginPath(); ctx.arc(0,0,b.r*0.28,0,TAU); ctx.fill();
+      ctx.restore();
+    }
     else circle(b.x,b.y,b.r,b.spore?'#ff7a8a':'#ff4d6d','#5a0010');
   }
   for(const b of pBullets){
