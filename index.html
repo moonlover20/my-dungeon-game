@@ -153,6 +153,7 @@
             <button class="title-item" id="tmNew">NEW GAME</button>
             <button class="title-item" id="tmAchievements">ACHIEVEMENTS</button>
             <button class="title-item" id="tmRanking">RANKING</button>
+            <button class="title-item" id="tmDatabase">DATABASE</button>
             <button class="title-item" id="tmSettings">SETTINGS</button>
             <button class="title-item" id="tmExit" style="font-size:clamp(15px,2.5vw,21px);color:#9b8fc4">EXIT</button>
           </div>
@@ -367,6 +368,28 @@
             </div>
           </div>
           <button class="btn ghost" id="rankingClose" onclick="if(typeof closeRankingTab==='function') closeRankingTab()">닫기</button>
+        </div>
+      </div>
+
+      <!-- DATABASE -->
+      <div class="overlay hidden" id="ovDatabase" data-tab="relics">
+        <div class="panel-box database-panel">
+          <div class="database-head">
+            <div>
+              <div class="tag">DATABASE</div>
+              <h2>아이템 데이터베이스</h2>
+            </div>
+            <button class="db-x" id="databaseClose" type="button" aria-label="닫기">×</button>
+          </div>
+          <div class="database-tools">
+            <div class="database-tabs">
+              <button class="db-tab active" data-tab="relics">유물</button>
+              <button class="db-tab" data-tab="perks">레벨업 퍽</button>
+              <button class="db-tab" data-tab="potions">포션</button>
+            </div>
+            <input id="databaseSearch" class="database-search" type="search" placeholder="이름 또는 설명 검색" autocomplete="off" spellcheck="false">
+          </div>
+          <div class="database-list" id="databaseBody"></div>
         </div>
       </div>
 
