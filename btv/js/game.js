@@ -3819,10 +3819,26 @@ $('helpClose').onclick=()=>{ $('ovHelp').classList.add('hidden'); if(prevState&&
 })();
 
 // ===== 타이틀 메뉴 버튼 =====
-$('tmNew').onclick=()=>{ show('start'); };
+function openDifficultyTab(){
+  hideAll();
+  $('ovTitle').classList.remove('hidden');
+  $('ovStart').classList.remove('hidden');
+  state='start';
+  syncChrome();
+  refreshSidePanel();
+  if(window.startTitleScene) window.startTitleScene();
+}
+function closeDifficultyTab(){
+  $('ovStart').classList.add('hidden');
+  state='title';
+  syncChrome();
+  refreshSidePanel();
+  if(window.startTitleScene) window.startTitleScene();
+}
+$('tmNew').onclick=openDifficultyTab;
 // tmSettings는 wireSettings()에서 openSettings로 연결됨 (아래에서 재정의)
 $('tmExit').onclick=()=>{ try{ window.close(); }catch(e){} };
-$('diffBack').onclick=()=>{ show('title'); if(window.startTitleScene) window.startTitleScene(); };
+$('diffBack').onclick=closeDifficultyTab;
 
 // 초기 채팅 잡담 미리 깔기
 chatSys("스트리머가 곧 들어옵니다...");
