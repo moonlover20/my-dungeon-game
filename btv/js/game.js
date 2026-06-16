@@ -3250,7 +3250,7 @@ function refreshSidePanel(){
   const sp=$('sidePanel'); if(!sp) return;
   const sw=$('stageWrap');
   // 게임이 시작된 이후로는 항상 표시 (타이틀 화면 'start' 및 player 미초기화 시에만 숨김)
-  if(state!=='start' && player && player.maxhp!=null){ renderSidePanel(); sp.classList.add('show'); if(sw) sw.classList.add('with-side'); }
+  if(state!=='title' && state!=='start' && player && player.maxhp!=null){ renderSidePanel(); sp.classList.add('show'); if(sw) sw.classList.add('with-side'); }
   else { sp.classList.remove('show'); if(sw) sw.classList.remove('with-side'); }
 }
 
@@ -3614,6 +3614,7 @@ function gameOver(win, killer){
   show('end');
   const canRetry = !win && (diffSet.maxRetries === Infinity || retries < diffSet.maxRetries);
   $('retryBtn').style.display = canRetry ? '' : 'none';
+  const titleBtn=$('titleBtn'); if(titleBtn) titleBtn.style.display = win ? 'none' : '';
   // 재도전 버튼 텍스트에 남은 횟수 표시
   if(canRetry && diffSet.maxRetries !== Infinity){
     const left = diffSet.maxRetries - retries;
@@ -3697,7 +3698,7 @@ function buildDiffButtons(){
   Object.values(DIFFS).forEach(d=>{
     const b=document.createElement('button');
     b.className='diffbtn'; b.style.borderColor=d.col;
-    b.innerHTML='<div style="color:'+d.col+';font-weight:bold;font-size:15px">'+d.label+'</div><div style="color:var(--muted);font-size:11px;margin-top:2px;word-break:keep-all;line-height:1.45">'+d.desc+'</div>';
+    b.innerHTML='<div class="diff-name" style="color:'+d.col+'">'+d.label+'</div><div class="diff-desc">'+d.desc+'</div>';
     b.onclick=()=>{ try{if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){} diffSet=d; stopIntroDrone(); startBGM(); bossTaunt(d, ()=>showStory(()=>newGame())); };
     cont.appendChild(b);
   });
@@ -3708,6 +3709,17 @@ buildDiffButtons();
   const set=(id,src)=>{ const el=$(id); if(el&&src) el.src=src; };
   set('startAvatar',BONGSIK_AVATAR); set('ovStoryAvatar',BONGSIK_AVATAR); set('ovStoryBcast',BROADCAST_SCREEN);
 })();
+function returnToTitleScreen(){
+  introFxReset();
+  paused=false; mouseDown=false; autoFire=false; runActive=false;
+  roomIsBoss=false; roomIsMidboss=false; cutsceneT=0; bossEvolve=null;
+  enemies=[]; pBullets=[]; eBullets=[]; pickups=[]; particles=[]; boss=null; floatBubbles=[];
+  const po=$('ovPause'); if(po) po.classList.add('hidden');
+  hideAll();
+  show('title');
+  if(window.startTitleScene) window.startTitleScene();
+  startBGM();
+}
 $('retryBtn').onclick=()=>{
   if(diffSet.maxRetries !== Infinity && retries >= diffSet.maxRetries){ banner('재도전 불가','횟수를 모두 소진했습니다',1400); return; }
   retryRoom();
@@ -3719,6 +3731,7 @@ $('restartBtn').onclick=()=>{
   // 연출·튜토리얼 스킵 — 보스 대사만 띄우고 곧장 시작
   bossTaunt(diffSet, ()=> newGameSkip());
 };
+{ const tb=$('titleBtn'); if(tb) tb.onclick=returnToTitleScreen; }
 $('muteBtn').onclick=function(){ if(typeof openSettings==='function') openSettings(); };
 // 구 soundPanel 컨트롤 - 패널이 DOM에 존재할 때만 배선 (설정창과 독립적으로 동작)
 { const sc=$('soundClose'); if(sc) sc.onclick=()=>{ const sp=$('soundPanel'); if(sp) sp.style.display='none'; }; }
