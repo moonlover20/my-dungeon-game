@@ -248,13 +248,37 @@
         </div>
       </div>
 
-      <!-- EVENT (미지) -->
+      <!-- EVENT (미지) — EventPanel v2 -->
       <div class="overlay hidden" id="ovEvent">
-        <div class="panel-box">
-          <div class="tag" id="eventTag">❓ 미지의 방</div>
-          <h2 id="eventTitle"></h2>
-          <p id="eventBody"></p>
-          <div class="choices" id="eventChoices"></div>
+        <div class="ev-panel">
+          <!-- 테마 배경 레이어 -->
+          <div class="ev-theme-bg" id="evThemeBg"></div>
+          <!-- 애니메이션 레이어 -->
+          <div class="ev-anim-layer" id="evAnimLayer" aria-hidden="true"></div>
+
+          <!-- 헤더 -->
+          <div class="ev-panel-header">
+            <div class="ev-panel-eyebrow" id="eventTag">❓ 미지의 방</div>
+            <div class="ev-panel-tags" id="evTagArea"></div>
+          </div>
+
+          <!-- 씬 + 텍스트 영역 -->
+          <div class="ev-panel-body">
+            <div class="ev-scene-wrap">
+              <canvas class="ev-scene-canvas" id="evSceneCanvas" width="70" height="88"></canvas>
+              <div class="ev-scene-label" id="evSceneLabel"></div>
+            </div>
+            <div class="ev-text-wrap">
+              <h2 class="ev-title" id="eventTitle"></h2>
+              <p class="ev-desc" id="eventBody"></p>
+            </div>
+          </div>
+
+          <!-- 구분선 -->
+          <div class="ev-divider" id="evDivider"></div>
+
+          <!-- 선택지 -->
+          <div class="ev-choices" id="eventChoices"></div>
         </div>
       </div>
 
@@ -407,6 +431,7 @@
           <div class="database-tools">
             <div class="database-tabs">
               <button class="db-tab active" data-tab="relics">유물</button>
+              <button class="db-tab" data-tab="perks">특성</button>
               <button class="db-tab" data-tab="enemies">적</button>
               <button class="db-tab" data-tab="bosses">보스</button>
               <button class="db-tab" data-tab="potions">포션</button>
