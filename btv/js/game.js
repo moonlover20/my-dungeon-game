@@ -248,13 +248,13 @@ const MUSIC = {
   vol:0.375,                           // 음악 기본 볼륨(배경음 슬라이더와 곱해짐) — 기존 0.75에서 50% 줄임
   tracks:{},
   files:{
-    main:         'main.mp3',
-    intro:        'intro.mp3',
-    act1:         'act1.mp3',
+    main:         'btv/assets/music/main.mp3',
+    intro:        'btv/assets/music/intro.mp3',
+    act1:         'btv/assets/music/act1.mp3',
     act2:         'btv/assets/music/act2-maple-bg.mp3',
-    midboss:      'midboss.mp3',
+    midboss:      'btv/assets/music/midboss.mp3',
     act2Midboss:  'btv/assets/music/act2-midboss-malkuth.mp3',
-    boss:         'boss.mp3',
+    boss:         'btv/assets/music/boss.mp3',
     finalBoss:    'btv/assets/music/act2-final-boss.mp3'
   },
   tightLoops:{
