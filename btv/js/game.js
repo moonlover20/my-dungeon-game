@@ -435,23 +435,38 @@ const ENEMY_TYPES={
   gwangcheon_gim:{name:"광천김", r:18, hp:58,  spd:40, dmg:7,  color:"#3f7a34", xp:88,  ai:"shooter", range:330, cool:1.6, label:"광천김"},
   reura         :{name:"러라",   r:15, hp:56,  spd:90, dmg:10, color:"#ffd166", xp:84,  ai:"chase", lunge:true, label:"러라"},
   namu          :{name:"나무",   r:22, hp:72,  spd:30, dmg:13, color:"#5fa84a", xp:96, ai:"chase",   label:"나무"},
-  pobear        :{name:"포베어", r:24, hp:70,  spd:54, dmg:13, color:"#c8884a", xp:96, ai:"charge",  label:"포베어"},
+  ketter        :{name:"케터",   r:16, hp:54,  spd:58, dmg:8,  color:"#7ed957", xp:86,  ai:"orbit", range:260, cool:1.35, label:"케터"},
+  // --- 2막 어려운 적 ---
+  pobear        :{name:"포베어", r:26, hp:125, spd:58, dmg:17, color:"#c8884a", xp:330, ai:"charge", armor:0.08, label:"포베어"},
+  blackstar     :{name:"흑별",   r:21, hp:110, spd:42, dmg:13, color:"#17111f", xp:315, ai:"orbit", range:270, cool:1.25, label:"흑별"},
+  killjoy       :{name:"킬조이", r:17, hp:100, spd:104,dmg:14, color:"#38e8ff", xp:320, ai:"shooter", range:380, cool:0.95, label:"킬조이"},
+  apple         :{name:"사과",   r:20, hp:112, spd:64, dmg:15, color:"#ff4d6d", xp:310, ai:"erratic", range:300, cool:1.4, label:"사과"},
   yanggaeng     :{name:"박제인간", r:58, hp:1450, spd:48, dmg:17, color:"#111111", xp:2200, ai:"bagjein", cool:1.7, label:"박제인간"},
   // === 2막 엘리트: 양갱 (3페이즈) ===
   kkotchung     :{name:"양갱", r:32, hp:240, spd:50, dmg:11, color:"#f7a8d0", xp:900,  ai:"kkotchung", cool:1.4, label:"미주"},
 };
 const ACT_POOLS=[
   { normal:["goblin_warrior","goblin_archer","goblin_shaman","goblin_bomber"], elite:["rhino_beetle"] },
-  { normal:["gwangcheon_gim","reura","namu","pobear"], elite:["kkotchung"] },
+  { normal:["gwangcheon_gim","reura","namu","ketter"], elite:["kkotchung"] },
   { normal:["slime_green","slime_red","slime_yellow","elf_melee","elf_ranged"], elite:["giant_golem","eldritch"] },
 ];
 const ACT1_WEAK_ENEMY_IDS=["goblin_warrior","goblin_archer","goblin_shaman","goblin_bomber"];
 const ACT1_LATE_ENEMY_IDS=["hoonsangtae","jaemin","sniper_viewer","stream_watcher"];
 const ACT1_PRIORITY_CAPS={sniper_viewer:1,stream_watcher:1};
+// === 2막 잡몹 분리 ===
+const ACT2_BASIC_ENEMY_IDS=["gwangcheon_gim","reura","namu","ketter"];      // 일반몹: 광천김/러라/나무/케터
+const ACT2_LATE_ENEMY_IDS=["pobear","blackstar","killjoy","apple"];          // 어려운 적: 포베어/흑별/킬조이/사과
+const ACT2_PRIORITY_CAPS={blackstar:1,killjoy:1,apple:1};                    // 방당 1마리 우선 제한 (포베어는 브루저라 미제한)
 function normalEnemyPoolFor(a,row){
   const pool=ACT_POOLS[Math.min(a-1,ACT_POOLS.length-1)];
   const base=(pool&&pool.normal?pool.normal:[]).slice();
   if(a===1) return base.concat(ACT1_LATE_ENEMY_IDS);
+  if(a===2){
+    // 2막 일반방에 등장 가능한 잡몹 전체 (기본 4종 + 어려운 적 4종)
+    const seen=new Set(), out=[];
+    ACT2_BASIC_ENEMY_IDS.concat(ACT2_LATE_ENEMY_IDS).forEach(id=>{ if(ENEMY_TYPES[id]&&!seen.has(id)){ seen.add(id); out.push(id); } });
+    return out;
+  }
   return base;
 }
 function enemyTypeCounts(list){
@@ -461,17 +476,32 @@ function enemyTypeCounts(list){
 }
 function pickNormalEnemyForRoom(a,row,counts){
   const pool=ACT_POOLS[Math.min(a-1,ACT_POOLS.length-1)];
-  if(a!==1) return pick((pool&&pool.normal)||[]);
-  counts=counts||{};
-  const strongRate=row>MIDBOSS_ROW?0.70:0.10;
-  const weak=ACT1_WEAK_ENEMY_IDS;
-  let strong=ACT1_LATE_ENEMY_IDS.filter(id=>!ACT1_PRIORITY_CAPS[id]||(counts[id]||0)<ACT1_PRIORITY_CAPS[id]);
-  const wantStrong=Math.random()<strongRate;
-  let choices=wantStrong?strong:weak;
-  if(!choices.length) choices=wantStrong?weak:strong;
-  const id=pick(choices.length?choices:weak);
-  counts[id]=(counts[id]||0)+1;
-  return id;
+  if(a===1){
+    counts=counts||{};
+    const strongRate=row>MIDBOSS_ROW?0.70:0.10;
+    const weak=ACT1_WEAK_ENEMY_IDS;
+    let strong=ACT1_LATE_ENEMY_IDS.filter(id=>!ACT1_PRIORITY_CAPS[id]||(counts[id]||0)<ACT1_PRIORITY_CAPS[id]);
+    const wantStrong=Math.random()<strongRate;
+    let choices=wantStrong?strong:weak;
+    if(!choices.length) choices=wantStrong?weak:strong;
+    const id=pick(choices.length?choices:weak);
+    counts[id]=(counts[id]||0)+1;
+    return id;
+  }
+  if(a===2){
+    counts=counts||{};
+    // 중보 전엔 가끔(10%), 중보 후엔 자주(70%) 어려운 적 등장
+    const hardRate=row>MIDBOSS_ROW?0.70:0.10;
+    const basic=ACT2_BASIC_ENEMY_IDS;
+    let hard=ACT2_LATE_ENEMY_IDS.filter(id=>!ACT2_PRIORITY_CAPS[id]||(counts[id]||0)<ACT2_PRIORITY_CAPS[id]);
+    const wantHard=Math.random()<hardRate;
+    let choices=wantHard?hard:basic;
+    if(!choices.length) choices=wantHard?basic:hard;          // 제한으로 후보 소진 시 반대 풀에서
+    const id=pick(choices.length?choices:basic);
+    counts[id]=(counts[id]||0)+1;
+    return id;
+  }
+  return pick((pool&&pool.normal)||[]);
 }
 const DB_EXTRA_ENEMY_IDS=['hyechul','yanggaeng','earthworm','zergling','mutalisk','ultra','zerg_egg'];
 const DB_ENEMY_IDS=(function(){
@@ -482,6 +512,7 @@ const DB_ENEMY_IDS=(function(){
     (pool.elite||[]).forEach(add);
   });
   ACT1_LATE_ENEMY_IDS.forEach(add);
+  ACT2_LATE_ENEMY_IDS.forEach(add);
   DB_EXTRA_ENEMY_IDS.forEach(add);
   return ids;
 })();
@@ -1696,6 +1727,55 @@ function updateIntentPatterns(e,dt){
     setIntent(e,'🛡','방어 태세',0.8,()=>{ e.defenseT=3; e._guardCd=7.5; burst(e.x,e.y,'#5fa84a',12,150); });
   }else if(e.type==='pobear'&&cd('_jumpCd',7)){
     setIntent(e,'⚔','점프 강타',1,()=>{ const tx=clamp(player.x+rand(-35,35),e.r,W-e.r), ty=clamp(player.y+rand(-35,35),e.r,H-e.r); e._jumpTx=tx; e._jumpTy=ty; e._jumpMax=Math.max(0.28,Math.min(0.72,Math.hypot(tx-e.x,ty-e.y)/520)); e.cs='jump'; e.csT=e._jumpMax; e._jumpCd=7.5; if(typeof beep==='function')beep(150,0.14,'sawtooth',0.06); });
+  }else if(e.type==='ketter' && cd('_silkCd',6)){
+    // 케터 — 실뿜기 / 둔화: 무빙을 살짝 꼬는 일반몹 패턴
+    setIntent(e,'🕸','실뿜기',0.8,()=>{
+      const tx=player.x, ty=player.y;
+      spawnSlowField(tx,ty,58,3.8);
+      const a=Math.atan2(player.y-e.y,player.x-e.x);
+      for(let i=-1;i<=1;i++){
+        const aa=a+i*0.18;
+        eBullets.push({x:e.x,y:e.y,vx:Math.cos(aa)*230,vy:Math.sin(aa)*230,r:6,dmg:intentDamage(e,6),life:3.2,srcName:'케터 실탄'});
+      }
+      if(typeof beep==='function')beep(200,0.1,'triangle',0.04);
+      e._silkCd=6.2;
+    });
+  }else if(e.type==='blackstar' && cd('_gravityCd',7)){
+    // 흑별 — 중력장 / 검은별 탄막: 공간 압박형 어려운 적
+    setIntent(e,'🌀','중력장',1.0,()=>{
+      spawnSlowField(player.x,player.y,92,5.2);
+      const k=10;
+      for(let i=0;i<k;i++){
+        const a=i/k*TAU+(e.wob||0);
+        eBullets.push({x:e.x,y:e.y,vx:Math.cos(a)*205,vy:Math.sin(a)*205,r:7,dmg:intentDamage(e,8),life:3.4,srcName:'흑별 파편'});
+      }
+      burst(e.x,e.y,'#7b2cff',16,190);
+      if(typeof beep==='function')beep(120,0.16,'sawtooth',0.05);
+      e._gravityCd=7.4;
+    });
+  }else if(e.type==='killjoy' && cd('_zapCd',6)){
+    // 킬조이 — 전기 레이저: 경고 후 발사하는 고기동 원거리 적
+    setIntent(e,'⚡','전기 레이저',0.75,()=>{
+      const a=Math.atan2(player.y-e.y,player.x-e.x);
+      kijoLaserWarns.push({
+        x:e.x,y:e.y,ang:a,width:11,range:460,t:0,warn:0.62,
+        color:'#38e8ff',fired:false,sniper:true,
+        dmg:intentDamage(e,12),srcName:'킬조이 전격'
+      });
+      burst(e.x,e.y,'#38e8ff',10,180);
+      if(typeof beep==='function')beep(520,0.08,'square',0.04);
+      e._zapCd=6.2;
+    });
+  }else if(e.type==='apple' && cd('_fallCd',6.5)){
+    // 사과 — 낙과 폭탄: 시전 시작 위치에 충격파를 떨어뜨리는 장판형 적
+    const tx=player.x, ty=player.y;
+    setIntent(e,'🍎','낙과',0.95,()=>{
+      intentShockwave(tx,ty,82,13,'사과 낙과');
+      burst(tx,ty,'#ff4d6d',18,220);
+      screenShake=Math.max(screenShake||0,5);
+      if(typeof beep==='function')beep(90,0.18,'sawtooth',0.06);
+      e._fallCd=6.8;
+    });
   }else if(e.type==='slime_red'&&cd('_redDashCd',5.5)){
     setIntent(e,'⚔','돌진',0.8,()=>{ const a=Math.atan2(player.y-e.y,player.x-e.x); e.lungeA=0.34; e.lvx=Math.cos(a); e.lvy=Math.sin(a); e._redDashCd=6; });
   }else if(e.type==='slime_yellow'&&cd('_yellowGuardCd',6)){
@@ -2760,8 +2840,8 @@ function startCombat(kind, fresh){
     let base=rand(3,5)+act*1.0+row*0.35;
     if(act===1) base*=1.15;               // 1막 일반방 밀도 소폭 상향
     if(row<MIDBOSS_ROW) base*=0.6;        // 중보 전: 약한 몹 중심, 낮은 밀도
-    else if(row>MIDBOSS_ROW) base*=act===1?0.6:1.5; // 1막 후반은 강한 일반몹 비중으로 압박, 물량은 완화
-    const countMax=(act===1&&row>MIDBOSS_ROW)?10:16;
+    else if(row>MIDBOSS_ROW) base*=(act===1||act===2)?0.7:1.5; // 1·2막 후반은 강한 일반몹 비중으로 압박, 물량은 완화
+    const countMax=((act===1||act===2)&&row>MIDBOSS_ROW)?11:16;
     let count=clamp(Math.round(base*diffSet.cnt), row<MIDBOSS_ROW?2:4, countMax);
     if(kind==='midboss'){
       if(act>=2){
@@ -7251,6 +7331,44 @@ const SPRITES={
     circle(-r*0.62,-r*0.05,r*0.24,'#e8c79a',false);            // 주둥이
     ctx.fillStyle='#2a1a10'; circle(-r*0.74,-r*0.08,r*0.07,'#2a1a10',false); circle(-r*0.5,-r*0.34,r*0.06,'#2a1a10',false); circle(-r*0.26,-r*0.32,r*0.06,'#2a1a10',false); // 코·눈
   },
+  ketter:(r)=>{ // 케터 — 초록 애벌레(나비 전 단계), 둥근 마디 3~4개
+    const seg=[{x:-r*0.62,rr:0.42},{x:-r*0.18,rr:0.5},{x:r*0.26,rr:0.46},{x:r*0.66,rr:0.4}];
+    seg.forEach(s=>circle(s.x,r*0.1,r*s.rr,'#7ed957','#3f7a34'));
+    circle(r*0.66,r*0.04,r*0.4,'#9be86a','#3f7a34');                 // 머리 마디
+    ctx.fillStyle='#143d12'; circle(r*0.78,-r*0.06,r*0.08,'#143d12',false); circle(r*0.56,-r*0.06,r*0.08,'#143d12',false); // 눈
+    ctx.strokeStyle='#3f7a34'; ctx.lineWidth=Math.max(1.5,r*0.07);   // 더듬이
+    ctx.beginPath(); ctx.moveTo(r*0.78,-r*0.3); ctx.lineTo(r*0.92,-r*0.62); ctx.moveTo(r*0.56,-r*0.3); ctx.lineTo(r*0.42,-r*0.62); ctx.stroke();
+    circle(r*0.92,-r*0.66,r*0.06,'#cfff9b','#3f7a34'); circle(r*0.42,-r*0.66,r*0.06,'#cfff9b','#3f7a34');
+  },
+  blackstar:(r)=>{ // 흑별 — 검은 별 + 검보라 오라
+    ctx.save();
+    const glow=ctx.createRadialGradient(0,0,r*0.2,0,0,r*1.4);
+    glow.addColorStop(0,'rgba(123,44,255,0.55)'); glow.addColorStop(1,'rgba(123,44,255,0)');
+    ctx.fillStyle=glow; circle(0,0,r*1.35,glow,false);
+    ctx.restore();
+    ctx.beginPath();                                                 // 5각 별
+    for(let i=0;i<10;i++){ const a=-Math.PI/2+i*Math.PI/5; const rad=(i%2===0)?r*1.0:r*0.42; const px=Math.cos(a)*rad, py=Math.sin(a)*rad; i?ctx.lineTo(px,py):ctx.moveTo(px,py); }
+    ctx.closePath();
+    ctx.fillStyle='#17111f'; ctx.fill(); ctx.lineWidth=Math.max(2,r*0.1); ctx.strokeStyle='#7b2cff'; ctx.stroke();
+    ctx.fillStyle='#b98bff'; circle(-r*0.16,-r*0.06,r*0.09,'#b98bff',false); circle(r*0.16,-r*0.06,r*0.09,'#b98bff',false); // 눈
+  },
+  killjoy:(r)=>{ // 킬조이 — 전기색 작은 캐릭터 + 번개 마크
+    circle(0,0,r*0.85,'#0e2b33','#38e8ff');                          // 몸
+    ctx.fillStyle='#061318'; _rr?_rr(-r*0.5,-r*0.34,r*1.0,r*0.5,r*0.12,'#061318'):ctx.fillRect(-r*0.5,-r*0.34,r*1.0,r*0.5); // 바이저
+    ctx.fillStyle='#38e8ff'; ctx.fillRect(-r*0.4,-r*0.2,r*0.8,r*0.16);
+    ctx.fillStyle='#9af6ff'; ctx.beginPath();                        // 번개
+    ctx.moveTo(r*0.04,-r*0.62); ctx.lineTo(-r*0.22,r*0.02); ctx.lineTo(-r*0.02,r*0.02); ctx.lineTo(-r*0.16,r*0.6); ctx.lineTo(r*0.26,-r*0.12); ctx.lineTo(r*0.04,-r*0.12); ctx.closePath();
+    ctx.fill(); ctx.lineWidth=1.5; ctx.strokeStyle='#eafdff'; ctx.stroke();
+  },
+  apple:(r)=>{ // 사과 — 빨간 사과 + 잎사귀
+    circle(-r*0.28,r*0.08,r*0.6,'#ff4d6d','#a01230');               // 왼쪽 덩이
+    circle(r*0.28,r*0.08,r*0.6,'#ff4d6d','#a01230');                // 오른쪽 덩이
+    circle(0,r*0.12,r*0.66,'#ff5d7a','#a01230');                    // 중앙 본체
+    ctx.fillStyle='#5a3a26'; ctx.fillRect(-r*0.06,-r*0.78,r*0.12,r*0.4); // 꼭지
+    ctx.fillStyle='#4caf50'; ctx.save(); ctx.translate(r*0.22,-r*0.6); ctx.rotate(0.5); // 잎
+    ctx.beginPath(); ctx.ellipse(0,0,r*0.34,r*0.16,0,0,TAU); ctx.fill(); ctx.lineWidth=1.5; ctx.strokeStyle='#2f7d33'; ctx.stroke(); ctx.restore();
+    ctx.fillStyle='rgba(255,255,255,0.5)'; circle(-r*0.3,-r*0.18,r*0.14,'rgba(255,255,255,0.5)',false); // 하이라이트
+  },
   yanggaeng:(r,e)=>{
     // 박제인간 — 레코드판 (회전 애니)
     const en=e&&e.enr;
@@ -9524,7 +9642,12 @@ function dbEnemyDesc(d,id){
     hoonsangtae:'식칼을 던지는 1막 후반의 강한 시청자.',
     jaemin:'부메랑을 던져 왕복으로 공격하는 1막 후반 몹.',
     sniper_viewer:'조준선 후 강력한 저격을 발사하는 우선 처치 대상.',
-    stream_watcher:'플레이어의 움직임을 방해하는 속박형 시청자.'
+    stream_watcher:'플레이어의 움직임을 방해하는 속박형 시청자.',
+    ketter:'실탄과 둔화 장판으로 이동을 방해하는 2막 일반몹.',
+    blackstar:'중력장과 원형 탄막으로 공간을 압박하는 2막 어려운 적.',
+    killjoy:'전기 레이저를 예고 후 발사하는 고기동 원거리 적.',
+    apple:'플레이어 위치에 낙과 폭탄을 떨어뜨리는 장판형 적.',
+    pobear:'점프 강타와 반동 재돌진을 사용하는 2막 브루저.'
   };
   if(special[id]) return special[id];
   const ai={chase:'추적',shooter:'원거리',orbit:'궤도 사격',charge:'돌진',erratic:'변칙 이동',cleaver_thrower:'식칼 투척',boomerang_thrower:'부메랑',sniper_laser:'저격',movement_lock:'이동 봉쇄',egg:'부화체',hyechul:'중간보스',bagjein:'중간보스',kkotchung:'정예 패턴'}[d.ai]||d.ai||'일반';
@@ -9534,6 +9657,8 @@ function dbEnemyGrade(id){
   if(id==='hyechul'||id==='yanggaeng') return '중간보스';
   if(DB_EXTRA_ENEMY_IDS.indexOf(id)>=0) return id==='zerg_egg'?'소환체':'소환 적';
   if(ACT_POOLS.some(pool=>(pool.elite||[]).indexOf(id)>=0)) return '정예';
+  if(ACT2_LATE_ENEMY_IDS.indexOf(id)>=0) return '어려운 적';
+  if(ACT1_LATE_ENEMY_IDS.indexOf(id)>=0) return '강한 적';
   return '일반';
 }
 function databaseRows(){
