@@ -197,6 +197,10 @@
     border:2px solid #38e8ff66;
     box-shadow:0 4px 0 #07040d,0 0 18px rgba(56,232,255,.18);
   }
+  #ovEnd .panel-box{
+    max-height:92vh;
+    overflow-y:auto;
+  }
   .score-label{
     color:var(--neon);
     font-size:11px;
@@ -208,6 +212,74 @@
     font-size:30px;
     font-weight:900;
     text-shadow:0 0 14px rgba(255,211,77,.45);
+  }
+  .score-guide{
+    margin-top:9px;
+    text-align:left;
+  }
+  .score-guide-toggle{
+    width:100%;
+    min-height:30px;
+    padding:7px 9px;
+    background:#181229;
+    border:2px solid #4b75aa;
+    color:#8be8ff;
+    font-family:inherit;
+    font-size:11px;
+    font-weight:900;
+    letter-spacing:1px;
+    cursor:pointer;
+    box-shadow:0 3px 0 #07040d;
+  }
+  .score-guide-toggle:hover,
+  .score-guide-toggle:focus-visible{
+    border-color:#8be8ff;
+    outline:none;
+    box-shadow:0 3px 0 #07040d,0 0 12px rgba(139,232,255,.24);
+  }
+  .score-guide-body{
+    margin-top:8px;
+    max-height:30vh;
+    overflow:auto;
+    padding:10px;
+    background:#080d1e;
+    border:2px solid rgba(139,232,255,.35);
+    color:#d8ebff;
+    font-size:10.5px;
+    line-height:1.55;
+    box-shadow:inset 0 0 0 2px rgba(255,255,255,.03);
+  }
+  .score-guide-body.hidden{display:none;}
+  .score-guide-section+.score-guide-section{
+    margin-top:10px;
+    padding-top:9px;
+    border-top:1px solid rgba(139,232,255,.22);
+  }
+  .score-guide-title{
+    color:#ffd34d;
+    font-size:11px;
+    font-weight:900;
+    letter-spacing:1px;
+    margin-bottom:5px;
+  }
+  .score-guide-line{
+    display:flex;
+    justify-content:space-between;
+    gap:8px;
+    padding:2px 0;
+  }
+  .score-guide-line span:first-child{color:#b9d4f2;}
+  .score-guide-line b{color:#fff;text-align:right;}
+  .score-guide-line.penalty b{color:#ff748b;}
+  .score-guide-line.total{
+    margin-top:5px;
+    padding-top:6px;
+    border-top:1px dashed rgba(255,211,77,.35);
+  }
+  .score-guide-line.total b{color:#ffd34d;}
+  .score-guide-note{
+    color:#9db5d8;
+    margin:3px 0 0;
   }
   .score-save{
     margin-top:4px;
@@ -644,6 +716,9 @@
   .db-row small{display:block;margin-top:5px;color:#ffd34d;font-size:11px;}
   .db-empty{padding:22px 12px;color:#9db5d8;text-align:center;border:2px dashed #304c7c;background:#0d1530;}
   @media (max-width:560px){
+    #ovEnd .panel-box{padding:16px 12px;max-height:94vh;}
+    .score-card{max-width:100%;padding:10px 11px;}
+    .score-guide-body{max-height:28vh;font-size:10px;}
     #achievementToast{top:10px;padding:10px 12px;}
     .ach-toast-title{font-size:12px;}
     .ach-toast-name{font-size:14px;}
