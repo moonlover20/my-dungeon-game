@@ -695,6 +695,11 @@ function relicCardHTML(r){
 // ===== JS: Input handling and runtime state =====
 const keys={};
 let mouseX=W/2, mouseY=H/2, mouseDown=false;
+function clearInputState(){
+  Object.keys(keys).forEach(k=>{ delete keys[k]; });
+  mouseDown=false;
+  autoFire=false;
+}
 function isOpen(id){
   const el=$(id);
   return !!(el && !el.classList.contains('hidden'));
@@ -1241,11 +1246,21 @@ function healPlayer(amount,x,y){
 function relicAttackPower(mult){
   return Math.max(1,((player.dmg+(player.potionAtkFlat||0))*currentAttackMul())*(mult||1));
 }
+function isKkotMain(e){
+  return !!(e&&e.type==='kkotchung'&&!e.clone);
+}
+function handleEnemyDefeat(e){
+  if(!e||!enemies.includes(e)) return false;
+  if(e.type==='hyechul'&&(e.phase||1)<3){ hyechulNextPhase(e); return true; }
+  if(isKkotMain(e)&&(e.phase||1)<3){ kkotNextPhase(e); return true; }
+  killEnemy(e);
+  return true;
+}
 function applyEnemyDirectDamage(o,dmg,color,opts){
   if(!o) return;
   o.hp-=dmg*(1-(o.armor||0)); o.hitT=0.1; burst(o.x,o.y,color||'#7ad7ff',7,170);
   if(opts&&opts.chainKill) o._chainKillSource=true;
-  if(o.hp<=0){ if(o.type==='hyechul'&&(o.phase||1)<3) hyechulNextPhase(o); else if(o.type==='kkotchung'&&(o.phase||1)<3) kkotNextPhase(o); else killEnemy(o); }
+  if(o.hp<=0) handleEnemyDefeat(o);
 }
 function intentDamage(e,dmg){
   return dmg*((e&&e.atkBuffT>0)?1.2:1)*((e&&e.intentDmgMul)||1);
@@ -1324,6 +1339,7 @@ function updateIntentPatterns(e,dt){
   }else if(e.type==='rhino_beetle'&&cd('_intentChargeCd',7.5)){
     setIntent(e,'⚔','돌진',1,()=>{ const a=Math.atan2(player.y-e.y,player.x-e.x); e.cs='dash'; e.csT=0.72; e.aimX=Math.cos(a); e.aimY=Math.sin(a); e._intentChargeCd=8; });
   }else if(e.type==='kkotchung'){
+    if(e.clone) e._cloneMade=true;
     if(e.hp<=e.maxhp*0.5&&!e._cloneMade){ e._cloneMade=true; setIntent(e,'💀','분신',1.2,()=>{ for(let i=0;i<2;i++){ spawnEnemy('kkotchung',clamp(e.x+rand(-70,70),40,W-40),clamp(e.y+rand(-40,80),80,H-60),0.45); const c=enemies[enemies.length-1]; c.label='분신'; c.clone=true; c.hp=70; c.maxhp=70; c.xp=0; } }); }
     else if(cd('_kkBuffCd',8.5)) setIntent(e,'🔮','광역 버프',1.2,()=>{ enemies.forEach(o=>{ if(o!==e&&dist2(o.x,o.y,e.x,e.y)<210*210){ o.atkBuffT=5; o.coolT*=0.7; } }); e._kkBuffCd=9; });
     else if(cd('_kkLockCd',6.5)) setIntent(e,'👁','고정',1,()=>{ for(let j=0;j<3;j++) setTimeout(()=>{ if(enemies.includes(e)) aimBulletFrom(e,310,10,8,'양갱 고정탄'); },j*120); e._kkLockCd=7; });
@@ -1807,7 +1823,23 @@ async function loadRankingSummaries(api){
   return snap.docs.map(doc=>normalizeRankingRecord(Object.assign({id:doc.id},doc.data())));
 }
 async function saveLegacyRunScore(){
-  throw new Error('Direct client leaderboard writes are disabled. Configure window.LEADERBOARD_SUBMIT_ENDPOINT.');
+  const summary=arguments[0]||{};
+  const build=arguments[1]||null;
+  const api=await ensureLeaderboardApi();
+  const runId=summary.runId||createRunId(api);
+  const createdAt=api.fs.serverTimestamp();
+  const summaryData=Object.assign({},summary,{runId,createdAt});
+  const buildData=build?Object.assign({runId,createdAt},build):null;
+  const legacyData=Object.assign({},summaryData,{
+    title:titleWithEmbeddedBuild(summaryData.title,build),
+    build:build||null
+  });
+  const batch=api.fs.writeBatch(api.db);
+  batch.set(api.fs.doc(api.db,LEADERBOARD_SUMMARY_COLLECTION,runId),summaryData);
+  if(buildData) batch.set(api.fs.doc(api.db,RUN_BUILDS_COLLECTION,runId),buildData);
+  batch.set(api.fs.doc(api.db,leaderboardCollectionFor(summaryData.difficultyKey),runId),legacyData);
+  await batch.commit();
+  return true;
 }
 async function saveRunScore(win,killer,scoreData,name){
   const token=++scoreSubmitSeq;
@@ -1849,12 +1881,8 @@ async function saveRunScore(win,killer,scoreData,name){
       createdAt:new Date().toISOString()
     };
     const build=pendingRunBuildSnapshot||createRunBuildSnapshot(scoreData);
-    if(!getLeaderboardSubmitEndpoint()){
-      if(saveEl) saveEl.textContent='server ranking endpoint missing';
-      console.warn('Remote leaderboard submit disabled: set window.LEADERBOARD_SUBMIT_ENDPOINT to a trusted HTTPS endpoint.');
-      return false;
-    }
-    await submitRunScoreToTrustedEndpoint(summary,build);
+    if(getLeaderboardSubmitEndpoint()) await submitRunScoreToTrustedEndpoint(summary,build);
+    else await saveLegacyRunScore(summary,build);
     rankingBuildCache.set(runId,build);
     if(saveEl) saveEl.textContent='ranking saved';
     return true;
@@ -2405,7 +2433,7 @@ function hurtPlayer(dmg, src){
     return;
   }
   player.hp-=dmg; player.iframes=0.5; hitFlash=0.25; screenShake=Math.max(screenShake,8); combatTookHit=true; runHits++;
-  if(player.thorns>0){ enemies.slice().forEach(o=>{ if(dist2(o.x,o.y,player.x,player.y)<12100){ o.hp-=player.thorns; o.hitT=0.1; if(o.hp<=0){ if(o.type==='hyechul'&&(o.phase||1)<3) hyechulNextPhase(o); else killEnemy(o);} } }); }
+  if(player.thorns>0){ enemies.slice().forEach(o=>{ if(dist2(o.x,o.y,player.x,player.y)<12100){ o.hp-=player.thorns; o.hitT=0.1; if(o.hp<=0) handleEnemyDefeat(o); } }); }
   sfx.hurt();
   if(Math.random()<0.5) chatRandom(pick(["아야 Sadge","왜맞음 KEKW","집중!","체력 ㄷㄷ","구르기!!","발컨 ㅋㅋㅋ"]));
   if(player.hp<=0){
@@ -2556,11 +2584,7 @@ function damageEnemy(e,dmg,crit,fromBullet,bullet){
     if(player.execBlast>0){ burst(e.x,e.y,'#ff5a5a',16,260); enemies.forEach(o=>{ if(o!==e && dist2(o.x,o.y,e.x,e.y)<6400){ o.hp-=player.execBlast; o.hitT=0.1; } }); }
   }
   // 사망 판정: 한 번만 호출되도록 통합
-  if(e.hp<=0){
-    if(e.type==='hyechul'&&(e.phase||1)<3) hyechulNextPhase(e);
-    else if(e.type==='kkotchung'&&(e.phase||1)<3) kkotNextPhase(e);
-    else killEnemy(e);
-  }
+  if(e.hp<=0) handleEnemyDefeat(e);
 }
 function hyechulNextPhase(e){
   e.phase=(e.phase||1)+1;
@@ -2579,7 +2603,7 @@ function hyechulNextPhase(e){
 }
 function kkotNextPhase(e){
   e.phase=(e.phase||1)+1;
-  e.hp=e.maxhp*(e.phase===2?0.66:0.33); e.hitT=0.2; e.stunT=0;
+  e.hp=e.maxhp; e.hitT=0.2; e.stunT=0;
   e.atkT=2.2; e.atkN=0; e.climaxT=0; e.eyeOrbs=[];
   const ph=e.phase;
   const col=ph===2?'#c03060':'#8a0030';
@@ -2593,7 +2617,8 @@ function kkotNextPhase(e){
   cutsceneT=2.4;
   // 페이즈2: 반지름 소폭 증가
   if(ph===2) e.r=Math.min(e.r+3,44);
-  if(ph===3) e.r=Math.min(e.r+4,50); e.spd*=1.25;
+  if(ph===3) e.r=Math.min(e.r+4,50);
+  e.spd*=1.12;
 }
 // 보스가 소환하는 적 — 무한 소환되므로 경험치를 주지 않음(무한 레벨업 방지)
 const SUMMON_TYPES=new Set(['earthworm','zergling','mutalisk','ultra','zerg_egg']);
@@ -2901,7 +2926,7 @@ function updateBossIntentPatterns(b,dt){
   }else if(b.key==='seungwoo'){
     if(b.hp<=b.maxhp*0.25&&!b._overload){ b._overload=true; setIntent(b,'💀','오버로드',1.5,()=>{ b.intentSpeedMul=1.3; banner('💀 오버로드','패턴 속도 증가',1000); }); }
     else if(cd('_sysErrCd',9)) setIntent(b,'📺','시스템 오류',1.5,()=>{ const x=rand(70,W-70), y=rand(100,H-70); setTimeout(()=>intentShockwave(x,y,105,22,'시스템 오류'),2000); GL.frameDrop=Math.max(GL.frameDrop||0,2); b._sysErrCd=9.5; });
-    else if(cd('_deleteCd',7.5)) setIntent(b,'👁','삭제 명령',1.5,()=>{ const a=Math.atan2(player.y-b.y,player.x-b.x); intentLaser(b.x,b.y,a,30,900,26,'삭제 명령','#9146ff'); b._deleteCd=8; });
+    else if(cd('_deleteCd',7.5)) beginSeungwooDeleteCommand(b);
   }else if(b.key==='bear'){
     if(b.hp<=b.maxhp*0.4&&!b._bearRage){ b._bearRage=true; setIntent(b,'💀','분노',1.7,()=>{ b.intentDmgMul=1.3; b.spd*=1.2; banner('💀 분노','공격력과 이동속도 증가',1100); }); }
     else if(cd('_earthCd',7)) setIntent(b,'⚔','대지 강타',2,()=>{ intentShockwave(b.x,b.y,170,28,'대지 강타'); b._earthCd=7.5; });
@@ -3008,12 +3033,12 @@ function killBoss(){
 // ===================== 승우 (글리치 최종보스) =====================
 const GL={mirror:0,keyRev:0,frameDrop:0,rotActive:0,shield:0,blackout:0};
 const gView={rot:0,rotT:0,fx:1,fy:1,fxT:1,fyT:1};
-let gZones=[], gWalls=[], gClones=[], gGrav=null, gTrack=null, gSlow=[];
+let gZones=[], gWalls=[], gClones=[], gGrav=null, gTrack=null, gSlow=[], seungwooLaserWarns=[];
 let gFakeReset=false, gResetT=0;
 
 function clearSeungwooFx(){
   for(const k in GL)GL[k]=0;
-  gZones=[];gWalls=[];gClones=[];gGrav=null;gTrack=null;gSlow=[];
+  gZones=[];gWalls=[];gClones=[];gGrav=null;gTrack=null;gSlow=[];seungwooLaserWarns=[];
   gFakeReset=false;gResetT=0;
   gView.rot=0;gView.rotT=0;gView.fx=1;gView.fy=1;gView.fxT=1;gView.fyT=1;
   timeScale=1;
@@ -3069,6 +3094,18 @@ function gp_rotate(b){ const m=irand(0,2); if(m===0)gView.rotT=Math.PI/2*(Math.r
 function gp_crashRain(b){ GL.frameDrop=Math.max(GL.frameDrop||0,3.8); const n=b.enraged?34:26; for(let i=0;i<n;i++) gShot(rand(20,W-20),-14,Math.PI/2+rand(-0.08,0.08),rand(230,315),rand(6,9),9); banner('▒ 데이터 폭우','위에서 쏟아진다',850); }
 function gp_tongueRush(b){ const pa=Math.atan2(player.y-b.y,player.x-b.x); for(let i=-2;i<=2;i++) gShot(b.x,b.y,pa+i*0.12,300,12,12,0.4); gRing(b,b.enraged?18:14,155,8); banner('혀 내밀기','정면을 비워라',850); }
 function gp_totalCollapse(b){ GL.blackout=Math.max(GL.blackout||0,0.45); gView.rotT+=rand(-0.45,0.45); gView.fxT=Math.random()<0.5?-1:1; GL.rotActive=4.2; gHoming(b); gRing(b,b.enraged?18:14,170,9); banner('TOTAL COLLAPSE','방송이 찢어진다',950); }
+function beginSeungwooDeleteCommand(b){
+  const warn=1.5;
+  const beam={x:b.x,y:b.y,ang:Math.atan2(player.y-b.y,player.x-b.x),width:30,range:900,t:0,warn,color:'#9146ff',fired:false};
+  const ok=setIntent(b,'👁','삭제 명령',warn,()=>{
+    beam.fired=true;
+    beam.t=Math.max(beam.t,beam.warn);
+    intentLaser(beam.x,beam.y,beam.ang,beam.width,beam.range,26,'삭제 명령',beam.color);
+    b._deleteCd=8;
+  });
+  if(ok) seungwooLaserWarns.push(beam);
+  return ok;
+}
 
 const GP1=[gp_straight,gp_blacksafe,gp_straight,gp_slow,gp_straight,gp_track];
 const GP2=[gp_mirror,gp_homing,gp_framedrop,gp_gravity,gp_walls,gp_fakesafe,gp_clones,gp_rotate];
@@ -3106,6 +3143,8 @@ function seungwooNextPhase(b){
 function updateSeungwoo(b,dt){
   if(b.gphase===undefined){ b.gphase=1; b.patI=0; b.attackT=1.6; b.moveT=0; b.tx=b.x; b.ty=b.y; b.usedReset=false; clearSeungwooFx(); }
   b.phaseT+=dt; b.angle+=dt*1.3; if(b.hitT>0)b.hitT-=dt;
+  for(const w of seungwooLaserWarns) w.t+=dt;
+  seungwooLaserWarns=seungwooLaserWarns.filter(w=>w.t<w.warn+0.32);
 
   // 글리치 타이머
   for(const k of ['mirror','keyRev','frameDrop','rotActive','shield']) if(GL[k]>0)GL[k]-=dt;
@@ -3164,6 +3203,23 @@ function updateSeungwoo(b,dt){
 
 // --- 승우 월드 렌더 (좌표 변환 안에서 호출) ---
 function drawSeungwooWorld(){
+  for(const w of seungwooLaserWarns){
+    const k=clamp(w.t/w.warn,0,1);
+    const fade=w.t<=w.warn?1:clamp(1-(w.t-w.warn)/0.32,0,1);
+    const sx=w.x, sy=w.y, ex=w.x+Math.cos(w.ang)*w.range, ey=w.y+Math.sin(w.ang)*w.range;
+    const nx=-Math.sin(w.ang), ny=Math.cos(w.ang), half=w.width;
+    const pulse=0.55+0.45*Math.sin(performance.now()/55);
+    ctx.save();
+    ctx.globalAlpha=fade;
+    ctx.fillStyle='rgba(145,70,255,'+(0.08+0.18*k)+')';
+    ctx.beginPath();
+    ctx.moveTo(sx+nx*half,sy+ny*half); ctx.lineTo(ex+nx*half,ey+ny*half); ctx.lineTo(ex-nx*half,ey-ny*half); ctx.lineTo(sx-nx*half,sy-ny*half);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle='rgba(56,232,255,'+(0.55+0.35*pulse)+')';
+    ctx.lineWidth=2+3*k; ctx.beginPath(); ctx.moveTo(sx,sy); ctx.lineTo(ex,ey); ctx.stroke();
+    if(w.t>=w.warn){ ctx.strokeStyle='#ffffff'; ctx.lineWidth=8; ctx.globalAlpha=0.45*fade; ctx.beginPath(); ctx.moveTo(sx,sy); ctx.lineTo(ex,ey); ctx.stroke(); }
+    ctx.restore();
+  }
   if(gGrav){ const g=ctx.createRadialGradient(gGrav.x,gGrav.y,4,gGrav.x,gGrav.y,gGrav.r); g.addColorStop(0,'rgba(0,0,0,0.8)'); g.addColorStop(0.5,'rgba(145,70,255,0.22)'); g.addColorStop(1,'rgba(145,70,255,0)'); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(gGrav.x,gGrav.y,gGrav.r,0,TAU); ctx.fill(); ctx.strokeStyle='#9146ff'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(gGrav.x,gGrav.y,18+Math.sin(performance.now()/120)*4,0,TAU); ctx.stroke(); }
   for(const f of gSlow){ ctx.fillStyle='rgba(56,232,255,0.10)'; ctx.strokeStyle='rgba(56,232,255,0.5)'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(f.x,f.y,f.r,0,TAU); ctx.fill(); ctx.stroke(); }
   if(gTrack){ ctx.fillStyle='rgba(255,77,109,0.16)'; ctx.strokeStyle='rgba(255,77,109,0.7)'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(gTrack.x,gTrack.y,gTrack.r,0,TAU); ctx.fill(); ctx.stroke(); }
@@ -3248,7 +3304,7 @@ function update(dt){
     if(player.perfectDodge){ player.perfectDodgeArmed=true; player.perfectDodgeCheckT=1; }
     if(player.shadowBarrage&&player.shadowBarrageCd<=0){ player.shadowBarrageT=1; player.shadowBarrageCd=6; }
     if(player.dodgeHaste) player.buffs.haste=Math.max(player.buffs.haste,2.5);
-    if(player.dodgeBlast>0){ enemies.slice().forEach(o=>{ if(dist2(o.x,o.y,player.x,player.y)<38025){ o.hp-=player.dodgeBlast; o.hitT=0.1; const ka=Math.atan2(o.y-player.y,o.x-player.x); o.x+=Math.cos(ka)*69; o.y+=Math.sin(ka)*69; if(o.hp<=0){ if(o.type==='hyechul'&&(o.phase||1)<3) hyechulNextPhase(o); else killEnemy(o);} } }); burst(player.x,player.y,'#38e8ff',22,280); screenShake=Math.max(screenShake,8); }
+    if(player.dodgeBlast>0){ enemies.slice().forEach(o=>{ if(dist2(o.x,o.y,player.x,player.y)<38025){ o.hp-=player.dodgeBlast; o.hitT=0.1; const ka=Math.atan2(o.y-player.y,o.x-player.x); o.x+=Math.cos(ka)*69; o.y+=Math.sin(ka)*69; if(o.hp<=0) handleEnemyDefeat(o); } }); burst(player.x,player.y,'#38e8ff',22,280); screenShake=Math.max(screenShake,8); }
     let mvx=(keys['d']||keys['arrowright']?1:0)-(keys['a']||keys['arrowleft']?1:0);
     let mvy=(keys['s']||keys['arrowdown']?1:0)-(keys['w']||keys['arrowup']?1:0);
     if(typeof GL!=='undefined'&&GL.keyRev>0){ mvx=-mvx; mvy=-mvy; }
@@ -3337,9 +3393,9 @@ function update(dt){
     updateIntentPatterns(e,dt);
     if(e._spd0==null) e._spd0=e.spd;
     const _chl=(e.chillT=(e.chillT||0))>0; if(_chl) e.chillT-=dt; e.spd=_chl? e._spd0*0.5 : e._spd0;
-    if((e.burnT=(e.burnT||0))>0){ e.burnT-=dt; const bdmg=(e.burnDmg||0)*dt; e.hp-=bdmg; e.hitT=Math.max(e.hitT,0.04); e._burnPopT=(e._burnPopT||0)-dt; if(e._burnPopT<=0){ e._burnPopT=0.35; if(GS.dmgNum&&typeof spawnDmgNum==='function') spawnDmgNum(e.x,e.y-e.r-4,Math.max(1,Math.round((e.burnDmg||0)*0.35)),false,'burn'); } if(e.hp<=0){ if(e.type==='hyechul'&&(e.phase||1)<3) hyechulNextPhase(e); else if(e.type==='kkotchung'&&(e.phase||1)<3) kkotNextPhase(e); else killEnemy(e); continue; } }
+    if((e.burnT=(e.burnT||0))>0){ e.burnT-=dt; const bdmg=(e.burnDmg||0)*dt; e.hp-=bdmg; e.hitT=Math.max(e.hitT,0.04); e._burnPopT=(e._burnPopT||0)-dt; if(e._burnPopT<=0){ e._burnPopT=0.35; if(GS.dmgNum&&typeof spawnDmgNum==='function') spawnDmgNum(e.x,e.y-e.r-4,Math.max(1,Math.round((e.burnDmg||0)*0.35)),false,'burn'); } if(e.hp<=0){ handleEnemyDefeat(e); continue; } }
     else { e._burnPopT=0; }
-    if((e.psT=(e.psT||0))>0){ e.psT-=dt; const pdmg=(e.psStacks||0)*(e.psDmg||0)*dt; e.hp-=pdmg; e.hitT=Math.max(e.hitT,0.04); e._psPopT=(e._psPopT||0)-dt; if(e._psPopT<=0){ e._psPopT=0.35; if(GS.dmgNum&&typeof spawnDmgNum==='function') spawnDmgNum(e.x,e.y-e.r-4,Math.max(1,Math.round((e.psStacks||0)*(e.psDmg||0)*0.35)),false,'poison'); } if(e.hp<=0){ if(e.type==='hyechul'&&(e.phase||1)<3) hyechulNextPhase(e); else if(e.type==='kkotchung'&&(e.phase||1)<3) kkotNextPhase(e); else killEnemy(e); continue; } } else { e.psStacks=0; e._psPopT=0; }
+    if((e.psT=(e.psT||0))>0){ e.psT-=dt; const pdmg=(e.psStacks||0)*(e.psDmg||0)*dt; e.hp-=pdmg; e.hitT=Math.max(e.hitT,0.04); e._psPopT=(e._psPopT||0)-dt; if(e._psPopT<=0){ e._psPopT=0.35; if(GS.dmgNum&&typeof spawnDmgNum==='function') spawnDmgNum(e.x,e.y-e.r-4,Math.max(1,Math.round((e.psStacks||0)*(e.psDmg||0)*0.35)),false,'poison'); } if(e.hp<=0){ handleEnemyDefeat(e); continue; } } else { e.psStacks=0; e._psPopT=0; }
     const a=Math.atan2(player.y-e.y,player.x-e.x);
     const d=Math.hypot(player.x-e.x,player.y-e.y);
     if((e.stunT=(e.stunT||0))>0){ e.stunT-=dt; }
@@ -3658,10 +3714,6 @@ function update(dt){
       // === 양갱: 3페이즈 엘리트 ===
       const ph=e.phase||1;
       e.wob+=dt*2.2;
-
-      // 페이즈 전환 체크 (HP 기준)
-      if(ph===1 && e.hp<=e.maxhp*0.66){ kkotNextPhase(e); return; }
-      if(ph===2 && e.hp<=e.maxhp*0.33){ kkotNextPhase(e); return; }
 
       // 이동: 페이즈별 거리 유지
       const kkWant=ph===1?230:ph===2?180:130;
@@ -7102,6 +7154,23 @@ function drawBossEvolve(){
 function drawEliteBar(e){
   const bw=420, bh=14, bx=(W-bw)/2, by=20;
   ctx.save();
+  if(isKkotMain(e)){
+    const phase=clamp(e.phase||1,1,3);
+    const gap=4, rowH=10, totalH=rowH*3+gap*2;
+    ctx.fillStyle='rgba(0,0,0,0.58)'; ctx.fillRect(bx-4,by-4,bw+8,totalH+8);
+    for(let i=1;i<=3;i++){
+      const y=by+(i-1)*(rowH+gap);
+      const fill=i<phase?0:(i===phase?clamp(e.hp/e.maxhp,0,1):1);
+      ctx.fillStyle='#2a1414'; ctx.fillRect(bx,y,bw,rowH);
+      const grad=ctx.createLinearGradient(bx,0,bx+bw,0); grad.addColorStop(0,i===3?'#8a0030':'#ff3b70'); grad.addColorStop(1,i===3?'#ff2060':'#ffb0d0');
+      ctx.fillStyle=grad; ctx.fillRect(bx,y,bw*fill,rowH);
+      ctx.strokeStyle=i===phase?'#ffb0d0':'#7a264a'; ctx.lineWidth=1.5; ctx.strokeRect(bx,y,bw,rowH);
+    }
+    ctx.fillStyle='#fff'; ctx.font='bold 12px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('🍯 양갱 ['+phase+'/3]', W/2, by-8);
+    ctx.textAlign='left'; ctx.restore();
+    return;
+  }
   ctx.fillStyle='rgba(0,0,0,0.55)'; ctx.fillRect(bx-4,by-4,bw+8,bh+8);
   ctx.fillStyle='#2a1414'; ctx.fillRect(bx,by,bw,bh);
   const f=clamp(e.hp/e.maxhp,0,1);
@@ -8528,7 +8597,9 @@ function autoPauseCheck(){
   if(GS.autoPause && state==='play' && !paused && document.hidden){ if(typeof togglePause==='function') togglePause(); }
 }
 document.addEventListener('visibilitychange',autoPauseCheck);
-window.addEventListener('blur',()=>{ if(GS.autoPause && state==='play' && !paused){ if(typeof togglePause==='function') togglePause(); } });
+window.addEventListener('blur',()=>{
+  clearInputState();
+});
 
 // 시작 시 저장된 설정 적용
 applySettings(); reflectControls();
