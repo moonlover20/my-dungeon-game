@@ -425,6 +425,12 @@
     color:#eaf8ff;
     font-size:11px;
     line-height:1.35;
+    cursor:help;
+    transition:filter .12s ease, transform .12s ease;
+  }
+  .rank-build-pill:hover{
+    filter:brightness(1.12);
+    transform:translateY(-1px);
   }
   .rank-build-pill img{
     width:16px;
