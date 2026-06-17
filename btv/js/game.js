@@ -546,6 +546,21 @@ const RELICS=[
   {id:"kijo_mask",name:"키죠의 가면",icon:"🎭",desc:"보스 피해 +35%. 받는 피해 +5%.",cls:"boon",apply:p=>{p.bossDmgMul*=1.35;p.armor-=0.05;}},
   {id:"viewer_slayer_mic",name:"시청자 학살자의 마이크",icon:"🎤",desc:"처치 시 6% 확률 폭발(피해 18, 내부쿨 0.15초).",cls:"boon",apply:p=>{p.killBurstChance+=0.06;p.killBurstDmg+=18;}},
   {id:"abstinence_chalice",name:"금욕의 성배",icon:"🏆",desc:"포션 0개 보유 시 공격력 +18%.",cls:"boon",apply:p=>{p.noPotionDmgMul*=1.18;}},
+  {id:"chat_window_grinder",name:"채팅창 분쇄기",icon:"🧾",desc:"처치 폭발 확률 +7%, 폭발 피해 +20.",cls:"boon",apply:p=>{p.killBurstChance+=0.07;p.killBurstDmg+=20;}},
+  {id:"hyechul_egg",name:"혜철이의 알",icon:"🥚",desc:"방 입장 시 체력 4 회복. 최대 체력 +10.",cls:"boon",apply:p=>{p.maxhp+=10;p.hp+=10;p.roomEntryHeal+=4;}},
+  {id:"yanggaeng_black_thread",name:"박제인의 검은 실",icon:"🧵",desc:"상태이상 걸린 적에게 피해 +18%.",cls:"boon",apply:p=>{p.statusDmgMul+=0.18;}},
+  {id:"seungwoo_broken_monitor",name:"승우의 깨진 모니터",icon:"📺",desc:"공격력 +15%, 치명타 확률 +8%.",cls:"boon",apply:p=>{p.dmgAdd+=0.15;p.critChance+=0.08;}},
+  {id:"moving_afterimage",name:"무빙의 잔상",icon:"💨",desc:"이동 속도 +12%, 베인Q 쿨다운 -15%.",cls:"boon",apply:p=>{p.spd*=1.12;p.dodgeCdMul*=0.85;}},
+  {id:"clutch_heart",name:"딸피의 심장",icon:"🫀",desc:"체력 30% 이하일 때 공격력 +28%. 최대 체력 +8.",cls:"boon",apply:p=>{p.lowHpMul+=0.28;p.maxhp+=8;p.hp+=8;}},
+  {id:"clip_dodge_instinct",name:"클립각 회피본능",icon:"🎬",desc:"베인Q 쿨다운 -20%. Q 직후 무적 시간이 조금 증가.",cls:"boon",apply:p=>{p.dodgeCdMul*=0.8;p.dodgeIframeBonus+=0.12;}},
+  {id:"collector_showcase",name:"수집가의 진열장",icon:"🗃️",desc:"공격력 +15%, 골드 획득 +20%.",cls:"boon",apply:p=>{p.dmgAdd+=0.15;p.goldMul*=1.2;}},
+  {id:"mythic_vault",name:"신화 보관함",icon:"🧰",desc:"치명타 확률 +12%, 치명타 피해 +40%.",cls:"boon",apply:p=>{p.critChance+=0.12;p.critMult+=0.4;}},
+  {id:"curse_crown",name:"저주의 왕관",icon:"👑",desc:"공격력 +30%. 받는 피해 +10%.",cls:"curse",apply:p=>{p.dmgAdd+=0.30;p.armor-=0.1;}},
+  {id:"direction_compass",name:"방향성 나침반",icon:"🧭",desc:"경험치 획득 +25%, 이동 속도 +8%.",cls:"boon",apply:p=>{p.xpMul*=1.25;p.spd*=1.08;}},
+  {id:"whale_card",name:"큰손 카드",icon:"💳",desc:"상점 가격 -18%, 골드 획득 +15%.",cls:"boon",apply:p=>{p.shopCostMul*=0.82;p.goldMul*=1.15;}},
+  {id:"no_spend_wallet",name:"무소비의 지갑",icon:"👛",desc:"골드 획득 +35%. 상점 가격 +10%.",cls:"boon",apply:p=>{p.goldMul*=1.35;p.shopCostMul*=1.1;}},
+  {id:"hardcore_transmitter",name:"하드코어 송출기",icon:"📡",desc:"보스 피해 +20%, 공격력 +8%.",cls:"boon",apply:p=>{p.bossDmgMul*=1.20;p.dmgAdd+=0.08;}},
+  {id:"nohit_wings",name:"무피격의 날개",icon:"🪽",desc:"이동 속도 +15%, 베인Q 쿨다운 -12%.",cls:"boon",apply:p=>{p.spd*=1.15;p.dodgeCdMul*=0.88;}},
   {id:"lightning_bottle",name:"번개의 병",icon:"⚡",desc:"적 처치 시 가장 가까운 적에게 공격력의 80% 체인 번개.",cls:"boon",apply:p=>{p.chainKillLightning+=0.8;}},
   {id:"bizarre_mask",name:"기괴한 가면",icon:"🎭",desc:"공격력 +35%. 최대 체력 -20%.",cls:"boon",apply:p=>{p.dmgAdd+=0.35;p.maxhp=Math.max(1,Math.round(p.maxhp*0.8));p.hp=Math.min(p.hp,p.maxhp);}},
   {id:"blood_chalice",name:"피의 성배",icon:"🩸",desc:"최대 체력 +25%. 방 클리어 시 체력 5 회복.",cls:"boon",apply:p=>{p.maxhp=Math.round(p.maxhp*1.25);p.hp=Math.min(p.maxhp,p.hp+Math.round(p.maxhp*0.2));p.roomClearHeal+=5;}},
@@ -589,9 +604,9 @@ const TIERS={
 };
 const _COMMON=['bread','ricochet','back_gun','magnet','potion_belt','vampire','gold_pig','xp_book'];
 const _RARE=['adrenaline','roll_master','sneaker','front_shield','giant_magnet','glass_legs','turtle','greed','slippery','speed_bullet','old_boots','strange_mushroom','hunters_eye','med_kit','blood_thirst'];
-const _EPIC=['coupon','sniper','heavy_cal','bignuke','crit_glasses','clover','chain_bomb','iron_skin','vampire_fang','nature_bless','super_bouncy','berserk','heavy_ammo','hair_trigger','recoil','cheat','thin_glass','time_bomb','gamble','cursed_mask','giant_slayer','comeback'];
-const _LEGEND=['fork','redbull','long_skewer','crit_hammer','stun_bell','all_in','kijo_mask','viewer_slayer_mic','abstinence_chalice','guardian_shield','greed_ring','explosive_rounds','time_warp','demon_contract','death_oath'];
-const _MYTHIC=['harpoon','homing_eye','one_shot','glass','lightning_bottle','bizarre_mask','blood_chalice','void_heart'];
+const _EPIC=['coupon','sniper','heavy_cal','bignuke','crit_glasses','clover','chain_bomb','iron_skin','vampire_fang','nature_bless','super_bouncy','berserk','heavy_ammo','hair_trigger','recoil','cheat','thin_glass','time_bomb','gamble','cursed_mask','giant_slayer','comeback','hyechul_egg','moving_afterimage','clutch_heart','direction_compass','whale_card','no_spend_wallet'];
+const _LEGEND=['fork','redbull','long_skewer','crit_hammer','stun_bell','all_in','kijo_mask','viewer_slayer_mic','abstinence_chalice','chat_window_grinder','yanggaeng_black_thread','seungwoo_broken_monitor','clip_dodge_instinct','collector_showcase','hardcore_transmitter','nohit_wings','guardian_shield','greed_ring','explosive_rounds','time_warp','demon_contract','death_oath'];
+const _MYTHIC=['harpoon','homing_eye','one_shot','glass','mythic_vault','curse_crown','lightning_bottle','bizarre_mask','blood_chalice','void_heart'];
 const TIER_OF={};
 RELICS.forEach(r=>{ TIER_OF[r.id]=_MYTHIC.includes(r.id)?'mythic':_LEGEND.includes(r.id)?'legend':_EPIC.includes(r.id)?'epic':_RARE.includes(r.id)?'rare':_COMMON.includes(r.id)?'common':'rare'; });
 function relicTier(r){ return TIERS[TIER_OF[r.id]||'rare']; }
@@ -806,19 +821,73 @@ let leaderboardSplitReadDenied=false;
 let leaderboardSplitWriteDenied=false;
 const USER_PROGRESS_COLLECTION='user_progress';
 const USER_PROGRESS_LOCAL_KEY='btvUserProgressBackup';
-const ACHIEVEMENT_RELIC_IDS=['kijo_mask','viewer_slayer_mic','abstinence_chalice'];
-const ACHIEVEMENTS=[
-  {id:'first_play',name:'첫 방송',desc:'처음 게임을 시작한다.',reward:'칭호: 첫방송'},
-  {id:'first_kill',name:'첫 처치',desc:'처음으로 시청자를 처치한다.',reward:'칭호: 초보사냥꾼'},
-  {id:'kill_100',name:'100 처치',desc:'누적 처치 100회를 달성한다.',reward:'시작 골드 +100'},
-  {id:'kill_1000',name:'1000 처치',desc:'누적 처치 1000회를 달성한다.',reward:'유물 해금: 시청자 학살자의 마이크'},
-  {id:'defeat_kijo',name:'키죠 격파',desc:'키죠를 쓰러뜨린다.',reward:'유물 해금: 키죠의 가면',spoiler:true,spoilerTerms:['키죠'],hiddenName:'??? 격파',hiddenDesc:'???를 쓰러뜨린다.',hiddenRelicName:'???의 가면'},
-  {id:'clear_act1',name:'1막 클리어',desc:'1막 보스를 격파한다.',reward:'시작 포션 +1'},
-  {id:'clear_game',name:'게임 클리어',desc:'최종 보스를 쓰러뜨리고 방송을 지킨다.',reward:'칭호: 방송생존자'},
-  {id:'hard_clear',name:'어려움 클리어',desc:'어려움 난이도로 게임을 클리어한다.',reward:'업적'},
-  {id:'no_potion_clear',name:'무포션 클리어',desc:'포션을 사용하지 않고 게임을 클리어한다.',reward:'유물 해금: 금욕의 성배'},
-  {id:'no_hit_boss',name:'노히트 보스',desc:'보스 전투를 한 대도 맞지 않고 클리어한다.',reward:'칭호: 노히트장인'},
+const START_BONUS_REWARDS={
+  first_play:'시작 골드 +10',
+  first_kill:'시작 골드 +10',
+  kill_100:'시작 골드 +30',
+  kill_500:'시작 골드 +30',
+  gold_1000:'시작 골드 +30',
+  clear_act1:'시작 포션 +1',
+  clear_act2:'시작 XP +30',
+  level_20:'시작 XP +20',
+  one_hp_survive:'시작 최대 체력 +5',
+  clear_game:'시작 트리포인트 +1'
+};
+const ACHIEVEMENT_RELIC_IDS=[
+  'kijo_mask','viewer_slayer_mic','abstinence_chalice','chat_window_grinder',
+  'hyechul_egg','yanggaeng_black_thread','seungwoo_broken_monitor','moving_afterimage',
+  'clutch_heart','clip_dodge_instinct','collector_showcase','mythic_vault','curse_crown',
+  'direction_compass','whale_card','no_spend_wallet','hardcore_transmitter','nohit_wings'
 ];
+const ACHIEVEMENTS=[
+  {id:'first_play',name:'첫 방송',desc:'처음 게임을 시작한다.',reward:'시작 골드 +10'},
+  {id:'first_kill',name:'첫 처치',desc:'처음으로 시청자를 처치한다.',reward:'시작 골드 +10'},
+  {id:'kill_100',name:'100 처치',desc:'누적 처치 100회를 달성한다.',reward:'시작 골드 +30'},
+  {id:'kill_500',name:'500 처치',desc:'누적 처치 500회를 달성한다.',reward:'시작 골드 +30'},
+  {id:'kill_1000',name:'1000 처치',desc:'누적 처치 1000회를 달성한다.',reward:'유물 해금: 시청자 학살자의 마이크'},
+  {id:'kill_3000',name:'3000 처치',desc:'누적 처치 3000회를 달성한다.',reward:'유물 해금: 채팅창 분쇄기'},
+  {id:'defeat_kijo',name:'키죠 격파',desc:'키죠를 쓰러뜨린다.',reward:'유물 해금: 키죠의 가면',spoiler:true,spoilerTerms:['키죠'],hiddenName:'??? 격파',hiddenDesc:'???를 쓰러뜨린다.',hiddenRelicName:'???의 가면'},
+  {id:'defeat_hyechul',name:'혜철이 격파',desc:'혜철이를 쓰러뜨린다.',reward:'유물 해금: 혜철이의 알',spoiler:true,spoilerTerms:['혜철이'],hiddenName:'??? 격파',hiddenDesc:'???를 쓰러뜨린다.',hiddenRelicName:'???의 알'},
+  {id:'defeat_yanggaeng',name:'박제인간 격파',desc:'박제인간을 쓰러뜨린다.',reward:'유물 해금: 박제인의 검은 실',spoiler:true,spoilerTerms:['박제인간','박제인'],hiddenName:'??? 격파',hiddenDesc:'???을 쓰러뜨린다.',hiddenRelicName:'???의 검은 실'},
+  {id:'clear_act1',name:'1막 클리어',desc:'1막 보스를 격파한다.',reward:'시작 포션 +1'},
+  {id:'clear_act2',name:'2막 클리어',desc:'2막 보스를 격파한다.',reward:'시작 XP +30'},
+  {id:'defeat_seungwoo',name:'승우 격파',desc:'승우를 쓰러뜨린다.',reward:'유물 해금: 승우의 깨진 모니터',spoiler:true,spoilerTerms:['승우'],hiddenName:'??? 격파',hiddenDesc:'???를 쓰러뜨린다.',hiddenRelicName:'???의 깨진 모니터'},
+  {id:'clear_game',name:'게임 클리어',desc:'최종 보스를 쓰러뜨리고 방송을 지킨다.',reward:'시작 트리포인트 +1'},
+  {id:'hard_clear',name:'어려움 클리어',desc:'어려움 난이도로 게임을 클리어한다.',reward:'유물 해금: 하드코어 송출기'},
+  {id:'no_potion_clear',name:'무포션 클리어',desc:'포션을 사용하지 않고 게임을 클리어한다.',reward:'유물 해금: 금욕의 성배'},
+  {id:'no_hit_boss',name:'노히트 보스',desc:'보스 전투를 한 대도 맞지 않고 클리어한다.',reward:'유물 해금: 무피격의 날개'},
+  {id:'no_hit_room',name:'무피격 방 클리어',desc:'일반 전투를 한 대도 맞지 않고 클리어한다.',reward:'유물 해금: 무빙의 잔상'},
+  {id:'clutch_room',name:'딸피 클리어',desc:'체력 10% 이하로 방을 클리어한다.',reward:'유물 해금: 딸피의 심장'},
+  {id:'one_hp_survive',name:'1 HP 생존',desc:'체력 1 상태로 생존하거나 방을 클리어한다.',reward:'시작 최대 체력 +5'},
+  {id:'low_hit_clear',name:'클린 클리어',desc:'피격 5회 이하로 게임을 클리어한다.',reward:'유물 해금: 클립각 회피본능'},
+  {id:'relic_10',name:'수집가',desc:'한 런에서 유물 10개를 보유한다.',reward:'유물 해금: 수집가의 진열장'},
+  {id:'mythic_3',name:'신화 보관자',desc:'한 런에서 신화 유물 3개를 보유한다.',reward:'유물 해금: 신화 보관함'},
+  {id:'curse_3_clear',name:'저주받은 클리어',desc:'저주 유물 3개 이상 보유하고 게임을 클리어한다.',reward:'유물 해금: 저주의 왕관'},
+  {id:'first_keystone',name:'첫 키스톤',desc:'패시브 트리 키스톤을 1개 해금한다.',reward:'유물 해금: 방향성 나침반'},
+  {id:'level_20',name:'레벨 20',desc:'한 런에서 20레벨을 달성한다.',reward:'시작 XP +20'},
+  {id:'gold_1000',name:'천 골드',desc:'한 런에서 골드 1000 이상을 보유한다.',reward:'시작 골드 +30'},
+  {id:'shop_spend_1000',name:'큰손',desc:'상점에서 누적 1000G를 사용한다.',reward:'유물 해금: 큰손 카드'},
+  {id:'no_shop_clear',name:'무소비 클리어',desc:'상점 구매 없이 게임을 클리어한다.',reward:'유물 해금: 무소비의 지갑'},
+];
+const ACHIEVEMENT_CATEGORY_ORDER=['progress','kills','bosses','combat','build','economy','clear'];
+const ACHIEVEMENT_CATEGORY_LABELS={
+  progress:'진행',
+  kills:'처치',
+  bosses:'보스',
+  combat:'전투 도전',
+  build:'빌드',
+  economy:'경제',
+  clear:'클리어 도전'
+};
+const ACHIEVEMENT_CATEGORIES={
+  first_play:'progress',first_kill:'progress',clear_act1:'progress',clear_act2:'progress',level_20:'progress',
+  kill_100:'kills',kill_500:'kills',kill_1000:'kills',kill_3000:'kills',
+  defeat_kijo:'bosses',defeat_hyechul:'bosses',defeat_yanggaeng:'bosses',defeat_seungwoo:'bosses',
+  no_hit_boss:'combat',no_hit_room:'combat',clutch_room:'combat',one_hp_survive:'combat',
+  relic_10:'build',mythic_3:'build',curse_3_clear:'build',first_keystone:'build',
+  gold_1000:'economy',shop_spend_1000:'economy',
+  clear_game:'clear',hard_clear:'clear',no_potion_clear:'clear',low_hit_clear:'clear',no_shop_clear:'clear'
+};
 const TITLE_REWARDS={
   first_play:{id:'first_broadcast',name:'첫방송'},
   first_kill:{id:'rookie_hunter',name:'초보사냥꾼'},
@@ -826,14 +895,33 @@ const TITLE_REWARDS={
   no_hit_boss:{id:'nohit_master',name:'노히트장인'}
 };
 const TITLE_LIST=Object.values(TITLE_REWARDS);
-const RELIC_REWARDS={defeat_kijo:'kijo_mask',kill_1000:'viewer_slayer_mic',no_potion_clear:'abstinence_chalice'};
+const RELIC_REWARDS={
+  defeat_kijo:'kijo_mask',
+  kill_1000:'viewer_slayer_mic',
+  no_potion_clear:'abstinence_chalice',
+  kill_3000:'chat_window_grinder',
+  defeat_hyechul:'hyechul_egg',
+  defeat_yanggaeng:'yanggaeng_black_thread',
+  defeat_seungwoo:'seungwoo_broken_monitor',
+  no_hit_room:'moving_afterimage',
+  clutch_room:'clutch_heart',
+  low_hit_clear:'clip_dodge_instinct',
+  relic_10:'collector_showcase',
+  mythic_3:'mythic_vault',
+  curse_3_clear:'curse_crown',
+  first_keystone:'direction_compass',
+  shop_spend_1000:'whale_card',
+  no_shop_clear:'no_spend_wallet',
+  hard_clear:'hardcore_transmitter',
+  no_hit_boss:'nohit_wings'
+};
 let userProgress={
   uid:null,
   achievements:{},
   titles:{},
   unlockedRelics:{},
   selectedTitle:'',
-  stats:{totalKills:0,bestScore:0,playCount:0,bestWave:0},
+  stats:{totalKills:0,totalElites:0,totalBosses:0,bestScore:0,playCount:0,bestWave:0,maxRunGold:0,shopSpendTotal:0,runShopSpent:0},
   loaded:false,
   dirty:false
 };
@@ -866,9 +954,14 @@ function normalizeProgressStats(stats){
   stats=stats||{};
   return {
     totalKills:Number(stats.totalKills)||0,
+    totalElites:Number(stats.totalElites)||0,
+    totalBosses:Number(stats.totalBosses)||0,
     bestScore:Number(stats.bestScore)||0,
     playCount:Number(stats.playCount)||0,
-    bestWave:Number(stats.bestWave)||0
+    bestWave:Number(stats.bestWave)||0,
+    maxRunGold:Number(stats.maxRunGold)||0,
+    shopSpendTotal:Number(stats.shopSpendTotal)||0,
+    runShopSpent:Number(stats.runShopSpent)||0
   };
 }
 function titleById(id){ return TITLE_LIST.find(t=>t.id===id)||null; }
@@ -914,9 +1007,14 @@ function mergeProgress(remote,local){
   remote.stats=normalizeProgressStats(remote.stats);
   local.stats=normalizeProgressStats(local.stats);
   remote.stats.totalKills=Math.max(remote.stats.totalKills,local.stats.totalKills);
+  remote.stats.totalElites=Math.max(remote.stats.totalElites,local.stats.totalElites);
+  remote.stats.totalBosses=Math.max(remote.stats.totalBosses,local.stats.totalBosses);
   remote.stats.bestScore=Math.max(remote.stats.bestScore,local.stats.bestScore);
   remote.stats.playCount=Math.max(remote.stats.playCount,local.stats.playCount);
   remote.stats.bestWave=Math.max(remote.stats.bestWave,local.stats.bestWave);
+  remote.stats.maxRunGold=Math.max(remote.stats.maxRunGold,local.stats.maxRunGold);
+  remote.stats.shopSpendTotal=Math.max(remote.stats.shopSpendTotal,local.stats.shopSpendTotal);
+  remote.stats.runShopSpent=Math.max(remote.stats.runShopSpent,local.stats.runShopSpent);
   remote.loaded=true;
   remote.dirty=!!local.dirty;
   return remote;
@@ -1056,11 +1154,68 @@ function formatAchievementRelicName(relicId,revealed){
 function formatAchievementReward(id,revealed){
   const a=achievementById(id);
   if(!a) return '';
-  if(TITLE_REWARDS[id]) return '칭호 ['+TITLE_REWARDS[id].name+']';
-  if(RELIC_REWARDS[id]) return '유물 ['+formatAchievementRelicName(RELIC_REWARDS[id],revealed)+']';
-  if(!a.reward || a.reward==='업적') return '';
-  if(!revealed && a.spoiler) return maskAchievementSpoilers(a.reward,a);
-  return a.reward;
+  const rewards=[];
+  if(START_BONUS_REWARDS[id]) rewards.push(START_BONUS_REWARDS[id]);
+  if(RELIC_REWARDS[id]) rewards.push('유물 해금: '+formatAchievementRelicName(RELIC_REWARDS[id],revealed));
+  if(TITLE_REWARDS[id]) rewards.push('칭호: '+TITLE_REWARDS[id].name);
+  if(!rewards.length && a.reward && a.reward!=='업적') rewards.push(a.reward);
+  let text=rewards.join(' · ');
+  if(!revealed && a.spoiler) text=maskAchievementSpoilers(text,a);
+  return text;
+}
+function achievementCategory(id){
+  return ACHIEVEMENT_CATEGORIES[id]||'progress';
+}
+function achievementSpoilerHint(id){
+  const cat=achievementCategory(id);
+  if(cat==='bosses') return '힌트: 특정 보스 또는 중간보스를 쓰러뜨리면 열린다.';
+  if(cat==='combat') return '힌트: 전투를 특별한 조건으로 끝내면 열린다.';
+  if(cat==='clear') return '힌트: 클리어 조건을 바꿔 도전하면 열린다.';
+  if(cat==='build') return '힌트: 한 런의 빌드 조건을 만족하면 열린다.';
+  return '힌트: 진행 중 특정 조건을 만족하면 열린다.';
+}
+function achievementRewardKinds(id){
+  const kinds=[];
+  const start=START_BONUS_REWARDS[id]||'';
+  if(start.indexOf('시작 골드')>=0) kinds.push({key:'gold',label:'시작 골드'});
+  if(start.indexOf('시작 XP')>=0) kinds.push({key:'xp',label:'시작 XP'});
+  if(start.indexOf('시작 포션')>=0) kinds.push({key:'potion',label:'시작 포션'});
+  if(start.indexOf('시작 최대 체력')>=0) kinds.push({key:'hp',label:'시작 체력'});
+  if(start.indexOf('트리포인트')>=0) kinds.push({key:'tree',label:'트리포인트'});
+  if(RELIC_REWARDS[id]) kinds.push({key:'relic',label:'유물 해금'});
+  return kinds;
+}
+function rewardBadgeHTML(id){
+  const kinds=achievementRewardKinds(id);
+  if(!kinds.length) return '';
+  return '<div class="ach-reward-badges">'+kinds.map(k=>'<em class="ach-reward-badge '+k.key+'">'+k.label+'</em>').join('')+'</div>';
+}
+function computeStartBonusSummary(){
+  const bonus={gold:0,xp:0,potions:0,maxhp:0,treePoints:0};
+  if(isAchievementUnlocked('first_play')) bonus.gold+=10;
+  if(isAchievementUnlocked('first_kill')) bonus.gold+=10;
+  if(isAchievementUnlocked('kill_100')) bonus.gold+=30;
+  if(isAchievementUnlocked('kill_500')) bonus.gold+=30;
+  if(isAchievementUnlocked('gold_1000')) bonus.gold+=30;
+  if(isAchievementUnlocked('clear_act1')) bonus.potions+=1;
+  if(isAchievementUnlocked('clear_act2')) bonus.xp+=30;
+  if(isAchievementUnlocked('level_20')) bonus.xp+=20;
+  if(isAchievementUnlocked('one_hp_survive')) bonus.maxhp+=5;
+  if(isAchievementUnlocked('clear_game')) bonus.treePoints+=1;
+  return bonus;
+}
+function renderStartBonusSummary(){
+  const el=$('achBonusSummary');
+  if(!el) return;
+  const b=computeStartBonusSummary();
+  const chips=[];
+  if(b.gold) chips.push(['gold','시작 골드 +'+b.gold]);
+  if(b.xp) chips.push(['xp','시작 XP +'+b.xp]);
+  if(b.potions) chips.push(['potion','시작 포션 +'+b.potions]);
+  if(b.maxhp) chips.push(['hp','시작 최대 체력 +'+b.maxhp]);
+  if(b.treePoints) chips.push(['tree','시작 트리포인트 +'+b.treePoints]);
+  el.innerHTML='<div class="ach-bonus-title">현재 적용 중인 시작 보너스</div>'+
+    (chips.length?'<div class="ach-bonus-chips">'+chips.map(c=>'<span class="'+c[0]+'">'+c[1]+'</span>').join('')+'</div>':'<div class="ach-bonus-empty">아직 적용 중인 시작 보너스 없음</div>');
 }
 function playAchievementToastSfx(){
   try{
@@ -1153,6 +1308,41 @@ function unlockAchievement(id){
   saveUserProgress();
   return true;
 }
+function checkKillAchievements(){
+  userProgress.stats=normalizeProgressStats(userProgress&&userProgress.stats);
+  const total=userProgress.stats.totalKills;
+  if(total>=100) unlockAchievement('kill_100');
+  if(total>=500) unlockAchievement('kill_500');
+  if(total>=1000) unlockAchievement('kill_1000');
+  if(total>=3000) unlockAchievement('kill_3000');
+}
+function checkGoldAchievements(){
+  userProgress.stats=normalizeProgressStats(userProgress&&userProgress.stats);
+  if(gold>userProgress.stats.maxRunGold) userProgress.stats.maxRunGold=gold;
+  if(gold>=1000) unlockAchievement('gold_1000');
+}
+function recordShopSpend(amount){
+  userProgress.stats=normalizeProgressStats(userProgress&&userProgress.stats);
+  const spent=Math.max(0,Math.round(Number(amount)||0));
+  userProgress.stats.shopSpendTotal+=spent;
+  userProgress.stats.runShopSpent+=spent;
+  if(userProgress.stats.shopSpendTotal>=1000) unlockAchievement('shop_spend_1000');
+  else saveUserProgress();
+}
+function checkLevelAchievements(){
+  if(level>=20) unlockAchievement('level_20');
+}
+function checkRunRelicAchievements(){
+  const relics=player&&Array.isArray(player.relics)?player.relics:[];
+  if(relics.length>=10) unlockAchievement('relic_10');
+  const mythicCount=relics.filter(r=>(TIER_OF[r.id]||'rare')==='mythic').length;
+  if(mythicCount>=3) unlockAchievement('mythic_3');
+}
+function checkLowHpRoomAchievements(){
+  if(!player||!player.maxhp) return;
+  if(player.hp<=1) unlockAchievement('one_hp_survive');
+  if(player.hp/player.maxhp<=0.1) unlockAchievement('clutch_room');
+}
 function selectTitle(title){
   const titleId=normalizeTitleId(title);
   if(titleId && !(userProgress.titles&&userProgress.titles[titleId])) return;
@@ -1162,8 +1352,13 @@ function selectTitle(title){
   saveUserProgress();
 }
 function applyStartBonuses(){
-  if(isAchievementUnlocked('kill_100')) gold+=100;
-  if(isAchievementUnlocked('clear_act1')) addPotion(rollPotion());
+  const bonus=computeStartBonusSummary();
+  gold+=bonus.gold;
+  for(let i=0;i<bonus.potions;i++) addPotion(rollPotion());
+  if(bonus.xp) gainXP(bonus.xp);
+  if(bonus.maxhp){ player.maxhp+=bonus.maxhp; player.hp+=bonus.maxhp; }
+  treePoints+=bonus.treePoints;
+  updateHUD();
 }
 function recordPlayStarted(){
   userProgress.stats=normalizeProgressStats(userProgress&&userProgress.stats);
@@ -1477,18 +1672,34 @@ function renderAchievements(){
   const rate=Math.round(done/ACHIEVEMENTS.length*100);
   const rateEl=$('achRate'); if(rateEl) rateEl.textContent=done+' / '+ACHIEVEMENTS.length+' ('+rate+'%)';
   refreshTitleDisplay();
+  renderStartBonusSummary();
   document.querySelectorAll('.ach-tab').forEach(btn=>btn.classList.toggle('active',btn.dataset.tab===(ov.dataset.tab||'achievements')));
   const body=$('achBody'); if(!body) return;
   const tab=ov.dataset.tab||'achievements';
   body.innerHTML='';
   if(tab==='achievements'){
-    ACHIEVEMENTS.forEach(a=>{
-      const unlocked=isAchievementUnlocked(a.id);
-      const row=document.createElement('div');
-      row.className='ach-row'+(unlocked?' unlocked':'');
-      const reward=formatAchievementReward(a.id,unlocked);
-      row.innerHTML='<div class="ach-medal">'+(unlocked?'🏆':'🔒')+'</div><div><b>'+formatAchievementName(a.id,unlocked)+'</b><span>'+formatAchievementDesc(a.id,unlocked)+'</span><small>'+(reward?'보상: '+reward:'')+'</small></div>';
-      body.appendChild(row);
+    ACHIEVEMENT_CATEGORY_ORDER.forEach(cat=>{
+      const list=ACHIEVEMENTS.filter(a=>achievementCategory(a.id)===cat);
+      if(!list.length) return;
+      const head=document.createElement('div');
+      const catDone=list.filter(a=>isAchievementUnlocked(a.id)).length;
+      head.className='ach-section-title';
+      head.innerHTML='<b>'+ACHIEVEMENT_CATEGORY_LABELS[cat]+'</b><span>'+catDone+' / '+list.length+'</span>';
+      body.appendChild(head);
+      list.forEach(a=>{
+        const unlocked=isAchievementUnlocked(a.id);
+        const row=document.createElement('div');
+        row.className='ach-row ach-card '+(unlocked?'unlocked':'locked')+(a.spoiler&&!unlocked?' spoiler':'');
+        const reward=formatAchievementReward(a.id,unlocked);
+        const desc=formatAchievementDesc(a.id,unlocked);
+        const hint=a.spoiler&&!unlocked?('<i>'+achievementSpoilerHint(a.id)+'</i>'):'';
+        row.innerHTML='<div class="ach-medal">'+(unlocked?'🏆':'🔒')+'</div><div class="ach-card-main">'+
+          '<div class="ach-card-top"><b>'+formatAchievementName(a.id,unlocked)+'</b><strong>'+(unlocked?'완료':'미완료')+'</strong></div>'+
+          rewardBadgeHTML(a.id)+
+          '<span>'+desc+'</span>'+hint+
+          '<small>'+(reward?'보상: '+reward:'')+'</small></div>';
+        body.appendChild(row);
+      });
     });
   }else if(tab==='titles'){
     const titles=TITLE_LIST;
@@ -1508,13 +1719,22 @@ function renderAchievements(){
     clear.onclick=()=>selectTitle('');
     body.appendChild(clear);
   }else{
+    const head=document.createElement('div');
+    head.className='ach-section-title relics';
+    head.innerHTML='<b>업적 보상 해금 유물</b><span>'+ACHIEVEMENT_RELIC_IDS.filter(id=>isRelicUnlockedByAchievement(id)).length+' / '+ACHIEVEMENT_RELIC_IDS.length+'</span>';
+    body.appendChild(head);
     ACHIEVEMENT_RELIC_IDS.forEach(id=>{
       const r=RELICS.find(x=>x.id===id);
       if(!r) return;
       const owned=isRelicUnlockedByAchievement(id);
+      const achId=achievementIdForRelic(id);
+      const achUnlocked=achId?isAchievementUnlocked(achId):owned;
       const row=document.createElement('div');
-      row.className='ach-row relic-'+(TIER_OF[id]||'rare')+(owned?' unlocked':'');
-      row.innerHTML='<div class="ach-medal">'+(owned?relicIconHTML(r,'relic-pix-lg'):'🔒')+'</div><div><b>'+formatAchievementRelicName(id,owned)+'</b><span>'+(owned?r.desc:'관련 업적 달성 시 해금')+'</span><small>'+(owned?'유물 풀에 등장 가능':'미달성 업적 보상')+'</small></div>';
+      row.className='ach-row ach-card ach-relic-row relic-'+(TIER_OF[id]||'rare')+(owned?' unlocked':' locked');
+      row.innerHTML='<div class="ach-medal">'+(owned?relicIconHTML(r,'relic-pix-lg'):'🔒')+'</div><div class="ach-card-main">'+
+        '<div class="ach-card-top"><b>'+formatAchievementRelicName(id,owned)+'</b><strong>'+(owned?'해금 완료':'잠금')+'</strong></div>'+
+        '<span>'+(owned?r.desc:'업적 보상으로 해금되는 유물입니다.')+'</span>'+
+        '<small>'+(owned?'해금 완료 · 데이터베이스와 유물 풀에 등장 가능':'해금 업적: '+formatAchievementName(achId,achUnlocked)+' · '+achievementSpoilerHint(achId))+'</small></div>';
       body.appendChild(row);
     });
   }
@@ -1960,7 +2180,7 @@ const player={};
 let enemies=[], pBullets=[], eBullets=[], pickups=[], particles=[];
 let totalKills=0, kills=0, gold=0, level=1, xp=0, xpNext=20;
 let playerAttackSeq=0;
-let runStartedAt=0, runHits=0;
+let runStartedAt=0, runHits=0, runShopPurchases=0, runShopSpent=0;
 let pendingScoreData=null, pendingScoreWin=false, pendingScoreKiller='', pendingScoreSaved=false;
 let pendingRunBuildSnapshot=null;
 let roomCleared=false, roomIsBoss=false, boss=null, bossBanner=0, roomHadElite=false;
@@ -2029,6 +2249,7 @@ function updateHpHud(){
 }
 function updateHUD(){
   if((state==='title'||state==='start') && player.maxhp==null){ refreshSidePanel(); return; }
+  checkGoldAchievements();
   { const rt=$('retryText'); if(rt){ const max=diffSet.maxRetries; const left=max===Infinity?'∞':Math.max(0,max-retries); rt.textContent=left; rt.style.color=(max!==Infinity&&left<=1)?'#ff4d6d':'var(--neon)'; } }
   updateHpHud();
   $('goldText').textContent=gold;
@@ -2195,7 +2416,7 @@ function saveRunCheckpoint(){
       version:RUN_SAVE_VERSION,
       savedAt:Date.now(),
       diffKey:diffSet&&diffSet.key?diffSet.key:'easy',
-      act,currentRow,kills,totalKills,gold,level,xp,xpNext,pendingLevels,retries,runHits,elapsed,
+      act,currentRow,kills,totalKills,gold,level,xp,xpNext,pendingLevels,retries,runHits,runShopPurchases,runShopSpent,elapsed,
       runPotionUsed,eliteViewerSpawns,tierIntroShown,shopIntroShown,
       treePoints,treeUnlocked:[...treeUnlocked],
       nextCombatMods:nextCombatMods?clonePlain(nextCombatMods):null,
@@ -2218,7 +2439,7 @@ function loadRunCheckpoint(){
     diffSet=DIFFS[data.diffKey]||DIFFS.easy;
     act=data.act||1; currentRow=data.currentRow||0; kills=0; totalKills=data.totalKills||0;
     gold=data.gold||0; level=data.level||1; xp=data.xp||0; xpNext=data.xpNext||20; pendingLevels=data.pendingLevels||0;
-    retries=data.retries||0; runHits=data.runHits||0; runStartedAt=performance.now()-(data.elapsed||0);
+    retries=data.retries||0; runHits=data.runHits||0; runShopPurchases=data.runShopPurchases||0; runShopSpent=data.runShopSpent||0; runStartedAt=performance.now()-(data.elapsed||0);
     runPotionUsed=!!data.runPotionUsed; eliteViewerSpawns=data.eliteViewerSpawns||0;
     tierIntroShown=!!data.tierIntroShown; shopIntroShown=!!data.shopIntroShown;
     treePoints=data.treePoints||0; treeUnlocked=new Set(data.treeUnlocked&&data.treeUnlocked.length?data.treeUnlocked:['hub']);
@@ -2455,6 +2676,7 @@ function hurtPlayer(dmg, src){
   if(player.deathWard>0 && player.hp-dmg<=0){
     player.deathWard--;
     player.hp=1;
+    unlockAchievement('one_hp_survive');
     player.iframes=1.3;
     hitFlash=0.25;
     screenShake=Math.max(screenShake,10);
@@ -2464,13 +2686,14 @@ function hurtPlayer(dmg, src){
     return;
   }
   player.hp-=dmg; player.iframes=0.5; hitFlash=0.25; screenShake=Math.max(screenShake,8); combatTookHit=true; runHits++;
+  if(player.hp<=1) unlockAchievement('one_hp_survive');
   if(player.thorns>0){ enemies.slice().forEach(o=>{ if(dist2(o.x,o.y,player.x,player.y)<12100){ o.hp-=player.thorns; o.hitT=0.1; if(o.hp<=0) handleEnemyDefeat(o); } }); }
   sfx.hurt();
   if(Math.random()<0.5) chatRandom(pick(["아야 Sadge","왜맞음 KEKW","집중!","체력 ㄷㄷ","구르기!!","발컨 ㅋㅋㅋ"]));
   if(player.hp<=0){
     if(combatChallenge==='gladiator'){ failGladiatorCombat(src||lastKiller); }
     else if(player.reviveOnce && !player.usedRevive){ player.usedRevive=true; player.hp=Math.round(player.maxhp*0.35); player.iframes=1.3; banner('부활!','수호천사가 너를 구했다',1700); burst(player.x,player.y,'#5dff9b',26,260); }
-    else if(player.lastStand && !player.usedLastStand){ player.usedLastStand=true; player.hp=1; player.iframes=1.3; banner('막판 정신력!','체력 1로 버텼다',1500); burst(player.x,player.y,'#ffd34d',20,220); }
+    else if(player.lastStand && !player.usedLastStand){ player.usedLastStand=true; player.hp=1; unlockAchievement('one_hp_survive'); player.iframes=1.3; banner('막판 정신력!','체력 1로 버텼다',1500); burst(player.x,player.y,'#ffd34d',20,220); }
     else { player.hp=0; gameOver(false, src||lastKiller); }
   }
   updateHUD();
@@ -2742,9 +2965,8 @@ function killEnemy(e){
     kills++; totalKills++;
     userProgress.stats.totalKills=(Number(userProgress.stats.totalKills)||0)+1;
     unlockAchievement('first_kill');
-    if(userProgress.stats.totalKills>=100) unlockAchievement('kill_100');
-    if(userProgress.stats.totalKills>=1000) unlockAchievement('kill_1000');
-    else saveUserProgress();
+    checkKillAchievements();
+    saveUserProgress();
     gainXP(e.xp);
     if(player.lifesteal>0 && Math.random()<player.lifesteal){ healPlayer(5,e.x,e.y); }
     if(player.healOnKill>0){ healPlayer(player.healOnKill,e.x,e.y); }
@@ -2788,6 +3010,7 @@ function gainXP(n){
     treePoints++;   // 트리 포인트 +1
     if(player._levelHeal) healPlayer(player._levelHeal);
   }
+  checkLevelAchievements();
   updateHUD();
   if(pendingLevels>0 && state==='play') showLevelUp();
 }
@@ -3053,7 +3276,11 @@ function killBoss(){
   const bossXp=[0,200,3100,440][act]||440;
   gainXP(bossXp);
   if(deadBoss&&deadBoss.key) markDiscovered('bosses', deadBoss.key);
+  userProgress.stats=normalizeProgressStats(userProgress&&userProgress.stats);
+  userProgress.stats.totalBosses+=1;
   if(deadBoss&&deadBoss.key==='kijo') unlockAchievement('defeat_kijo');
+  if(deadBoss&&deadBoss.key==='seungwoo') unlockAchievement('defeat_seungwoo');
+  saveUserProgress();
   if(act>=MAX_ACT){ enemies.length=0; eBullets.length=0; }   // 최종보스 처치 시 남은 잡몹·탄막 정리
   updateHUD();
   if(typeof clearSeungwooFx==='function') clearSeungwooFx();
@@ -4407,7 +4634,21 @@ function onCombatCleared(){
   if(nextGoldPenalty>0){ const loss=Math.round(gold*nextGoldPenalty); gold=Math.max(0,gold-loss); nextGoldPenalty=0; if(loss>0) setTimeout(()=>banner('분위기 하락','골드 -'+loss,1200),200); updateHUD(); }
   if(player.roomClearHeal>0) healPlayer(player.roomClearHeal,player.x,player.y);
   banner('CLEAR', t==='boss'?'보스 격파!':(t==='midboss'?'중간보스 격파!':(t==='elite'?'자잘자 격파!':'정리 완료')), 1000);
+  if(t==='fight'&&!combatTookHit) unlockAchievement('no_hit_room');
   if(t==='boss'&&!combatTookHit) unlockAchievement('no_hit_boss');
+  checkLowHpRoomAchievements();
+  if(t==='midboss'){
+    userProgress.stats=normalizeProgressStats(userProgress&&userProgress.stats);
+    userProgress.stats.totalBosses+=1;
+    if(act>=2) unlockAchievement('defeat_yanggaeng');
+    else unlockAchievement('defeat_hyechul');
+    saveUserProgress();
+  }
+  if(t==='elite'){
+    userProgress.stats=normalizeProgressStats(userProgress&&userProgress.stats);
+    userProgress.stats.totalElites+=1;
+    saveUserProgress();
+  }
   setTimeout(()=>{
     // 도전과제(노히트) 판정 우선
     if(combatChallenge==='nohit'){
@@ -4434,6 +4675,7 @@ function finishNode(){
   pendingNode=null;
   if(wasBoss){
     if(act===1) unlockAchievement('clear_act1');
+    if(act===2) unlockAchievement('clear_act2');
     if(act>=MAX_ACT){ victory(); return; }
     act++; currentRow=0; genMap();
     showMap();
@@ -4591,6 +4833,7 @@ function eventTakeRelic(r,after){
   player.relics.push(r);
   markDiscovered('relics', r.id);
   r.apply(player);
+  checkRunRelicAchievements();
   try{sfx.pick&&sfx.pick();}catch(e){}
   banner(r.icon+' '+r.name,'['+relicTier(r).name+'] 획득!',1500);
   updateHUD();
@@ -5917,6 +6160,7 @@ function takeRelic(r){
   player.relics.push(r);
   markDiscovered('relics', r.id);
   r.apply(player);
+  checkRunRelicAchievements();
   sfx.pick(); banner(r.icon+" "+r.name,"["+relicTier(r).name+"] 획득!",1500);
   hideAll();
   const a=relicAfter; relicAfter=null;
@@ -5956,6 +6200,7 @@ function grantShopRelic(r){
   player.relics.push(r);
   markDiscovered('relics', r.id);
   r.apply(player);
+  checkRunRelicAchievements();
   return true;
 }
 function openShop(after){
@@ -6036,6 +6281,9 @@ function shopCard(it,items,idx){
     gold-=it.cost;
     const ok=it.buy();
     if(ok===false){ gold+=it.cost; updateHUD(); renderShop(items); return; }
+    runShopPurchases++;
+    runShopSpent+=it.cost;
+    recordShopSpend(it.cost);
     it.bought=true;
     sfx.coin();
     if(!it.skipBuyBanner) banner(it.icon+' 구매!','',1000);
@@ -7986,6 +8234,9 @@ function gameOver(win, killer){
     unlockAchievement('clear_game');
     if(diffSet&&diffSet.key==='hard') unlockAchievement('hard_clear');
     if(!runPotionUsed) unlockAchievement('no_potion_clear');
+    if(runHits<=5) unlockAchievement('low_hit_clear');
+    if((player.relics||[]).filter(r=>r&&r.cls==='curse').length>=3) unlockAchievement('curse_3_clear');
+    if(runShopPurchases===0 && runShopSpent===0) unlockAchievement('no_shop_clear');
   }
   show('end');
   const canRetry = !win && (diffSet.maxRetries === Infinity || retries < diffSet.maxRetries);
@@ -8032,7 +8283,7 @@ function newGame(){
   startBGM();
   runActive=true;
   pendingRunBuildSnapshot=null;
-  act=1; currentRow=0; kills=0; totalKills=0; gold=0; level=1; xp=0; xpNext=20; pendingLevels=0; retries=0; runHits=0; runStartedAt=performance.now(); treePoints=0; treeUnlocked=new Set(['hub']);
+  act=1; currentRow=0; kills=0; totalKills=0; gold=0; level=1; xp=0; xpNext=20; pendingLevels=0; retries=0; runHits=0; runShopPurchases=0; runShopSpent=0; runStartedAt=performance.now(); treePoints=0; treeUnlocked=new Set(['hub']);
   resetPlayer();
   runPotionUsed=false;
   recordPlayStarted();
@@ -8070,7 +8321,7 @@ function newGameSkip(){
   clearRunCheckpoint();
   startBGM();
   runActive=true;
-  act=1; currentRow=0; kills=0; totalKills=0; gold=0; level=1; xp=0; xpNext=20; pendingLevels=0; retries=0; runHits=0; runStartedAt=performance.now(); treePoints=0; treeUnlocked=new Set(['hub']);
+  act=1; currentRow=0; kills=0; totalKills=0; gold=0; level=1; xp=0; xpNext=20; pendingLevels=0; retries=0; runHits=0; runShopPurchases=0; runShopSpent=0; runStartedAt=performance.now(); treePoints=0; treeUnlocked=new Set(['hub']);
   resetPlayer();
   runPotionUsed=false;
   recordPlayStarted();
@@ -8397,9 +8648,112 @@ function devResetDatabase(){
   renderDatabase();
   return dbDiscovered;
 }
+function devUnlockAchievements(){
+  userProgress=normalizeProgress(userProgress);
+  ACHIEVEMENTS.forEach(a=>{
+    if(!userProgress.achievements[a.id]) userProgress.achievements[a.id]={at:Date.now(),dev:true};
+    applyAchievementReward(a.id);
+  });
+  userProgress.stats=normalizeProgressStats(userProgress.stats);
+  renderAchievements();
+  refreshTitleDisplay();
+  saveUserProgress(true);
+  return {unlocked:Object.keys(userProgress.achievements).length,total:ACHIEVEMENTS.length};
+}
+function devResetAchievements(){
+  const uid=userProgress&&userProgress.uid||null;
+  const loaded=!!(userProgress&&userProgress.loaded);
+  userProgress={
+    uid,
+    achievements:{},
+    titles:{},
+    unlockedRelics:{},
+    selectedTitle:'',
+    stats:normalizeProgressStats(),
+    loaded,
+    dirty:true
+  };
+  achievementToastQueue.length=0;
+  achievementToastActiveIds.clear();
+  achievementToastShowing=false;
+  renderAchievements();
+  refreshTitleDisplay();
+  saveUserProgress(true);
+  return {unlocked:0,total:ACHIEVEMENTS.length};
+}
+function rebuildAchievementRewardsFromUnlocked(){
+  userProgress=normalizeProgress(userProgress);
+  userProgress.titles={};
+  userProgress.unlockedRelics={};
+  Object.keys(userProgress.achievements||{}).forEach(id=>{
+    if(achievementById(id)) applyAchievementReward(id);
+  });
+  if(userProgress.selectedTitle&&!userProgress.titles[userProgress.selectedTitle]) userProgress.selectedTitle='';
+}
+function devUnlockAchievement(id){
+  id=String(id||'').trim();
+  if(!achievementById(id)) return {ok:false,error:'unknown achievement id',id,total:ACHIEVEMENTS.length};
+  const changed=unlockAchievement(id);
+  return {ok:true,id,changed,unlocked:Object.keys(userProgress.achievements||{}).length,total:ACHIEVEMENTS.length};
+}
+function devLockAchievement(id){
+  id=String(id||'').trim();
+  if(!achievementById(id)) return {ok:false,error:'unknown achievement id',id,total:ACHIEVEMENTS.length};
+  userProgress=normalizeProgress(userProgress);
+  const changed=!!userProgress.achievements[id];
+  delete userProgress.achievements[id];
+  rebuildAchievementRewardsFromUnlocked();
+  renderAchievements();
+  refreshTitleDisplay();
+  saveUserProgress(true);
+  return {ok:true,id,changed,unlocked:Object.keys(userProgress.achievements||{}).length,total:ACHIEVEMENTS.length};
+}
+function devCurrentStartBonus(){
+  return computeStartBonusSummary();
+}
+function devResetProgress(){
+  const result=devResetAchievements();
+  try{ localStorage.removeItem(USER_PROGRESS_LOCAL_KEY); }catch(e){}
+  clearRunCheckpoint();
+  return Object.assign({cleared:['user progress','run checkpoint'],kept:['settings','database discovery','leaderboard name']},result);
+}
+function devHelp(){
+  const lines=[
+    'BTV dev tools',
+    'btvDev.help()',
+    'btvDev.unlockAllAchievements()',
+    'btvDev.resetAchievements()',
+    'btvDev.unlockAchievement("kill_100")',
+    'btvDev.lockAchievement("kill_100")',
+    'btvDev.resetProgress()',
+    'btvDev.unlockDatabase()',
+    'btvDev.startBonus()',
+    'btvDev.count()',
+    '테스트 순서: 새 게임 시작 -> 업적 탭 열기 -> 시작 보너스 표시 확인 -> 특정 업적 강제 해금 -> 새 게임에서 보너스 적용 확인 -> 업적 초기화 후 정상 복구 확인'
+  ];
+  console.log(lines.join('\n'));
+  return lines;
+}
 if(location.hostname==='localhost' || location.hostname==='127.0.0.1' || location.search.includes('debug=1')){
+  window.btvDev={
+    help:devHelp,
+    unlockAllAchievements:devUnlockAchievements,
+    resetAchievements:devResetAchievements,
+    unlockAchievement:devUnlockAchievement,
+    lockAchievement:devLockAchievement,
+    resetProgress:devResetProgress,
+    unlockDatabase:devUnlockDatabase,
+    resetDatabase:devResetDatabase,
+    startBonus:devCurrentStartBonus,
+    count:()=>ACHIEVEMENTS.length
+  };
   window.devUnlockDatabase=devUnlockDatabase;
   window.devResetDatabase=devResetDatabase;
+  window.devUnlockAchievements=devUnlockAchievements;
+  window.devResetAchievements=devResetAchievements;
+  window.devUnlockAchievement=devUnlockAchievement;
+  window.devLockAchievement=devLockAchievement;
+  window.devAchievementCount=()=>ACHIEVEMENTS.length;
 }
 
 function renderDatabase(){
@@ -8510,6 +8864,7 @@ function applySettings(){
   GS.fps=!!_SET.fps;
   GS.fireToggle=!!_SET.fireToggle;
   GS.autoPause=!!_SET.autoPause;
+  if(document.body) document.body.classList.toggle('reduce-flash',!!_SET.flashReduce);
   if(!GS.fireToggle) autoFire=false;
   const oldMute=$('muteChk'); if(oldMute) oldMute.checked=muted;
 }
@@ -8849,6 +9204,7 @@ function treeUnlockNode(node){
   treeUnlocked.add(node.id);
   treePoints -= (node.cost||1);
   node.apply(player);
+  if(node.isKeystone) unlockAchievement('first_keystone');
   updateHUD();
   return true;
 }
