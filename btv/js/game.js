@@ -558,7 +558,7 @@ const RELICS=[
   // ===== 축복: 치명타 =====
   {id:"crit_glasses",name:"정밀 조준경",icon:"🔍",desc:"치명타 확률 +20%.",cls:"boon",apply:p=>{p.critChance+=0.2;}},
   {id:"crit_hammer",name:"한 방 망치",icon:"🔨",desc:"치명타 피해 +100% (2배→3배).",cls:"boon",apply:p=>{p.critMult+=1;}},
-  {id:"clover",name:"네잎클로버",icon:"🍀",desc:"치명타 +15%, 골드 +30%.",cls:"boon",apply:p=>{p.critChance+=0.15;p.goldMul*=1.30;}},
+  {id:"clover",name:"네잎클로버",icon:"🍀",desc:"치명타 +15%, 골드 +30%.",cls:"boon",apply:p=>{p.critChance+=0.15;p.goldMul+=0.30;}},
   // ===== 축복: 연사/투사체 =====
   {id:"redbull",name:"수상한 에너지드링크",icon:"🥤",desc:"발사 속도 +30%.",cls:"boon",apply:p=>{p.fireMul*=0.7;}},
   {id:"adrenaline",name:"아드레날린 주사",icon:"💉",desc:"발사 속도 +20%, 이동 속도 +15%.",cls:"boon",apply:p=>{p.fireMul*=0.80;p.spd*=1.15;}},
@@ -586,8 +586,8 @@ const RELICS=[
   {id:"sneaker",name:"한 짝뿐인 운동화",icon:"👟",desc:"이동 속도 +18%.",cls:"boon",apply:p=>{p.spd*=1.18;}},
   {id:"roll_master",name:"베인Q 숙련",icon:"🌀",desc:"베인Q 쿨 -35%.",cls:"boon",apply:p=>{p.dodgeCdMul*=0.65;}},
   {id:"magnet",name:"강력 자석",icon:"🧲",desc:"골드/회복 흡수 범위 대폭 증가.",cls:"boon",apply:p=>{p.magnet*=2.2;}},
-  {id:"giant_magnet",name:"초강력 자석",icon:"🌟",desc:"흡수 범위 증가 + 골드 +20%.",cls:"boon",apply:p=>{p.magnet*=2;p.goldMul*=1.2;}},
-  {id:"gold_pig",name:"황금 돼지 저금통",icon:"🐷",desc:"골드 획득 +60%.",cls:"boon",apply:p=>{p.goldMul*=1.6;}},
+  {id:"giant_magnet",name:"초강력 자석",icon:"🌟",desc:"흡수 범위 증가 + 골드 +20%.",cls:"boon",apply:p=>{p.magnet*=2;p.goldMul+=0.2;}},
+  {id:"gold_pig",name:"황금 돼지 저금통",icon:"🐷",desc:"골드 획득 +60%.",cls:"boon",apply:p=>{p.goldMul+=0.6;}},
   {id:"xp_book",name:"경험의 서",icon:"📖",desc:"경험치 획득 +40%.",cls:"boon",apply:p=>{p.xpMul*=1.4;}},
   {id:"potion_belt",name:"비상용 물약 벨트",icon:"🧪",desc:"즉시 랜덤 포션 1개 획득.",cls:"boon",apply:p=>{addPotion(rollPotion());}},
   {id:"kijo_mask",name:"키죠의 가면",icon:"🎭",desc:"보스 피해 +35%. 받는 피해 +5%.",cls:"boon",apply:p=>{p.bossDmgMul*=1.35;p.armor-=0.05;}},
@@ -600,12 +600,12 @@ const RELICS=[
   {id:"moving_afterimage",name:"무빙의 잔상",icon:"💨",desc:"이동 속도 +12%, 베인Q 쿨다운 -15%.",cls:"boon",apply:p=>{p.spd*=1.12;p.dodgeCdMul*=0.85;}},
   {id:"clutch_heart",name:"딸피의 심장",icon:"🫀",desc:"체력 30% 이하일 때 공격력 +28%. 최대 체력 +8.",cls:"boon",apply:p=>{p.lowHpMul+=0.28;p.maxhp+=8;p.hp+=8;}},
   {id:"clip_dodge_instinct",name:"클립각 회피본능",icon:"🎬",desc:"베인Q 쿨다운 -20%. Q 직후 무적 시간이 조금 증가.",cls:"boon",apply:p=>{p.dodgeCdMul*=0.8;p.dodgeIframeBonus+=0.12;}},
-  {id:"collector_showcase",name:"수집가의 진열장",icon:"🗃️",desc:"공격력 +15%, 골드 획득 +20%.",cls:"boon",apply:p=>{p.dmgAdd+=0.15;p.goldMul*=1.2;}},
+  {id:"collector_showcase",name:"수집가의 진열장",icon:"🗃️",desc:"공격력 +15%, 골드 획득 +20%.",cls:"boon",apply:p=>{p.dmgAdd+=0.15;p.goldMul+=0.2;}},
   {id:"mythic_vault",name:"신화 보관함",icon:"🧰",desc:"치명타 확률 +12%, 치명타 피해 +40%.",cls:"boon",apply:p=>{p.critChance+=0.12;p.critMult+=0.4;}},
   {id:"curse_crown",name:"저주의 왕관",icon:"👑",desc:"공격력 +30%. 받는 피해 +10%.",cls:"curse",apply:p=>{p.dmgAdd+=0.30;p.armor-=0.1;}},
   {id:"direction_compass",name:"방향성 나침반",icon:"🧭",desc:"경험치 획득 +25%, 이동 속도 +8%.",cls:"boon",apply:p=>{p.xpMul*=1.25;p.spd*=1.08;}},
-  {id:"whale_card",name:"큰손 카드",icon:"💳",desc:"상점 가격 -18%, 골드 획득 +15%.",cls:"boon",apply:p=>{p.shopCostMul*=0.82;p.goldMul*=1.15;}},
-  {id:"no_spend_wallet",name:"무소비의 지갑",icon:"👛",desc:"골드 획득 +35%. 상점 가격 +10%.",cls:"boon",apply:p=>{p.goldMul*=1.35;p.shopCostMul*=1.1;}},
+  {id:"whale_card",name:"큰손 카드",icon:"💳",desc:"상점 가격 -18%, 골드 획득 +15%.",cls:"boon",apply:p=>{p.shopCostMul*=0.82;p.goldMul+=0.15;}},
+  {id:"no_spend_wallet",name:"무소비의 지갑",icon:"👛",desc:"골드 획득 +35%. 상점 가격 +10%.",cls:"boon",apply:p=>{p.goldMul+=0.35;p.shopCostMul*=1.1;}},
   {id:"hardcore_transmitter",name:"하드코어 송출기",icon:"📡",desc:"보스 피해 +20%, 공격력 +8%.",cls:"boon",apply:p=>{p.bossDmgMul*=1.20;p.dmgAdd+=0.08;}},
   {id:"nohit_wings",name:"무피격의 날개",icon:"🪽",desc:"이동 속도 +15%, 베인Q 쿨다운 -12%.",cls:"boon",apply:p=>{p.spd*=1.15;p.dodgeCdMul*=0.88;}},
   {id:"lightning_bottle",name:"번개의 병",icon:"⚡",desc:"적 처치 시 가장 가까운 적에게 공격력의 80% 체인 번개.",cls:"boon",apply:p=>{p.chainKillLightning+=0.8;}},
@@ -613,7 +613,7 @@ const RELICS=[
   {id:"blood_chalice",name:"피의 성배",icon:"🩸",desc:"최대 체력 +25%. 방 클리어 시 체력 5 회복.",cls:"boon",apply:p=>{p.maxhp=Math.round(p.maxhp*1.25);p.hp=Math.min(p.maxhp,p.hp+Math.round(p.maxhp*0.2));p.roomClearHeal+=5;}},
   {id:"void_heart",name:"공허의 심장",icon:"🌑",desc:"공격력 +25%, 치명타 +15%. 회복 효과 50% 감소.",cls:"boon",apply:p=>{p.dmgAdd+=0.25;p.critChance+=0.15;p.recoveryMul*=0.5;}},
   {id:"guardian_shield",name:"수호자의 방패",icon:"🛡️",desc:"받는 피해 -20%.",cls:"boon",apply:p=>{p.armor+=0.2;}},
-  {id:"greed_ring",name:"탐욕의 반지",icon:"💎",desc:"골드 획득량 +50%. 상점 가격 +20%.",cls:"boon",apply:p=>{p.goldMul*=1.5;p.shopCostMul*=1.2;}},
+  {id:"greed_ring",name:"탐욕의 반지",icon:"💎",desc:"골드 획득량 +50%. 상점 가격 +20%.",cls:"boon",apply:p=>{p.goldMul+=0.5;p.shopCostMul*=1.2;}},
   {id:"explosive_rounds",name:"폭발 탄환",icon:"🧨",desc:"치명타 발생 시 작은 폭발 생성.",cls:"boon",apply:p=>{p.critExplodeMul+=0.6;}},
   {id:"time_warp",name:"시간 왜곡기",icon:"🔄",desc:"레벨업 시 체력 10 회복.",cls:"boon",apply:p=>{p._levelHeal=(p._levelHeal||0)+10;}},
   {id:"old_boots",name:"낡은 군화",icon:"🥾",desc:"이동속도 +15%.",cls:"boon",apply:p=>{p.spd*=1.15;}},
@@ -630,7 +630,7 @@ const RELICS=[
   {id:"one_shot",name:"모 아니면 도",icon:"💀",desc:"공격력 +80%. 최대 체력 50 고정.",cls:"curse",apply:p=>{p.dmgAdd+=0.80;p.maxhp=50;p.hp=Math.min(p.hp,50);}},
   {id:"thin_glass",name:"더 얇은 유리",icon:"🪟",desc:"치명타 +30%. 받는 피해 +25%.",cls:"curse",apply:p=>{p.critChance+=0.3;p.armor-=0.25;}},
   {id:"time_bomb",name:"시한폭탄 심장",icon:"⏱️",desc:"공격력 +30%. 초당 체력 -1.",cls:"curse",apply:p=>{p.dmgAdd+=0.30;p.regen-=1;}},
-  {id:"greed",name:"탐욕의 손",icon:"🤑",desc:"골드 +120%. 최대 체력 -25%.",cls:"curse",apply:p=>{p.goldMul*=2.2;p.maxhp=Math.round(p.maxhp*0.75);p.hp=Math.min(p.hp,p.maxhp);}},
+  {id:"greed",name:"탐욕의 손",icon:"🤑",desc:"골드 +120%. 최대 체력 -25%.",cls:"curse",apply:p=>{p.goldMul+=1.2;p.maxhp=Math.round(p.maxhp*0.75);p.hp=Math.min(p.hp,p.maxhp);}},
   {id:"slippery",name:"미끄러운 신발",icon:"🧊",desc:"이동 속도 +40%. 베인Q 쿨 +50%.",cls:"curse",apply:p=>{p.spd*=1.4;p.dodgeCdMul*=1.5;}},
   {id:"glass_legs",name:"유리 다리",icon:"🦵",desc:"이동 속도 +30%. 최대 체력 -20%.",cls:"curse",apply:p=>{p.spd*=1.3;p.maxhp=Math.round(p.maxhp*0.8);p.hp=Math.min(p.hp,p.maxhp);}},
   {id:"turtle",name:"거북이 등딱지",icon:"🐢",desc:"받는 피해 -30%. 이동 속도 -15%.",cls:"curse",apply:p=>{p.armor+=0.3;p.spd*=0.85;}},
@@ -877,6 +877,13 @@ const START_BONUS_REWARDS={
   clear_act1:'시작 포션 +1',
   clear_act2:'시작 XP +30',
   level_20:'시작 XP +20',
+  berserk_kill:'시작 XP +10',
+  legend_exists:'시작 XP +10',
+  mythic_exists:'시작 XP +10',
+  greedy_exists:'시작 골드 +10',
+  chosen_broadcast:'시작 XP +10',
+  quick_room_clear:'시작 XP +10',
+  lonely_intruder:'시작 골드 +10',
   one_hp_survive:'시작 최대 체력 +5',
   clear_game:'시작 트리포인트 +1'
 };
@@ -912,6 +919,13 @@ const ACHIEVEMENTS=[
   {id:'curse_3_clear',name:'저주받은 클리어',desc:'저주 유물 3개 이상 보유하고 게임을 클리어한다.',reward:'유물 해금: 저주의 왕관'},
   {id:'first_keystone',name:'첫 키스톤',desc:'패시브 트리 키스톤을 1개 해금한다.',reward:'유물 해금: 방향성 나침반'},
   {id:'level_20',name:'레벨 20',desc:'한 런에서 20레벨을 달성한다.',reward:'시작 XP +20'},
+  {id:'berserk_kill',name:'분노를 잠재우다',desc:'광폭화된 적을 처치한다.',reward:'시작 XP +10',spoiler:true,hiddenName:'???',hiddenDesc:'???'},
+  {id:'legend_exists',name:'전설은 실존한다',desc:'첫 특성 선택지에서 전설 특성을 발견한다.',reward:'시작 XP +10',spoiler:true,hiddenName:'???',hiddenDesc:'???'},
+  {id:'mythic_exists',name:'신화는 실존한다',desc:'첫 특성 선택지에서 신화 특성을 발견한다.',reward:'시작 XP +10',spoiler:true,hiddenName:'???',hiddenDesc:'???'},
+  {id:'greedy_exists',name:'욕심은 실존한다',desc:'첫 특성 선택지에서 전설/신화 특성이 2개 이상 등장한다.',reward:'시작 골드 +10',spoiler:true,hiddenName:'???',hiddenDesc:'???'},
+  {id:'chosen_broadcast',name:'선택받은 방송',desc:'첫 특성 선택지 3개가 모두 영웅 이상으로 등장한다.',reward:'시작 XP +10',spoiler:true,hiddenName:'???',hiddenDesc:'???'},
+  {id:'quick_room_clear',name:'한 방 컷',desc:'일반 전투를 10초 이내에 클리어한다.',reward:'시작 XP +10',spoiler:true,hiddenName:'???',hiddenDesc:'???'},
+  {id:'lonely_intruder',name:'혼자 왔니?',desc:'존버 난입 시청자를 처치한다.',reward:'시작 골드 +10',spoiler:true,hiddenName:'???',hiddenDesc:'???'},
   {id:'gold_1000',name:'천 골드',desc:'한 런에서 골드 1000 이상을 보유한다.',reward:'시작 골드 +30'},
   {id:'shop_spend_1000',name:'큰손',desc:'상점에서 누적 1000G를 사용한다.',reward:'유물 해금: 큰손 카드'},
   {id:'no_shop_clear',name:'무소비 클리어',desc:'상점 구매 없이 게임을 클리어한다.',reward:'유물 해금: 무소비의 지갑'},
@@ -930,7 +944,7 @@ const ACHIEVEMENT_CATEGORIES={
   first_play:'progress',first_kill:'progress',clear_act1:'progress',clear_act2:'progress',level_20:'progress',
   kill_100:'kills',kill_500:'kills',kill_1000:'kills',kill_3000:'kills',
   defeat_kijo:'bosses',defeat_hyechul:'bosses',defeat_yanggaeng:'bosses',defeat_seungwoo:'bosses',
-  no_hit_boss:'combat',no_hit_room:'combat',clutch_room:'combat',one_hp_survive:'combat',
+  no_hit_boss:'combat',no_hit_room:'combat',clutch_room:'combat',one_hp_survive:'combat',berserk_kill:'combat',legend_exists:'combat',mythic_exists:'combat',greedy_exists:'combat',chosen_broadcast:'combat',quick_room_clear:'combat',lonely_intruder:'combat',
   relic_10:'build',mythic_3:'build',curse_3_clear:'build',first_keystone:'build',
   gold_1000:'economy',shop_spend_1000:'economy',
   clear_game:'clear',hard_clear:'clear',no_potion_clear:'clear',low_hit_clear:'clear',no_shop_clear:'clear'
@@ -1294,9 +1308,16 @@ function computeStartBonusSummary(){
   if(isAchievementUnlocked('kill_100')) bonus.gold+=30;
   if(isAchievementUnlocked('kill_500')) bonus.gold+=30;
   if(isAchievementUnlocked('gold_1000')) bonus.gold+=30;
+  if(isAchievementUnlocked('greedy_exists')) bonus.gold+=10;
+  if(isAchievementUnlocked('lonely_intruder')) bonus.gold+=10;
   if(isAchievementUnlocked('clear_act1')) bonus.potions+=1;
   if(isAchievementUnlocked('clear_act2')) bonus.xp+=30;
   if(isAchievementUnlocked('level_20')) bonus.xp+=20;
+  if(isAchievementUnlocked('berserk_kill')) bonus.xp+=10;
+  if(isAchievementUnlocked('legend_exists')) bonus.xp+=10;
+  if(isAchievementUnlocked('mythic_exists')) bonus.xp+=10;
+  if(isAchievementUnlocked('chosen_broadcast')) bonus.xp+=10;
+  if(isAchievementUnlocked('quick_room_clear')) bonus.xp+=10;
   if(isAchievementUnlocked('one_hp_survive')) bonus.maxhp+=5;
   if(isAchievementUnlocked('clear_game')) bonus.treePoints+=1;
   return bonus;
@@ -2393,7 +2414,7 @@ function banner(big,small,ms){
 }
 
 // ---------- 전투 구역 시작 ----------
-let lastRoomKind=null, cutsceneT=0, roomEntryHp=0, retries=0;
+let lastRoomKind=null, cutsceneT=0, roomEntryHp=0, roomStartedAt=0, retries=0;
 // ── 방 입장 시점의 진행 상태 스냅샷 (재도전 시 무한 레벨업 방지) ──
 let roomEntrySnap=null;
 function snapshotProgress(){
@@ -2574,6 +2595,7 @@ function startCombat(kind, fresh){
   enemies=[]; pBullets=[]; eBullets=[]; pickups=[]; particles=[]; hazards=[]; floatBubbles=[]; kijoMasks=[]; kijoGazes=[]; kijoParades=[]; kijoLaserWarns=[];
   player.x=W/2; player.y=H-90;
   roomCleared=false; roomIsBoss=(kind==='boss'); roomIsMidboss=(kind==='midboss'); kills=0; boss=null; roomHadElite=false; eliteIntro=null; timeScale=1; slowmoT=0;
+  roomStartedAt=performance.now();
   resetStallWatch();
   // GL/gView 리셋 (승우 외 보스전 잔여 효과 제거)
   if(typeof GL!=='undefined'){ for(const k in GL) GL[k]=0; }
@@ -3061,6 +3083,8 @@ function killEnemy(e){
   enemies.splice(idx,1);
   if(e.type==='hyechul'){ enemies=enemies.filter(o=>!SUMMON_TYPES.has(o.type)); }
   if(e.dummy){ burst(e.x,e.y,e.color,10,180); return; }
+  if(e._stallRaged) unlockAchievement('berserk_kill');
+  if(e._stallReinforcement) unlockAchievement('lonely_intruder');
   if(e.type==='slime_green') spawnSlimeSplit(e);
   markDiscovered('enemies', e.type);
   burst(e.x,e.y,e.color,14,220);
@@ -4905,6 +4929,7 @@ function onCombatCleared(){
   if(player.roomClearHeal>0) healPlayer(player.roomClearHeal,player.x,player.y);
   banner('CLEAR', t==='boss'?'보스 격파!':(t==='midboss'?'중간보스 격파!':(t==='elite'?'자잘자 격파!':'정리 완료')), 1000);
   if(t==='fight'&&!combatTookHit) unlockAchievement('no_hit_room');
+  if(t==='fight'&&roomStartedAt&&performance.now()-roomStartedAt<=10000) unlockAchievement('quick_room_clear');
   if(t==='boss'&&!combatTookHit) unlockAchievement('no_hit_boss');
   checkLowHpRoomAchievements();
   if(t==='midboss'){
@@ -6100,7 +6125,7 @@ const LEVEL_PERKS=[
   {g:'common',icon:'🥾',name:'민첩 특화',desc:'이동 속도 +10',apply:p=>{p.spd+=10;}},
   {g:'common',icon:'❤️',name:'활력',desc:'최대 체력 +15, 10 회복',apply:p=>{p.maxhp+=15;healPlayer(10,player.x,player.y);}},
   {g:'common',icon:'🛡️',name:'방어 특화',desc:'받는 피해 -5%',apply:p=>{p.armor+=0.05;}},
-  {g:'common',icon:'🧲',name:'광부',desc:'골드 획득 +18%',apply:p=>{p.goldMul*=1.18;}},
+  {g:'common',icon:'🧲',name:'광부',desc:'골드 획득 +18%',apply:p=>{p.goldMul+=0.18;}},
   {g:'common',icon:'💥',name:'대구경',desc:'투사체 크기 +10%',apply:p=>{p.bulletSize+=0.10;}},
   {g:'common',icon:'🌿',name:'재생',desc:'초당 체력 +0.5',apply:p=>{p.regen+=0.5;}},
   {g:'rare',icon:'📈',name:'경험치 부스트',desc:'경험치 +15%',apply:p=>{p.xpMul+=0.15;}},
@@ -6160,7 +6185,7 @@ const LEVEL_PERKS=[
   {id:'regen_overload',g:'epic',icon:'🌿',name:'재생 과부하',desc:'체력 50% 이하일 때 재생 효과 +50%',minLevel:8,maxLevel:14,build:'sustain',tags:['combat','sustain','keystone'],isMiniKeystone:true,skip:p=>p.regenOverload,apply:p=>{p.regenOverload=true;}},
   {id:'vamp_shield',g:'legend',icon:'🛡️',name:'흡혈 보호막',desc:'초과 회복량을 보호막으로 전환. 자연 재생 효과 -30%',minLevel:16,maxLevel:25,build:'sustain',tags:['combat','sustain','defense','keystone'],isKeystone:true,skip:p=>p.overhealShieldRate>0,apply:p=>{p.overhealShieldRate=Math.max(p.overhealShieldRate||0,0.5);p.overhealShieldCap=Math.max(p.overhealShieldCap||0,0.2);p.regen*=0.70;}},
   {id:'investment_return',g:'rare',icon:'💰',name:'투자 수익',desc:'골드 150 이상 보유 시 공격력 +10%',minLevel:8,maxLevel:18,build:'economy',tags:['combat','economy','damage','seed'],skip:p=>p.investmentReturn,apply:p=>{p.investmentReturn=true;}},
-  {id:'greed_contract',g:'legend',icon:'💎',name:'탐욕의 계약',desc:'골드 획득 +40%, 받는 피해 +10%',minLevel:16,maxLevel:25,build:'economy',tags:['economy','risk','keystone'],isKeystone:true,skip:p=>p.greedContract,apply:p=>{p.greedContract=true;p.goldMul*=1.4;p.damageTakenMul*=1.1;}},
+  {id:'greed_contract',g:'legend',icon:'💎',name:'탐욕의 계약',desc:'골드 획득 +40%, 받는 피해 +10%',minLevel:16,maxLevel:25,build:'economy',tags:['economy','risk','keystone'],isKeystone:true,skip:p=>p.greedContract,apply:p=>{p.greedContract=true;p.goldMul+=0.4;p.damageTakenMul*=1.1;}},
   // ===== 신화 Myth =====
   {g:'mythic',icon:'🔱',name:'다중 사격',desc:'투사체 +1발',apply:p=>{p.shots+=1;}},
   {g:'mythic',icon:'👁️',name:'유도의 눈',desc:'투사체가 적을 강하게 추적',skip:p=>p.homing>0,apply:p=>{p.homing=12;}},
@@ -6364,6 +6389,14 @@ function perkEntranceFx(picks){
 function showLevelUp(){
   if(!tierIntroShown){ tierIntroShown=true; show('tierIntro'); return; }
   const picks=rollPerks(3);
+  if(!Array.isArray(player.perkIds)||player.perkIds.length===0){
+    const highTierCount=picks.filter(pk=>pk.g==='legend'||pk.g==='mythic').length;
+    const allEpicPlus=picks.length===3&&picks.every(pk=>pk.g==='epic'||pk.g==='legend'||pk.g==='mythic');
+    if(picks.some(pk=>pk.g==='legend')) unlockAchievement('legend_exists');
+    if(picks.some(pk=>pk.g==='mythic')) unlockAchievement('mythic_exists');
+    if(highTierCount>=2) unlockAchievement('greedy_exists');
+    if(allEpicPlus) unlockAchievement('chosen_broadcast');
+  }
   picks.forEach(pk=>markDiscovered('perks', perkId(pk)));
   $('levelTitle').textContent='Lv.'+level+' — 특성 1택'+(pendingLevels>1?' ('+pendingLevels+'개 남음)':'');
   const cont=$('levelChoices'); cont.className='perkrow'; cont.innerHTML='';
@@ -6470,11 +6503,14 @@ const SHOP_QUOTES=[
 ];
 let currentShopItems=[];
 const SHOP_PRICE_MUL=0.85;
+const ACT2_SHOP_PRICE_MUL=1.20;
+const SHOP_STOCK_COST_MUL=[1,1.3,1.6];
 function shopPrice(base){
   const disc=nextShopDiscount>0?Math.max(0,1-nextShopDiscount):1;
   const costMul=player&&Number.isFinite(Number(player.shopCostMul))?Number(player.shopCostMul):1;
+  const actMul=act>=2?ACT2_SHOP_PRICE_MUL:1;
   const safeBase=Number.isFinite(Number(base))?Number(base):1;
-  return Math.max(1,Math.round(safeBase*costMul*disc*SHOP_PRICE_MUL));
+  return Math.max(1,Math.round(safeBase*costMul*disc*SHOP_PRICE_MUL*actMul));
 }
 function shopRelicPrice(r){
   return shopPrice((88+act*20+Math.random()*20)*relicTier(r).costMul*2.5);
@@ -6497,6 +6533,22 @@ function grantShopRelic(r){
   checkRunRelicAchievements();
   return true;
 }
+function addStockedShopSpecial(items,spec){
+  const stock=act>=2?3:1;
+  for(let i=0;i<stock;i++){
+    const stepMul=SHOP_STOCK_COST_MUL[i]||SHOP_STOCK_COST_MUL[SHOP_STOCK_COST_MUL.length-1]||1;
+    items.push({
+      kind:'special',
+      name:stock>1?spec.name+' '+(i+1):spec.name,
+      icon:spec.icon,
+      desc:spec.desc,
+      cost:shopPrice(spec.baseCost*stepMul),
+      grade:spec.grade,
+      skipBuyBanner:spec.skipBuyBanner,
+      buy:spec.buy
+    });
+  }
+}
 function openShop(after){
   shopAfter=after||null;
   // 1회성 상점 할인 소비 (shopPrice가 이미 적용하고 있으므로, 진입 시 알림 후 초기화)
@@ -6511,15 +6563,15 @@ function openShop(after){
   const ptn=rollShopPotions(3);
   ptn.forEach(pt=>items.push({kind:'potion',name:pt.name,icon:pt.icon,desc:pt.desc,cost:shopPrice(getPotionShopBasePrice(pt,act)),potion:pt,
     buy:()=>addPotion(pt)}));
-  items.push({kind:'special',name:'체력 강화',icon:'❤️',desc:'최대 체력 +15 / 현재 체력 +15',cost:shopPrice(155),
+  addStockedShopSpecial(items,{name:'체력 강화',icon:'❤️',desc:'최대 체력 +15 / 현재 체력 +15',baseCost:155,
     buy:()=>{player.maxhp+=15;healPlayer(15,player.x,player.y);}});
-  items.push({kind:'special',name:'경험치 북',icon:'📚',desc:'현재 레벨 필요 경험치의 35% 획득',cost:shopPrice(125),
+  addStockedShopSpecial(items,{name:'경험치 북',icon:'📚',desc:'현재 레벨 필요 경험치의 35% 획득',baseCost:125,
     buy:()=>{gainXP(xpNext*0.35);}});
   if(diffSet.maxRetries!==Infinity){
-    items.push({kind:'special',name:'재도전권',icon:'🎟️',desc:'재도전 가능 횟수 +1',cost:shopPrice(155),grade:{name:'편의',col:'#40bbff'},skipBuyBanner:true,
+    addStockedShopSpecial(items,{name:'재도전권',icon:'🎟️',desc:'재도전 가능 횟수 +1',baseCost:155,grade:{name:'편의',col:'#40bbff'},skipBuyBanner:true,
       buy:()=>{const ok=grantRetryCharge(1,'상점 재도전권'); if(ok) banner('🎟️ 재도전 +1','다시 한 번 기회가 생겼다',1500); return ok;}});
   }
-  items.push({kind:'special',name:'수상한 상자',icon:'🎁',desc:'영웅 이상 유물 랜덤 획득',cost:shopPrice(360),grade:{name:'영웅+',col:'#c98bff'},
+  addStockedShopSpecial(items,{name:'수상한 상자',icon:'🎁',desc:'영웅 이상 유물 랜덤 획득',baseCost:360,grade:{name:'영웅+',col:'#c98bff'},
     buy:()=>{const r=rollShopChestRelic(); if(!r){ banner('상자 비어 있음','획득 가능한 유물이 없다',1200); return false; } grantShopRelic(r); banner(r.icon+' '+r.name,'상자에서 유물 획득!',1500); return true; }});
   currentShopItems=items;
   if(nextShopDiscount>0) nextShopDiscount=0;
@@ -9803,11 +9855,11 @@ const TREE_NODES = [
   // 💰 골드 라인 — "슈퍼챗 부자"
   // ══════════════════════════════════
   { id:'g_gold1', name:'골드 수집 I',  icon:'💰', branch:'gold', req:['hub'], cost:1,
-    desc:'골드 획득 +14%', apply:p=>{ p.goldMul*=1.14; } },
+    desc:'골드 획득 +14%', apply:p=>{ p.goldMul+=0.14; } },
   { id:'g_xp1',   name:'성장 계약',icon:'📈', branch:'gold', req:['g_donate'], cost:2,
-    desc:'경험치 획득 +18%, 골드 획득 -8%', apply:p=>{ p.xpMul*=1.18; p.goldMul*=0.92; } },
+    desc:'경험치 획득 +18%, 골드 획득 -8%', apply:p=>{ p.xpMul*=1.18; p.goldMul-=0.08; } },
   { id:'g_gold2', name:'골드 수집 II', icon:'💰', branch:'gold', req:['g_gold1'], cost:1,
-    desc:'골드 획득 추가 +14%', apply:p=>{ p.goldMul*=1.14; } },
+    desc:'골드 획득 추가 +14%', apply:p=>{ p.goldMul+=0.14; } },
   { id:'g_xp2',   name:'압축 성장',icon:'⏫',branch:'gold', req:['g_xp1'], cost:2,
     desc:'경험치 획득 +20%, 받는 피해 +5%', apply:p=>{ p.xpMul*=1.20; p.damageTakenMul*=1.05; } },
   { id:'g_donate',name:'도네 알림 강화',icon:'💸', branch:'gold', req:['g_gold1'], cost:1,
@@ -9815,7 +9867,7 @@ const TREE_NODES = [
   { id:'g_power', name:'현질의 힘',    icon:'💳', branch:'gold', req:['g_gold2','g_donate'], cost:2,
     desc:'보유 골드 100당 공격력 +2% (최대+30%)', apply:p=>{ p.goldPower+=0.02; } },
   { id:'g_magnet',name:'초강력 자석',  icon:'🧲', branch:'gold', req:['g_donate','g_power'], cost:2,
-    desc:'흡수 범위 2배 + 골드 +20%', apply:p=>{ p.magnet*=2; p.goldMul*=1.2; } },
+    desc:'흡수 범위 2배 + 골드 +20%', apply:p=>{ p.magnet*=2; p.goldMul+=0.2; } },
   { id:'g_jackpot',name:'대박 도네',   icon:'🎰', branch:'gold', req:['g_magnet'], cost:3,
     desc:'골드 폭탄 확률 2배 + 레벨업 시 체력 +8 회복', once:true,
     apply:p=>{ p.donateChance*=2; p._levelHeal=(p._levelHeal||0)+8; } },
@@ -9824,7 +9876,7 @@ const TREE_NODES = [
     apply:p=>{ p.investmentReturn=true; } },
   { id:'greed_contract', name:'탐욕의 계약', icon:'💎', branch:'gold', req:['investment_return','g_jackpot'], cost:3, isKeystone:true,
     desc:'골드 획득 +40%, 받는 피해 +10%', skip:p=>p.greedContract,
-    apply:p=>{ p.greedContract=true; p.goldMul*=1.4; p.damageTakenMul*=1.1; } },
+    apply:p=>{ p.greedContract=true; p.goldMul+=0.4; p.damageTakenMul*=1.1; } },
 
   // ══════════════════════════════════
   // 🛡️ 생존 라인 — "불사 스트리머"
