@@ -1257,14 +1257,14 @@ function intentShockwave(x,y,r,dmg,src){
   }
 }
 function intentLaser(x,y,ang,width,range,dmg,src,color){
-  const px=player.x-x, py=player.y-y;
-  const along=px*Math.cos(ang)+py*Math.sin(ang);
-  const side=Math.abs(-px*Math.sin(ang)+py*Math.cos(ang));
-  if(along>0&&along<range&&side<width) hurtPlayer(dmg,src||'레이저');
   for(let i=0;i<9;i++){
     eBullets.push({x:x+Math.cos(ang)*i*42,y:y+Math.sin(ang)*i*42,vx:Math.cos(ang)*260,vy:Math.sin(ang)*260,r:6,dmg:Math.max(6,Math.round(dmg*0.45)),life:1.2,srcName:src||'레이저'});
   }
   burst(x+Math.cos(ang)*range*0.45,y+Math.sin(ang)*range*0.45,color||'#ff4d6d',12,220);
+  const px=player.x-x, py=player.y-y;
+  const along=px*Math.cos(ang)+py*Math.sin(ang);
+  const side=Math.abs(-px*Math.sin(ang)+py*Math.cos(ang));
+  if(along>0&&along<range&&side<width) hurtPlayer(dmg,src||'레이저');
 }
 function spawnSlimeSplit(e){
   if(!e||e.splitChild) return;
@@ -1758,7 +1758,8 @@ async function renderRankingList(){
       row.innerHTML=
         '<div class="rank-no">#'+rank+'</div>'+
         '<div><div class="rank-name"></div><div class="rank-meta"></div></div>'+
-        '<div class="rank-score">'+fmtScore(Number(d.score)||0)+'</div>';
+        '<div class="rank-score">'+fmtScore(Number(d.score)||0)+'</div>'+
+        '<div class="rank-detail-hint">상세</div>';
       row.querySelector('.rank-name').textContent=visibleLeaderboardName(d.nickname||d.name,d.title);
       row.querySelector('.rank-meta').textContent=rankingReachedText(d);
       row.onclick=()=>openRankBuildDetail(d);
@@ -1786,7 +1787,7 @@ let sfxVol=1, bgmVol=1;
 let bossEvolve=null;
 let shopIntroShown=false;
 let hazards=[];
-let kijoMasks=[], kijoGazes=[], kijoParades=[];
+let kijoMasks=[], kijoGazes=[], kijoParades=[], kijoLaserWarns=[];
 let tierIntroShown=false;
 let screenShake=0, hitFlash=0;
 // ── 이벤트 → 다음 전투/보상에 적용되는 모디파이어 ──
@@ -2041,7 +2042,7 @@ function loadRunCheckpoint(){
     mapData=restoreMapData(data.mapData);
     if(!mapData) throw new Error('map restore failed');
     buildBackdrop(act);
-    enemies=[]; pBullets=[]; eBullets=[]; pickups=[]; particles=[]; hazards=[]; floatBubbles=[]; kijoMasks=[]; kijoGazes=[]; kijoParades=[];
+    enemies=[]; pBullets=[]; eBullets=[]; pickups=[]; particles=[]; hazards=[]; floatBubbles=[]; kijoMasks=[]; kijoGazes=[]; kijoParades=[]; kijoLaserWarns=[];
     boss=null; pendingNode=null; roomCleared=true; roomIsBoss=false; roomIsMidboss=false; roomHadElite=false; bossBanner=0; bossEvolve=null; cutsceneT=0;
     tutorialMode=false; tutorialDoneFlag=true; paused=false; mouseDown=false; autoFire=false; runActive=true; state='map';
     hideAll(); startBGM(); showMap(); banner('이어하기','저장된 진행을 불러왔다',1400);
@@ -2068,7 +2069,7 @@ function startCombat(kind, fresh){
     fitField();
   }
   if(fresh){ roomEntryHp=player.hp; snapshotProgress(); if(player.roomEntryHeal>0) healPlayer(player.roomEntryHeal,player.x,player.y); }
-  enemies=[]; pBullets=[]; eBullets=[]; pickups=[]; particles=[]; hazards=[]; floatBubbles=[]; kijoMasks=[]; kijoGazes=[]; kijoParades=[];
+  enemies=[]; pBullets=[]; eBullets=[]; pickups=[]; particles=[]; hazards=[]; floatBubbles=[]; kijoMasks=[]; kijoGazes=[]; kijoParades=[]; kijoLaserWarns=[];
   player.x=W/2; player.y=H-90;
   roomCleared=false; roomIsBoss=(kind==='boss'); roomIsMidboss=(kind==='midboss'); kills=0; boss=null; roomHadElite=false; eliteIntro=null; timeScale=1; slowmoT=0;
   // GL/gView 리셋 (승우 외 보스전 잔여 효과 제거)
@@ -2610,6 +2611,18 @@ function kijoGazePattern(b){
   kijoGazes.push({x:b.x,y:b.y,ang,w:b.enraged?0.82:0.68,r:820,t:0,warn:b.enraged?0.85:1.05,done:false});
   banner('가면 시선','시선 밖으로!',850);
 }
+function beginKijoEvilEye(b){
+  const warn=1.5;
+  const beam={x:b.x,y:b.y,ang:Math.atan2(player.y-b.y,player.x-b.x),width:34,range:900,t:0,warn,color:'#ff4d6d',fired:false};
+  const ok=setIntent(b,'👁','마안',warn,()=>{
+    beam.fired=true;
+    beam.t=Math.max(beam.t,beam.warn);
+    intentLaser(beam.x,beam.y,beam.ang,beam.width,beam.range,24,'키죠 마안',beam.color);
+    b._evilEyeCd=8.5;
+  });
+  if(ok) kijoLaserWarns.push(beam);
+  return ok;
+}
 function kijoParadePattern(b){
   kijoParades=[];
   const n=b.enraged?4:3;
@@ -2645,6 +2658,9 @@ function kijoQueueDamageWindow(b,t,delay){
   b.restWaitDur=0;
 }
 function updateKijoFx(dt){
+  for(const w of kijoLaserWarns) w.t+=dt;
+  kijoLaserWarns=kijoLaserWarns.filter(w=>w.t<w.warn+0.32);
+
   for(const g of kijoGazes){
     g.t+=dt;
     if(!g.done&&g.t>=g.warn){
@@ -2700,7 +2716,7 @@ function updateBossIntentPatterns(b,dt){
   const cd=(name,base)=>{ b[name]=(b[name]==null?rand(base*0.65,base*1.2):b[name])-dt; return b[name]<=0&&!b.intent; };
   if(b.key==='kijo'){
     if(b.hp<=b.maxhp*0.3&&!b._madness){ b._madness=true; setIntent(b,'💀','광기',1.5,()=>{ b.intentSpeedMul=1.4; banner('💀 광기','키죠의 패턴이 빨라진다',1100); }); }
-    else if(cd('_evilEyeCd',8)) setIntent(b,'👁','마안',1.5,()=>{ const a=Math.atan2(player.y-b.y,player.x-b.x); intentLaser(b.x,b.y,a,34,900,24,'키죠 마안','#ff4d6d'); b._evilEyeCd=8.5; });
+    else if(cd('_evilEyeCd',8)) beginKijoEvilEye(b);
     else if(cd('_maskBombCd',11)) setIntent(b,'🎭','가면 폭발',1.5,()=>{ for(let i=0;i<4;i++){ const x=clamp(player.x+rand(-150,150),50,W-50), y=clamp(player.y+rand(-120,120),90,H-60); setTimeout(()=>intentShockwave(x,y,90,16,'가면 폭발'),5000); burst(x,y,'#c0392b',8,120); } b._maskBombCd=12; });
   }else if(b.key==='seungwoo'){
     if(b.hp<=b.maxhp*0.25&&!b._overload){ b._overload=true; setIntent(b,'💀','오버로드',1.5,()=>{ b.intentSpeedMul=1.3; banner('💀 오버로드','패턴 속도 증가',1000); }); }
@@ -2727,6 +2743,7 @@ function updateBoss(dt){
   if(!b.enraged && b.hp<b.maxhp*0.4){ b.enraged=true; b.spd*=1.4; banner("격노!","보스가 분노한다",1300); chatSys("🔥 보스 격노 — 채팅 카오스 monkaS"); }
   if(stunned) return;
   if(b.key==='kijo'){ b.restT=0; b.restWaitT=0; b.restWaitDur=0; }
+  if(b.key==='kijo'&&b.intent&&b.intent.label==='마안') return;
   // 플레이어 추적(느슨)
   const a=Math.atan2(player.y-b.y,player.x-b.x);
   const sp=b.spd*(b.enraged?1.3:1)*statusMoveMul(b);
@@ -2882,7 +2899,7 @@ function seungwooNextPhase(b){
   const ph=(b.gphase||1)+1;
   b.gphase=ph;
   clearSeungwooFx();
-  eBullets.length=0; hazards=[]; particles=[];
+  eBullets.length=0; hazards=[]; particles=[]; kijoLaserWarns=[];
   b.maxhp=(b.phaseHp&&b.phaseHp[ph-1])||b.maxhp;
   b.hp=b.maxhp;
   b.hitT=0.2; b.stunT=0; b.burnT=0; b.psT=0; b.psStacks=0;
@@ -6856,6 +6873,39 @@ function drawKijoMaskShape(x,y,r,kind,alpha,seed){
   ctx.restore();
 }
 function drawKijoFx(){
+  for(const w of kijoLaserWarns){
+    const k=clamp(w.t/w.warn,0,1);
+    const fade=w.t<=w.warn?1:clamp(1-(w.t-w.warn)/0.32,0,1);
+    const sx=w.x, sy=w.y, ex=w.x+Math.cos(w.ang)*w.range, ey=w.y+Math.sin(w.ang)*w.range;
+    const nx=-Math.sin(w.ang), ny=Math.cos(w.ang), half=w.width;
+    const pulse=0.55+0.45*Math.sin(performance.now()/55);
+    ctx.save();
+    ctx.globalAlpha=fade;
+    ctx.fillStyle='rgba(255,77,109,'+(0.08+0.16*k)+')';
+    ctx.beginPath();
+    ctx.moveTo(sx+nx*half,sy+ny*half);
+    ctx.lineTo(ex+nx*half,ey+ny*half);
+    ctx.lineTo(ex-nx*half,ey-ny*half);
+    ctx.lineTo(sx-nx*half,sy-ny*half);
+    ctx.closePath();
+    ctx.fill();
+    ctx.lineCap='round';
+    ctx.shadowColor=w.color;
+    ctx.shadowBlur=16+10*pulse;
+    ctx.strokeStyle=w.fired?'#ffd34d':w.color;
+    ctx.lineWidth=5+3*pulse;
+    ctx.beginPath(); ctx.moveTo(sx,sy); ctx.lineTo(ex,ey); ctx.stroke();
+    ctx.shadowBlur=0;
+    ctx.strokeStyle='rgba(255,211,77,'+(0.45+0.35*k)+')';
+    ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.moveTo(sx+nx*half,sy+ny*half); ctx.lineTo(ex+nx*half,ey+ny*half);
+    ctx.moveTo(sx-nx*half,sy-ny*half); ctx.lineTo(ex-nx*half,ey-ny*half);
+    ctx.stroke();
+    ctx.fillStyle='rgba(255,211,77,'+(0.18+0.35*k)+')';
+    ctx.beginPath(); ctx.arc(sx,sy,10+8*k,0,TAU); ctx.fill();
+    ctx.restore();
+  }
   for(const g of kijoGazes){
     const k=clamp(g.t/g.warn,0,1), a=0.08+0.22*Math.sin(k*Math.PI);
     ctx.save(); ctx.globalAlpha=a; ctx.fillStyle='#ff4d6d';
