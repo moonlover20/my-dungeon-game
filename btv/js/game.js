@@ -248,14 +248,18 @@ const MUSIC = {
   vol:0.375,                           // 음악 기본 볼륨(배경음 슬라이더와 곱해짐) — 기존 0.75에서 50% 줄임
   tracks:{},
   files:{
-    main:    'main.mp3',
-    intro:   'intro.mp3',
-    act1:    'act1.mp3',
-    midboss: 'midboss.mp3',
-    boss:    'boss.mp3'
+    main:         'main.mp3',
+    intro:        'intro.mp3',
+    act1:         'act1.mp3',
+    act2:         'btv/assets/music/act2-maple-bg.mp3',
+    midboss:      'midboss.mp3',
+    act2Midboss:  'btv/assets/music/act2-midboss-malkuth.mp3',
+    boss:         'boss.mp3',
+    finalBoss:    'btv/assets/music/act2-final-boss.mp3'
   },
   tightLoops:{
-    midboss:{start:0.02,endPad:0.28}
+    midboss:{start:0.02,endPad:0.28},
+    act2Midboss:{start:0.02,endPad:0.28}
   }
 };
 (function initMusic(){
@@ -274,9 +278,9 @@ const MUSIC = {
 function desiredMusicKey(){
   if(state==='title'||state==='start') return 'main'; // 시작화면·난이도 선택 화면 → main.mp3
   if(!runActive) return 'intro';   // 스토리·엔드 등 기타 비전투 화면
-  if(roomIsBoss) return 'boss';
-  if(roomIsMidboss) return 'midboss';
-  return 'act1';                   // 실제 act1 진입 후 — 전투·맵·상점·이벤트·레벨업 등
+  if(roomIsBoss) return act>=MAX_ACT ? 'finalBoss' : 'boss';
+  if(roomIsMidboss) return act>=2 ? 'act2Midboss' : 'midboss';
+  return act>=2 ? 'act2' : 'act1'; // 2막 일반 진행은 메이플 BGM 사용
 }
 // 첫 사용자 제스처에서 모든 트랙 재생 권한 확보
 function unlockMusic(){
@@ -362,7 +366,7 @@ const ENEMY_TYPES={
   goblin_archer  :{name:"대파",  r:14, hp:18, spd:50, dmg:6,  color:"#7bbf5a", xp:10, ai:"shooter", range:340, cool:1.25, label:"대파"},
   goblin_shaman  :{name:"까치",  r:15, hp:24, spd:66, dmg:7,  color:"#8a6fb0", xp:12, ai:"orbit",   range:240, cool:1.05, label:"까치"},
   goblin_bomber  :{name:"블페러", r:15, hp:22, spd:100, dmg:6,  color:"#9aa83f", xp:11, ai:"chase", explode:true, label:"블페러"},
-  rhino_beetle   :{name:"자잘자",   r:24, hp:75, spd:60, dmg:12, color:"#3a2418", xp:14, ai:"charge", label:"자잘자"},
+  rhino_beetle   :{name:"자잘자",   r:27, hp:140, spd:68, dmg:16, color:"#3a2418", xp:24, ai:"charge", armor:0.15, label:"자잘자"},
   earthworm      :{name:"지렁이", r:12, hp:10, spd:74, dmg:6, color:"#e87a8a", xp:0, ai:"erratic", label:"지렁이"},
   hyechul        :{name:"혜철이", r:52, hp:300, spd:42, dmg:15, color:"#c0392b", xp:150, ai:"hyechul", label:"혜철이"},
   zergling       :{name:"저글링", r:14, hp:12, spd:120, dmg:7, color:"#c98bff", xp:0, ai:"charge", label:"저글링"},
@@ -385,11 +389,11 @@ const ENEMY_TYPES={
   elf_melee   :{name:"엘프 검사",  r:14,hp:26,spd:82,dmg:11,color:"#bfe3a0",xp:11,ai:"chase"},
   elf_ranged  :{name:"엘프 궁수",  r:14,hp:22,spd:54,dmg:0, color:"#a8d98a",xp:12,ai:"shooter",range:360,cool:1.3},
   // === 2막 (봉식 월드): 광천김 소굴 ===
-  gwangcheon_gim:{name:"광천김", r:18, hp:45,  spd:40, dmg:7,  color:"#3f7a34", xp:88,  ai:"shooter", range:330, cool:1.6, label:"광천김"},
-  reura         :{name:"러라",   r:15, hp:36,  spd:90, dmg:10, color:"#ffd166", xp:72,  ai:"chase", lunge:true, label:"러라"},
-  namu          :{name:"나무",   r:22, hp:95,  spd:30, dmg:13, color:"#5fa84a", xp:112, ai:"chase",   label:"나무"},
-  pobear        :{name:"포베어", r:24, hp:82,  spd:54, dmg:13, color:"#c8884a", xp:104, ai:"charge",  label:"포베어"},
-  yanggaeng     :{name:"박제인간", r:54, hp:1000, spd:44, dmg:14, color:"#111111", xp:1800, ai:"bagjein", cool:2, label:"박제인간"},
+  gwangcheon_gim:{name:"광천김", r:18, hp:58,  spd:40, dmg:7,  color:"#3f7a34", xp:88,  ai:"shooter", range:330, cool:1.6, label:"광천김"},
+  reura         :{name:"러라",   r:15, hp:56,  spd:90, dmg:10, color:"#ffd166", xp:84,  ai:"chase", lunge:true, label:"러라"},
+  namu          :{name:"나무",   r:22, hp:72,  spd:30, dmg:13, color:"#5fa84a", xp:96, ai:"chase",   label:"나무"},
+  pobear        :{name:"포베어", r:24, hp:70,  spd:54, dmg:13, color:"#c8884a", xp:96, ai:"charge",  label:"포베어"},
+  yanggaeng     :{name:"박제인간", r:58, hp:1450, spd:48, dmg:17, color:"#111111", xp:2200, ai:"bagjein", cool:1.7, label:"박제인간"},
   // === 2막 엘리트: 양갱 (3페이즈) ===
   kkotchung     :{name:"양갱", r:32, hp:240, spd:50, dmg:11, color:"#f7a8d0", xp:900,  ai:"kkotchung", cool:1.4, label:"미주"},
 };
@@ -778,8 +782,8 @@ let progressRemoteDisabled=false;
 let scoreSubmitSeq=0;
 let rankingDifficulty='easy';
 const rankingBuildCache=new Map();
-let leaderboardSplitReadDenied=true;
-let leaderboardSplitWriteDenied=true;
+let leaderboardSplitReadDenied=false;
+let leaderboardSplitWriteDenied=false;
 const USER_PROGRESS_COLLECTION='user_progress';
 const USER_PROGRESS_LOCAL_KEY='btvUserProgressBackup';
 const ACHIEVEMENT_RELIC_IDS=['kijo_mask','viewer_slayer_mic','abstinence_chalice'];
@@ -1542,6 +1546,27 @@ function rankingReachedText(data){
 function createRunId(api){
   return api.fs.doc(api.fs.collection(api.db,LEADERBOARD_SUMMARY_COLLECTION)).id;
 }
+function createClientRunId(){
+  try{
+    if(window.crypto && window.crypto.randomUUID) return window.crypto.randomUUID();
+  }catch(e){}
+  return 'run-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10);
+}
+function getLeaderboardSubmitEndpoint(){
+  const endpoint=String(window.LEADERBOARD_SUBMIT_ENDPOINT||'').trim();
+  return /^https:\/\//i.test(endpoint)?endpoint:'';
+}
+async function submitRunScoreToTrustedEndpoint(summary,build){
+  const endpoint=getLeaderboardSubmitEndpoint();
+  if(!endpoint) throw new Error('Trusted leaderboard endpoint missing');
+  const res=await fetch(endpoint,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({summary,build})
+  });
+  if(!res.ok) throw new Error('Leaderboard endpoint rejected: '+res.status);
+  return true;
+}
 function createRunBuildSnapshot(scoreData){
   const p=player||{};
   const pc=v=>Math.round(Number(v||0)*1000)/1000;
@@ -1777,41 +1802,8 @@ async function loadRankingSummaries(api){
   const snap=await api.fs.getDocs(q);
   return snap.docs.map(doc=>normalizeRankingRecord(Object.assign({id:doc.id},doc.data())));
 }
-async function saveLegacyRunScore(api,difficultyKey,summary,build){
-  const collection=api.fs.collection(api.db,leaderboardCollectionFor(difficultyKey));
-  const legacyBase={
-    name:summary.name||summary.nickname||'PLAYER',
-    score:summary.score||0,
-    kills:summary.kills||0,
-    level:summary.level||0,
-    act:summary.act||1,
-    floor:summary.floor||1,
-    hits:summary.hits||0,
-    retries:summary.retries||0,
-    elapsedSec:summary.elapsedSec||summary.clearTime||0,
-    win:!!summary.win,
-    killer:summary.killer||'',
-    title:titleWithEmbeddedBuild(summary.title||'',build),
-    difficultyKey,
-    difficulty:summary.difficulty||'',
-    createdAt:summary.createdAt
-  };
-  try{
-    const legacyDoc=await api.fs.addDoc(collection,Object.assign({},legacyBase,{
-      runId:summary.runId,
-      nickname:summary.nickname||summary.name,
-      clearTime:summary.clearTime||summary.elapsedSec,
-      character:summary.character||PLAYER_CHARACTER_NAME,
-      version:summary.version||RUN_BUILD_VERSION,
-      build
-    }));
-    if(build) rankingBuildCache.set(summary.runId||legacyDoc.id,build);
-    return legacyDoc;
-  }catch(e){
-    if(!isFirestorePermissionError(e)) throw e;
-    const legacyDoc=await api.fs.addDoc(collection,legacyBase);
-    return legacyDoc;
-  }
+async function saveLegacyRunScore(){
+  throw new Error('Direct client leaderboard writes are disabled. Configure window.LEADERBOARD_SUBMIT_ENDPOINT.');
 }
 async function saveRunScore(win,killer,scoreData,name){
   const token=++scoreSubmitSeq;
@@ -1826,10 +1818,9 @@ async function saveRunScore(win,killer,scoreData,name){
       return false;
     }
     const saveName=cleanLeaderboardName(name||getLeaderboardName());
-    const api=await ensureLeaderboardApi();
     if(token!==scoreSubmitSeq) return false;
     const difficultyKey=diffSet&&diffSet.key?diffSet.key:'easy';
-    const runId=createRunId(api);
+    const runId=createClientRunId();
     const clearTime=Math.round(scoreData.elapsedSec);
     const summary={
       runId,
@@ -1851,25 +1842,16 @@ async function saveRunScore(win,killer,scoreData,name){
       difficulty:diffSet&&diffSet.label?diffSet.label:'',
       character:PLAYER_CHARACTER_NAME,
       version:RUN_BUILD_VERSION,
-      createdAt:api.fs.serverTimestamp()
+      createdAt:new Date().toISOString()
     };
     const build=pendingRunBuildSnapshot||createRunBuildSnapshot(scoreData);
-    if(!leaderboardSplitWriteDenied){
-      try{
-        const batch=api.fs.writeBatch(api.db);
-        batch.set(api.fs.doc(api.db,LEADERBOARD_SUMMARY_COLLECTION,runId),summary);
-        batch.set(api.fs.doc(api.db,RUN_BUILDS_COLLECTION,runId),build);
-        await batch.commit();
-        rankingBuildCache.set(runId,build);
-      }catch(e){
-        if(!isFirestorePermissionError(e)) throw e;
-        leaderboardSplitWriteDenied=true;
-        leaderboardSplitReadDenied=true;
-        await saveLegacyRunScore(api,difficultyKey,summary,build);
-      }
-    }else{
-      await saveLegacyRunScore(api,difficultyKey,summary,build);
+    if(!getLeaderboardSubmitEndpoint()){
+      if(saveEl) saveEl.textContent='server ranking endpoint missing';
+      console.warn('Remote leaderboard submit disabled: set window.LEADERBOARD_SUBMIT_ENDPOINT to a trusted HTTPS endpoint.');
+      return false;
     }
+    await submitRunScoreToTrustedEndpoint(summary,build);
+    rankingBuildCache.set(runId,build);
     if(saveEl) saveEl.textContent='ranking saved';
     return true;
   }catch(e){
@@ -2269,7 +2251,7 @@ function startCombat(kind, fresh){
         spawnEnemy('rhino_beetle', W/2, 120, diff);
         const ze=enemies[enemies.length-1]; roomHadElite=true;
         ze.elite=true; ze.eliteViewer=true; ze.label='자잘자';
-        ze.hp*=1.75; ze.maxhp*=1.75; ze.dmg=Math.round(ze.dmg*1.4); ze.r+=4; ze.xp=80; ze.coolT=1.0;
+        ze.hp*=2.1; ze.maxhp*=2.1; ze.dmg=Math.round(ze.dmg*1.5); ze.r+=5; ze.xp=120; ze.coolT=1.0;
         ze.x=W/2; ze.y=190; ze.intro=true; ze.introScale=0; ze.stunT=4; ze.tauntedHalf=false;
         eliteIntro={t:0, ze:ze, warn:null, landed:false, banner:0, tensionDone:false};
         beep(330,0.5,'triangle',0.05); beep(440,0.55,'sine',0.035); // "징—"
@@ -8242,8 +8224,10 @@ function devResetDatabase(){
   renderDatabase();
   return dbDiscovered;
 }
-window.devUnlockDatabase=devUnlockDatabase;
-window.devResetDatabase=devResetDatabase;
+if(location.hostname==='localhost' || location.hostname==='127.0.0.1' || location.search.includes('debug=1')){
+  window.devUnlockDatabase=devUnlockDatabase;
+  window.devResetDatabase=devResetDatabase;
+}
 
 function renderDatabase(){
   const ov=$('ovDatabase'); if(!ov || ov.classList.contains('hidden')) return;
