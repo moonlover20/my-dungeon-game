@@ -415,6 +415,18 @@
           </div>
           <button class="btn ghost" id="rankingClose" onclick="if(typeof closeRankingTab==='function') closeRankingTab()">닫기</button>
         </div>
+        <div class="rank-build-modal hidden" id="rankBuildModal" role="dialog" aria-modal="true" aria-labelledby="rankBuildTitle">
+          <div class="rank-build-panel">
+            <div class="rank-build-head">
+              <div>
+                <div class="tag">CLEAR BUILD</div>
+                <h2 id="rankBuildTitle">클리어 빌드</h2>
+              </div>
+              <button class="db-x" id="rankBuildClose" type="button" aria-label="닫기">×</button>
+            </div>
+            <div class="rank-build-body" id="rankBuildBody"></div>
+          </div>
+        </div>
       </div>
 
       <!-- DATABASE -->
