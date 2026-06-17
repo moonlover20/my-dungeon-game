@@ -2276,9 +2276,7 @@ async function saveLegacyRunScore(){
     name:cleanLeaderboardName(summary.name||summary.nickname),
     retries:Math.max(0,Math.round(Number(summary.retries)||0)),
     score:clamp(Math.round(Number(summary.score)||0),0,SCORE_MAX),
-    scoreBreakdown:summary.scoreBreakdown||null,
     title:String(summaryData.title||''),
-    cleared:!!summary.win,
     win:!!summary.win
   };
   await api.fs.addDoc(api.fs.collection(api.db,leaderboardCollectionFor(legacyData.difficultyKey)),legacyData);
