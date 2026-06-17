@@ -1176,7 +1176,7 @@ const STALL_WARN_T=8;
 const STALL_REGEN_T=12;
 const STALL_RAGE_T=18;
 const STALL_REINFORCE_T=25;
-const STALL_REGEN_MUL=0.3;
+const STALL_REGEN_MUL=0.05;
 function effectiveRegen(p){
   p=p||player;
   let regen=BASE_NATURAL_REGEN+(Number(p.regen)||0)+(p.redPulseBuff>0?(p.redPulseRegen||0):0);
@@ -2601,7 +2601,7 @@ function stallTargetEnemies(){
   return enemies.filter(e=>e&&!e.dummy&&!e._stallReinforcement&&!SUMMON_TYPES.has(e.type));
 }
 function shouldTrackStall(){
-  if(state!=='play'||roomCleared||roomIsBoss||roomIsMidboss||boss||bossBanner>0) return false;
+  if(state!=='play'||roomCleared||roomIsBoss||roomIsMidboss||roomHadElite||boss||bossBanner>0) return false;
   const n=stallTargetEnemies().length;
   return n>0&&n<=STALL_REAL_ENEMY_LIMIT;
 }
@@ -2613,12 +2613,12 @@ function markStallKill(){
 }
 function applyStallRage(){
   enemies.forEach(e=>{
-    if(!e||e.dummy||SUMMON_TYPES.has(e.type)||e._stallRaged) return;
+    if(!e||e.dummy||e.midboss||e.eliteViewer||SUMMON_TYPES.has(e.type)||e._stallRaged) return;
     e._stallRaged=true;
-    e.spd*=1.35;
-    if(e._spd0!=null) e._spd0*=1.35;
-    if(e.cool) e.cool=Math.max(0.25,e.cool*0.75);
-    e.dmg=Math.max(1,Math.round((e.dmg||1)*1.15));
+    e.spd*=2;
+    if(e._spd0!=null) e._spd0*=2;
+    if(e.cool) e.cool=Math.max(0.25,e.cool*0.3);
+    e.dmg=Math.max(1,Math.round((e.dmg||1)*2));
   });
 }
 function spawnStallReinforcements(){
@@ -2641,7 +2641,7 @@ function updateStallWatch(dt){
   if(!shouldTrackStall()){ resetStallWatch(); return; }
   stallTimer+=dt;
   if(!stallWarned&&stallTimer>=STALL_WARN_T){ stallWarned=true; banner('시청자 이탈','빨리 마무리해!',1300); }
-  if(!stallRegenWarned&&stallTimer>=STALL_REGEN_T){ stallRegenWarned=true; banner('시청자 이탈','재생 효율 -70%',1300); }
+  if(!stallRegenWarned&&stallTimer>=STALL_REGEN_T){ stallRegenWarned=true; banner('시청자 이탈','재생 효율 -95%',1300); }
   if(!stallRaged&&stallTimer>=STALL_RAGE_T){ stallRaged=true; applyStallRage(); banner('남은 적 광폭화','재생 존버 견제',1400); }
   if(!stallReinforced&&stallTimer>=STALL_REINFORCE_T){ stallReinforced=true; spawnStallReinforcements(); }
 }
