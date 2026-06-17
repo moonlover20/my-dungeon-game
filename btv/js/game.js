@@ -891,8 +891,23 @@ const ACHIEVEMENT_CATEGORIES={
 const TITLE_REWARDS={
   first_play:{id:'first_broadcast',name:'첫방송'},
   first_kill:{id:'rookie_hunter',name:'초보사냥꾼'},
+  kill_3000:{id:'chat_grinder',name:'채팅 분쇄자'},
+  defeat_kijo:{id:'mask_breaker',name:'가면 파쇄자'},
+  defeat_hyechul:{id:'egg_hunter',name:'알 사냥꾼'},
+  defeat_yanggaeng:{id:'black_thread_cutter',name:'검은 실 절단자'},
+  defeat_seungwoo:{id:'monitor_breaker',name:'모니터 브레이커'},
   clear_game:{id:'broadcast_survivor',name:'방송생존자'},
-  no_hit_boss:{id:'nohit_master',name:'노히트장인'}
+  hard_clear:{id:'hardcore_broadcaster',name:'하드코어 송출자'},
+  no_potion_clear:{id:'dry_clearer',name:'무포션 수행자'},
+  no_hit_boss:{id:'nohit_master',name:'노히트장인'},
+  no_hit_room:{id:'moving_master',name:'무빙 장인'},
+  clutch_room:{id:'clutch_survivor',name:'딸피 생존자'},
+  low_hit_clear:{id:'clip_dodger',name:'클립각 회피자'},
+  relic_10:{id:'showcase_owner',name:'진열장 주인'},
+  mythic_3:{id:'mythic_keeper',name:'신화 보관자'},
+  curse_3_clear:{id:'curse_crowned',name:'저주받은 왕관'},
+  shop_spend_1000:{id:'big_spender',name:'큰손 후원자'},
+  no_shop_clear:{id:'no_spend_ascetic',name:'무소비 수행자'}
 };
 const TITLE_LIST=Object.values(TITLE_REWARDS);
 const RELIC_REWARDS={
@@ -982,6 +997,39 @@ function normalizeTitleMap(titles){
   });
   return out;
 }
+function grantAchievementRewardToProgress(progress,id){
+  if(!progress) return false;
+  let changed=false;
+  if(TITLE_REWARDS[id]){
+    progress.titles=progress.titles||{};
+    const titleId=TITLE_REWARDS[id].id;
+    if(!progress.titles[titleId]){
+      progress.titles[titleId]=true;
+      changed=true;
+    }
+  }
+  if(RELIC_REWARDS[id]){
+    progress.unlockedRelics=progress.unlockedRelics||{};
+    const relicId=RELIC_REWARDS[id];
+    if(!progress.unlockedRelics[relicId]){
+      progress.unlockedRelics[relicId]=true;
+      changed=true;
+    }
+  }
+  return changed;
+}
+function syncAchievementRewardsForProgress(progress){
+  if(!progress) return false;
+  let changed=false;
+  Object.keys(progress.achievements||{}).forEach(id=>{
+    if(achievementById(id)) changed=grantAchievementRewardToProgress(progress,id)||changed;
+  });
+  if(progress.selectedTitle&&!(progress.titles&&progress.titles[progress.selectedTitle])){
+    progress.selectedTitle='';
+    changed=true;
+  }
+  return changed;
+}
 function normalizeProgress(data){
   const base=defaultProgress();
   data=data||{};
@@ -994,6 +1042,7 @@ function normalizeProgress(data){
   base.stats=normalizeProgressStats(data.stats);
   base.loaded=!!data.loaded;
   base.dirty=!!data.dirty;
+  syncAchievementRewardsForProgress(base);
   return base;
 }
 function mergeProgress(remote,local){
@@ -1183,6 +1232,7 @@ function achievementRewardKinds(id){
   if(start.indexOf('시작 최대 체력')>=0) kinds.push({key:'hp',label:'시작 체력'});
   if(start.indexOf('트리포인트')>=0) kinds.push({key:'tree',label:'트리포인트'});
   if(RELIC_REWARDS[id]) kinds.push({key:'relic',label:'유물 해금'});
+  if(TITLE_REWARDS[id]) kinds.push({key:'title',label:'칭호'});
   return kinds;
 }
 function rewardBadgeHTML(id){
@@ -1295,8 +1345,7 @@ function refreshTitleDisplay(){
   refreshTitleInfoStats();
 }
 function applyAchievementReward(id){
-  if(TITLE_REWARDS[id]) userProgress.titles[TITLE_REWARDS[id].id]=true;
-  if(RELIC_REWARDS[id]) userProgress.unlockedRelics[RELIC_REWARDS[id]]=true;
+  grantAchievementRewardToProgress(userProgress,id);
 }
 function unlockAchievement(id){
   if(!userProgress.achievements) userProgress=normalizeProgress(userProgress);
