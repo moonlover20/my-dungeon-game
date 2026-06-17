@@ -507,7 +507,6 @@
   .ach-tab.active{color:#130b24;background:#c98bff;border-color:#efe0ff;box-shadow:0 4px 0 #633f8b,0 0 16px rgba(201,139,255,.5);}
   .achievement-list{display:flex;flex-direction:column;gap:8px;max-height:45vh;overflow-y:auto;text-align:left;padding-right:3px;}
   .ach-section-title{
-    position:sticky;top:0;z-index:1;
     display:flex;justify-content:space-between;align-items:center;gap:10px;
     padding:7px 9px;margin-top:4px;
     color:#f8f4ff;background:linear-gradient(90deg,rgba(201,139,255,.24),rgba(56,232,255,.12));
@@ -560,6 +559,7 @@
   .ach-reward-badge.hp{color:#ff9bb7;border-color:rgba(255,116,139,.34);}
   .ach-reward-badge.tree{color:#c98bff;border-color:rgba(201,139,255,.38);}
   .ach-reward-badge.relic{color:#fff;border-color:rgba(255,255,255,.22);box-shadow:0 0 10px rgba(201,139,255,.12);}
+  .ach-reward-badge.title{color:#ffe68a;border-color:rgba(255,230,138,.4);box-shadow:0 0 10px rgba(255,211,77,.14);}
   .ach-clear-title{margin-top:8px;}
   #ovDatabase{
     z-index:20;
