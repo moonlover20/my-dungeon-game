@@ -141,6 +141,7 @@
         <canvas id="titleCanvas" width="180" height="112"></canvas>
         <div id="titleVignette"></div>
         <div class="title-wrap">
+          <div class="title-atmosphere" aria-hidden="true"></div>
           <div class="title-logo">
             <h1>시청자를 막아라</h1>
             <div class="sub">Block the Viewers</div>
@@ -162,7 +163,7 @@
             </div>
             <div class="title-credits">
               <div><span>👨‍💻 개발</span><b>달좋아해요</b></div>
-              <div><span>🎵 음악</span><b>케티</b></div>
+              <div><span>🎵 음악</span><b>케터</b></div>
             </div>
             <div class="title-stats" aria-label="플레이 통계">
               <div><span>최고 점수</span><b id="titleBestScore">0</b></div>
@@ -454,12 +455,13 @@
               <div class="tag">🏆 업적</div>
               <h2>업적</h2>
             </div>
-            <div class="ach-rate" id="achRate">0 / 10 (0%)</div>
+            <div class="ach-rate" id="achRate">0 / 0 (0%)</div>
           </div>
           <div class="ach-current-title" id="achCurrentTitle" aria-live="polite">
             <div class="title-display-label">🏆 현재 칭호</div>
             <div class="title-display-name">칭호 없음</div>
           </div>
+          <div class="ach-bonus-summary" id="achBonusSummary" aria-live="polite"></div>
           <div class="achievement-tabs">
             <button class="ach-tab active" data-tab="achievements">업적</button>
             <button class="ach-tab" data-tab="titles">칭호</button>
