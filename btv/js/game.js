@@ -704,6 +704,16 @@ function isOpen(id){
   const el=$(id);
   return !!(el && !el.classList.contains('hidden'));
 }
+function isPauseOwnerOpen(){
+  return isOpen('ovPause') || isOpen('ovSettings') || treeOpen || isOpen('ovTree');
+}
+function recoverInvisiblePause(){
+  if(state==='play' && paused && !isPauseOwnerOpen()){
+    resumeGame();
+    return true;
+  }
+  return false;
+}
 function handleEscape(e){
   if(e){
     e.preventDefault();
@@ -730,6 +740,7 @@ function handleEscape(e){
     return true;
   }
   if(state==='play'){
+    if(recoverInvisiblePause()) return true;
     togglePause();
     return true;
   }
@@ -1830,11 +1841,24 @@ async function saveLegacyRunScore(){
   const createdAt=api.fs.serverTimestamp();
   const summaryData=Object.assign({},summary,{runId,createdAt});
   const buildData=build?Object.assign({runId,createdAt},build):null;
-  const legacyData=Object.assign({},summaryData,{
-    title:titleWithEmbeddedBuild(summaryData.title,build),
-    build:build||null
-  });
-  await api.fs.setDoc(api.fs.doc(api.db,leaderboardCollectionFor(summaryData.difficultyKey),runId),legacyData);
+  const legacyData={
+    act:Math.max(1,Math.round(Number(summary.act)||1)),
+    createdAt,
+    difficulty:String(summary.difficulty||''),
+    difficultyKey:String(summary.difficultyKey||'easy'),
+    elapsedSec:Math.max(0,Math.round(Number(summary.elapsedSec)||0)),
+    floor:Math.max(1,Math.round(Number(summary.floor)||1)),
+    hits:Math.max(0,Math.round(Number(summary.hits)||0)),
+    killer:String(summary.killer||''),
+    kills:Math.max(0,Math.round(Number(summary.kills)||0)),
+    level:Math.max(1,Math.round(Number(summary.level)||1)),
+    name:cleanLeaderboardName(summary.name||summary.nickname),
+    retries:Math.max(0,Math.round(Number(summary.retries)||0)),
+    score:clamp(Math.round(Number(summary.score)||0),0,SCORE_MAX),
+    title:String(summaryData.title||''),
+    win:!!summary.win
+  };
+  await api.fs.addDoc(api.fs.collection(api.db,leaderboardCollectionFor(legacyData.difficultyKey)),legacyData);
   if(!leaderboardSplitWriteDenied){
     try{
       const batch=api.fs.writeBatch(api.db);
@@ -7407,6 +7431,7 @@ function resumeGame(){
 function loop(now){
   let dt=(now-last)/1000; last=now;
   if(dt>0.05) dt=0.05;
+  recoverInvisiblePause();
   if(typeof updFps==='function') updFps(dt);
   if(!paused){ update(dt); if(typeof updateDmgNums==='function') updateDmgNums(dt); }
   draw();
