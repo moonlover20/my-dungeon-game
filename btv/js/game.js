@@ -776,6 +776,8 @@ let progressRemoteDisabled=false;
 let scoreSubmitSeq=0;
 let rankingDifficulty='easy';
 const rankingBuildCache=new Map();
+let leaderboardSplitReadDenied=false;
+let leaderboardSplitWriteDenied=false;
 const USER_PROGRESS_COLLECTION='user_progress';
 const USER_PROGRESS_LOCAL_KEY='btvUserProgressBackup';
 const ACHIEVEMENT_RELIC_IDS=['kijo_mask','viewer_slayer_mic','abstinence_chalice'];
@@ -1503,6 +1505,9 @@ function fmtTime(sec){
 function leaderboardCollectionFor(key){
   return LEADERBOARD_COLLECTIONS[key]||LEADERBOARD_COLLECTIONS.easy;
 }
+function isFirestorePermissionError(e){
+  return !!(e && (e.code==='permission-denied' || /Missing or insufficient permissions/i.test(String(e.message||e))));
+}
 function setRankingDifficulty(key){
   rankingDifficulty=LEADERBOARD_COLLECTIONS[key]?key:'easy';
   document.querySelectorAll('.rank-tab').forEach(btn=>{
@@ -1636,7 +1641,15 @@ async function openRankBuildDetail(summary){
   const runId=summary&&(summary.runId||summary.id);
   modal.classList.remove('hidden');
   body.innerHTML='<div class="rank-build-empty">상세 빌드 정보를 불러오는 중...</div>';
+  if(summary&&summary.build){
+    renderRunBuildDetail(summary,summary.build);
+    return;
+  }
   if(!runId){
+    renderRunBuildDetail(summary,null);
+    return;
+  }
+  if(leaderboardSplitReadDenied){
     renderRunBuildDetail(summary,null);
     return;
   }
@@ -1656,38 +1669,81 @@ async function openRankBuildDetail(summary){
     rankingBuildCache.set(runId,build);
     renderRunBuildDetail(summary,build);
   }catch(e){
-    console.warn('run build load failed',e);
+    if(isFirestorePermissionError(e)) leaderboardSplitReadDenied=true;
+    else console.warn('run build load failed',e);
     rankingBuildCache.set(runId,null);
     renderRunBuildDetail(summary,null);
   }
 }
 async function loadRankingSummaries(api){
-  try{
-    const q=api.fs.query(
-      api.fs.collection(api.db,LEADERBOARD_SUMMARY_COLLECTION),
-      api.fs.where('difficultyKey','==',rankingDifficulty),
-      api.fs.orderBy('score','desc'),
-      api.fs.limit(10)
-    );
-    const snap=await api.fs.getDocs(q);
-    const records=snap.docs.map(doc=>Object.assign({id:doc.id,runId:doc.id},doc.data()));
-    if(records.length) return records;
-  }catch(e){
-    console.warn('leaderboard summary query failed',e);
+  if(!leaderboardSplitReadDenied){
+    try{
+      const q=api.fs.query(
+        api.fs.collection(api.db,LEADERBOARD_SUMMARY_COLLECTION),
+        api.fs.where('difficultyKey','==',rankingDifficulty),
+        api.fs.orderBy('score','desc'),
+        api.fs.limit(10)
+      );
+      const snap=await api.fs.getDocs(q);
+      const records=snap.docs.map(doc=>Object.assign({id:doc.id,runId:doc.id},doc.data()));
+      if(records.length) return records;
+    }catch(e){
+      if(isFirestorePermissionError(e)) leaderboardSplitReadDenied=true;
+      else console.warn('leaderboard summary query failed',e);
+    }
   }
-  try{
-    const q=api.fs.query(api.fs.collection(api.db,LEADERBOARD_SUMMARY_COLLECTION),api.fs.orderBy('score','desc'),api.fs.limit(50));
-    const snap=await api.fs.getDocs(q);
-    const records=snap.docs.map(doc=>Object.assign({id:doc.id,runId:doc.id},doc.data()))
-      .filter(d=>(d.difficultyKey||'easy')===rankingDifficulty)
-      .slice(0,10);
-    if(records.length) return records;
-  }catch(e){
-    console.warn('leaderboard summary fallback failed',e);
+  if(!leaderboardSplitReadDenied){
+    try{
+      const q=api.fs.query(api.fs.collection(api.db,LEADERBOARD_SUMMARY_COLLECTION),api.fs.orderBy('score','desc'),api.fs.limit(50));
+      const snap=await api.fs.getDocs(q);
+      const records=snap.docs.map(doc=>Object.assign({id:doc.id,runId:doc.id},doc.data()))
+        .filter(d=>(d.difficultyKey||'easy')===rankingDifficulty)
+        .slice(0,10);
+      if(records.length) return records;
+    }catch(e){
+      if(isFirestorePermissionError(e)) leaderboardSplitReadDenied=true;
+      else console.warn('leaderboard summary fallback failed',e);
+    }
   }
   const q=api.fs.query(api.fs.collection(api.db,leaderboardCollectionFor(rankingDifficulty)),api.fs.orderBy('score','desc'),api.fs.limit(10));
   const snap=await api.fs.getDocs(q);
   return snap.docs.map(doc=>Object.assign({id:doc.id},doc.data()));
+}
+async function saveLegacyRunScore(api,difficultyKey,summary,build){
+  const collection=api.fs.collection(api.db,leaderboardCollectionFor(difficultyKey));
+  const legacyBase={
+    name:summary.name||summary.nickname||'PLAYER',
+    score:summary.score||0,
+    kills:summary.kills||0,
+    level:summary.level||0,
+    act:summary.act||1,
+    floor:summary.floor||1,
+    hits:summary.hits||0,
+    retries:summary.retries||0,
+    elapsedSec:summary.elapsedSec||summary.clearTime||0,
+    win:!!summary.win,
+    killer:summary.killer||'',
+    title:summary.title||'',
+    difficultyKey,
+    difficulty:summary.difficulty||'',
+    createdAt:summary.createdAt
+  };
+  try{
+    const legacyDoc=await api.fs.addDoc(collection,Object.assign({},legacyBase,{
+      runId:summary.runId,
+      nickname:summary.nickname||summary.name,
+      clearTime:summary.clearTime||summary.elapsedSec,
+      character:summary.character||PLAYER_CHARACTER_NAME,
+      version:summary.version||RUN_BUILD_VERSION,
+      build
+    }));
+    if(build) rankingBuildCache.set(summary.runId||legacyDoc.id,build);
+    return legacyDoc;
+  }catch(e){
+    if(!isFirestorePermissionError(e)) throw e;
+    const legacyDoc=await api.fs.addDoc(collection,legacyBase);
+    return legacyDoc;
+  }
 }
 async function saveRunScore(win,killer,scoreData,name){
   const token=++scoreSubmitSeq;
@@ -1726,11 +1782,22 @@ async function saveRunScore(win,killer,scoreData,name){
       createdAt:api.fs.serverTimestamp()
     };
     const build=pendingRunBuildSnapshot||createRunBuildSnapshot(scoreData);
-    const batch=api.fs.writeBatch(api.db);
-    batch.set(api.fs.doc(api.db,LEADERBOARD_SUMMARY_COLLECTION,runId),summary);
-    batch.set(api.fs.doc(api.db,RUN_BUILDS_COLLECTION,runId),build);
-    await batch.commit();
-    rankingBuildCache.set(runId,build);
+    if(!leaderboardSplitWriteDenied){
+      try{
+        const batch=api.fs.writeBatch(api.db);
+        batch.set(api.fs.doc(api.db,LEADERBOARD_SUMMARY_COLLECTION,runId),summary);
+        batch.set(api.fs.doc(api.db,RUN_BUILDS_COLLECTION,runId),build);
+        await batch.commit();
+        rankingBuildCache.set(runId,build);
+      }catch(e){
+        if(!isFirestorePermissionError(e)) throw e;
+        leaderboardSplitWriteDenied=true;
+        leaderboardSplitReadDenied=true;
+        await saveLegacyRunScore(api,difficultyKey,summary,build);
+      }
+    }else{
+      await saveLegacyRunScore(api,difficultyKey,summary,build);
+    }
     if(saveEl) saveEl.textContent='ranking saved';
     return true;
   }catch(e){
