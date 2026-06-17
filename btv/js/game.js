@@ -5275,8 +5275,7 @@ function showLevelUp(){
     el.title=perkTooltipText(pk);
     el.innerHTML='<div class="pk-ic">'+(PERK_ICONS[pk.name]?'<img class="pk-img" src="'+PERK_ICONS[pk.name]+'" alt="">':pk.icon)+'</div><div class="pk-nm">'+pk.name+'</div>'+
       '<div class="pk-gr" style="color:'+t.col+'">['+t.name+']</div>'+
-      '<div class="pk-ds">'+pk.desc+'</div>'+
-      '<div class="pk-ds" style="font-size:10px;color:var(--muted);margin-top:5px">'+perkBuildMetaText(pk)+'</div>';
+      '<div class="pk-ds">'+pk.desc+'</div>';
     el.onclick=()=>{ if(selEl)selEl.classList.remove('sel'); selEl=el; selPerk=pk; el.classList.add('sel'); confirmBtn.disabled=false; confirmBtn.classList.add('ready'); confirmBtn.textContent='수락 ✓  '+pk.name; sfx.vote&&sfx.vote(); renderSidePanel(pk); };
     cont.appendChild(el);
   });
