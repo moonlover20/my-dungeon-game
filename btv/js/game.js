@@ -293,16 +293,20 @@ function unlockMusic(){
   }
 }
 // 매 프레임 호출 — 목표 트랙으로 부드럽게 크로스페이드
+function safeMediaVolume(v){
+  v=Number(v);
+  return Number.isFinite(v)?clamp(v,0,1):0;
+}
 function updateMusic(dt){
   if(!MUSIC.enabled || !MUSIC.unlocked) return;
   const want = muted ? null : desiredMusicKey();
-  const baseVol = MUSIC.vol * (typeof bgmVol==='number'?bgmVol:1);
-  const rate = 2.2*dt;
+  const baseVol = safeMediaVolume(MUSIC.vol * (typeof bgmVol==='number'?bgmVol:1));
+  const rate = Math.max(0,2.2*dt);
   for(const k in MUSIC.tracks){
     const a=MUSIC.tracks[k]; if(!a) continue;
     const goal=(k===want)?baseVol:0;
-    if(a.volume<goal) a.volume=Math.min(goal,a.volume+rate);
-    else if(a.volume>goal) a.volume=Math.max(0,Math.min(1,a.volume-rate));
+    if(a.volume<goal) a.volume=safeMediaVolume(Math.min(goal,a.volume+rate));
+    else if(a.volume>goal) a.volume=safeMediaVolume(Math.max(0,a.volume-rate));
     if(k===want){
       const lp=MUSIC.tightLoops&&MUSIC.tightLoops[k];
       if(lp && isFinite(a.duration) && a.duration>1 && a.currentTime>=a.duration-(lp.endPad||0)){
@@ -4121,31 +4125,61 @@ function genMap(){
     if(n.row===CAMP1_ROW||n.row===CAMP2_ROW){ n.type=Math.random()<0.5?'campfire':rollNodeType(n.row); return; }
     n.type=rollNodeType(n.row);
   });
-  ensureType(nodes,'shop',1);
-  ensureTypeInRow(nodes,'campfire',CAMP1_ROW);   // 휴식 보장: 각 관문 줄에 모닷불 최소 1개
-  ensureTypeInRow(nodes,'campfire',CAMP2_ROW);
+  ensureType(nodes,'shop',1,edges);
+  ensureTypeInRow(nodes,'campfire',CAMP1_ROW,edges);   // 휴식 보장: 각 관문 줄에 모닷불 최소 1개
+  ensureTypeInRow(nodes,'campfire',CAMP2_ROW,edges);
   placeEliteNodes(nodes);   // 자잘자 엘리트 노드 1~2개 (낮은 층 제외)
+  smoothMapNodeSequences(nodes,edges);
+  ensureType(nodes,'shop',1,edges);
+  ensureTypeInRow(nodes,'campfire',CAMP1_ROW,edges);
+  ensureTypeInRow(nodes,'campfire',CAMP2_ROW,edges);
   const startIds=nodes.filter(n=>n.row===0).map(n=>n.id);
   mapData={nm,nodes,edges:[...edges],startIds,currentId:null,reach:new Set(startIds)};
   buildBackdrop(act);
 }
 function rollNodeType(row){
   const bag=[];
-  for(let i=0;i<34;i++) bag.push('fight');   // 전투 비중 ↓
-  for(let i=0;i<32;i++) bag.push('event');    // 미지(❓) 비중 ↑
+  for(let i=0;i<44;i++) bag.push('fight');
+  for(let i=0;i<24;i++) bag.push('event');
   if(row>=1) for(let i=0;i<7;i++) bag.push('shop');
   if(row>=2) for(let i=0;i<6;i++) bag.push('campfire');
   return pick(bag);
 }
-function ensureType(nodes,type,minRow){
-  if(nodes.some(n=>n.type===type)) return;
-  const cand=nodes.filter(n=>n.type==='fight'&&n.row>=minRow);
-  if(cand.length) pick(cand).type=type;
+function isProtectedMapNode(n){
+  return !n || n.row===0 || n.type==='boss' || n.type==='midboss' || n.type==='elite';
 }
-function ensureTypeInRow(nodes,type,row){
-  const inRow=nodes.filter(n=>n.row===row && n.type!=='boss' && n.type!=='midboss');
+function wouldCreateMapSequence(nodes,edges,node,type){
+  if(!edges) return false;
+  const byId={};
+  nodes.forEach(n=>{ byId[n.id]=n; });
+  function nodeType(id){ return id===node.id?type:(byId[id]&&byId[id].type); }
+  const edgeList=[...edges];
+  for(let i=0;i<edgeList.length;i++){
+    const [from,to]=edgeList[i].split('>');
+    if(type==='shop'||type==='campfire'){
+      if(nodeType(from)===type&&nodeType(to)===type) return true;
+    }
+    if(type==='event'){
+      for(let j=0;j<edgeList.length;j++){
+        const [mid,end]=edgeList[j].split('>');
+        if(mid===to && nodeType(from)==='event' && nodeType(to)==='event' && nodeType(end)==='event') return true;
+      }
+    }
+  }
+  return false;
+}
+function ensureType(nodes,type,minRow,edges){
+  if(nodes.some(n=>n.type===type)) return;
+  const cand=nodes.filter(n=>n.type==='fight'&&n.row>=minRow&&!isProtectedMapNode(n));
+  const safe=edges?cand.filter(n=>!wouldCreateMapSequence(nodes,edges,n,type)):cand;
+  const pool=safe.length?safe:cand;
+  if(pool.length) pick(pool).type=type;
+}
+function ensureTypeInRow(nodes,type,row,edges){
+  const inRow=nodes.filter(n=>n.row===row && !isProtectedMapNode(n));
   if(!inRow.length || inRow.some(n=>n.type===type)) return;
-  pick(inRow).type=type;
+  const safe=edges?inRow.filter(n=>!wouldCreateMapSequence(nodes,edges,n,type)):inRow;
+  pick(safe.length?safe:inRow).type=type;
 }
 // 자잘자(엘리트) 노드 배치 — 낮은 층 제외, 난이도별 개수만큼 같은 줄 중복 없이 분산
 function placeEliteNodes(nodes){
@@ -4158,6 +4192,44 @@ function placeEliteNodes(nodes){
     if(usedRows.has(n.row)) continue;   // 같은 줄 중복 방지
     n.type='elite'; usedRows.add(n.row); placed++;
   }
+}
+function smoothMapNodeSequences(nodes,edges){
+  const byId={};
+  nodes.forEach(n=>{ byId[n.id]=n; });
+  const prevMap={};
+  nodes.forEach(n=>{ prevMap[n.id]=[]; });
+  edges.forEach(e=>{
+    const [from,to]=e.split('>');
+    if(byId[from]&&byId[to]) prevMap[to].push(from);
+  });
+  const fixedRows=new Set([0,MIDBOSS_ROW,CAMP1_ROW,CAMP2_ROW]);
+  function canChange(n){
+    if(!n) return false;
+    if(n.type==='boss'||n.type==='midboss'||n.type==='elite') return false;
+    if(fixedRows.has(n.row)) return false;
+    return true;
+  }
+  const sorted=nodes.slice().sort((a,b)=>a.row-b.row);
+  const streak={};
+  sorted.forEach(n=>{
+    const type=n.type;
+    const prevs=prevMap[n.id]||[];
+    let maxPrevSame=0;
+    prevs.forEach(pid=>{
+      const p=byId[pid];
+      if(p&&p.type===type&&streak[pid]!=null) maxPrevSame=Math.max(maxPrevSame,streak[pid]);
+    });
+    let s=maxPrevSame+1;
+    if(type==='event'&&s>=3&&canChange(n)){
+      n.type='fight';
+      s=1;
+    }
+    if((type==='shop'||type==='campfire')&&s>=2&&canChange(n)){
+      n.type='fight';
+      s=1;
+    }
+    streak[n.id]=s;
+  });
 }
 
 function showMap(){
