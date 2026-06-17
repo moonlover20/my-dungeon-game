@@ -696,6 +696,10 @@ function handleEscape(e){
     e.preventDefault();
     e.stopPropagation();
   }
+  if(isOpen('rankBuildModal')){
+    closeRankBuildModal();
+    return true;
+  }
   if(isOpen('ovDatabase')){
     closeDatabaseTab();
     return true;
@@ -760,6 +764,10 @@ const NAME_MAX_LEN=12;
 const RETRY_SCORE_PENALTY=2500;
 const HIT_SCORE_PENALTY=450;
 const LEADERBOARD_COLLECTIONS={easy:'scores_easy',normal:'scores_normal',hard:'scores_hard'};
+const LEADERBOARD_SUMMARY_COLLECTION='leaderboard';
+const RUN_BUILDS_COLLECTION='runBuilds';
+const RUN_BUILD_VERSION='run-build-v1';
+const PLAYER_CHARACTER_NAME='봉식';
 let leaderboardApiPromise=null;
 let progressApiPromise=null;
 let progressLoadPromise=null;
@@ -767,6 +775,7 @@ let progressSaveTimer=null;
 let progressRemoteDisabled=false;
 let scoreSubmitSeq=0;
 let rankingDifficulty='easy';
+const rankingBuildCache=new Map();
 const USER_PROGRESS_COLLECTION='user_progress';
 const USER_PROGRESS_LOCAL_KEY='btvUserProgressBackup';
 const ACHIEVEMENT_RELIC_IDS=['kijo_mask','viewer_slayer_mic','abstinence_chalice'];
@@ -1501,9 +1510,184 @@ function setRankingDifficulty(key){
   });
 }
 function rankingReachedText(data){
-  const a=Number(data.act||0), f=Number(data.floor||0), lv=Number(data.level||0), k=Number(data.kills||0);
-  const h=Number(data.hits||0), r=Number(data.retries||0), t=fmtTime(data.elapsedSec);
-  return a+'막 '+f+'층 · Lv.'+lv+' · 처치 '+k+' · 피격 '+h+' · 재도전 '+r+' · '+t;
+  const diff=data.difficulty||data.difficultyKey||'';
+  const character=data.character||PLAYER_CHARACTER_NAME;
+  const lv=Number(data.level||0);
+  const t=fmtTime(data.clearTime!=null?data.clearTime:data.elapsedSec);
+  return diff+' · '+character+' · Lv.'+lv+' · '+t;
+}
+function createRunId(api){
+  return api.fs.doc(api.fs.collection(api.db,LEADERBOARD_SUMMARY_COLLECTION)).id;
+}
+function createRunBuildSnapshot(scoreData){
+  const p=player||{};
+  const pc=v=>Math.round(Number(v||0)*1000)/1000;
+  return {
+    relics:(p.relics||[]).map(r=>r&&r.id).filter(Boolean),
+    potions:(p.potions||[]).map(pt=>pt&&pt.id).filter(Boolean),
+    perks:(p.perkIds||[]).filter(Boolean),
+    passiveNodes:Array.from(treeUnlocked||[]).filter(Boolean),
+    stats:{
+      maxHp:Math.round(Number(p.maxhp)||0),
+      damage:pc((Number(p.dmg)||0)*currentAttackMul(p)),
+      attackSpeed:pc(playerFireRate(p)),
+      critChance:pc(clamp(Number(p.critChance)||0,0,CRIT_CHANCE_CAP)),
+      critDamage:pc(clamp(Number(p.critMult)||CRIT_BASE_MULT,1,CRIT_MULT_CAP)),
+      moveSpeed:Math.round(Number(p.spd)||0),
+      projectileCount:Number(p.shots)||1,
+      armor:pc(effectiveArmor(p)),
+      regen:pc(effectiveRegen(p)),
+      bulletSpeed:Math.round(playerBulletSpeed(p))
+    },
+    gold:Math.round(Number(gold)||0),
+    act:Math.max(1,Number(act)||1),
+    stage:scoreData&&scoreData.reachedFloor?Number(scoreData.reachedFloor):Math.max(1,currentRow+1),
+    version:RUN_BUILD_VERSION
+  };
+}
+function rankBuildText(v){
+  return String(v==null?'':v).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+function nameById(list,id){
+  const item=(list||[]).find(x=>x&&x.id===id);
+  return item?item.name:String(id||'');
+}
+function perkByStoredId(id){
+  return (LEVEL_PERKS||[]).find(pk=>perkId(pk)===id || pk.name===id);
+}
+function passiveNodeById(id){
+  return (TREE_NODES||[]).find(n=>n&&n.id===id);
+}
+function rankBuildPill(kind,id){
+  let icon='', name=String(id||'');
+  if(kind==='relic'){
+    const r=(RELICS||[]).find(x=>x&&x.id===id);
+    if(r){ icon=relicIconHTML(r,'relic-pix-sm'); name=r.name; }
+  }else if(kind==='potion'){
+    const p=(POTIONS||[]).find(x=>x&&x.id===id);
+    if(p){ icon=POTION_PIX[p.id]?'<img src="'+rankBuildText(POTION_PIX[p.id])+'" alt="">':rankBuildText(p.icon||''); name=p.name; }
+  }else if(kind==='perk'){
+    const pk=perkByStoredId(id);
+    if(pk){ icon=PERK_ICONS[pk.name]?'<img src="'+rankBuildText(PERK_ICONS[pk.name])+'" alt="">':rankBuildText(pk.icon||''); name=pk.name; }
+  }else if(kind==='passive'){
+    const node=passiveNodeById(id);
+    if(node){ icon=rankBuildText(node.icon||''); name=node.name; }
+  }
+  return '<span class="rank-build-pill">'+icon+'<span>'+rankBuildText(name)+'</span></span>';
+}
+function renderRankBuildList(kind,ids){
+  ids=Array.isArray(ids)?ids.filter(Boolean):[];
+  if(!ids.length) return '<div class="rank-build-empty">없음</div>';
+  return '<div class="rank-build-list">'+ids.map(id=>rankBuildPill(kind,id)).join('')+'</div>';
+}
+function formatRankBuildStat(key,val){
+  const n=Number(val);
+  if(!Number.isFinite(n)) return rankBuildText(val);
+  if(key==='critChance'||key==='armor') return Math.round(n*100)+'%';
+  if(key==='critDamage') return 'x'+n.toFixed(1);
+  if(key==='attackSpeed') return n.toFixed(1)+'/초';
+  if(key==='damage'||key==='regen') return n.toFixed(1);
+  return String(Math.round(n));
+}
+function renderRunBuildDetail(summary,build){
+  const title=$('rankBuildTitle');
+  const body=$('rankBuildBody');
+  if(!body) return;
+  const nick=cleanLeaderboardName(summary&&((summary.nickname||summary.name)||''));
+  if(title) title.textContent=nick+'님의 클리어 빌드';
+  if(!build || build.version!==RUN_BUILD_VERSION){
+    body.innerHTML='<div class="rank-build-empty">상세 빌드 정보 없음</div>';
+    return;
+  }
+  const summaryItems=[
+    ['난이도',summary.difficulty||summary.difficultyKey||'-'],
+    ['캐릭터',summary.character||PLAYER_CHARACTER_NAME],
+    ['클리어 시간',fmtTime(summary.clearTime!=null?summary.clearTime:summary.elapsedSec)],
+    ['레벨','Lv.'+(Number(summary.level)||0)]
+  ];
+  const statLabels={
+    maxHp:'최대 체력', damage:'공격력', attackSpeed:'초당 발사',
+    critChance:'치명타 확률', critDamage:'치명타 피해', moveSpeed:'이동 속도',
+    projectileCount:'투사체', armor:'피해 감소', regen:'체력 재생', bulletSpeed:'탄속'
+  };
+  const stats=Object.keys(statLabels).filter(k=>build.stats&&build.stats[k]!=null).map(k=>
+    '<div class="rank-build-stat"><span>'+rankBuildText(statLabels[k])+'</span><b>'+formatRankBuildStat(k,build.stats[k])+'</b></div>'
+  ).join('')+
+    '<div class="rank-build-stat"><span>골드</span><b>'+fmtScore(Number(build.gold)||0)+'</b></div>'+
+    '<div class="rank-build-stat"><span>진행</span><b>'+rankBuildText((build.act||'-')+'막 '+(build.stage||'-')+'층')+'</b></div>';
+  body.innerHTML=
+    '<div class="rank-build-summary">'+summaryItems.map(item=>
+      '<div class="rank-build-chip"><span>'+rankBuildText(item[0])+'</span><b>'+rankBuildText(item[1])+'</b></div>'
+    ).join('')+'</div>'+
+    '<div class="rank-build-section"><h3>주요 스펙</h3><div class="rank-build-stats">'+stats+'</div></div>'+
+    '<div class="rank-build-section"><h3>유물</h3>'+renderRankBuildList('relic',build.relics)+'</div>'+
+    '<div class="rank-build-section"><h3>포션</h3>'+renderRankBuildList('potion',build.potions)+'</div>'+
+    '<div class="rank-build-section"><h3>레벨업 특성</h3>'+renderRankBuildList('perk',build.perks)+'</div>'+
+    '<div class="rank-build-section"><h3>패시브 노드</h3>'+renderRankBuildList('passive',build.passiveNodes)+'</div>';
+}
+function closeRankBuildModal(){
+  const modal=$('rankBuildModal');
+  if(modal) modal.classList.add('hidden');
+}
+async function openRankBuildDetail(summary){
+  const modal=$('rankBuildModal');
+  const body=$('rankBuildBody');
+  if(!modal || !body) return;
+  const runId=summary&&(summary.runId||summary.id);
+  modal.classList.remove('hidden');
+  body.innerHTML='<div class="rank-build-empty">상세 빌드 정보를 불러오는 중...</div>';
+  if(!runId){
+    renderRunBuildDetail(summary,null);
+    return;
+  }
+  if(rankingBuildCache.has(runId)){
+    const cached=rankingBuildCache.get(runId);
+    renderRunBuildDetail(summary,cached&&typeof cached.then==='function'?await cached:cached);
+    return;
+  }
+  try{
+    const loadPromise=(async()=>{
+      const api=await ensureLeaderboardApi();
+      const snap=await api.fs.getDoc(api.fs.doc(api.db,RUN_BUILDS_COLLECTION,runId));
+      return snap.exists()?snap.data():null;
+    })();
+    rankingBuildCache.set(runId,loadPromise);
+    const build=await loadPromise;
+    rankingBuildCache.set(runId,build);
+    renderRunBuildDetail(summary,build);
+  }catch(e){
+    console.warn('run build load failed',e);
+    rankingBuildCache.set(runId,null);
+    renderRunBuildDetail(summary,null);
+  }
+}
+async function loadRankingSummaries(api){
+  try{
+    const q=api.fs.query(
+      api.fs.collection(api.db,LEADERBOARD_SUMMARY_COLLECTION),
+      api.fs.where('difficultyKey','==',rankingDifficulty),
+      api.fs.orderBy('score','desc'),
+      api.fs.limit(10)
+    );
+    const snap=await api.fs.getDocs(q);
+    const records=snap.docs.map(doc=>Object.assign({id:doc.id,runId:doc.id},doc.data()));
+    if(records.length) return records;
+  }catch(e){
+    console.warn('leaderboard summary query failed',e);
+  }
+  try{
+    const q=api.fs.query(api.fs.collection(api.db,LEADERBOARD_SUMMARY_COLLECTION),api.fs.orderBy('score','desc'),api.fs.limit(50));
+    const snap=await api.fs.getDocs(q);
+    const records=snap.docs.map(doc=>Object.assign({id:doc.id,runId:doc.id},doc.data()))
+      .filter(d=>(d.difficultyKey||'easy')===rankingDifficulty)
+      .slice(0,10);
+    if(records.length) return records;
+  }catch(e){
+    console.warn('leaderboard summary fallback failed',e);
+  }
+  const q=api.fs.query(api.fs.collection(api.db,leaderboardCollectionFor(rankingDifficulty)),api.fs.orderBy('score','desc'),api.fs.limit(10));
+  const snap=await api.fs.getDocs(q);
+  return snap.docs.map(doc=>Object.assign({id:doc.id},doc.data()));
 }
 async function saveRunScore(win,killer,scoreData,name){
   const token=++scoreSubmitSeq;
@@ -1517,7 +1701,11 @@ async function saveRunScore(win,killer,scoreData,name){
     const api=await ensureLeaderboardApi();
     if(token!==scoreSubmitSeq) return false;
     const difficultyKey=diffSet&&diffSet.key?diffSet.key:'easy';
-    await api.fs.addDoc(api.fs.collection(api.db,leaderboardCollectionFor(difficultyKey)),{
+    const runId=createRunId(api);
+    const clearTime=Math.round(scoreData.elapsedSec);
+    const summary={
+      runId,
+      nickname:saveName,
       name:saveName,
       score:scoreToSave,
       kills:totalKills,
@@ -1526,14 +1714,23 @@ async function saveRunScore(win,killer,scoreData,name){
       floor:scoreData.reachedFloor,
       hits:runHits,
       retries,
-      elapsedSec:Math.round(scoreData.elapsedSec),
+      clearTime,
+      elapsedSec:clearTime,
       win:!!win,
       killer:killer||lastKiller||'',
       title:getSelectedTitleName(),
       difficultyKey,
       difficulty:diffSet&&diffSet.label?diffSet.label:'',
+      character:PLAYER_CHARACTER_NAME,
+      version:RUN_BUILD_VERSION,
       createdAt:api.fs.serverTimestamp()
-    });
+    };
+    const build=pendingRunBuildSnapshot||createRunBuildSnapshot(scoreData);
+    const batch=api.fs.writeBatch(api.db);
+    batch.set(api.fs.doc(api.db,LEADERBOARD_SUMMARY_COLLECTION,runId),summary);
+    batch.set(api.fs.doc(api.db,RUN_BUILDS_COLLECTION,runId),build);
+    await batch.commit();
+    rankingBuildCache.set(runId,build);
     if(saveEl) saveEl.textContent='ranking saved';
     return true;
   }catch(e){
@@ -1548,21 +1745,24 @@ async function renderRankingList(){
   setRankingDifficulty(rankingDifficulty);
   try{
     const api=await ensureLeaderboardApi();
-    const q=api.fs.query(api.fs.collection(api.db,leaderboardCollectionFor(rankingDifficulty)),api.fs.orderBy('score','desc'),api.fs.limit(10));
-    const snap=await api.fs.getDocs(q);
-    if(snap.empty){ list.innerHTML='<div class="rank-empty">아직 기록이 없습니다.</div>'; return; }
+    const records=await loadRankingSummaries(api);
+    if(!records.length){ list.innerHTML='<div class="rank-empty">아직 기록이 없습니다.</div>'; return; }
     list.innerHTML='';
     let rank=1;
-    snap.forEach(doc=>{
-      const d=doc.data();
+    records.forEach(d=>{
       const row=document.createElement('div');
-      row.className='rank-row';
+      row.className='rank-row has-build';
+      row.tabIndex=0;
+      row.setAttribute('role','button');
+      row.setAttribute('aria-label',cleanLeaderboardName(d.nickname||d.name)+'님의 클리어 빌드 보기');
       row.innerHTML=
         '<div class="rank-no">#'+rank+'</div>'+
         '<div><div class="rank-name"></div><div class="rank-meta"></div></div>'+
         '<div class="rank-score">'+fmtScore(Number(d.score)||0)+'</div>';
-      row.querySelector('.rank-name').textContent=visibleLeaderboardName(d.name,d.title);
+      row.querySelector('.rank-name').textContent=visibleLeaderboardName(d.nickname||d.name,d.title);
       row.querySelector('.rank-meta').textContent=rankingReachedText(d);
+      row.onclick=()=>openRankBuildDetail(d);
+      row.onkeydown=e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openRankBuildDetail(d); } };
       list.appendChild(row);
       rank++;
     });
@@ -1577,6 +1777,7 @@ let totalKills=0, kills=0, gold=0, level=1, xp=0, xpNext=20;
 let playerAttackSeq=0;
 let runStartedAt=0, runHits=0;
 let pendingScoreData=null, pendingScoreWin=false, pendingScoreKiller='', pendingScoreSaved=false;
+let pendingRunBuildSnapshot=null;
 let roomCleared=false, roomIsBoss=false, boss=null, bossBanner=0, roomHadElite=false;
 let eliteViewerSpawns=0;   // 자잘자(엘리트 시청자) 런 전체 출몰 횟수 — 최대 1회로 제한
 let roomIsMidboss=false, runActive=false;   // 음악 컨텍스트용 플래그
@@ -7366,6 +7567,7 @@ function gameOver(win, killer){
   pendingScoreData=scoreData;
   pendingScoreWin=!!win;
   pendingScoreKiller=k;
+  pendingRunBuildSnapshot=createRunBuildSnapshot(scoreData);
   resetEndRankForm();
   $('endQuip').textContent='채팅: "'+quip+'"';
   chatSys(win?"🎉🎉 클리어!! 채팅 축제":"☠ 사망 ("+k+") — 채팅: "+pick(["GG","한판더","아깝다 Sadge","리트 ㄱㄱ"]));
@@ -7377,6 +7579,7 @@ function newGame(){
   clearRunCheckpoint();
   startBGM();
   runActive=true;
+  pendingRunBuildSnapshot=null;
   act=1; currentRow=0; kills=0; totalKills=0; gold=0; level=1; xp=0; xpNext=20; pendingLevels=0; retries=0; runHits=0; runStartedAt=performance.now(); treePoints=0; treeUnlocked=new Set(['hub']);
   resetPlayer();
   runPotionUsed=false;
@@ -7594,6 +7797,7 @@ function openRankingTab(){
   renderRankingList();
 }
 function closeRankingTab(){
+  closeRankBuildModal();
   $('ovRanking').classList.add('hidden');
   $('ovTitle').classList.remove('hidden');
   state='title';
@@ -7793,6 +7997,7 @@ function bootGame(){
   { const ab=$('tmAchievements'); if(ab) ab.onclick=openAchievementsTab; }
   { const db=$('tmDatabase'); if(db) db.onclick=openDatabaseTab; }
   { const rc=$('rankingClose'); if(rc) rc.onclick=closeRankingTab; }
+  { const rbc=$('rankBuildClose'); if(rbc) rbc.onclick=closeRankBuildModal; }
   { const ac=$('achClose'); if(ac) ac.onclick=closeAchievementsTab; }
   { const dc=$('databaseClose'); if(dc) dc.onclick=closeDatabaseTab; }
   window.addEventListener('beforeunload',()=>{ if(state==='map') saveRunCheckpoint(); });
