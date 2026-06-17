@@ -1834,11 +1834,18 @@ async function saveLegacyRunScore(){
     title:titleWithEmbeddedBuild(summaryData.title,build),
     build:build||null
   });
-  const batch=api.fs.writeBatch(api.db);
-  batch.set(api.fs.doc(api.db,LEADERBOARD_SUMMARY_COLLECTION,runId),summaryData);
-  if(buildData) batch.set(api.fs.doc(api.db,RUN_BUILDS_COLLECTION,runId),buildData);
-  batch.set(api.fs.doc(api.db,leaderboardCollectionFor(summaryData.difficultyKey),runId),legacyData);
-  await batch.commit();
+  await api.fs.setDoc(api.fs.doc(api.db,leaderboardCollectionFor(summaryData.difficultyKey),runId),legacyData);
+  if(!leaderboardSplitWriteDenied){
+    try{
+      const batch=api.fs.writeBatch(api.db);
+      batch.set(api.fs.doc(api.db,LEADERBOARD_SUMMARY_COLLECTION,runId),summaryData);
+      if(buildData) batch.set(api.fs.doc(api.db,RUN_BUILDS_COLLECTION,runId),buildData);
+      await batch.commit();
+    }catch(e){
+      if(isFirestorePermissionError(e)) leaderboardSplitWriteDenied=true;
+      console.warn('leaderboard detail write skipped; legacy score saved',e);
+    }
+  }
   return true;
 }
 async function saveRunScore(win,killer,scoreData,name){
