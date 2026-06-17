@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>시청자를 막아라</title>
-<link rel="stylesheet" href="btv/css/styles.css?v=1.2.1-hotfix7">
+<link rel="stylesheet" href="btv/css/styles.css?v=1.3.0">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%2315101f'/%3E%3Crect x='5' y='1' width='6' height='1' fill='%239b8fc4'/%3E%3Crect x='3' y='2' width='10' height='1' fill='%239b8fc4'/%3E%3Crect x='2' y='3' width='12' height='1' fill='%239b8fc4'/%3E%3Crect x='2' y='4' width='12' height='1' fill='%239b8fc4'/%3E%3Crect x='2' y='5' width='12' height='1' fill='%239b8fc4'/%3E%3Crect x='3' y='4' width='3' height='3' fill='%2315101f'/%3E%3Crect x='10' y='4' width='3' height='3' fill='%2315101f'/%3E%3Crect x='3' y='4' width='3' height='3' fill='%23a02080'/%3E%3Crect x='10' y='4' width='3' height='3' fill='%23a02080'/%3E%3Crect x='2' y='6' width='12' height='1' fill='%239b8fc4'/%3E%3Crect x='2' y='7' width='12' height='1' fill='%239b8fc4'/%3E%3Crect x='3' y='8' width='10' height='1' fill='%239b8fc4'/%3E%3Crect x='4' y='9' width='8' height='1' fill='%239b8fc4'/%3E%3Crect x='4' y='10' width='3' height='1' fill='%239b8fc4'/%3E%3Crect x='9' y='10' width='3' height='1' fill='%239b8fc4'/%3E%3Crect x='4' y='11' width='3' height='3' fill='%239b8fc4'/%3E%3Crect x='9' y='11' width='3' height='3' fill='%239b8fc4'/%3E%3C/svg%3E">
 </head>
 <body>
@@ -12,9 +12,13 @@
 <!-- ===== HTML: Global effects layer ===== -->
 <div id="glitchFx"></div>
 <div id="introFx" aria-hidden="true">
-  <div id="introBinary"></div>
+  <div id="introBroadcastChat">
+    <div id="introChatList"></div>
+  </div>
+  <div id="introReplicas"></div>
   <div id="introPopups"></div>
   <div id="introBlackout"><div class="eb-wrap"><button id="endBroadcastBtn">■ 방송 종료 · END BROADCAST</button><div id="ebStatus"></div></div></div>
+  <button id="introSkipBtn" type="button">건너뛰기 ▶▶</button>
 </div>
 
 <!-- ===== HTML: App shell ===== -->
@@ -147,7 +151,7 @@
             <div class="sub">Block the Viewers</div>
           </div>
           <div class="title-live title-info-card" aria-label="게임 소개">
-            <div class="title-live-head"><span><span class="ld"></span>LIVE</span><span class="title-version">v1.2.1-hotfix7</span></div>
+            <div class="title-live-head"><span><span class="ld"></span>LIVE</span><span class="title-version">v1.3.0</span></div>
             <div class="title-card-name">시청자를 막아라</div>
             <p class="title-card-desc">스트리머가 되어 끝없이 몰려오는 시청자를 막아내는 픽셀 로그라이크 액션 게임</p>
             <div class="title-info-grid">
@@ -182,7 +186,7 @@
             <button class="title-item" id="tmExit" style="font-size:clamp(15px,2.5vw,21px);color:#9b8fc4">EXIT</button>
           </div>
         </div>
-        <div style="position:fixed;bottom:12px;right:16px;font-family:'Courier New',monospace;font-size:11px;color:#3a2f50;letter-spacing:2px;pointer-events:none;z-index:1;" id="verTag">v1.2.1-hotfix7</div>
+        <div style="position:fixed;bottom:12px;right:16px;font-family:'Courier New',monospace;font-size:11px;color:#3a2f50;letter-spacing:2px;pointer-events:none;z-index:1;" id="verTag">v1.3.0</div>
       </div>
 
       <!-- START (난이도 선택) -->
@@ -203,7 +207,7 @@
       <!-- BOSS TAUNT -->
       <div class="overlay hidden" id="ovTaunt">
         <div class="panel-box taunt-box" style="text-align:center">
-          <div class="tag" style="color:var(--danger)">█▓▒ ??? ▒▓█</div>
+          <div class="tag" style="color:var(--danger)">송출 관리자</div>
           <div id="tauntText"></div>
           <div style="margin-top:14px;font-size:11px;color:#5a5070;letter-spacing:1px">화면을 클릭하면 건너뜁니다</div>
         </div>
@@ -237,7 +241,13 @@
         <div class="panel-box">
           <div class="tag" id="mapTag">1막 · 경로 선택</div>
           <h2 id="mapTitle">길을 골라라</h2>
-          <div id="mapSvg"></div>
+          <div class="map-board">
+            <div id="mapSvg"></div>
+            <div class="map-controls">
+              <span>드래그: 이동 / 휠: 이동</span>
+              <button type="button" id="mapCenterBtn" class="map-center-btn">현재 위치</button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -403,7 +413,7 @@
             <button class="rank-tab" data-diff="hard">어려움</button>
           </div>
           <div class="ranking-screen">
-            <div class="ranking-list" id="rankingList">
+            <div class="ranking-list pixel-scroll" id="rankingList">
               <div class="rank-empty">기록을 불러오는 중...</div>
             </div>
           </div>
@@ -418,7 +428,7 @@
               </div>
               <button class="db-x" id="rankBuildClose" type="button" aria-label="닫기">×</button>
             </div>
-            <div class="rank-build-body" id="rankBuildBody"></div>
+            <div class="rank-build-body pixel-scroll" id="rankBuildBody"></div>
           </div>
         </div>
       </div>
@@ -443,7 +453,7 @@
             </div>
             <input id="databaseSearch" class="database-search" type="search" placeholder="이름 또는 설명 검색" autocomplete="off" spellcheck="false">
           </div>
-          <div class="database-list" id="databaseBody"></div>
+          <div class="database-list pixel-scroll" id="databaseBody"></div>
         </div>
       </div>
 
@@ -467,7 +477,7 @@
             <button class="ach-tab" data-tab="titles">칭호</button>
             <button class="ach-tab" data-tab="relics">해금 유물</button>
           </div>
-          <div class="achievement-list" id="achBody"></div>
+          <div class="achievement-list pixel-scroll" id="achBody"></div>
           <button class="btn ghost" id="achClose">닫기</button>
         </div>
       </div>
@@ -498,7 +508,7 @@
 
 <!-- ===== JS: Game runtime ===== -->
 <script defer src="btv/js/firebase-config.public.js"></script>
-<script defer src="btv/js/game.js?v=1.2.1-hotfix7"></script>
+<script defer src="btv/js/game.js?v=1.3.0"></script>
 
       <!-- PASSIVE TREE -->
       <div class="hidden" id="ovTree" style="position:fixed;inset:0;z-index:500;background:rgba(5,3,10,0.97);display:flex;flex-direction:column;align-items:stretch;">
