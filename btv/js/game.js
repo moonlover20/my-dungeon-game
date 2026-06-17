@@ -773,7 +773,7 @@ const ACHIEVEMENT_RELIC_IDS=['kijo_mask','viewer_slayer_mic','abstinence_chalice
 const ACHIEVEMENTS=[
   {id:'first_play',name:'첫 방송',desc:'처음 게임을 시작한다.',reward:'칭호: 첫방송'},
   {id:'first_kill',name:'첫 처치',desc:'처음으로 시청자를 처치한다.',reward:'칭호: 초보사냥꾼'},
-  {id:'kill_100',name:'100 처치',desc:'누적 처치 100회를 달성한다.',reward:'시작 골드 +20'},
+  {id:'kill_100',name:'100 처치',desc:'누적 처치 100회를 달성한다.',reward:'시작 골드 +100'},
   {id:'kill_1000',name:'1000 처치',desc:'누적 처치 1000회를 달성한다.',reward:'유물 해금: 시청자 학살자의 마이크'},
   {id:'defeat_kijo',name:'키죠 격파',desc:'키죠를 쓰러뜨린다.',reward:'유물 해금: 키죠의 가면',spoiler:true,spoilerTerms:['키죠'],hiddenName:'??? 격파',hiddenDesc:'???를 쓰러뜨린다.',hiddenRelicName:'???의 가면'},
   {id:'clear_act1',name:'1막 클리어',desc:'1막 보스를 격파한다.',reward:'시작 포션 +1'},
@@ -1125,7 +1125,7 @@ function selectTitle(title){
   saveUserProgress();
 }
 function applyStartBonuses(){
-  if(isAchievementUnlocked('kill_100')) gold+=20;
+  if(isAchievementUnlocked('kill_100')) gold+=100;
   if(isAchievementUnlocked('clear_act1')) addPotion(rollPotion());
 }
 function recordPlayStarted(){
@@ -1513,7 +1513,6 @@ async function saveRunScore(win,killer,scoreData,name){
     scoreData=scoreData||calcRunScore(win);
     const scoreToSave=clamp(Math.round(Number(scoreData&&scoreData.score)||0),0,SCORE_MAX);
     if(scoreData) scoreData.score=scoreToSave;
-    console.info('ranking scoreData before Firestore save', scoreData);
     const saveName=cleanLeaderboardName(name||getLeaderboardName());
     const api=await ensureLeaderboardApi();
     if(token!==scoreSubmitSeq) return false;
@@ -1719,6 +1718,7 @@ function restoreProgress(){
     potionBuffs:(s.player.potionBuffs||[]).map(b=>Object.assign({},b)),
     minion:null
   });
+  migrateTreeOnlyPerksToTree();
   recalcPotionBuffs(player);
 }
 
@@ -1771,6 +1771,7 @@ function restorePlayerFromSave(data){
   }
   Object.assign(player,p);
   player.perkIds=Array.isArray(player.perkIds)?player.perkIds.filter(Boolean):[];
+  migrateTreeOnlyPerksToTree();
   player.relics=relicIds.map(id=>RELICS.find(r=>r.id===id)).filter(Boolean);
   player.potions=potionIds.map(id=>POTIONS.find(pt=>pt.id===id)).filter(Boolean);
   player.buffs=Object.assign({rage:0,haste:0,shield:0},player.buffs||{});
@@ -2309,10 +2310,10 @@ function killEnemy(e){
     gainXP(e.xp);
     if(player.lifesteal>0 && Math.random()<player.lifesteal){ healPlayer(5,e.x,e.y); }
     if(player.healOnKill>0){ healPlayer(player.healOnKill,e.x,e.y); }
-    if(player.donateChance>0 && Math.random()<player.donateChance){ const dg=irand(20,50); gold+=dg; banner('💸 도네 알림!','+'+dg+' G',900); burst(e.x,e.y,'#ffd34d',18,240); }
+    if(player.donateChance>0 && Math.random()<player.donateChance){ const dg=irand(24,58); gold+=dg; banner('💸 도네 알림!','+'+dg+' G',900); burst(e.x,e.y,'#ffd34d',18,240); }
   }
   // 골드: 처치 즉시 획득 (소환몹은 무한 스폰이라 미지급)
-  if(!isSummon){ let coin=irand(2,6); if(e.elite) coin+=irand(8,16); coin=Math.round(coin*player.goldMul);
+  if(!isSummon){ let coin=irand(3,7); if(e.elite) coin+=irand(10,18); coin=Math.round(coin*player.goldMul);
   gold+=coin; sfx.coin(); burst(e.x,e.y,'#ffd34d',5,120); }
   if(!isSummon && player.explodeKill>0){ burst(e.x,e.y,'#ff9b4d',12,200); enemies.slice().forEach(o=>{ if(o!==e && dist2(o.x,o.y,e.x,e.y)<4900){ applyEnemyDirectDamage(o,player.explodeKill,'#ff9b4d'); } }); }
   if(!isSummon && player.chainKillLightning>0 && enemies.length && !e._chainKillSource){
@@ -2594,7 +2595,7 @@ function killBoss(){
   const deadBoss=boss;
   burst(boss.x,boss.y,boss.color,40,320); screenShake=18;
   banner("보스 처치!","승리!",2000); sfx.coin();
-  gold+=irand(90,150); sfx.coin(); burst(boss.x,boss.y,'#ffd34d',20,260);
+  gold+=irand(105,170); sfx.coin(); burst(boss.x,boss.y,'#ffd34d',20,260);
   const bossXp=[0,200,3100,440][act]||440;
   gainXP(bossXp);
   if(deadBoss&&deadBoss.key) markDiscovered('bosses', deadBoss.key);
@@ -3853,10 +3854,10 @@ function onCombatCleared(){
       reward();
       return;
     }
-    if(t==='midboss'){ const bonus=irand(60,90); gold+=bonus; updateHUD(); offerRelics(3,'중간보스 보상',(act>=2?'박제인간을 쓰러뜨린 보상이다':'혜철이를 쓰러뜨린 보상이다')+' · 골드 +'+bonus, finishNode); }
+    if(t==='midboss'){ const bonus=irand(70,105); gold+=bonus; updateHUD(); offerRelics(3,'중간보스 보상',(act>=2?'박제인간을 쓰러뜨린 보상이다':'혜철이를 쓰러뜨린 보상이다')+' · 골드 +'+bonus, finishNode); }
     else if(t==='boss') offerRelics(3,'👑 보스 보상','막 보스를 쓰러뜨린 보상이다 · 좋은 유물 확률 증가', finishNode, {weights:BOSS_RELIC_WEIGHTS});
-    else if(combatRewardMul>1){ const bonus=Math.round(irand(30,55)*combatRewardMul); gold+=bonus; combatRewardMul=1; offerRelics(3,'🎁 합방 보상','보상이 2배로! 골드 +'+bonus, finishNode); }
-    else if(roomHadElite){ const bonus=irand(70,110); gold+=bonus; updateHUD(); banner('⚔️ 자잘자 보상','골드 +'+bonus,1400); finishNode(); }
+    else if(combatRewardMul>1){ const bonus=Math.round(irand(36,65)*combatRewardMul); gold+=bonus; combatRewardMul=1; offerRelics(3,'🎁 합방 보상','보상이 2배로! 골드 +'+bonus, finishNode); }
+    else if(roomHadElite){ const bonus=irand(80,125); gold+=bonus; updateHUD(); banner('⚔️ 자잘자 보상','골드 +'+bonus,1400); finishNode(); }
     else offerSmallReward();
   }, 700);
 }
@@ -4991,7 +4992,7 @@ const LEVEL_PERKS=[
   {g:'common',icon:'🥾',name:'민첩 특화',desc:'이동 속도 +10',apply:p=>{p.spd+=10;}},
   {g:'common',icon:'❤️',name:'활력',desc:'최대 체력 +15, 10 회복',apply:p=>{p.maxhp+=15;healPlayer(10,player.x,player.y);}},
   {g:'common',icon:'🛡️',name:'방어 특화',desc:'받는 피해 -5%',apply:p=>{p.armor+=0.05;}},
-  {g:'common',icon:'🧲',name:'광부',desc:'골드 획득 +15%',apply:p=>{p.goldMul*=1.15;}},
+  {g:'common',icon:'🧲',name:'광부',desc:'골드 획득 +18%',apply:p=>{p.goldMul*=1.18;}},
   {g:'common',icon:'💥',name:'대구경',desc:'투사체 크기 +10%',apply:p=>{p.bulletSize+=0.10;}},
   {g:'common',icon:'🌿',name:'재생',desc:'초당 체력 +0.5',apply:p=>{p.regen+=0.5;}},
   {g:'rare',icon:'📈',name:'경험치 부스트',desc:'경험치 +15%',apply:p=>{p.xpMul+=0.15;}},
@@ -5058,6 +5059,15 @@ const LEVEL_PERKS=[
   {g:'mythic',icon:'🍷',name:'유리 대포',desc:'공격력 +5, 받는 피해 +30%',skip:p=>p.glassCannon,apply:p=>{p.glassCannon=true;p.dmg+=5;p.armor-=0.3;}},
   {g:'mythic',icon:'🤝',name:'구독자 소환',desc:'따라다니며 자동 공격하는 구독자',skip:p=>!!p.minion,apply:p=>{p.minion={ang:0,fireT:0,x:p.x,y:p.y};}},
 ];
+const TREE_ONLY_PERK_IDS=new Set([
+  'sharp_senses','weakpoint_strike','red_pulse','gamblers_blade',
+  'shotgun_mastery','barrage_focus',
+  'elemental_overload','corrosive_spread',
+  'dodge_reload','perfect_dodge','shadow_barrage',
+  'regen_overload','vamp_shield',
+  'investment_return','greed_contract'
+]);
+LEVEL_PERKS.forEach(pk=>{ if(TREE_ONLY_PERK_IDS.has(perkId(pk))) pk.skip=()=>true; });
 const PERK_META_BY_NAME={
   '공격 특화':{minLevel:1,maxLevel:15,tags:['combat','starter','damage'],build:'damage'},
   '속사 특화':{minLevel:1,maxLevel:15,tags:['combat','starter','rate'],build:'rate'},
@@ -5183,6 +5193,7 @@ function acquiredBuildCounts(){
 }
 function canRollPerk(pk,owned,lvl){
   if(!pk) return false;
+  if(TREE_ONLY_PERK_IDS.has(perkId(pk))) return false;
   if(pk.skip&&pk.skip(player)) return false;
   const min=pk.minLevel==null?1:pk.minLevel;
   const max=pk.maxLevel==null?Infinity:pk.maxLevel;
@@ -5283,7 +5294,7 @@ function pickLevelPerk(pk){
 }
 // ---------- 일반 전투 보상 ----------
 const SMALL_REWARDS=[
-  {icon:'💰',name:'골드 한 줌',desc:'골드를 줍는다',apply:()=>{const g=irand(15,30)+act*6;gold+=g;banner('골드 +'+g,'',1000);}},
+  {icon:'💰',name:'골드 한 줌',desc:'골드를 줍는다',apply:()=>{const g=irand(22,38)+act*7;gold+=g;banner('골드 +'+g,'',1000);}},
   {icon:'❤️',name:'응급 처치',desc:'체력 30 회복',apply:()=>{healPlayer(30,player.x,player.y);banner('체력 +30','',1000);}},
   {icon:'🧪',name:'물약 보급',desc:'랜덤 포션 1개',apply:()=>{ if(player.potions.length<3) addPotion(rollPotion()); else { gold+=20; banner('포션 가득 → 골드 +20','',1000);} }},
   {icon:'⚔️',name:'무기 손질',desc:'공격력 +0.3',apply:()=>{player.dmg+=0.3;banner('공격력 +0.3','',1000);}},
@@ -5294,7 +5305,7 @@ const SMALL_REWARDS=[
   {icon:'💥',name:'탄 개조',desc:'투사체 크기 +3%',apply:()=>{player.bulletSize*=1.03;banner('투사체 크기 +3%','',1000);}},
   {icon:'🌿',name:'활력 물약',desc:'최대 체력 +12, 12 회복',apply:()=>{player.maxhp+=12;healPlayer(12,player.x,player.y);banner('최대 체력 +12','',1000);}},
   {icon:'🔋',name:'추진제',desc:'투사체 속도 +5%',apply:()=>{player.bulletSpeedMul+=0.05;banner('투사체 속도 +5%','',1000);}},
-  {icon:'🧲',name:'자력 코일',desc:'골드 획득 +10%',apply:()=>{player.goldMul+=0.1;banner('골드 획득 +10%','',1000);}},
+  {icon:'🧲',name:'자력 코일',desc:'골드 획득 +12%',apply:()=>{player.goldMul+=0.12;banner('골드 획득 +12%','',1000);}},
   {icon:'🩸',name:'흡혈 코팅',desc:'흡혈 확률 +2%',apply:()=>{player.lifesteal+=0.02;banner('흡혈 +2%','',1000);}},
   {icon:'📈',name:'수련서',desc:'경험치 획득 +15%',apply:()=>{player.xpMul+=0.15;banner('경험치 +15%','',1000);}},
 ];
@@ -5358,7 +5369,8 @@ const SHOP_QUOTES=[
 let currentShopItems=[];
 function shopPrice(base){
   const disc=nextShopDiscount>0?Math.max(0,1-nextShopDiscount):1;
-  return Math.round(base*(player.shopCostMul||1)*disc);
+  const shopMul=0.72;
+  return Math.round(base*(player.shopCostMul||1)*disc*shopMul);
 }
 function shopRelicPrice(r){
   return shopPrice((88+act*20+Math.random()*20)*relicTier(r).costMul*2.5);
@@ -5383,7 +5395,7 @@ function grantShopRelic(r){
 function openShop(after){
   shopAfter=after||null;
   // 1회성 상점 할인 소비 (shopPrice가 이미 적용하고 있으므로, 진입 시 알림 후 초기화)
-  if(nextShopDiscount>0){ banner('상점 할인',`전품목 ${Math.round(nextShopDiscount*100)}% 할인 적용!`,1800); nextShopDiscount=0; }
+  if(nextShopDiscount>0){ banner('상점 할인',`전품목 ${Math.round(nextShopDiscount*100)}% 할인 적용!`,1800); }
   if(!shopIntroShown){ shopIntroShown=true; banner('💡 포션 사용법','구매한 포션은 1·2·3 키로 사용!',2800); }
   const items=[];
   const owned=new Set(player.relics.map(r=>r.id));
@@ -5394,17 +5406,18 @@ function openShop(after){
   const ptn=rollShopPotions(3);
   ptn.forEach(pt=>items.push({kind:'potion',name:pt.name,icon:pt.icon,desc:pt.desc,cost:shopPrice(40+act*5+Math.random()*14),potion:pt,
     buy:()=>addPotion(pt)}));
-  items.push({kind:'special',name:'체력 강화',icon:'❤️',desc:'최대 체력 +15 / 현재 체력 +15',cost:shopPrice(220),
+  items.push({kind:'special',name:'체력 강화',icon:'❤️',desc:'최대 체력 +15 / 현재 체력 +15',cost:shopPrice(155),
     buy:()=>{player.maxhp+=15;healPlayer(15,player.x,player.y);}});
-  items.push({kind:'special',name:'경험치 북',icon:'📚',desc:'현재 레벨 필요 경험치의 35% 획득',cost:shopPrice(180),
+  items.push({kind:'special',name:'경험치 북',icon:'📚',desc:'현재 레벨 필요 경험치의 35% 획득',cost:shopPrice(125),
     buy:()=>{gainXP(xpNext*0.35);}});
   if(diffSet.maxRetries!==Infinity){
-    items.push({kind:'special',name:'재도전권',icon:'🎟️',desc:'재도전 가능 횟수 +1',cost:shopPrice(220),grade:{name:'편의',col:'#40bbff'},skipBuyBanner:true,
+    items.push({kind:'special',name:'재도전권',icon:'🎟️',desc:'재도전 가능 횟수 +1',cost:shopPrice(155),grade:{name:'편의',col:'#40bbff'},skipBuyBanner:true,
       buy:()=>{const ok=grantRetryCharge(1,'상점 재도전권'); if(ok) banner('🎟️ 재도전 +1','다시 한 번 기회가 생겼다',1500); return ok;}});
   }
   items.push({kind:'special',name:'수상한 상자',icon:'🎁',desc:'영웅 이상 유물 랜덤 획득',cost:shopPrice(360),grade:{name:'영웅+',col:'#c98bff'},
     buy:()=>{const r=rollShopChestRelic(); if(!r){ banner('상자 비어 있음','획득 가능한 유물이 없다',1200); return false; } grantShopRelic(r); banner(r.icon+' '+r.name,'상자에서 유물 획득!',1500); return true; }});
   currentShopItems=items;
+  if(nextShopDiscount>0) nextShopDiscount=0;
   const ov=$('ovShop'); if(ov){ ov.classList.remove('shop-enter'); void ov.offsetWidth; ov.classList.add('shop-enter'); }
   renderShop(items);
   show('shop');
@@ -7039,81 +7052,6 @@ function showEntrance(role,name,quip){
 // ---------- 인벤토리 ----------
 function spStats(p){
   const regen=effectiveRegen(p);
-  return [
-    ['❤️ 최대체력', Math.round(p.maxhp), p.maxhp],
-    ['⚔️ 공격력', ((p.dmg+(p.potionAtkFlat||0))*currentAttackMul(p)).toFixed(1), (p.dmg+(p.potionAtkFlat||0))*currentAttackMul(p)],
-    ['🎯 치명타', Math.round(clamp(p.critChance,0,CRIT_CHANCE_CAP)*100)+'%', clamp(p.critChance,0,CRIT_CHANCE_CAP)],
-    ['🔥 초당발사', playerFireRate(p).toFixed(1)+'발', playerFireRate(p)],
-    ['➹ 투사체', p.shots+'발', p.shots],
-    ['👟 이동', Math.round(p.spd), p.spd],
-    ['🛡️ 피해감소', Math.round(effectiveArmor(p)*100)+'%', effectiveArmor(p)],
-    ['🌿 재생', fmtSignedNumber(regen)+'/초', regen],
-  ];
-}
-function spEffects(p){
-  const E=[]; const seen=new Set();
-  const add=(c,ic,lb,pn,dd,key)=>{
-    if(!c) return;
-    key=key||pn||lb;
-    if(seen.has(key)) return;
-    seen.add(key);
-    E.push({ic,t:lb,pn,d:dd});
-  };
-  const timeLabel=t=>' ('+Math.max(0,Math.ceil(t||0))+'초)';
-  const regen=effectiveRegen(p);
-  add(p.shots>1,'🔱','다중사격 '+p.shots+'발','다중 사격','한 번에 여러 발을 동시에 발사');
-  add(p.pierce>0,'🍢','관통 '+p.pierce,'관통','탄이 적을 뚫고 지나간다');
-  add(p.bounce>0,'🔴','반사 '+p.bounce,'반사','탄이 벽·적에 튕긴다');
-  add(p.homing>0,'👁️','유도탄','유도의 눈','탄이 가까운 적을 추적');
-  add(p.backShot,'🔙','쌍방향 사격','쌍방향 사격','앞뒤로 동시에 발사');
-  add(p.burn>0,'🔥','화염탄','화염탄','명중 시 지속 화상 피해');
-  add(p.chill>0,'❄️','빙결탄','빙결탄','명중한 적을 둔화시킨다');
-  add(p.poison>0,'🟢','독침','독침','명중 시 지속 독 피해');
-  add(p.bulletExplode>0,'💢','작렬탄','작렬탄','명중 지점에서 폭발');
-  add(p.explodeKill>0,'💣','연쇄폭발','연쇄 폭발','적 처치 시 주변 폭발');
-  add(p.doubleTap>0,'🔫','더블탭 '+Math.round(p.doubleTap*100)+'%','더블탭','확률로 즉시 한 발 추가');
-  add(p.stunChance>0,'🔔','기절 '+Math.round(p.stunChance*100)+'%','충격파','확률로 적을 기절');
-  add(p.lifesteal>0,'🩸','흡혈 '+Math.round(p.lifesteal*100)+'%','흡혈','적 처치 시 체력 회복');
-  add(p.crowdRage>0,'😤','분노','분노','주변 적이 많을수록 공격력↑');
-  add(p.lowHpMul>0,'🆘','저체력 폭주','저체력 폭주','체력이 낮을수록 공격력↑');
-  add(p.bossDmgMul>1,'🗡️','거인사냥 +'+Math.round((p.bossDmgMul-1)*100)+'%','거인 사냥','보스·정예에게 추가 피해');
-  add(p.glassCannon,'🍷','유리대포','유리 대포','공격력 대폭↑, 받는 피해↑');
-  add(p.thorns>0,'🌵','가시 '+p.thorns,'가시 갑옷','접촉한 적에게 반사 피해');
-  add(p.healOnKill>0,'💚','흡성 '+p.healOnKill,'흡성','적 처치 시 체력 회복');
-  add(regen!==0,'🌿','재생 '+fmtSignedNumber(regen)+'/초','재생','기본 자연재생과 유물·특성 재생 합산','regen');
-  add(p.shieldRegen>0,'🔵','재충전 보호막','재충전 보호막','일정 시간마다 보호막 충전');
-  add(p.critHeal>0,'💉','치명타 회복 +'+p.critHeal,'치명 흡혈','치명타 적중 시 체력 회복');
-  add(p.critExplodeMul>0,'🧨','치명타 폭발','작렬탄','치명타 발생 시 작은 폭발');
-  add(p.chainLightning>0,'⚡','감전 연쇄 '+p.chainLightning,'감전 연쇄','명중 시 근처 적에게 연쇄 번개');
-  add(p.statusDmgMul>0,'🔥','상태이상 피해 +'+Math.round(p.statusDmgMul*100)+'%','점화','상태이상 적에게 주는 피해 증가');
-  add(p.execThreshold>0,'✂️','처형 '+Math.round(p.execThreshold*100)+'%','클립 박제','체력이 낮은 잡몹 즉시 처치');
-  (p.potionBuffs||[]).forEach(b=>{
-    if((b.t||0)<=0) return;
-    const key='potion-buff:'+(b.id||[b.atkFlat,b.atkMul,b.fireAdd,b.armor,b.regen].join(':'));
-    let label=b.label||'포션 효과';
-    if(b.regen) label='재생 '+fmtSignedNumber(b.regen)+'/초';
-    add(true,b.icon||'🧪',label+timeLabel(b.t),b.name||'포션 효과',b.desc||'포션으로 생긴 임시 효과',key);
-  });
-  add(p.buffs&&p.buffs.rage>0,'🔥','분노'+timeLabel(p.buffs.rage),'분노 물약','일시적 공격력 증가','buff-rage');
-  add(p.buffs&&p.buffs.haste>0,'💨','가속'+timeLabel(p.buffs.haste),'추진력','일시적 발사속도 증가','buff-haste');
-  add(p.buffs&&p.buffs.shield>0,'✨','무적'+timeLabel(p.buffs.shield),'보호막','일시적 무적','buff-shield');
-  add(p.timeStop>0,'⏱️','시간 정지'+timeLabel(p.timeStop),'시간 정지 물약','모든 적 일시 정지','time-stop');
-  add(p.hitShield>0,'🔵','피격 보호막 '+p.hitShield,'보호막 물약','피해를 무효화하는 보호막','hit-shield');
-  add(p.deathWard>0,'🪽','불사 '+p.deathWard,'불사 물약','죽을 피해를 무시','death-ward');
-  add(p.lastStand,'🩹','막판 정신력','막판 정신력','치명타를 1회 체력 1로 버틴다');
-  add(p.dodgeMaxCharges>1,'🌀','이중도약','이중 도약','회피를 2회까지 충전');
-  add(p.dodgeBlast>0,'🌪️','처단','처단','회피 시 충격파 발생');
-  add(p.dodgeHaste,'💨','추진력','추진력','회피 직후 이동 가속');
-  add(p.dodgeIframeBonus>0,'👻','잔상','잔상','회피 무적 시간 증가');
-  add(p.dodgeCdMul<1,'🌑','그림자보법','그림자 보법','회피 쿨다운 감소');
-  add(p.minion,'🤝','구독자','구독자 소환','자동 공격 분신을 소환');
-  add(p.donateChance>0,'💸','도네 '+Math.round(p.donateChance*100)+'%','도네 알림','적 처치 시 확률로 골드');
-  add(p.goldMul>1,'🧲','골드 +'+Math.round((p.goldMul-1)*100)+'%','광부','골드 획득량 증가');
-  add(p.xpMul>1,'📈','경험치 +'+Math.round((p.xpMul-1)*100)+'%','경험치 부스트','경험치 획득량 증가');
-  return E;
-}
-function spStats(p){
-  const regen=effectiveRegen(p);
   const shots=(p.shots||1)+(p.shadowBarrageT>0?1:0);
   const atk=(p.dmg+(p.potionAtkFlat||0))*currentAttackMul(p);
   return [
@@ -7723,7 +7661,7 @@ function databaseRows(){
   const ov=$('ovDatabase');
   const tab=ov?(ov.dataset.tab||'relics'):'relics';
   if(tab==='perks'){
-    return LEVEL_PERKS.map(pk=>{
+    return LEVEL_PERKS.filter(pk=>!TREE_ONLY_PERK_IDS.has(perkId(pk))).map(pk=>{
       if(!isDiscovered('perks',perkId(pk))) return dbLockedRow();
       const t=PERK_TIERS[pk.g]||{};
       return {
@@ -8067,13 +8005,28 @@ const TREE_NODES = [
     desc:'투사체 크기 추가 +12%', apply:p=>{ p.bulletSize*=1.12; } },
   { id:'s_spread', name:'집탄 조정',   icon:'🎯', branch:'shot', req:['s_speed1','s_size1'], cost:1,
     desc:'다발 사격 시 탄 퍼짐 -30%', apply:p=>{ p._spreadMul=(p._spreadMul||1)*0.7; } },
-  { id:'s_shots1', name:'다중 사격 I', icon:'🔱', branch:'shot', req:['s_spread'], cost:2,
+  { id:'s_shots1', name:'다중 사격 I', icon:'🔱', branch:'shot', req:['s_spread','barrage_focus'], cost:2,
     desc:'투사체 +1발', apply:p=>{ p.shots+=1; } },
   { id:'s_back',   name:'후방 사격',   icon:'🔙', branch:'shot', req:['s_shots1'], cost:1,
     desc:'뒤로도 한 발 발사', once:true, skip:p=>p.backShot,
     apply:p=>{ p.backShot=true; } },
   { id:'s_shots2', name:'다중 사격 II',icon:'🔱', branch:'shot', req:['s_shots1','s_size2'], cost:3,
     desc:'투사체 추가 +1발', apply:p=>{ p.shots+=1; } },
+  { id:'sharp_senses', name:'예리한 감각', icon:'🎯', branch:'shot', req:['hub'], cost:1,
+    desc:'치명타 확률 +5%', apply:p=>{ p.critChance+=0.05; } },
+  { id:'weakpoint_strike', name:'급소 타격', icon:'💥', branch:'shot', req:['sharp_senses'], cost:2,
+    desc:'치명타 피해 +25%', apply:p=>{ p.critMult+=0.25; } },
+  { id:'red_pulse', name:'붉은 맥박', icon:'🩸', branch:'shot', req:['weakpoint_strike'], cost:2, isMiniKeystone:true,
+    desc:'치명타 적중 시 3초 동안 재생 +5 (내부쿨 6초)', skip:p=>p.redPulseRegen>0,
+    apply:p=>{ p.redPulseRegen=Math.max(p.redPulseRegen||0,5); } },
+  { id:'gamblers_blade', name:'도박사의 칼날', icon:'🎲', branch:'shot', req:['red_pulse'], cost:3, isKeystone:true,
+    desc:'치명타 확률 +15%, 치명타 피해 +50%, 비치명타 피해 -20%', skip:p=>p.gamblersBlade,
+    apply:p=>{ p.gamblersBlade=true; p.critChance+=0.15; p.critMult+=0.5; p.nonCritDmgMul*=0.8; } },
+  { id:'shotgun_mastery', name:'산탄 숙련', icon:'🔱', branch:'shot', req:['hub'], cost:1,
+    desc:'가까운 거리 투사체 피해 +15% (보스는 절반)', apply:p=>{ p.closeProjectileDmgMul+=0.15; } },
+  { id:'barrage_focus', name:'탄막 집중', icon:'🎯', branch:'shot', req:['shotgun_mastery'], cost:2, isMiniKeystone:true,
+    desc:'추가 투사체 피해 보정 완화, 추가 투사체 치명타 확률 +10%', skip:p=>p.barrageFocus,
+    apply:p=>{ p.barrageFocus=true; p.extraProjectileCritChance+=0.10; } },
 
   // ══════════════════════════════════
   // 🔥 상태이상 라인 — "도배 방송"
@@ -8096,16 +8049,21 @@ const TREE_NODES = [
   { id:'t_spread',  name:'도배왕',        icon:'🌋', branch:'status', req:['t_stun'], cost:3,
     desc:'상태이상 적 처치 시 주변 전파 + 피해 추가 +20%', once:true, skip:p=>p.statusSpread,
     apply:p=>{ p.statusSpread=true; p.statusDmgMul+=0.20; } },
+  { id:'elemental_overload', name:'원소 과부하', icon:'🔥', branch:'status', req:['t_dmg'], cost:2, isMiniKeystone:true,
+    desc:'상태이상 걸린 적에게 치명타 확률 +10%', apply:p=>{ p.statusCritChance+=0.10; } },
+  { id:'corrosive_spread', name:'부식 확산', icon:'🟢', branch:'status', req:['elemental_overload','t_spread'], cost:3, isKeystone:true,
+    desc:'상태이상 적 처치 시 주변 적에게 약한 독/화상 전이', skip:p=>p.corrosiveSpread,
+    apply:p=>{ p.corrosiveSpread=true; } },
 
   // ══════════════════════════════════
   // 💰 골드 라인 — "슈퍼챗 부자"
   // ══════════════════════════════════
   { id:'g_gold1', name:'골드 수집 I',  icon:'💰', branch:'gold', req:['hub'], cost:1,
-    desc:'골드 획득 +12%', apply:p=>{ p.goldMul*=1.12; } },
+    desc:'골드 획득 +14%', apply:p=>{ p.goldMul*=1.14; } },
   { id:'g_xp1',   name:'경험치 가속 I',icon:'📈', branch:'gold', req:['hub'], cost:1,
     desc:'경험치 획득 +12%', apply:p=>{ p.xpMul*=1.12; } },
   { id:'g_gold2', name:'골드 수집 II', icon:'💰', branch:'gold', req:['g_gold1'], cost:1,
-    desc:'골드 획득 추가 +12%', apply:p=>{ p.goldMul*=1.12; } },
+    desc:'골드 획득 추가 +14%', apply:p=>{ p.goldMul*=1.14; } },
   { id:'g_xp2',   name:'경험치 가속 II',icon:'📈',branch:'gold', req:['g_xp1'], cost:1,
     desc:'경험치 획득 추가 +12%', apply:p=>{ p.xpMul*=1.12; } },
   { id:'g_donate',name:'도네 알림 강화',icon:'💸', branch:'gold', req:['g_gold1'], cost:1,
@@ -8117,6 +8075,12 @@ const TREE_NODES = [
   { id:'g_jackpot',name:'대박 도네',   icon:'🎰', branch:'gold', req:['g_magnet'], cost:3,
     desc:'골드 폭탄 확률 2배 + 레벨업 시 체력 +8 회복', once:true,
     apply:p=>{ p.donateChance*=2; p._levelHeal=(p._levelHeal||0)+8; } },
+  { id:'investment_return', name:'투자 수익', icon:'💰', branch:'gold', req:['g_power'], cost:2, isMiniKeystone:true,
+    desc:'골드 150 이상 보유 시 공격력 +10%', skip:p=>p.investmentReturn,
+    apply:p=>{ p.investmentReturn=true; } },
+  { id:'greed_contract', name:'탐욕의 계약', icon:'💎', branch:'gold', req:['investment_return','g_jackpot'], cost:3, isKeystone:true,
+    desc:'골드 획득 +40%, 받는 피해 +10%', skip:p=>p.greedContract,
+    apply:p=>{ p.greedContract=true; p.goldMul*=1.4; p.damageTakenMul*=1.1; } },
 
   // ══════════════════════════════════
   // 🛡️ 생존 라인 — "불사 스트리머"
@@ -8138,6 +8102,12 @@ const TREE_NODES = [
   { id:'v_undead',name:'불사 스트리머',icon:'💀', branch:'survive', req:['v_steal','v_thorns'], cost:3,
     desc:'1회 체력1로 버티기', once:true, skip:p=>p.lastStand,
     apply:p=>{ p.lastStand=true; } },
+  { id:'regen_overload', name:'재생 과부하', icon:'🌿', branch:'survive', req:['v_regen'], cost:2, isMiniKeystone:true,
+    desc:'체력 50% 이하일 때 재생 효과 +50%', skip:p=>p.regenOverload,
+    apply:p=>{ p.regenOverload=true; } },
+  { id:'vamp_shield', name:'흡혈 보호막', icon:'🛡️', branch:'survive', req:['regen_overload','v_steal'], cost:3, isKeystone:true,
+    desc:'최대 체력 초과 회복량 일부를 보호막으로 전환 (최대 체력 20%)', skip:p=>p.overhealShieldRate>0,
+    apply:p=>{ p.overhealShieldRate=Math.max(p.overhealShieldRate||0,0.5); p.overhealShieldCap=Math.max(p.overhealShieldCap||0,0.2); } },
 
   // ══════════════════════════════════
   // ⚡ 기동 라인 — "신나는 방송"
@@ -8160,10 +8130,33 @@ const TREE_NODES = [
   { id:'m_blitz', name:'질풍 방송',    icon:'⚡', branch:'speed', req:['m_dtap','m_charge2'], cost:3,
     desc:'회피 후 2초간 발사속도 +30% + 회피 폭발', once:true,
     apply:p=>{ p.dodgeHaste=true; p.dodgeBlast+=14; } },
+  { id:'dodge_reload', name:'구르기 장전', icon:'🌀', branch:'speed', req:['hub'], cost:1,
+    desc:'베인Q 사용 후 다음 탄 피해 +40% (2초)', skip:p=>p.dodgeReload,
+    apply:p=>{ p.dodgeReload=true; } },
+  { id:'perfect_dodge', name:'완벽 회피', icon:'💨', branch:'speed', req:['dodge_reload'], cost:2, isMiniKeystone:true,
+    desc:'Q 이후 1초 동안 피격되지 않으면 3초 동안 발사속도 +20%', skip:p=>p.perfectDodge,
+    apply:p=>{ p.perfectDodge=true; } },
+  { id:'shadow_barrage', name:'그림자 탄막', icon:'🌑', branch:'speed', req:['perfect_dodge','m_dtap'], cost:3, isKeystone:true,
+    desc:'Q 후 1초 동안 투사체 +1 (내부쿨 6초)', skip:p=>p.shadowBarrage,
+    apply:p=>{ p.shadowBarrage=true; } },
 ];
 
 // 찍힌 노드 id Set
 let treeUnlocked = new Set(['hub']);
+
+function migrateTreeOnlyPerksToTree(){
+  if(!player||!Array.isArray(player.perkIds)||!treeUnlocked) return;
+  let moved=false;
+  player.perkIds=player.perkIds.filter(id=>{
+    if(TREE_ONLY_PERK_IDS.has(id)){
+      treeUnlocked.add(id);
+      moved=true;
+      return false;
+    }
+    return true;
+  });
+  if(moved && !treeUnlocked.has('hub')) treeUnlocked.add('hub');
+}
 
 // ---------- 트리 조건 체크 ----------
 function treeCanUnlock(node){
@@ -8180,347 +8173,6 @@ function treeUnlockNode(node){
   node.apply(player);
   updateHUD();
   return true;
-}
-
-// ---------- 트리 레이아웃 (캔버스 좌표) ----------
-// 각 노드의 화면 위치를 미리 계산
-function getTreeLayout(W, H){
-  // 허브를 화면 중앙보다 살짝 위에
-  const cx = W/2, cy = H * 0.48;
-
-  const BRANCH_ANGLES = {
-    speed:    -Math.PI/2,
-    shot:     -Math.PI/2 - Math.PI*0.38,
-    survive:  -Math.PI/2 + Math.PI*0.38,
-    status:   -Math.PI/2 - Math.PI*0.76,
-    gold:     -Math.PI/2 + Math.PI*0.76,
-  };
-
-  // 화면 크기에 비례한 절대 픽셀 간격
-  const BASE = Math.min(W, H) * 0.09;   // 허브~1단계
-  const GAP  = Math.min(W, H) * 0.085;  // 단계 간격
-
-  // depth → 거리(px)
-  function dist(d){ return BASE + GAP*(d-1); }
-
-  // [깊이, 좌우오프셋(라디안)]
-  const NODE_POS = {
-    m_spd1:   [1,-0.22], m_fire1:  [1, 0.22],
-    m_spd2:   [2,-0.22], m_fire2:  [2, 0.22],
-    m_dodge:  [3, 0],
-    m_dtap:   [4,-0.22], m_charge2:[4, 0.22],
-    m_blitz:  [5, 0],
-
-    s_speed1: [1,-0.20], s_size1:  [1, 0.20],
-    s_speed2: [2,-0.20], s_size2:  [2, 0.20],
-    s_spread: [3, 0],
-    s_shots1: [4,-0.20], s_back:   [4, 0.20],
-    s_shots2: [5, 0],
-
-    v_hp1:    [1,-0.20], v_armor1: [1, 0.20],
-    v_hp2:    [2,-0.20], v_armor2: [2, 0.20],
-    v_regen:  [3,-0.20],
-    v_steal:  [4,-0.20], v_thorns: [4, 0.20],
-    v_undead: [5, 0],
-
-    t_burn1:  [1,-0.20], t_poison1:[1, 0.20],
-    t_burn2:  [2,-0.20], t_poison2:[2, 0.20],
-    t_chill:  [3, 0.20], t_dmg:    [3,-0.20],
-    t_stun:   [4, 0],
-    t_spread: [5, 0],
-
-    g_gold1:  [1,-0.20], g_xp1:    [1, 0.20],
-    g_gold2:  [2,-0.20], g_xp2:    [2, 0.20],
-    g_donate: [3, 0.20], g_power:  [3,-0.20],
-    g_magnet: [4, 0],
-    g_jackpot:[5, 0],
-  };
-
-  const NODE_BRANCH = {};
-  TREE_NODES.forEach(n=>{ if(n.branch!=='hub') NODE_BRANCH[n.id]=n.branch; });
-
-  const pos = { hub:{x:cx, y:cy} };
-
-  for(const [id, [depth, off]] of Object.entries(NODE_POS)){
-    const branch = NODE_BRANCH[id];
-    if(!branch) continue;
-    const angle = BRANCH_ANGLES[branch] + off;
-    const d     = dist(depth);
-    pos[id] = {
-      x: cx + Math.cos(angle) * d,
-      y: cy + Math.sin(angle) * d,
-    };
-  }
-  return pos;
-}
-
-// ---------- 트리 오버레이 렌더링 ----------
-const BRANCH_COL = {
-  hub:     '#38e8ff',
-  shot:    '#ff9f43',
-  status:  '#5dff9b',
-  gold:    '#ffd34d',
-  survive: '#ff6b9d',
-  speed:   '#c98bff',
-};
-const BRANCH_LABEL = {
-  shot:'🔱 다중 사격', status:'🔥 도배 방송',
-  gold:'💰 슈퍼챗', survive:'🛡️ 불사', speed:'⚡ 질풍',
-};
-
-let _treeLayout = null;
-let _treeHover  = null;   // 현재 마우스 호버 노드 id
-let _treeCanvas = null;
-let _treeCtx    = null;
-
-function openTree(){
-  if(state!=='play' && state!=='map') return;
-  if(isOpen('ovSettings') || isOpen('ovDatabase') || isOpen('ovPause')) return;
-  _treePrevPaused = paused;
-  treeOpen = true;
-  $('ovTree').classList.remove('hidden');
-  if(state==='play' && !paused){ paused=true; mouseDown=false; autoFire=false; }
-  // display 전환이 브라우저에 반영된 뒤 렌더 (한 프레임 대기)
-  requestAnimationFrame(()=>requestAnimationFrame(renderTree));
-}
-function closeTree(){
-  treeOpen = false;
-  $('ovTree').classList.add('hidden');
-  const tt=$('treeTooltip'); if(tt) tt.style.display='none';
-  if(state==='play' && !_treePrevPaused && paused){ paused=false; last=performance.now(); }
-}
-
-function renderTree(){
-  const cvs = $('treeCanvas');
-  if(!cvs) return;
-  // 렌더 직전 실제 레이아웃 크기로 세팅
-  const _rect = cvs.getBoundingClientRect();
-  const W = cvs.width  = Math.round(_rect.width)  || window.innerWidth  || 1280;
-  const H = cvs.height = Math.round(_rect.height) || window.innerHeight || 720;
-  const c = cvs.getContext('2d');
-  _treeCanvas = cvs; _treeCtx = c;
-
-  // 배경
-  c.fillStyle = '#05030a';
-  c.fillRect(0,0,W,H);
-
-  // 픽셀 격자 느낌 (8px 도트)
-  c.strokeStyle = 'rgba(56,232,255,0.03)';
-  c.lineWidth = 1;
-  for(let x=0;x<W;x+=8){ c.beginPath(); c.moveTo(x,0); c.lineTo(x,H); c.stroke(); }
-  for(let y=0;y<H;y+=8){ c.beginPath(); c.moveTo(0,y); c.lineTo(W,y); c.stroke(); }
-
-  _treeLayout = getTreeLayout(W, H);
-  const pos = _treeLayout;
-
-  // ── 엣지(선) 그리기 ──
-  for(const node of TREE_NODES){
-    if(!pos[node.id]) continue;
-    for(const reqId of node.req){
-      if(!pos[reqId]) continue;
-      const unlocked = treeUnlocked.has(node.id) && treeUnlocked.has(reqId);
-      const available = treeUnlocked.has(reqId) && !treeUnlocked.has(node.id);
-      c.save();
-      c.strokeStyle = unlocked ? BRANCH_COL[node.branch]
-                    : available ? 'rgba(255,255,255,0.25)'
-                    : 'rgba(255,255,255,0.08)';
-      c.lineWidth = unlocked ? 2 : 1;
-      if(!unlocked) c.setLineDash([4,4]);
-      c.shadowColor = unlocked ? BRANCH_COL[node.branch] : 'none';
-      c.shadowBlur  = unlocked ? 8 : 0;
-      c.beginPath();
-      c.moveTo(pos[reqId].x, pos[reqId].y);
-      c.lineTo(pos[node.id].x, pos[node.id].y);
-      c.stroke();
-      c.setLineDash([]);
-      c.restore();
-    }
-  }
-
-  // ── 노드 그리기 ──
-  const R = Math.min(W,H)*0.036;  // 노드 반지름
-  for(const node of TREE_NODES){
-    const p = pos[node.id]; if(!p) continue;
-    const unlocked  = treeUnlocked.has(node.id);
-    const canUnlock = treeCanUnlock(node);
-    const hover     = _treeHover === node.id;
-    const col       = BRANCH_COL[node.branch] || '#fff';
-
-    c.save();
-
-    // 글로우
-    if(unlocked || hover){
-      c.shadowColor = col;
-      c.shadowBlur  = hover ? 24 : 16;
-    }
-
-    // 노드 배경 (픽셀 느낌: 정사각형 + 둥근 모서리 없이)
-    const nr = R * (hover ? 1.15 : 1);
-    if(unlocked){
-      c.fillStyle = col;
-    } else if(canUnlock){
-      c.fillStyle = '#1a1030';
-      c.strokeStyle = col;
-      c.lineWidth = 2;
-    } else {
-      c.fillStyle = '#0d0820';
-      c.strokeStyle = 'rgba(255,255,255,0.12)';
-      c.lineWidth = 1;
-    }
-
-    // 픽셀아트 스타일 8각형 (정팔각형 근사)
-    c.beginPath();
-    const sides = 8;
-    for(let i=0;i<sides;i++){
-      const a = (i/sides)*Math.PI*2 - Math.PI/8;
-      i===0 ? c.moveTo(p.x+Math.cos(a)*nr, p.y+Math.sin(a)*nr)
-             : c.lineTo(p.x+Math.cos(a)*nr, p.y+Math.sin(a)*nr);
-    }
-    c.closePath();
-    c.fill();
-    if(!unlocked) c.stroke();
-    c.restore();
-
-    // 비용 뱃지 (미해금 노드에만)
-    if(!unlocked && (node.cost||1) > 1){
-      c.save();
-      c.font = `bold ${Math.round(R*0.55)}px "Courier New"`;
-      c.textAlign = 'right'; c.textBaseline = 'top';
-      c.fillStyle = canUnlock ? '#ffd34d' : '#555';
-      c.fillText((node.cost||1)+'P', p.x+nr*0.9, p.y-nr*0.9);
-      c.restore();
-    }
-
-    // 아이콘 (이모지)
-    c.save();
-    c.font = `${Math.round(R*0.9)}px sans-serif`;
-    c.textAlign = 'center'; c.textBaseline = 'middle';
-    c.globalAlpha = unlocked ? 1 : canUnlock ? 0.8 : 0.3;
-    c.fillText(node.icon, p.x, p.y + R*0.05);
-    c.restore();
-
-    // 노드 이름
-    if(hover || unlocked){
-      c.save();
-      c.font = `bold ${Math.round(R*0.55)}px "Courier New"`;
-      c.textAlign = 'center'; c.textBaseline = 'top';
-      c.fillStyle = unlocked ? col : '#ccc';
-      c.shadowColor = col; c.shadowBlur = 6;
-      c.fillText(node.name, p.x, p.y + nr + 2);
-      c.restore();
-    }
-  }
-
-  // ── 우상단 포인트 표시 ──
-  c.save();
-  c.font = 'bold 15px "Courier New"';
-  c.textAlign = 'right'; c.textBaseline = 'top';
-  c.fillStyle = '#38e8ff';
-  c.shadowColor = '#38e8ff'; c.shadowBlur = 10;
-  c.fillText(`SKILL POINTS : ${treePoints}`, W-16, 16);
-  c.restore();
-
-  // ── 브랜치 레이블 ──
-  const branchFirst = {};
-  for(const node of TREE_NODES){
-    if(node.branch==='hub' || branchFirst[node.branch]) continue;
-    if(node.req.includes('hub') && pos[node.id]){
-      branchFirst[node.branch] = pos[node.id];
-    }
-  }
-  for(const [branch, bpos] of Object.entries(branchFirst)){
-    if(!bpos) continue;
-    const col = BRANCH_COL[branch];
-    const lbl = BRANCH_LABEL[branch];
-    const cx2 = pos.hub.x, cy2 = pos.hub.y;
-    const mid = { x:(bpos.x+cx2)/2, y:(bpos.y+cy2)/2-18 };
-    c.save();
-    c.font = 'bold 11px "Courier New"';
-    c.textAlign = 'center'; c.textBaseline = 'middle';
-    c.fillStyle = col; c.globalAlpha = 0.7;
-    c.shadowColor = col; c.shadowBlur = 6;
-    c.fillText(lbl, mid.x, mid.y);
-    c.restore();
-  }
-
-  // 툴팁은 HTML div로 처리 (renderTreeTooltip 별도 호출)
-}
-
-// ---------- 트리 마우스 이벤트 ----------
-function treeNodeAt(mx, my, W, H){
-  if(!_treeLayout) return null;
-  const R = Math.min(W,H)*0.036 * 1.2;
-  for(const node of TREE_NODES){
-    const p = _treeLayout[node.id];
-    if(!p) continue;
-    if(Math.hypot(mx-p.x, my-p.y) < R) return node;
-  }
-  return null;
-}
-function updateTreeTooltip(node, cx, cy){
-  const tt = $('treeTooltip');
-  if(!tt) return;
-  if(!node){ tt.style.display='none'; return; }
-
-  const col = BRANCH_COL[node.branch] || '#38e8ff';
-  const unlocked  = treeUnlocked.has(node.id);
-  const canUnlock = treeCanUnlock(node);
-
-  $('ttName').textContent  = node.icon + ' ' + node.name;
-  $('ttName').style.color  = col;
-  $('ttDesc').textContent  = node.desc;
-  tt.style.borderColor     = col;
-  tt.style.boxShadow       = '0 0 18px ' + col + '55';
-
-  const stEl = $('ttState');
-  if(unlocked){
-    stEl.textContent = '✓ 획득 완료';
-    stEl.style.color = '#5dff9b';
-  } else if(canUnlock){
-    stEl.textContent = '[' + (node.cost||1) + 'P] 클릭하여 획득';
-    stEl.style.color = '#ffd34d';
-  } else {
-    const missing = (node.req||[]).filter(r=>!treeUnlocked.has(r));
-    stEl.textContent = missing.length ? '선행 노드 필요' : '포인트 부족 (' + (node.cost||1) + 'P)';
-    stEl.style.color = '#666';
-  }
-
-  // 화면 경계 벗어나지 않게 위치 조정
-  const W = window.innerWidth, H = window.innerHeight;
-  const ttW = 260, ttH = 110;
-  let tx = cx + 16, ty = cy + 16;
-  if(tx + ttW > W - 8) tx = cx - ttW - 8;
-  if(ty + ttH > H - 8) ty = cy - ttH - 8;
-  tt.style.left    = tx + 'px';
-  tt.style.top     = ty + 'px';
-  tt.style.display = 'block';
-}
-
-function initTreeEvents(){
-  const cvs = $('treeCanvas');
-  if(!cvs) return;
-  cvs.addEventListener('mousemove', e=>{
-    if(!treeOpen) return;
-    const r  = cvs.getBoundingClientRect();
-    const mx = (e.clientX - r.left) * (cvs.width  / r.width);
-    const my = (e.clientY - r.top)  * (cvs.height / r.height);
-    const node = treeNodeAt(mx, my, cvs.width, cvs.height);
-    const newHover = node ? node.id : null;
-    if(newHover !== _treeHover){ _treeHover = newHover; renderTree(); }
-    updateTreeTooltip(node, e.clientX, e.clientY);
-  });
-  cvs.addEventListener('mouseleave', ()=>{ updateTreeTooltip(null,0,0); });
-  cvs.addEventListener('click', e=>{
-    if(!treeOpen) return;
-    const r  = cvs.getBoundingClientRect();
-    const mx = (e.clientX - r.left) * (cvs.width  / r.width);
-    const my = (e.clientY - r.top)  * (cvs.height / r.height);
-    const node = treeNodeAt(mx, my, cvs.width, cvs.height);
-    if(node && treeUnlockNode(node)){
-      banner(node.icon+' '+node.name, '트리 노드 획득!', 1100);
-      renderTree();
-    }
-  });
 }
 
 // ---------- POE-style passive tree overlay v2 ----------
@@ -8550,14 +8202,20 @@ const TREE_BRANCH_ANGLE = {
 const TREE_NODE_POS2 = {
   m_spd1:[1,-0.25], m_fire1:[1,0.25], m_spd2:[2,-0.22], m_fire2:[2,0.22],
   m_dodge:[3,0], m_dtap:[4,-0.25], m_charge2:[4,0.25], m_blitz:[5,0],
+  dodge_reload:[1,0.56], perfect_dodge:[3,0.52], shadow_barrage:[6,0.38],
   s_speed1:[1,-0.22], s_size1:[1,0.22], s_speed2:[2,-0.22], s_size2:[2,0.22],
   s_spread:[3,0], s_shots1:[4,-0.24], s_back:[4,0.24], s_shots2:[5,0],
+  sharp_senses:[1,-0.60], weakpoint_strike:[2,-0.62], red_pulse:[3,-0.58],
+  gamblers_blade:[5,-0.62], shotgun_mastery:[1,0.58], barrage_focus:[3,0.50],
   v_hp1:[1,-0.22], v_armor1:[1,0.22], v_hp2:[2,-0.22], v_armor2:[2,0.22],
   v_regen:[3,-0.22], v_steal:[4,-0.24], v_thorns:[4,0.24], v_undead:[5,0],
+  regen_overload:[4,-0.56], vamp_shield:[5,-0.48],
   t_burn1:[1,-0.22], t_poison1:[1,0.22], t_burn2:[2,-0.22], t_poison2:[2,0.22],
   t_chill:[3,0.22], t_dmg:[3,-0.22], t_stun:[4,0], t_spread:[5,0],
+  elemental_overload:[4,-0.52], corrosive_spread:[6,-0.28],
   g_gold1:[1,-0.22], g_xp1:[1,0.22], g_gold2:[2,-0.22], g_xp2:[2,0.22],
   g_donate:[3,0.22], g_power:[3,-0.22], g_magnet:[4,0], g_jackpot:[5,0],
+  investment_return:[4,-0.50], greed_contract:[6,-0.26],
 };
 
 let treeAtlasSelected = 'hub';
@@ -8566,6 +8224,8 @@ let treeAtlasZoom = 1.08;
 let treeAtlasDrag = null;
 let treeAtlasMoved = false;
 let treeEventsReady = false;
+let _treeLayout = null;
+let _treeHover = null;
 
 function treeNodeById(id){ return TREE_NODES.find(n=>n.id===id) || TREE_NODES[0]; }
 function treeCanReach(node){ return !treeUnlocked.has(node.id) && (node.req||[]).every(r=>treeUnlocked.has(r)); }
@@ -8626,6 +8286,16 @@ const TREE_PIXEL_PATTERNS = {
 function treePixelKey(node){
   const id=node.id;
   if(id==='hub') return 'hub';
+  if(id==='sharp_senses'||id==='weakpoint_strike'||id==='barrage_focus') return 'target';
+  if(id==='red_pulse'||id==='gamblers_blade') return 'blood';
+  if(id==='shotgun_mastery') return 'split';
+  if(id==='elemental_overload') return 'fire';
+  if(id==='corrosive_spread') return 'poison';
+  if(id==='dodge_reload'||id==='perfect_dodge'||id==='shadow_barrage') return 'swirl';
+  if(id==='regen_overload') return 'leaf';
+  if(id==='vamp_shield') return 'shield';
+  if(id==='investment_return') return 'coin';
+  if(id==='greed_contract') return 'card';
   if(id.includes('speed')||id==='m_blitz') return 'bolt';
   if(id.includes('size')||id==='m_charge2') return 'orb';
   if(id.includes('spread')||id==='m_dtap') return 'target';
@@ -8769,7 +8439,7 @@ function drawTreeNode2(c,node,p,W,H){
   const unlocked=treeUnlocked.has(node.id), can=treeCanUnlock(node), reach=treeCanReach(node);
   const hover=_treeHover===node.id, selected=treeAtlasSelected===node.id;
   const col=TREE_BRANCH_COL[node.branch]||TREE_BRANCH_COL.hub;
-  const major=node.id==='hub' || (node.cost||1)>=3;
+  const major=node.id==='hub' || node.isMiniKeystone || node.isKeystone || (node.cost||1)>=3;
   const r=(major?22:16)*(hover||selected?1.14:1);
   c.save();
   c.globalAlpha=unlocked?1:(can?0.96:(reach?0.48:0.22));
@@ -8784,7 +8454,7 @@ function drawTreeNode2(c,node,p,W,H){
   c.arc(sp.x,sp.y,r,0,TAU);
   c.fillStyle=unlocked?'#17120b':'#090b11';
   c.fill();
-  c.lineWidth=major?3:2;
+  c.lineWidth=node.isKeystone?4:(major?3:2);
   c.strokeStyle=unlocked?col:(can?'#f3d98b':(reach?'#5a554b':'#2c2b30'));
   c.stroke();
   if(can && !unlocked){
@@ -8792,6 +8462,13 @@ function drawTreeNode2(c,node,p,W,H){
     c.arc(sp.x,sp.y,r+7,0,TAU);
     c.strokeStyle='rgba(243,217,139,0.55)';
     c.lineWidth=1;
+    c.stroke();
+  }
+  if(node.isKeystone || node.isMiniKeystone){
+    c.beginPath();
+    c.arc(sp.x,sp.y,r+10,0,TAU);
+    c.strokeStyle=node.isKeystone?'rgba(255,211,77,0.62)':'rgba(139,232,255,0.48)';
+    c.lineWidth=node.isKeystone?2:1;
     c.stroke();
   }
   c.fillStyle='rgba(0,0,0,0.22)';
@@ -8859,7 +8536,7 @@ function treeNodeAt(sx,sy,W,H){
   for(const node of TREE_NODES){
     const p=_treeLayout[node.id]; if(!p) continue;
     const sp=treeToScreen2(p.x,p.y,W,H);
-    const r=(node.id==='hub'||(node.cost||1)>=3?27:22);
+    const r=(node.id==='hub'||node.isMiniKeystone||node.isKeystone||(node.cost||1)>=3?30:22);
     const d=Math.hypot(sx-sp.x,sy-sp.y);
     if(d<r && d<bestD){ best=node; bestD=d; }
   }
@@ -8869,7 +8546,7 @@ function updateTreeTooltip(node,cx,cy){
   const tt=$('treeTooltip'); if(!tt) return;
   if(!node){ tt.style.display='none'; return; }
   const col=TREE_BRANCH_COL[node.branch]||TREE_BRANCH_COL.hub;
-  $('ttName').textContent=node.name;
+  $('ttName').textContent=(node.isKeystone?'KEYSTONE · ':node.isMiniKeystone?'MINI · ':'')+node.name;
   $('ttName').style.color=col;
   $('ttDesc').textContent=node.desc||'';
   $('ttState').textContent=treeStatusText(node);
