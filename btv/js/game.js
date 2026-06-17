@@ -760,6 +760,7 @@ function getLeaderboardFirebaseConfig(){
   return cfg&&cfg.apiKey?cfg:null;
 }
 const SCORE_MAX=9999999;
+const LEADERBOARD_MIN_SCORE=5000;
 const NAME_MAX_LEN=12;
 const RETRY_SCORE_PENALTY=2500;
 const HIT_SCORE_PENALTY=450;
@@ -1596,21 +1597,38 @@ function passiveNodeById(id){
   return (TREE_NODES||[]).find(n=>n&&n.id===id);
 }
 function rankBuildPill(kind,id){
-  let icon='', name=String(id||'');
+  let icon='', name=String(id||''), tip='';
   if(kind==='relic'){
     const r=(RELICS||[]).find(x=>x&&x.id===id);
-    if(r){ icon=relicIconHTML(r,'relic-pix-sm'); name=r.name; }
+    if(r){
+      icon=relicIconHTML(r,'relic-pix-sm');
+      name=r.name;
+      tip=(r.name||'')+' - '+(r.desc||'');
+    }
   }else if(kind==='potion'){
     const p=(POTIONS||[]).find(x=>x&&x.id===id);
-    if(p){ icon=POTION_PIX[p.id]?'<img src="'+rankBuildText(POTION_PIX[p.id])+'" alt="">':rankBuildText(p.icon||''); name=p.name; }
+    if(p){
+      icon=POTION_PIX[p.id]?'<img src="'+rankBuildText(POTION_PIX[p.id])+'" alt="">':rankBuildText(p.icon||'');
+      name=p.name;
+      tip=(p.name||'')+' - '+(p.desc||'');
+    }
   }else if(kind==='perk'){
     const pk=perkByStoredId(id);
-    if(pk){ icon=PERK_ICONS[pk.name]?'<img src="'+rankBuildText(PERK_ICONS[pk.name])+'" alt="">':rankBuildText(pk.icon||''); name=pk.name; }
+    if(pk){
+      icon=PERK_ICONS[pk.name]?'<img src="'+rankBuildText(PERK_ICONS[pk.name])+'" alt="">':rankBuildText(pk.icon||'');
+      name=pk.name;
+      tip=typeof perkTooltipText==='function'?perkTooltipText(pk):((pk.name||'')+' - '+(pk.desc||''));
+    }
   }else if(kind==='passive'){
     const node=passiveNodeById(id);
-    if(node){ icon=rankBuildText(node.icon||''); name=node.name; }
+    if(node){
+      icon=rankBuildText(node.icon||'');
+      name=node.name;
+      tip=(node.name||'')+' - '+(node.desc||node.description||node.text||'');
+    }
   }
-  return '<span class="rank-build-pill">'+icon+'<span>'+rankBuildText(name)+'</span></span>';
+  const safeTip=rankBuildText(tip||name).replace(/\n/g,'&#10;');
+  return '<span class="rank-build-pill" title="'+safeTip+'" aria-label="'+safeTip+'">'+icon+'<span>'+rankBuildText(name)+'</span></span>';
 }
 function renderRankBuildList(kind,ids){
   ids=Array.isArray(ids)?ids.filter(Boolean):[];
@@ -1785,6 +1803,10 @@ async function saveRunScore(win,killer,scoreData,name){
     scoreData=scoreData||calcRunScore(win);
     const scoreToSave=clamp(Math.round(Number(scoreData&&scoreData.score)||0),0,SCORE_MAX);
     if(scoreData) scoreData.score=scoreToSave;
+    if(scoreToSave<LEADERBOARD_MIN_SCORE){
+      if(saveEl) saveEl.textContent=fmtScore(LEADERBOARD_MIN_SCORE)+'점 이상부터 랭킹 등록 가능';
+      return false;
+    }
     const saveName=cleanLeaderboardName(name||getLeaderboardName());
     const api=await ensureLeaderboardApi();
     if(token!==scoreSubmitSeq) return false;
@@ -1929,7 +1951,7 @@ function resetPlayer(){
     nonCritDmgMul:1, closeProjectileDmgMul:0, barrageFocus:false, extraProjectileCritChance:0,
     statusCritChance:0, corrosiveSpread:false, dodgeReload:false, dodgeReloadT:0,
     perfectDodge:false, perfectDodgeArmed:false, perfectDodgeCheckT:0, perfectDodgeFireT:0,
-    shadowBarrage:false, shadowBarrageT:0, shadowBarrageCd:0, regenOverload:false,
+    shadowBarrage:false, shadowBarrageExtraShots:1, shadowBarrageT:0, shadowBarrageCd:0, regenOverload:false,
     overhealShieldRate:0, overhealShieldCap:0.2, overhealShield:0, investmentReturn:false,
     damageTakenMul:1, redPulseRegen:0, redPulseCd:0, redPulseBuff:0, gamblersBlade:false, greedContract:false, _critDefaultsV2:true,
   });
@@ -1973,7 +1995,7 @@ function renderPotions(){
     const p=player.potions&&player.potions[i];
     const el=document.createElement('div');
     el.className='pslot'+(p?'':' empty');
-    if(p){ el.innerHTML=(POTION_PIX[p.id]?('<img class="picon" src="'+POTION_PIX[p.id]+'">'):p.icon)+'<span class="key">'+(i+1)+'</span>'; el.title=p.name+' — '+p.desc; el.onclick=()=>usePotion(i); }
+    if(p){ el.innerHTML=(POTION_PIX[p.id]?('<img class="picon" src="'+POTION_PIX[p.id]+'">'):p.icon)+'<span class="key">'+(i+1)+'</span>'; el.title=p.name+' - '+p.desc; el.onclick=()=>usePotion(i); }
     else { el.textContent='·'; }
     cont.appendChild(el);
   }
@@ -2294,7 +2316,7 @@ function playerShoot(){
   const speed=playerBulletSpeed(player);
   let baseShot=base;
   if(player.dodgeReloadT>0){ baseShot*=1.4; player.dodgeReloadT=0; }
-  const n=player.shots+(player.shadowBarrageT>0?1:0), spread=n>1?0.16:0;
+  const n=player.shots+(player.shadowBarrageT>0?(player.shadowBarrageExtraShots||1):0), spread=n>1?0.16:0;
   const primaryDirIndex=Math.floor((n-1)/2);
   const dirs=[];
   for(let i=0;i<n;i++) dirs.push(ang+(i-(n-1)/2)*spread);
@@ -5362,12 +5384,12 @@ const LEVEL_PERKS=[
   {id:'shotgun_mastery',g:'rare',icon:'🔱',name:'산탄 숙련',desc:'가까운 거리 투사체 피해 +15% (보스는 절반)',minLevel:3,maxLevel:15,build:'projectile',tags:['combat','projectile','seed'],apply:p=>{p.closeProjectileDmgMul+=0.15;}},
   {id:'barrage_focus',g:'epic',icon:'🎯',name:'탄막 집중',desc:'추가 투사체 피해 보정 완화, 추가 투사체 치명타 확률 +10%',minLevel:8,maxLevel:14,build:'projectile',tags:['combat','projectile','crit','keystone'],isMiniKeystone:true,skip:p=>p.barrageFocus,apply:p=>{p.barrageFocus=true;p.extraProjectileCritChance+=0.10;}},
   {id:'elemental_overload',g:'epic',icon:'🔥',name:'원소 과부하',desc:'상태이상 걸린 적에게 치명타 확률 +10%',minLevel:8,maxLevel:14,build:'status',tags:['combat','status','crit','keystone'],isMiniKeystone:true,apply:p=>{p.statusCritChance+=0.10;}},
-  {id:'corrosive_spread',g:'legend',icon:'🟢',name:'부식 확산',desc:'상태이상 적 처치 시 주변 적에게 약한 독/화상 전이',minLevel:16,maxLevel:25,build:'status',tags:['combat','status','keystone'],isKeystone:true,skip:p=>p.corrosiveSpread,apply:p=>{p.corrosiveSpread=true;}},
+  {id:'corrosive_spread',g:'legend',icon:'🟢',name:'부식 확산',desc:'상태이상 적 처치 시 주변 적에게 독/화상 전이 강화. 직접 타격 피해 -8%',minLevel:16,maxLevel:25,build:'status',tags:['combat','status','keystone'],isKeystone:true,skip:p=>p.corrosiveSpread,apply:p=>{p.corrosiveSpread=true;p.statusDmgMul+=0.15;p.dmgMul*=0.92;}},
   {id:'dodge_reload',g:'rare',icon:'🌀',name:'구르기 장전',desc:'베인Q 사용 후 다음 탄 피해 +40% (2초)',minLevel:3,maxLevel:15,build:'mobility',tags:['combat','mobility','projectile','seed'],skip:p=>p.dodgeReload,apply:p=>{p.dodgeReload=true;}},
   {id:'perfect_dodge',g:'epic',icon:'💨',name:'완벽 회피',desc:'Q 이후 1초 동안 피격되지 않으면 3초 동안 발사속도 +20%',minLevel:8,maxLevel:14,build:'mobility',tags:['combat','mobility','rate','keystone'],isMiniKeystone:true,skip:p=>p.perfectDodge,apply:p=>{p.perfectDodge=true;}},
-  {id:'shadow_barrage',g:'legend',icon:'🌑',name:'그림자 탄막',desc:'Q 후 1초 동안 투사체 +1 (내부쿨 6초)',minLevel:16,maxLevel:25,build:'mobility',tags:['combat','mobility','projectile','keystone'],isKeystone:true,skip:p=>p.shadowBarrage,apply:p=>{p.shadowBarrage=true;}},
+  {id:'shadow_barrage',g:'legend',icon:'🌑',name:'그림자 탄막',desc:'Q 후 1초 동안 투사체 +2. 베인Q 쿨다운 +25%',minLevel:16,maxLevel:25,build:'mobility',tags:['combat','mobility','projectile','keystone'],isKeystone:true,skip:p=>p.shadowBarrage,apply:p=>{p.shadowBarrage=true;p.shadowBarrageExtraShots=2;p.dodgeCdMul*=1.25;}},
   {id:'regen_overload',g:'epic',icon:'🌿',name:'재생 과부하',desc:'체력 50% 이하일 때 재생 효과 +50%',minLevel:8,maxLevel:14,build:'sustain',tags:['combat','sustain','keystone'],isMiniKeystone:true,skip:p=>p.regenOverload,apply:p=>{p.regenOverload=true;}},
-  {id:'vamp_shield',g:'legend',icon:'🛡️',name:'흡혈 보호막',desc:'최대 체력 초과 회복량 일부를 보호막으로 전환 (최대 체력 20%)',minLevel:16,maxLevel:25,build:'sustain',tags:['combat','sustain','defense','keystone'],isKeystone:true,skip:p=>p.overhealShieldRate>0,apply:p=>{p.overhealShieldRate=Math.max(p.overhealShieldRate||0,0.5);p.overhealShieldCap=Math.max(p.overhealShieldCap||0,0.2);}},
+  {id:'vamp_shield',g:'legend',icon:'🛡️',name:'흡혈 보호막',desc:'초과 회복량을 보호막으로 전환. 자연 재생 효과 -30%',minLevel:16,maxLevel:25,build:'sustain',tags:['combat','sustain','defense','keystone'],isKeystone:true,skip:p=>p.overhealShieldRate>0,apply:p=>{p.overhealShieldRate=Math.max(p.overhealShieldRate||0,0.5);p.overhealShieldCap=Math.max(p.overhealShieldCap||0,0.2);p.regen*=0.70;}},
   {id:'investment_return',g:'rare',icon:'💰',name:'투자 수익',desc:'골드 150 이상 보유 시 공격력 +10%',minLevel:8,maxLevel:18,build:'economy',tags:['combat','economy','damage','seed'],skip:p=>p.investmentReturn,apply:p=>{p.investmentReturn=true;}},
   {id:'greed_contract',g:'legend',icon:'💎',name:'탐욕의 계약',desc:'골드 획득 +40%, 받는 피해 +10%',minLevel:16,maxLevel:25,build:'economy',tags:['economy','risk','keystone'],isKeystone:true,skip:p=>p.greedContract,apply:p=>{p.greedContract=true;p.goldMul*=1.4;p.damageTakenMul*=1.1;}},
   // ===== 신화 Myth =====
@@ -5466,12 +5488,12 @@ function perkTooltipText(pk){
   if(pk.id==='shotgun_mastery') lines.push('조건: 가까운 거리 · 보스 대상 보너스 절반');
   if(pk.id==='barrage_focus') lines.push('보정: 기본 100/35/20/10 → 100/45/30/15');
   if(pk.id==='elemental_overload') lines.push('조건: 대상이 상태이상일 때');
-  if(pk.id==='corrosive_spread') lines.push('처치 시 약한 독/화상 전이 · 기존 확산과 중복 폭딜 제한');
+  if(pk.id==='corrosive_spread') lines.push('처치 시 독/화상 전이 강화 · 직접 타격 피해 -8%');
   if(pk.id==='dodge_reload') lines.push('발동: 베인Q 사용 후 다음 탄 · 지속 2초');
   if(pk.id==='perfect_dodge') lines.push('발동: Q 이후 1초 무피격 · 지속 3초');
-  if(pk.id==='shadow_barrage') lines.push('발동: Q 후 1초 · 내부쿨 6초');
+  if(pk.id==='shadow_barrage') lines.push('발동: Q 후 1초 · 투사체 +2 · 베인Q 쿨다운 +25%');
   if(pk.id==='regen_overload') lines.push('조건: 체력 50% 이하');
-  if(pk.id==='vamp_shield') lines.push('초과 회복 보호막 상한: 최대 체력 20%');
+  if(pk.id==='vamp_shield') lines.push('초과 회복 보호막 상한: 최대 체력 20% · 자연 재생 -30%');
   if(pk.id==='investment_return') lines.push('조건: 골드 150 이상 보유');
   if(pk.id==='greed_contract') lines.push('리스크: 받는 피해 +10%');
   return lines.filter(Boolean).join('\n');
@@ -7401,7 +7423,7 @@ function showEntrance(role,name,quip){
 // ---------- 인벤토리 ----------
 function spStats(p){
   const regen=effectiveRegen(p);
-  const shots=(p.shots||1)+(p.shadowBarrageT>0?1:0);
+  const shots=(p.shots||1)+(p.shadowBarrageT>0?(p.shadowBarrageExtraShots||1):0);
   const atk=(p.dmg+(p.potionAtkFlat||0))*currentAttackMul(p);
   return [
     ['❤️ 최대체력', Math.round(p.maxhp), p.maxhp],
@@ -7452,7 +7474,7 @@ function spEffects(p){
   add(p.poison>0,'🟢','독침','독침','명중 시 지속 독 피해');
   add(p.statusDmgMul>0,'🔥','상태이상 피해 +'+pc(p.statusDmgMul),'점화','상태이상 적에게 주는 피해 증가');
   add(p.statusCritChance>0,'🔥','원소 과부하 +'+pc(p.statusCritChance),'원소 과부하','상태이상 걸린 적에게 치명타 확률 증가. 치명타 상한 적용','elemental-overload');
-  add(p.corrosiveSpread,'🟢','부식 확산','부식 확산','상태이상 적 처치 시 약한 독/화상 전이. 기존 확산 보유 시 중복 전이 제한','corrosive-spread');
+  add(p.corrosiveSpread,'🟢','부식 확산','부식 확산','상태이상 적 처치 시 독/화상 전이 강화. 직접 타격 피해 -8%','corrosive-spread');
   add(p.statusSpread,'🌬️','상태 확산','확산','상태이상 적 처치 시 주변 전파');
   add(p.chainLightning>0,'⚡','감전 연쇄 '+p.chainLightning,'감전 연쇄','명중 시 근처 적에게 연쇄 번개');
   add(p.chainKillLightning>0,'⚡','번개의 병','번개의 병','처치 시 가장 가까운 적에게 1회 체인 번개. 처치 연쇄 폭딜은 직접 피해로 제한','lightning-bottle');
@@ -7462,7 +7484,7 @@ function spEffects(p){
   add(p.dodgeReload,'🌀','구르기 장전'+(p.dodgeReloadT>0?timeLabel(p.dodgeReloadT):''),'구르기 장전','베인Q 후 2초 안의 다음 탄 피해 +40%','dodge-reload');
   add(p.perfectDodge,'💨','완벽 회피'+(p.perfectDodgeFireT>0?timeLabel(p.perfectDodgeFireT):''),'완벽 회피','Q 이후 1초간 피격되지 않으면 3초 동안 발사속도 +20%','perfect-dodge');
   add(p.perfectDodgeArmed,'💨','회피 판정'+timeLabel(p.perfectDodgeCheckT),'완벽 회피','피격되지 않으면 발사속도 버프 발동','perfect-dodge-armed');
-  add(p.shadowBarrage,'🌑','그림자 탄막'+(p.shadowBarrageT>0?timeLabel(p.shadowBarrageT):''),'그림자 탄막','Q 후 1초 동안 투사체 +1, 내부쿨 6초','shadow-barrage');
+  add(p.shadowBarrage,'🌑','그림자 탄막'+(p.shadowBarrageT>0?timeLabel(p.shadowBarrageT):''),'그림자 탄막','Q 후 1초 동안 투사체 +'+(p.shadowBarrageExtraShots||1)+', 내부쿨 6초','shadow-barrage');
   add(p.shadowBarrageCd>0&&p.shadowBarrageT<=0,'🌑','탄막 쿨'+timeLabel(p.shadowBarrageCd),'그림자 탄막','내부쿨 대기 중','shadow-barrage-cd');
   add(p.dodgeMaxCharges>1,'🌀','이중도약','이중 도약','회피를 2회까지 충전');
   add(p.dodgeBlast>0,'💥','처단','처단','회피 시 충격파 발생');
@@ -7476,7 +7498,7 @@ function spEffects(p){
   add(p.healOnKill>0,'💚','흡성 '+p.healOnKill,'흡성','적 처치 시 체력 회복');
   add(p.shieldRegen>0,'🔵','재충전 보호막','재충전 보호막','일정 시간마다 보호막 충전');
   add(p.hitShield>0,'🔵','피격 보호막 '+p.hitShield,'보호막 물약','피해를 무효화하는 보호막','hit-shield');
-  add(p.overhealShieldRate>0,'🛡️','흡혈 보호막 '+Math.round(p.overhealShield||0)+'/'+Math.round(p.maxhp*(p.overhealShieldCap||0.2)),'흡혈 보호막','초과 회복량 일부를 보호막으로 전환. 상한 최대 체력 20%','vamp-shield');
+  add(p.overhealShieldRate>0,'🛡️','흡혈 보호막 '+Math.round(p.overhealShield||0)+'/'+Math.round(p.maxhp*(p.overhealShieldCap||0.2)),'흡혈 보호막','초과 회복량을 보호막으로 전환. 자연 재생 효과 -30%. 상한 최대 체력 20%','vamp-shield');
   add(p.deathWard>0,'🪽','불사 '+p.deathWard,'불사 물약','죽을 피해를 무시','death-ward');
   add(p.lastStand,'🩹','막판 정신력','막판 정신력','치명타를 1회 체력 1로 버팀');
 
@@ -7545,7 +7567,7 @@ function renderSidePanel(previewPk){
   }
   if(p.relics&&p.relics.length){
     h+='<div class="sp-title" style="margin-top:9px">🏺 유물 '+p.relics.length+'</div>';
-    h+='<div class="sp-relics">'+p.relics.map(r=>'<span title="'+((r.name||'').replace(/"/g,'')+' — '+(r.desc||'').replace(/"/g,''))+'">'+relicIconHTML(r,'relic-pix-sm')+'</span>').join('')+'</div>';
+    h+='<div class="sp-relics">'+p.relics.map(r=>'<span title="'+((r.name||'').replace(/"/g,'')+' - '+(r.desc||'').replace(/"/g,''))+'">'+relicIconHTML(r,'relic-pix-sm')+'</span>').join('')+'</div>';
   }
   const el=$('sidePanel'); if(el) el.innerHTML=h;
 }
@@ -7570,7 +7592,7 @@ function renderInventory(){
   if(p.statusDmgMul>0) stats.push(['상태 피해', '+'+Math.round(p.statusDmgMul*100)+'%']);
   if(p.dodgeReload) stats.push(['Q 다음 탄', '+40%']);
   if(p.perfectDodge) stats.push(['Q 완벽 회피', '발사 +20%']);
-  if(p.shadowBarrage) stats.push(['Q 탄막', '+1발']);
+  if(p.shadowBarrage) stats.push(['Q 탄막', '+'+(p.shadowBarrageExtraShots||1)+'발']);
   if(p.investmentReturn) stats.push(['투자 수익', gold>=150?'ON':'150G 필요']);
   if(p.damageTakenMul&&p.damageTakenMul!==1) stats.push(['받는 피해', '+'+Math.round((p.damageTakenMul-1)*100)+'%']);
   if(p.overhealShieldRate>0) stats.push(['보호막', Math.round(p.overhealShield||0)+' / '+Math.round(p.maxhp*(p.overhealShieldCap||0.2))]);
@@ -7626,17 +7648,31 @@ const DEATH_LINES={
   '울트라':{title:'울트라에게 깔렸다', q:['채팅: 울트라 컨트롤 ㄷㄷ','울트라: 쿠어어','채팅: 저글링부터 잡지 그랬어']},
   '바닥 장판':{title:'바닥 장판에 녹았다', q:['채팅: 바닥 보고 다녀요 KEKW','채팅: 장판 회피 연습… Sadge','채팅: 그건 좀…']},
 };
+function leaderboardMinScoreMessage(){
+  return fmtScore(LEADERBOARD_MIN_SCORE)+'점 이상부터 랭킹 등록 가능';
+}
+function refreshEndRankEligibility(){
+  const submit=$('endRankSubmit');
+  const saveEl=$('endScoreSave');
+  const score=Math.round(Number(pendingScoreData&&pendingScoreData.score)||0);
+  const eligible=score>=LEADERBOARD_MIN_SCORE;
+  if(!submit) return eligible;
+  if(!eligible){
+    submit.disabled=true;
+    submit.textContent='등록 불가';
+    if(saveEl) saveEl.textContent=leaderboardMinScoreMessage();
+  }else{
+    submit.disabled=false;
+    submit.textContent='랭킹 등록';
+    if(saveEl) saveEl.textContent='ranking standby';
+  }
+  return eligible;
+}
 function resetEndRankForm(){
   pendingScoreSaved=false;
   const input=$('endRankName');
-  const submit=$('endRankSubmit');
-  const saveEl=$('endScoreSave');
   if(input) input.value=getLeaderboardName();
-  if(submit){
-    submit.disabled=false;
-    submit.textContent='랭킹 등록';
-  }
-  if(saveEl) saveEl.textContent='ranking standby';
+  refreshEndRankEligibility();
 }
 async function submitEndRankScore(){
   const submit=$('endRankSubmit');
@@ -7667,11 +7703,20 @@ async function submitEndRankScore(){
     }
     if(saveEl) saveEl.textContent='ranking saved';
   }else{
-    if(submit){
-      submit.disabled=false;
-      submit.textContent='랭킹 등록';
+    const score=Math.round(Number(pendingScoreData&&pendingScoreData.score)||0);
+    if(score<LEADERBOARD_MIN_SCORE){
+      if(submit){
+        submit.disabled=true;
+        submit.textContent='등록 불가';
+      }
+      if(saveEl) saveEl.textContent=leaderboardMinScoreMessage();
+    }else{
+      if(submit){
+        submit.disabled=false;
+        submit.textContent='랭킹 등록';
+      }
+      if(saveEl) saveEl.textContent='ranking save failed';
     }
-    if(saveEl) saveEl.textContent='ranking save failed';
   }
 }
 function gameOver(win, killer){
@@ -7804,6 +7849,7 @@ function initStreamerArt(){
 function returnToTitleScreen(){
   introFxReset();
   paused=false; mouseDown=false; autoFire=false; runActive=false;
+  clearRunCheckpoint();
   roomIsBoss=false; roomIsMidboss=false; cutsceneT=0; bossEvolve=null;
   enemies=[]; pBullets=[]; eBullets=[]; pickups=[]; particles=[]; boss=null; floatBubbles=[];
   const po=$('ovPause'); if(po) po.classList.add('hidden');
@@ -7827,6 +7873,7 @@ function wireMainControls(){
     bossTaunt(diffSet, ()=> newGameSkip());
   };
   { const tb=$('titleBtn'); if(tb) tb.onclick=returnToTitleScreen; }
+  { const peb=$('pauseExitBtn'); if(peb) peb.onclick=returnToTitleScreen; }
   $('muteBtn').onclick=function(){ if(typeof openSettings==='function') openSettings(); };
   // 구 soundPanel 컨트롤 - 패널이 DOM에 존재할 때만 배선 (설정창과 독립적으로 동작)
   { const sc=$('soundClose'); if(sc) sc.onclick=()=>{ const sp=$('soundPanel'); if(sp) sp.style.display='none'; }; }
@@ -8380,6 +8427,10 @@ const TREE_NODES = [
   { id:'barrage_focus', name:'탄막 집중', icon:'🎯', branch:'shot', req:['shotgun_mastery'], cost:2, isMiniKeystone:true,
     desc:'추가 투사체 피해 보정 완화, 추가 투사체 치명타 확률 +10%', skip:p=>p.barrageFocus,
     apply:p=>{ p.barrageFocus=true; p.extraProjectileCritChance+=0.10; } },
+  { id:'s_stable_barrage', name:'안정된 탄막', icon:'🎯', branch:'shot', req:['s_spread'], cost:2,
+    desc:'투사체 피해 +8%, 투사체 속도 -8%', apply:p=>{ p.dmgMul*=1.08; p.bulletSpeedMul*=0.92; } },
+  { id:'s_overcharge_round', name:'과충전 탄환', icon:'💥', branch:'shot', req:['weakpoint_strike'], cost:2,
+    desc:'보스 피해 +18%, 일반 피해 -5%', apply:p=>{ p.bossDmgMul*=1.18; p.dmgMul*=0.95; } },
 
   // ══════════════════════════════════
   // 🔥 상태이상 라인 — "도배 방송"
@@ -8402,26 +8453,30 @@ const TREE_NODES = [
   { id:'t_spread',  name:'도배왕',        icon:'🌋', branch:'status', req:['t_stun'], cost:3,
     desc:'상태이상 적 처치 시 주변 전파 + 피해 추가 +20%', once:true, skip:p=>p.statusSpread,
     apply:p=>{ p.statusSpread=true; p.statusDmgMul+=0.20; } },
+  { id:'t_venom_mature', name:'맹독 숙성', icon:'🟢', branch:'status', req:['t_poison2'], cost:2,
+    desc:'독 피해 +30%, 직접 피해 -5%', apply:p=>{ p.poison*=1.3; p.dmgMul*=0.95; } },
+  { id:'t_frost_mark', name:'냉기 각인', icon:'❄️', branch:'status', req:['t_chill'], cost:2,
+    desc:'둔화된 적에게 치명타 확률 +8%', apply:p=>{ p.statusCritChance+=0.08; } },
   { id:'elemental_overload', name:'원소 과부하', icon:'🔥', branch:'status', req:['t_dmg'], cost:2, isMiniKeystone:true,
     desc:'상태이상 걸린 적에게 치명타 확률 +10%', apply:p=>{ p.statusCritChance+=0.10; } },
   { id:'corrosive_spread', name:'부식 확산', icon:'🟢', branch:'status', req:['elemental_overload','t_spread'], cost:3, isKeystone:true,
-    desc:'상태이상 적 처치 시 주변 적에게 약한 독/화상 전이', skip:p=>p.corrosiveSpread,
-    apply:p=>{ p.corrosiveSpread=true; } },
+    desc:'상태이상 적 처치 시 주변 적에게 독/화상 전이 강화. 직접 타격 피해 -8%', skip:p=>p.corrosiveSpread,
+    apply:p=>{ p.corrosiveSpread=true; p.statusDmgMul+=0.15; p.dmgMul*=0.92; } },
 
   // ══════════════════════════════════
   // 💰 골드 라인 — "슈퍼챗 부자"
   // ══════════════════════════════════
   { id:'g_gold1', name:'골드 수집 I',  icon:'💰', branch:'gold', req:['hub'], cost:1,
     desc:'골드 획득 +14%', apply:p=>{ p.goldMul*=1.14; } },
-  { id:'g_xp1',   name:'경험치 가속 I',icon:'📈', branch:'gold', req:['hub'], cost:1,
-    desc:'경험치 획득 +12%', apply:p=>{ p.xpMul*=1.12; } },
+  { id:'g_xp1',   name:'성장 계약',icon:'📈', branch:'gold', req:['g_donate'], cost:2,
+    desc:'경험치 획득 +18%, 골드 획득 -8%', apply:p=>{ p.xpMul*=1.18; p.goldMul*=0.92; } },
   { id:'g_gold2', name:'골드 수집 II', icon:'💰', branch:'gold', req:['g_gold1'], cost:1,
     desc:'골드 획득 추가 +14%', apply:p=>{ p.goldMul*=1.14; } },
-  { id:'g_xp2',   name:'경험치 가속 II',icon:'📈',branch:'gold', req:['g_xp1'], cost:1,
-    desc:'경험치 획득 추가 +12%', apply:p=>{ p.xpMul*=1.12; } },
+  { id:'g_xp2',   name:'압축 성장',icon:'⏫',branch:'gold', req:['g_xp1'], cost:2,
+    desc:'경험치 획득 +20%, 받는 피해 +5%', apply:p=>{ p.xpMul*=1.20; p.damageTakenMul*=1.05; } },
   { id:'g_donate',name:'도네 알림 강화',icon:'💸', branch:'gold', req:['g_gold1'], cost:1,
     desc:'처치 시 골드 폭탄 확률 +8%', apply:p=>{ p.donateChance+=0.08; } },
-  { id:'g_power', name:'현질의 힘',    icon:'💳', branch:'gold', req:['g_gold2','g_xp2'], cost:2,
+  { id:'g_power', name:'현질의 힘',    icon:'💳', branch:'gold', req:['g_gold2','g_donate'], cost:2,
     desc:'보유 골드 100당 공격력 +2% (최대+30%)', apply:p=>{ p.goldPower+=0.02; } },
   { id:'g_magnet',name:'초강력 자석',  icon:'🧲', branch:'gold', req:['g_donate','g_power'], cost:2,
     desc:'흡수 범위 2배 + 골드 +20%', apply:p=>{ p.magnet*=2; p.goldMul*=1.2; } },
@@ -8455,12 +8510,16 @@ const TREE_NODES = [
   { id:'v_undead',name:'불사 스트리머',icon:'💀', branch:'survive', req:['v_steal','v_thorns'], cost:3,
     desc:'1회 체력1로 버티기', once:true, skip:p=>p.lastStand,
     apply:p=>{ p.lastStand=true; } },
+  { id:'v_blood_cycle', name:'피의 순환', icon:'🩸', branch:'survive', req:['v_regen'], cost:2,
+    desc:'흡혈 확률 +5%, 최대 체력 -8%', apply:p=>{ p.lifesteal+=0.05; p.maxhp=Math.max(1,Math.round(p.maxhp*0.92)); p.hp=Math.min(p.hp,p.maxhp); } },
+  { id:'v_shield_training', name:'방패 운용', icon:'🛡️', branch:'survive', req:['v_armor2'], cost:2,
+    desc:'받는 피해 -8%, 이동속도 -8', apply:p=>{ p.armor+=0.08; p.spd-=8; } },
   { id:'regen_overload', name:'재생 과부하', icon:'🌿', branch:'survive', req:['v_regen'], cost:2, isMiniKeystone:true,
     desc:'체력 50% 이하일 때 재생 효과 +50%', skip:p=>p.regenOverload,
     apply:p=>{ p.regenOverload=true; } },
   { id:'vamp_shield', name:'흡혈 보호막', icon:'🛡️', branch:'survive', req:['regen_overload','v_steal'], cost:3, isKeystone:true,
-    desc:'최대 체력 초과 회복량 일부를 보호막으로 전환 (최대 체력 20%)', skip:p=>p.overhealShieldRate>0,
-    apply:p=>{ p.overhealShieldRate=Math.max(p.overhealShieldRate||0,0.5); p.overhealShieldCap=Math.max(p.overhealShieldCap||0,0.2); } },
+    desc:'초과 회복량을 보호막으로 전환. 자연 재생 효과 -30%', skip:p=>p.overhealShieldRate>0,
+    apply:p=>{ p.overhealShieldRate=Math.max(p.overhealShieldRate||0,0.5); p.overhealShieldCap=Math.max(p.overhealShieldCap||0,0.2); p.regen*=0.70; } },
 
   // ══════════════════════════════════
   // ⚡ 기동 라인 — "신나는 방송"
@@ -8483,6 +8542,10 @@ const TREE_NODES = [
   { id:'m_blitz', name:'질풍 방송',    icon:'⚡', branch:'speed', req:['m_dtap','m_charge2'], cost:3,
     desc:'회피 후 2초간 발사속도 +30% + 회피 폭발', once:true,
     apply:p=>{ p.dodgeHaste=true; p.dodgeBlast+=14; } },
+  { id:'m_risky_roll', name:'위험한 구르기', icon:'🌀', branch:'speed', req:['m_dodge'], cost:2,
+    desc:'베인Q 쿨다운 -15%, 최대 체력 -6%', apply:p=>{ p.dodgeCdMul*=0.85; p.maxhp=Math.max(1,Math.round(p.maxhp*0.94)); p.hp=Math.min(p.hp,p.maxhp); } },
+  { id:'m_dash_shot', name:'질주 사격', icon:'🔫', branch:'speed', req:['m_fire2'], cost:2,
+    desc:'발사 속도 +12%, 받는 피해 +4%', apply:p=>{ p.fireAdd+=0.12; p.damageTakenMul*=1.04; } },
   { id:'dodge_reload', name:'구르기 장전', icon:'🌀', branch:'speed', req:['hub'], cost:1,
     desc:'베인Q 사용 후 다음 탄 피해 +40% (2초)', skip:p=>p.dodgeReload,
     apply:p=>{ p.dodgeReload=true; } },
@@ -8490,8 +8553,8 @@ const TREE_NODES = [
     desc:'Q 이후 1초 동안 피격되지 않으면 3초 동안 발사속도 +20%', skip:p=>p.perfectDodge,
     apply:p=>{ p.perfectDodge=true; } },
   { id:'shadow_barrage', name:'그림자 탄막', icon:'🌑', branch:'speed', req:['perfect_dodge','m_dtap'], cost:3, isKeystone:true,
-    desc:'Q 후 1초 동안 투사체 +1 (내부쿨 6초)', skip:p=>p.shadowBarrage,
-    apply:p=>{ p.shadowBarrage=true; } },
+    desc:'Q 후 1초 동안 투사체 +2. 베인Q 쿨다운 +25%', skip:p=>p.shadowBarrage,
+    apply:p=>{ p.shadowBarrage=true; p.shadowBarrageExtraShots=2; p.dodgeCdMul*=1.25; } },
 ];
 
 // 찍힌 노드 id Set
@@ -8554,19 +8617,19 @@ const TREE_BRANCH_ANGLE = {
 };
 const TREE_NODE_POS2 = {
   m_spd1:[1,-0.25], m_fire1:[1,0.25], m_spd2:[2,-0.22], m_fire2:[2,0.22],
-  m_dodge:[3,0], m_dtap:[4,-0.25], m_charge2:[4,0.25], m_blitz:[5,0],
+  m_dodge:[3,0], m_dtap:[4,-0.25], m_charge2:[4,0.25], m_blitz:[5,0], m_risky_roll:[4,0.58], m_dash_shot:[3,-0.55],
   dodge_reload:[1,0.56], perfect_dodge:[3,0.52], shadow_barrage:[6,0.38],
   s_speed1:[1,-0.22], s_size1:[1,0.22], s_speed2:[2,-0.22], s_size2:[2,0.22],
-  s_spread:[3,0], s_shots1:[4,-0.24], s_back:[4,0.24], s_shots2:[5,0],
+  s_spread:[3,0], s_shots1:[4,-0.24], s_back:[4,0.24], s_shots2:[5,0], s_stable_barrage:[4,0.10], s_overcharge_round:[4,-0.76],
   sharp_senses:[1,-0.60], weakpoint_strike:[2,-0.62], red_pulse:[3,-0.58],
   gamblers_blade:[5,-0.62], shotgun_mastery:[1,0.58], barrage_focus:[3,0.50],
   v_hp1:[1,-0.22], v_armor1:[1,0.22], v_hp2:[2,-0.22], v_armor2:[2,0.22],
-  v_regen:[3,-0.22], v_steal:[4,-0.24], v_thorns:[4,0.24], v_undead:[5,0],
+  v_regen:[3,-0.22], v_steal:[4,-0.24], v_thorns:[4,0.24], v_undead:[5,0], v_blood_cycle:[4,-0.78], v_shield_training:[3,0.54],
   regen_overload:[4,-0.56], vamp_shield:[5,-0.48],
   t_burn1:[1,-0.22], t_poison1:[1,0.22], t_burn2:[2,-0.22], t_poison2:[2,0.22],
-  t_chill:[3,0.22], t_dmg:[3,-0.22], t_stun:[4,0], t_spread:[5,0],
+  t_chill:[3,0.22], t_dmg:[3,-0.22], t_stun:[4,0], t_spread:[5,0], t_venom_mature:[3,0.55], t_frost_mark:[4,0.42],
   elemental_overload:[4,-0.52], corrosive_spread:[6,-0.28],
-  g_gold1:[1,-0.22], g_xp1:[1,0.22], g_gold2:[2,-0.22], g_xp2:[2,0.22],
+  g_gold1:[1,-0.22], g_gold2:[2,-0.22], g_xp1:[4,0.52], g_xp2:[5,0.48],
   g_donate:[3,0.22], g_power:[3,-0.22], g_magnet:[4,0], g_jackpot:[5,0],
   investment_return:[4,-0.50], greed_contract:[6,-0.26],
 };
@@ -8664,6 +8727,7 @@ function treePixelKey(node){
   if(id.includes('xp')) return 'chart';
   if(id==='g_donate') return 'donate';
   if(id==='g_power') return 'card';
+  if(id==='g_xp2') return 'arrow';
   if(id==='g_magnet') return 'magnet';
   if(id==='g_jackpot') return 'slot';
   if(id.includes('hp')) return 'heart';
@@ -8674,7 +8738,8 @@ function treePixelKey(node){
   if(id==='v_undead') return 'skull';
   if(id.includes('spd')) return 'boot';
   if(id.includes('fire')) return 'gun';
-  if(id==='m_dodge') return 'swirl';
+  if(id==='m_dodge'||id==='m_risky_roll') return 'swirl';
+  if(id==='m_dash_shot') return 'gun';
   return node.branch==='survive'?'shield':'orb';
 }
 function drawTreePixelIcon(c,node,x,y,major,alpha){
