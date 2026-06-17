@@ -380,14 +380,14 @@ let ambientTimer=0;
 // ===== JS: Data tables - enemies, difficulty, bosses, relics =====
 const ENEMY_TYPES={
   // === 1막: 고블린 소굴 ===
-  goblin_warrior :{name:"러부엉",  r:16, hp:28, spd:78, dmg:11, color:"#6fae4e", xp:8,  ai:"chase", lunge:true, label:"러부엉"},
-  goblin_archer  :{name:"대파",  r:14, hp:18, spd:50, dmg:6,  color:"#7bbf5a", xp:10, ai:"shooter", range:340, cool:1.25, label:"대파"},
-  goblin_shaman  :{name:"까치",  r:15, hp:24, spd:66, dmg:7,  color:"#8a6fb0", xp:12, ai:"orbit",   range:240, cool:1.05, label:"까치"},
-  goblin_bomber  :{name:"블페러", r:15, hp:22, spd:100, dmg:6,  color:"#9aa83f", xp:11, ai:"chase", explode:true, label:"블페러"},
-  hoonsangtae   :{name:"\uD6C8\uC0C1\uD0DC", r:17, hp:48, spd:55, dmg:10, color:"#e25572", xp:38, ai:"cleaver_thrower", range:320, cool:1.55, label:"\uD6C8\uC0C1\uD0DC"},
-  jaemin        :{name:"\uC7AC\uBBFC", r:16, hp:42, spd:68, dmg:9, color:"#f0a84a", xp:36, ai:"boomerang_thrower", range:300, cool:2.15, label:"\uC7AC\uBBFC"},
-  sniper_viewer :{name:"\uC800\uACA9\uB7EC", r:15, hp:34, spd:28, dmg:13, color:"#d83a3a", xp:42, ai:"sniper_laser", range:520, cool:3.0, label:"\uC800\uACA9\uB7EC"},
-  stream_watcher:{name:"\uBC29\uD50C\uB7EC", r:15, hp:40, spd:44, dmg:6, color:"#4fc0d8", xp:34, ai:"movement_lock", range:360, cool:4.0, label:"\uBC29\uD50C\uB7EC"},
+  goblin_warrior :{name:"러부엉",  r:20.8, hp:28, spd:78, dmg:11, color:"#6fae4e", xp:8,  ai:"chase", lunge:true, label:"러부엉"},
+  goblin_archer  :{name:"대파",  r:18.2, hp:18, spd:50, dmg:6,  color:"#7bbf5a", xp:10, ai:"shooter", range:340, cool:1.25, label:"대파"},
+  goblin_shaman  :{name:"까치",  r:19.5, hp:24, spd:66, dmg:7,  color:"#8a6fb0", xp:12, ai:"orbit",   range:240, cool:1.05, label:"까치"},
+  goblin_bomber  :{name:"블페러", r:19.5, hp:22, spd:100, dmg:6,  color:"#9aa83f", xp:11, ai:"chase", explode:true, label:"블페러"},
+  hoonsangtae   :{name:"\uD6C8\uC0C1\uD0DC", r:44.2, hp:48, spd:55, dmg:10, color:"#e25572", xp:38, ai:"cleaver_thrower", range:320, cool:1.55, label:"\uD6C8\uC0C1\uD0DC"},
+  jaemin        :{name:"\uC7AC\uBBFC", r:20.8, hp:42, spd:68, dmg:9, color:"#f0a84a", xp:36, ai:"boomerang_thrower", range:300, cool:2.15, label:"\uC7AC\uBBFC"},
+  sniper_viewer :{name:"\uC800\uACA9\uB7EC", r:19.5, hp:34, spd:28, dmg:13, color:"#d83a3a", xp:42, ai:"sniper_laser", range:520, cool:3.0, label:"\uC800\uACA9\uB7EC"},
+  stream_watcher:{name:"\uBC29\uD50C\uB7EC", r:19.5, hp:40, spd:44, dmg:6, color:"#4fc0d8", xp:34, ai:"movement_lock", range:360, cool:4.0, label:"\uBC29\uD50C\uB7EC"},
   rhino_beetle   :{name:"자잘자",   r:27, hp:140, spd:68, dmg:16, color:"#3a2418", xp:24, ai:"charge", armor:0.15, label:"자잘자"},
   earthworm      :{name:"지렁이", r:12, hp:10, spd:74, dmg:6, color:"#e87a8a", xp:0, ai:"erratic", label:"지렁이"},
   hyechul        :{name:"혜철이", r:52, hp:300, spd:42, dmg:15, color:"#c0392b", xp:150, ai:"hyechul", label:"혜철이"},
@@ -848,8 +848,9 @@ function getLeaderboardFirebaseConfig(){
 const SCORE_MAX=9999999;
 const LEADERBOARD_MIN_SCORE=3000;
 const NAME_MAX_LEN=12;
+const FLOORS_PER_ACT=15;
 const RETRY_SCORE_PENALTY=1500;
-const HIT_SCORE_PENALTY=450;
+const HIT_SCORE_PENALTY=200;
 const LEADERBOARD_COLLECTIONS={easy:'scores_easy',normal:'scores_normal',hard:'scores_hard'};
 const LEADERBOARD_SUMMARY_COLLECTION='leaderboard';
 const RUN_BUILDS_COLLECTION='runBuilds';
@@ -1637,7 +1638,7 @@ function spawnSlimeSplit(e){
   for(let i=0;i<2;i++){
     spawnEnemy('slime_green',clamp(e.x+rand(-24,24),30,W-30),clamp(e.y+rand(-24,24),40,H-40),0.65);
     const s=enemies[enemies.length-1];
-    s.splitChild=true; s.r=Math.max(9,e.r*0.62); s.hp=Math.max(6,e.maxhp*0.35); s.maxhp=s.hp; s.xp=1;
+    s.splitChild=true; s.summoned=true; s.noKillScore=true; s.r=Math.max(9,e.r*0.62); s.hp=Math.max(6,e.maxhp*0.35); s.maxhp=s.hp; s.xp=1;
   }
 }
 function updateIntentPatterns(e,dt){
@@ -1663,7 +1664,7 @@ function updateIntentPatterns(e,dt){
     setIntent(e,'⚔','돌진',1,()=>{ const a=Math.atan2(player.y-e.y,player.x-e.x); e.cs='dash'; e.csT=0.72; e.aimX=Math.cos(a); e.aimY=Math.sin(a); e._intentChargeCd=8; });
   }else if(e.type==='kkotchung'){
     if(e.clone) e._cloneMade=true;
-    if(e.hp<=e.maxhp*0.5&&!e._cloneMade){ e._cloneMade=true; setIntent(e,'💀','분신',1.2,()=>{ for(let i=0;i<2;i++){ spawnEnemy('kkotchung',clamp(e.x+rand(-70,70),40,W-40),clamp(e.y+rand(-40,80),80,H-60),0.45); const c=enemies[enemies.length-1]; c.label='분신'; c.clone=true; c.hp=70; c.maxhp=70; c.xp=0; } }); }
+    if(e.hp<=e.maxhp*0.5&&!e._cloneMade){ e._cloneMade=true; setIntent(e,'💀','분신',1.2,()=>{ for(let i=0;i<2;i++){ spawnEnemy('kkotchung',clamp(e.x+rand(-70,70),40,W-40),clamp(e.y+rand(-40,80),80,H-60),0.45); const c=enemies[enemies.length-1]; c.label='분신'; c.clone=true; c.summoned=true; c.noKillScore=true; c.hp=70; c.maxhp=70; c.xp=0; } }); }
     else if(cd('_kkBuffCd',8.5)) setIntent(e,'🔮','광역 버프',1.2,()=>{ enemies.forEach(o=>{ if(o!==e&&dist2(o.x,o.y,e.x,e.y)<210*210){ o.atkBuffT=5; o.coolT*=0.7; } }); e._kkBuffCd=9; });
     else if(cd('_kkLockCd',6.5)) setIntent(e,'👁','고정',1,()=>{ for(let j=0;j<3;j++) setTimeout(()=>{ if(enemies.includes(e)) aimBulletFrom(e,310,10,8,'양갱 고정탄'); },j*120); e._kkLockCd=7; });
   }else if(e.type==='gwangcheon_gim'&&cd('_pierceCd',6)){
@@ -1866,26 +1867,66 @@ function getLeaderboardName(){
   }catch(e){}
   return cleanLeaderboardName('');
 }
+function scoreNumber(v,fallback){
+  const n=Number(v);
+  return Number.isFinite(n)?n:(fallback||0);
+}
+function scoreInt(v,fallback,min){
+  const n=Math.round(scoreNumber(v,fallback));
+  return Math.max(min==null?0:min,n);
+}
+function scoreCleared(data){
+  if(data&&data.cleared!=null) return !!data.cleared;
+  if(data&&data.win!=null) return !!data.win;
+  return false;
+}
+function calcScoreBreakdown(data){
+  data=data||{};
+  const floor=scoreInt(data.floor!=null?data.floor:data.reachedFloor,1,1);
+  const scoreAct=scoreInt(data.act,1,1);
+  const globalFloor=(scoreAct-1)*FLOORS_PER_ACT+floor;
+  const scoreKills=scoreInt(data.kills!=null?data.kills:data.totalKills,0,0);
+  const scoreLevel=scoreInt(data.level,1,1);
+  const elapsedSec=Math.max(0,scoreNumber(data.elapsedSec!=null?data.elapsedSec:data.clearTime,0));
+  const hits=scoreInt(data.hits!=null?data.hits:data.runHits,0,0);
+  const scoreRetries=scoreInt(data.retries,0,0);
+  const cleared=scoreCleared(data);
+  const progressScore=globalFloor*1200;
+  const killScore=scoreKills*120;
+  const levelScore=(scoreLevel-1)*1500;
+  const clearBonus=cleared?30000:0;
+  const timeBonus=cleared?Math.max(0,Math.round((2000-elapsedSec)*10)):0;
+  const hitPenalty=hits*HIT_SCORE_PENALTY;
+  const retryPenalty=scoreRetries*RETRY_SCORE_PENALTY;
+  const grossScore=progressScore+killScore+levelScore+clearBonus+timeBonus;
+  const penaltyScore=hitPenalty+retryPenalty;
+  const rawScore=Math.round(grossScore-penaltyScore);
+  const score=clamp(Math.max(0,rawScore),0,SCORE_MAX);
+  return {score,totalScore:score,reachedFloor:floor,act:scoreAct,globalFloor,progressScore,killScore,levelScore,earnedScore:progressScore+killScore+levelScore,clearBonus,timeBonus,hitPenalty,retryPenalty,penaltyScore,appliedPenalty:penaltyScore,rawScore,elapsedSec,kills:scoreKills,level:scoreLevel,hits,retries:scoreRetries,cleared};
+}
+function scoreBreakdownFromSummary(data){
+  if(!data) return null;
+  const build=data.build||{};
+  const hasCore=(data.act!=null||data.floor!=null||data.reachedFloor!=null||data.stage!=null||build.act!=null||build.stage!=null);
+  if(!hasCore) return null;
+  return calcScoreBreakdown({
+    act:data.act!=null?data.act:build.act,
+    floor:data.floor!=null?data.floor:(data.reachedFloor!=null?data.reachedFloor:(data.stage!=null?data.stage:build.stage)),
+    kills:data.kills!=null?data.kills:data.totalKills,
+    level:data.level,
+    elapsedSec:data.elapsedSec!=null?data.elapsedSec:data.clearTime,
+    hits:data.hits!=null?data.hits:data.runHits,
+    retries:data.retries,
+    cleared:data.cleared,
+    win:data.win
+  });
+}
 function calcRunScore(win){
   const reachedFloor=Math.max(1,currentRow+1);
-  const progressScore=Math.max(0,act-1)*9000 + reachedFloor*1200;
-  const killScore=totalKills*120;
-  const levelScore=Math.max(0,level-1)*800;
-  const earnedScore=progressScore+killScore+levelScore;
-  const clearBonus=win?30000:0;
   const elapsedSec=runStartedAt>0?Math.max(0,(performance.now()-runStartedAt)/1000):0;
-  const timeBonus=win?Math.max(0,Math.round((900-elapsedSec)*20)):0;
-  const hitPenalty=runHits*HIT_SCORE_PENALTY;
-  const retryPenalty=retries*RETRY_SCORE_PENALTY;
-  const bonusScore=clearBonus+timeBonus;
-  const penaltyScore=hitPenalty+retryPenalty;
-  const grossScore=earnedScore+bonusScore;
-  const penaltyCap=Math.floor(grossScore*0.85);
-  const appliedPenalty=Math.min(penaltyScore,penaltyCap);
-  const rawScore=Math.round(grossScore-penaltyScore);
-  const score=clamp(Math.max(1,Math.round(grossScore-appliedPenalty)),0,SCORE_MAX);
-  return {score,reachedFloor,progressScore,killScore,levelScore,earnedScore,clearBonus,timeBonus,hitPenalty,retryPenalty,penaltyScore,appliedPenalty,rawScore,elapsedSec};
+  return calcScoreBreakdown({act,floor:reachedFloor,kills:totalKills,level,elapsedSec,hits:runHits,retries,cleared:!!win});
 }
+const calculateScoreBreakdown=calcScoreBreakdown;
 function fmtScore(n){ return Number(n||0).toLocaleString('ko-KR'); }
 function fmtTime(sec){
   sec=Math.max(0,Math.round(Number(sec)||0));
@@ -1993,7 +2034,22 @@ function normalizeRankingRecord(data){
   const split=splitEmbeddedBuildTitle(d.title);
   d.title=split.title;
   if(!d.build && split.build) d.build=split.build;
+  const breakdown=d.scoreBreakdown||scoreBreakdownFromSummary(d);
+  if(breakdown){
+    d.scoreBreakdown=breakdown;
+    d.score=breakdown.score;
+    if(d.floor==null) d.floor=breakdown.reachedFloor;
+    if(d.act==null) d.act=breakdown.act;
+    if(d.elapsedSec==null) d.elapsedSec=breakdown.elapsedSec;
+    if(d.kills==null) d.kills=breakdown.kills;
+    if(d.level==null) d.level=breakdown.level;
+    if(d.hits==null) d.hits=breakdown.hits;
+    if(d.retries==null) d.retries=breakdown.retries;
+  }
   return d;
+}
+function sortRankingRecords(records){
+  return (records||[]).sort((a,b)=>(Number(b.score)||0)-(Number(a.score)||0));
 }
 function nameById(list,id){
   const item=(list||[]).find(x=>x&&x.id===id);
@@ -2054,12 +2110,39 @@ function formatRankBuildStat(key,val){
   if(key==='damage'||key==='regen') return n.toFixed(1);
   return String(Math.round(n));
 }
+function renderScoreBreakdownSection(summary){
+  const b=(summary&&summary.scoreBreakdown)||scoreBreakdownFromSummary(summary);
+  if(!b){
+    return '<div class="rank-build-section"><h3>점수 분해</h3><div class="rank-build-empty">정보 부족</div></div>';
+  }
+  const total=Number(b.score!=null?b.score:(summary&&summary.score))||0;
+  const rows=[
+    ['진행 점수',b.progressScore],
+    ['처치 점수',b.killScore],
+    ['레벨 점수',b.levelScore],
+    ['클리어 보너스',b.clearBonus],
+    ['시간 보너스',b.timeBonus],
+    ['피격 패널티',-Math.abs(Number(b.hitPenalty)||0)],
+    ['재도전 패널티',-Math.abs(Number(b.retryPenalty)||0)],
+    ['총점',total]
+  ].map(item=>{
+    const n=Number(item[1])||0;
+    const text=(n<0?'-':'')+fmtScore(Math.abs(Math.round(n)));
+    return '<div class="rank-build-stat"><span>'+rankBuildText(item[0])+'</span><b>'+rankBuildText(text)+'</b></div>';
+  }).join('');
+  return '<div class="rank-build-section"><h3>점수 분해</h3><div class="rank-build-stats">'+rows+'</div></div>';
+}
 function renderRunBuildDetail(summary,build){
   const title=$('rankBuildTitle');
   const body=$('rankBuildBody');
   if(!body) return;
   const nick=cleanLeaderboardName(summary&&((summary.nickname||summary.name)||''));
   if(title) title.textContent=nick+'님의 클리어 빌드';
+  const scoreSection=renderScoreBreakdownSection(summary);
+  if(!build || build.version!==RUN_BUILD_VERSION){
+    body.innerHTML=scoreSection+'<div class="rank-build-empty">상세 빌드 정보 없음</div>';
+    return;
+  }
   if(!build || build.version!==RUN_BUILD_VERSION){
     body.innerHTML='<div class="rank-build-empty">상세 빌드 정보 없음</div>';
     return;
@@ -2085,6 +2168,7 @@ function renderRunBuildDetail(summary,build){
     '<div class="rank-build-summary">'+summaryItems.map(item=>
       '<div class="rank-build-chip"><span>'+rankBuildText(item[0])+'</span><b>'+rankBuildText(item[1])+'</b></div>'
     ).join('')+'</div>'+
+    scoreSection+
     '<div class="rank-build-section"><h3>주요 스펙</h3><div class="rank-build-stats">'+stats+'</div></div>'+
     '<div class="rank-build-section"><h3>유물</h3>'+renderRankBuildList('relic',build.relics)+'</div>'+
     '<div class="rank-build-section"><h3>포션</h3>'+renderRankBuildList('potion',build.potions)+'</div>'+
@@ -2143,11 +2227,11 @@ async function loadRankingSummaries(api){
         api.fs.collection(api.db,LEADERBOARD_SUMMARY_COLLECTION),
         api.fs.where('difficultyKey','==',rankingDifficulty),
         api.fs.orderBy('score','desc'),
-        api.fs.limit(10)
+        api.fs.limit(50)
       );
       const snap=await api.fs.getDocs(q);
       const records=snap.docs.map(doc=>normalizeRankingRecord(Object.assign({id:doc.id,runId:doc.id},doc.data())));
-      if(records.length) return records;
+      if(records.length) return sortRankingRecords(records).slice(0,10);
     }catch(e){
       if(isFirestorePermissionError(e)) leaderboardSplitReadDenied=true;
       else console.warn('leaderboard summary query failed',e);
@@ -2160,15 +2244,15 @@ async function loadRankingSummaries(api){
       const records=snap.docs.map(doc=>normalizeRankingRecord(Object.assign({id:doc.id,runId:doc.id},doc.data())))
         .filter(d=>(d.difficultyKey||'easy')===rankingDifficulty)
         .slice(0,10);
-      if(records.length) return records;
+      if(records.length) return sortRankingRecords(records).slice(0,10);
     }catch(e){
       if(isFirestorePermissionError(e)) leaderboardSplitReadDenied=true;
       else console.warn('leaderboard summary fallback failed',e);
     }
   }
-  const q=api.fs.query(api.fs.collection(api.db,leaderboardCollectionFor(rankingDifficulty)),api.fs.orderBy('score','desc'),api.fs.limit(10));
+  const q=api.fs.query(api.fs.collection(api.db,leaderboardCollectionFor(rankingDifficulty)),api.fs.orderBy('score','desc'),api.fs.limit(50));
   const snap=await api.fs.getDocs(q);
-  return snap.docs.map(doc=>normalizeRankingRecord(Object.assign({id:doc.id},doc.data())));
+  return sortRankingRecords(snap.docs.map(doc=>normalizeRankingRecord(Object.assign({id:doc.id},doc.data())))).slice(0,10);
 }
 async function saveLegacyRunScore(){
   const summary=arguments[0]||{};
@@ -2192,7 +2276,9 @@ async function saveLegacyRunScore(){
     name:cleanLeaderboardName(summary.name||summary.nickname),
     retries:Math.max(0,Math.round(Number(summary.retries)||0)),
     score:clamp(Math.round(Number(summary.score)||0),0,SCORE_MAX),
+    scoreBreakdown:summary.scoreBreakdown||null,
     title:String(summaryData.title||''),
+    cleared:!!summary.win,
     win:!!summary.win
   };
   await api.fs.addDoc(api.fs.collection(api.db,leaderboardCollectionFor(legacyData.difficultyKey)),legacyData);
@@ -2231,6 +2317,7 @@ async function saveRunScore(win,killer,scoreData,name){
       nickname:saveName,
       name:saveName,
       score:scoreToSave,
+      scoreBreakdown:Object.assign({},scoreData,{score:scoreToSave}),
       kills:totalKills,
       level,
       act,
@@ -2239,6 +2326,7 @@ async function saveRunScore(win,killer,scoreData,name){
       retries,
       clearTime,
       elapsedSec:clearTime,
+      cleared:!!win,
       win:!!win,
       killer:killer||lastKiller||'',
       title:getSelectedTitleName(),
@@ -2687,12 +2775,14 @@ function startCombat(kind, fresh){
 
 function spawnEnemy(type,x,y,diff){
   const d=ENEMY_TYPES[type];
+  const isSummonedType=(typeof SUMMON_TYPES!=='undefined'&&SUMMON_TYPES.has(type));
   markDiscovered('enemies', type);
   enemies.push({
     type,sprite:type,name:d.name,x,y,r:d.r,
     hp:d.hp*diff*diffSet.hp,maxhp:d.hp*diff*diffSet.hp,spd:d.spd*diffSet.spd,dmg:d.dmg*Math.min(diff,2.2),
     color:d.color,xp:d.xp,ai:d.ai,range:d.range||0,cool:d.cool||0,coolT:rand(0,1.2),
     explode:d.explode,armor:d.armor||0,label:d.label,canLunge:d.lunge,vx:0,vy:0,wob:rand(0,TAU),hitT:0,
+    summoned:!!(d.summoned||isSummonedType),noKillScore:!!(d.noKillScore||isSummonedType),
   });
 }
 function spawnBoss(b){
@@ -3028,7 +3118,7 @@ function resetStallWatch(){
 }
 function stallTargetEnemies(){
   if(!enemies||!enemies.length) return [];
-  return enemies.filter(e=>e&&!e.dummy&&!e._stallReinforcement&&!SUMMON_TYPES.has(e.type));
+  return enemies.filter(e=>e&&!e.dummy&&!e._stallReinforcement&&!e.noKillScore&&!e.summoned&&!e.clone&&!e.splitChild&&!SUMMON_TYPES.has(e.type));
 }
 function shouldTrackStall(){
   if(state!=='play'||roomCleared||roomIsBoss||roomIsMidboss||roomHadElite||boss||bossBanner>0) return false;
@@ -3043,7 +3133,7 @@ function markStallKill(){
 }
 function applyStallRage(){
   enemies.forEach(e=>{
-    if(!e||e.dummy||e.midboss||e.eliteViewer||SUMMON_TYPES.has(e.type)||e._stallRaged) return;
+    if(!e||e.dummy||e.midboss||e.eliteViewer||e.noKillScore||e.summoned||e.clone||e.splitChild||SUMMON_TYPES.has(e.type)||e._stallRaged) return;
     e._stallRaged=true;
     e.spd*=2;
     if(e._spd0!=null) e._spd0*=2;
@@ -3080,6 +3170,7 @@ function updateStallWatch(dt){
 function killEnemy(e){
   const idx=enemies.indexOf(e); if(idx<0) return;
   const isSummon=SUMMON_TYPES.has(e.type)||e._stallReinforcement;
+  const countsForKillScore=!isSummon&&!e.noKillScore&&!e.summoned&&!e.clone&&!e.splitChild;
   enemies.splice(idx,1);
   if(e.type==='hyechul'){ enemies=enemies.filter(o=>!SUMMON_TYPES.has(o.type)); }
   if(e.dummy){ burst(e.x,e.y,e.color,10,180); return; }
@@ -3112,12 +3203,14 @@ function killEnemy(e){
   }
   if(e.eliteViewer){ banner('자잘자 처치!','',1100); spawnDeathBubble(e.x, e.y-e.r-12, pick(['로블록스 하러 가야겠다…','봉식님… 너무하시네요 Sadge','다음 생엔 더 셀게요…','채금 풀리면 또 봬요','이게 맞나요…? 운영자 호출']), 3.4); }
   if(!isSummon){
-    markStallKill();
-    kills++; totalKills++;
-    userProgress.stats.totalKills=(Number(userProgress.stats.totalKills)||0)+1;
-    unlockAchievement('first_kill');
-    checkKillAchievements();
-    saveUserProgress();
+    if(countsForKillScore){
+      markStallKill();
+      kills++; totalKills++;
+      userProgress.stats.totalKills=(Number(userProgress.stats.totalKills)||0)+1;
+      unlockAchievement('first_kill');
+      checkKillAchievements();
+      saveUserProgress();
+    }
     gainXP(e.xp);
     if(player.lifesteal>0 && Math.random()<player.lifesteal){ healPlayer(5,e.x,e.y); }
     if(player.healOnKill>0){ healPlayer(player.healOnKill,e.x,e.y); }
@@ -7619,7 +7712,7 @@ function spawnEgg(x,y,hatchType,hatchTime){
     x:clamp(x,30,W-30),y:clamp(y,120,H-120),r:d.r,
     hp:d.hp*diffSet.hp,maxhp:d.hp*diffSet.hp,spd:0,_spd0:0,dmg:0,
     color:d.color,xp:0,ai:'egg',hatchType,hatchT:hm,hatchMax:hm,
-    wob:rand(0,TAU),hitT:0,coolT:0,
+    wob:rand(0,TAU),hitT:0,coolT:0,summoned:true,noKillScore:true,
   });
   burst(x,y,'#8a3f6f',10,140);
 }
@@ -8922,6 +9015,56 @@ const DEATH_LINES={
 function leaderboardMinScoreMessage(){
   return fmtScore(LEADERBOARD_MIN_SCORE)+'점 이상부터 랭킹 등록 가능';
 }
+function signedScoreText(value){
+  const n=Math.round(Number(value)||0);
+  return (n>=0?'+':'-')+fmtScore(Math.abs(n));
+}
+function scoreGuideLine(label,value,penalty){
+  return '<div class="score-guide-line'+(penalty?' penalty':'')+'"><span>'+rankBuildText(label)+'</span><b>'+rankBuildText(value)+'</b></div>';
+}
+function renderEndScoreGuide(scoreData,expanded){
+  const toggle=$('scoreGuideToggle');
+  const body=$('scoreGuideBody');
+  if(!toggle||!body) return;
+  const data=scoreData||pendingScoreData||calculateScoreBreakdown({});
+  toggle.setAttribute('aria-expanded',expanded?'true':'false');
+  toggle.textContent=expanded?'점수 산정 방식 숨기기 ▲':'점수 산정 방식 보기 ▼';
+  body.classList.toggle('hidden',!expanded);
+  const total=Number(data.totalScore!=null?data.totalScore:data.score)||0;
+  body.innerHTML=
+    '<div class="score-guide-section">'+
+      '<div class="score-guide-title">점수 산정 방식</div>'+
+      '<div>진행 점수 = 전역 층수 × 1200</div>'+
+      '<div>전역 층수 = (현재 막 - 1) × 15 + 도달층</div>'+
+      '<br>'+
+      '<div>처치 점수 = 처치 수 × 120</div>'+
+      '<div class="score-guide-note">※ 소환물/분열몹은 처치 점수에 포함되지 않음</div>'+
+      '<br>'+
+      '<div>레벨 점수 = (레벨 - 1) × 1500</div>'+
+      '<div>클리어 보너스 = 클리어 시 +30,000</div>'+
+      '<div>시간 보너스 = 클리어 시 max(0, (2000초 - 플레이시간) × 10)</div>'+
+      '<div class="score-guide-note">※ 2000초 초과 클리어 또는 미클리어 시 0점</div>'+
+      '<br>'+
+      '<div>피격 패널티 = 피격 횟수 × -200</div>'+
+      '<div>재도전 패널티 = 재도전 횟수 × -1500</div>'+
+    '</div>'+
+    '<div class="score-guide-section">'+
+      '<div class="score-guide-title">이번 런 점수 분해</div>'+
+      scoreGuideLine('진행 점수',signedScoreText(data.progressScore),false)+
+      scoreGuideLine('처치 점수',signedScoreText(data.killScore),false)+
+      scoreGuideLine('레벨 점수',signedScoreText(data.levelScore),false)+
+      scoreGuideLine('클리어 보너스',signedScoreText(data.clearBonus),false)+
+      scoreGuideLine('시간 보너스',signedScoreText(data.timeBonus),false)+
+      scoreGuideLine('피격 패널티',signedScoreText(-Math.abs(Number(data.hitPenalty)||0)),true)+
+      scoreGuideLine('재도전 패널티',signedScoreText(-Math.abs(Number(data.retryPenalty)||0)),true)+
+      '<div class="score-guide-line total"><span>총점</span><b>'+rankBuildText(fmtScore(total))+'</b></div>'+
+    '</div>';
+}
+function toggleEndScoreGuide(){
+  const body=$('scoreGuideBody');
+  const expanded=!(body&&body.classList.contains('hidden'));
+  renderEndScoreGuide(pendingScoreData,!expanded);
+}
 function refreshEndRankEligibility(){
   const submit=$('endRankSubmit');
   const saveEl=$('endScoreSave');
@@ -9036,6 +9179,7 @@ function gameOver(win, killer){
   pendingScoreWin=!!win;
   pendingScoreKiller=k;
   pendingRunBuildSnapshot=createRunBuildSnapshot(scoreData);
+  renderEndScoreGuide(scoreData,false);
   resetEndRankForm();
   $('endQuip').textContent='채팅: "'+quip+'"';
   chatSys(win?"🎉🎉 클리어!! 채팅 축제":"☠ 사망 ("+k+") — 채팅: "+pick(["GG","한판더","아깝다 Sadge","리트 ㄱㄱ"]));
@@ -9139,6 +9283,7 @@ function wireMainControls(){
     retryRoom();
   };
   { const rb=$('endRankSubmit'); if(rb) rb.onclick=submitEndRankScore; }
+  { const sgt=$('scoreGuideToggle'); if(sgt) sgt.onclick=toggleEndScoreGuide; }
   $('restartBtn').onclick=()=>{
     introFxReset(); stopBGM(); hideAll();
     try{ if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)(); if(audioCtx.state==='suspended')audioCtx.resume(); }catch(e){}
