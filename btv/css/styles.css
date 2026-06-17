@@ -1490,3 +1490,77 @@
     display: none;
   }
 }
+
+@media (hover: hover) and (pointer: fine) {
+  :root {
+    --pixel-cursor: url("../assets/cursor.png") 4 4, auto;
+    --pixel-cursor-click: url("../assets/cursor.png") 4 4, pointer;
+  }
+
+  html,
+  body,
+  canvas {
+    cursor: var(--pixel-cursor) !important;
+  }
+
+  button,
+  .btn,
+  .choice,
+  .card,
+  .shop-card,
+  .shop-item,
+  .perkcard,
+  .diffbtn,
+  .title-item,
+  .iconbtn,
+  .rank-tab,
+  .db-tab,
+  .ach-tab,
+  .vote-opt,
+  .mapnode.reach,
+  .pslot,
+  .set-x,
+  .set-btn,
+  .set-toggle,
+  .switch,
+  .slider,
+  .tree-unlock-btn,
+  .tree-close-btn,
+  #databaseClose,
+  #treeCanvas,
+  [role="button"],
+  [onclick],
+  label {
+    cursor: var(--pixel-cursor-click) !important;
+  }
+
+  button:disabled,
+  .btn:disabled,
+  .choice:disabled,
+  .shop-card.disabled,
+  .shop-card.sold,
+  .title-item.disabled,
+  .pslot.empty,
+  .tree-unlock-btn:disabled,
+  button.ach-row:disabled,
+  #levelConfirm:disabled,
+  [aria-disabled="true"] {
+    cursor: var(--pixel-cursor) !important;
+  }
+}
+
+@media (hover: none), (pointer: coarse) {
+  html,
+  body,
+  canvas,
+  button,
+  .btn,
+  .choice,
+  .card,
+  .shop-card,
+  .shop-item,
+  [role="button"],
+  [onclick] {
+    cursor: auto !important;
+  }
+}
