@@ -4659,10 +4659,10 @@ function genMap(){
 }
 function rollNodeType(row){
   const bag=[];
-  for(let i=0;i<44;i++) bag.push('fight');
+  for(let i=0;i<42;i++) bag.push('fight');
   for(let i=0;i<24;i++) bag.push('event');
-  if(row>=1) for(let i=0;i<7;i++) bag.push('shop');
-  if(row>=2) for(let i=0;i<6;i++) bag.push('campfire');
+  if(row>=1) for(let i=0;i<11;i++) bag.push('shop');
+  if(row>=2) for(let i=0;i<4;i++) bag.push('campfire');
   return pick(bag);
 }
 function isProtectedMapNode(n){
