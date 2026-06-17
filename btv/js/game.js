@@ -767,6 +767,7 @@ const LEADERBOARD_COLLECTIONS={easy:'scores_easy',normal:'scores_normal',hard:'s
 const LEADERBOARD_SUMMARY_COLLECTION='leaderboard';
 const RUN_BUILDS_COLLECTION='runBuilds';
 const RUN_BUILD_VERSION='run-build-v1';
+const RUN_BUILD_TITLE_MARKER='\n__BTV_RUN_BUILD__:';
 const PLAYER_CHARACTER_NAME='봉식';
 let leaderboardApiPromise=null;
 let progressApiPromise=null;
@@ -1553,6 +1554,37 @@ function createRunBuildSnapshot(scoreData){
 function rankBuildText(v){
   return String(v==null?'':v).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 }
+function encodeRunBuildPayload(build){
+  try{
+    return btoa(unescape(encodeURIComponent(JSON.stringify(build))));
+  }catch(e){
+    return '';
+  }
+}
+function decodeRunBuildPayload(payload){
+  try{
+    return JSON.parse(decodeURIComponent(escape(atob(String(payload||'')))));
+  }catch(e){
+    return null;
+  }
+}
+function titleWithEmbeddedBuild(title,build){
+  const payload=encodeRunBuildPayload(build);
+  return String(title||'')+(payload?(RUN_BUILD_TITLE_MARKER+payload):'');
+}
+function splitEmbeddedBuildTitle(title){
+  title=String(title||'');
+  const idx=title.indexOf(RUN_BUILD_TITLE_MARKER);
+  if(idx<0) return {title,build:null};
+  return {title:title.slice(0,idx),build:decodeRunBuildPayload(title.slice(idx+RUN_BUILD_TITLE_MARKER.length))};
+}
+function normalizeRankingRecord(data){
+  const d=Object.assign({},data||{});
+  const split=splitEmbeddedBuildTitle(d.title);
+  d.title=split.title;
+  if(!d.build && split.build) d.build=split.build;
+  return d;
+}
 function nameById(list,id){
   const item=(list||[]).find(x=>x&&x.id===id);
   return item?item.name:String(id||'');
@@ -1685,7 +1717,7 @@ async function loadRankingSummaries(api){
         api.fs.limit(10)
       );
       const snap=await api.fs.getDocs(q);
-      const records=snap.docs.map(doc=>Object.assign({id:doc.id,runId:doc.id},doc.data()));
+      const records=snap.docs.map(doc=>normalizeRankingRecord(Object.assign({id:doc.id,runId:doc.id},doc.data())));
       if(records.length) return records;
     }catch(e){
       if(isFirestorePermissionError(e)) leaderboardSplitReadDenied=true;
@@ -1696,7 +1728,7 @@ async function loadRankingSummaries(api){
     try{
       const q=api.fs.query(api.fs.collection(api.db,LEADERBOARD_SUMMARY_COLLECTION),api.fs.orderBy('score','desc'),api.fs.limit(50));
       const snap=await api.fs.getDocs(q);
-      const records=snap.docs.map(doc=>Object.assign({id:doc.id,runId:doc.id},doc.data()))
+      const records=snap.docs.map(doc=>normalizeRankingRecord(Object.assign({id:doc.id,runId:doc.id},doc.data())))
         .filter(d=>(d.difficultyKey||'easy')===rankingDifficulty)
         .slice(0,10);
       if(records.length) return records;
@@ -1707,7 +1739,7 @@ async function loadRankingSummaries(api){
   }
   const q=api.fs.query(api.fs.collection(api.db,leaderboardCollectionFor(rankingDifficulty)),api.fs.orderBy('score','desc'),api.fs.limit(10));
   const snap=await api.fs.getDocs(q);
-  return snap.docs.map(doc=>Object.assign({id:doc.id},doc.data()));
+  return snap.docs.map(doc=>normalizeRankingRecord(Object.assign({id:doc.id},doc.data())));
 }
 async function saveLegacyRunScore(api,difficultyKey,summary,build){
   const collection=api.fs.collection(api.db,leaderboardCollectionFor(difficultyKey));
@@ -1723,7 +1755,7 @@ async function saveLegacyRunScore(api,difficultyKey,summary,build){
     elapsedSec:summary.elapsedSec||summary.clearTime||0,
     win:!!summary.win,
     killer:summary.killer||'',
-    title:summary.title||'',
+    title:titleWithEmbeddedBuild(summary.title||'',build),
     difficultyKey,
     difficulty:summary.difficulty||'',
     createdAt:summary.createdAt
