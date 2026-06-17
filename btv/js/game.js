@@ -1946,11 +1946,21 @@ function setRankingDifficulty(key){
   });
 }
 function rankingReachedText(data){
-  const diff=data.difficulty||data.difficultyKey||'';
-  const character=data.character||PLAYER_CHARACTER_NAME;
-  const lv=Number(data.level||0);
-  const t=fmtTime(data.clearTime!=null?data.clearTime:data.elapsedSec);
-  return diff+' · '+character+' · Lv.'+lv+' · '+t;
+  return getRankSummaryText(data);
+}
+function getRankSummaryText(run){
+  run=run||{};
+  const runAct=Math.max(1,Math.round(Number(run.act)||1));
+  const floor=Math.max(1,Math.round(Number(run.floor!=null?run.floor:run.reachedFloor)||1));
+  const level=Math.max(1,Math.round(Number(run.level)||1));
+  const elapsed=run.clearTime!=null?run.clearTime:run.elapsedSec;
+  const timeText=fmtTime(elapsed);
+  const cleared=!!(run.cleared||run.win);
+  if(cleared) return '클리어 · Lv.'+level+' · '+timeText;
+  return '진행 '+runAct+'막 '+floor+'층 · Lv.'+level+' · '+timeText;
+}
+function rankDetailButtonText(run){
+  return (run&&(run.cleared||run.win))?'빌드 보기':'상세 보기';
 }
 function createRunId(api){
   return api.fs.doc(api.fs.collection(api.db,LEADERBOARD_SUMMARY_COLLECTION)).id;
@@ -2132,13 +2142,38 @@ function renderScoreBreakdownSection(summary){
   }).join('');
   return '<div class="rank-build-section"><h3>점수 분해</h3><div class="rank-build-stats">'+rows+'</div></div>';
 }
+function renderScoreBreakdownSectionV2(summary){
+  const b=(summary&&summary.scoreBreakdown)||scoreBreakdownFromSummary(summary);
+  if(!b){
+    return '<div class="rank-build-section"><h3>점수 분해</h3><div class="rank-build-empty">정보 부족</div></div>';
+  }
+  const total=Number(b.score!=null?b.score:(summary&&summary.score))||0;
+  const rows=[
+    ['진행 점수',b.progressScore,'add'],
+    ['처치 점수',b.killScore,'add'],
+    ['레벨 점수',b.levelScore,'add'],
+    ['클리어 보너스',b.clearBonus,'add'],
+    ['시간 보너스',b.timeBonus,'add'],
+    ['피격 패널티',-Math.abs(Number(b.hitPenalty)||0),'penalty'],
+    ['재도전 패널티',-Math.abs(Number(b.retryPenalty)||0),'penalty'],
+    ['총점',total,'total']
+  ].map(item=>{
+    const n=Number(item[1])||0;
+    const text=item[2]==='total'
+      ? fmtScore(Math.round(n))
+      : ((n>=0?'+':'-')+fmtScore(Math.abs(Math.round(n))));
+    return '<div class="rank-build-stat score-'+item[2]+'"><span>'+rankBuildText(item[0])+'</span><b>'+rankBuildText(text)+'</b></div>';
+  }).join('');
+  return '<div class="rank-build-section"><h3>점수 분해</h3><div class="rank-build-stats">'+rows+'</div></div>';
+}
 function renderRunBuildDetail(summary,build){
   const title=$('rankBuildTitle');
   const body=$('rankBuildBody');
   if(!body) return;
   const nick=cleanLeaderboardName(summary&&((summary.nickname||summary.name)||''));
-  if(title) title.textContent=nick+'님의 클리어 빌드';
-  const scoreSection=renderScoreBreakdownSection(summary);
+  if(title) title.textContent=nick+'님의 런 상세';
+  const scoreSection=renderScoreBreakdownSectionV2(summary);
+  if(title) title.textContent=nick+'님의 런 상세';
   if(!build || build.version!==RUN_BUILD_VERSION){
     body.innerHTML=scoreSection+'<div class="rank-build-empty">상세 빌드 정보 없음</div>';
     return;
@@ -2147,11 +2182,14 @@ function renderRunBuildDetail(summary,build){
     body.innerHTML='<div class="rank-build-empty">상세 빌드 정보 없음</div>';
     return;
   }
+  const detailAct=Math.max(1,Math.round(Number(summary&&summary.act)||1));
+  const detailFloor=Math.max(1,Math.round(Number(summary&&(summary.floor!=null?summary.floor:summary.reachedFloor))||1));
   const summaryItems=[
     ['난이도',summary.difficulty||summary.difficultyKey||'-'],
     ['캐릭터',summary.character||PLAYER_CHARACTER_NAME],
-    ['클리어 시간',fmtTime(summary.clearTime!=null?summary.clearTime:summary.elapsedSec)],
-    ['레벨','Lv.'+(Number(summary.level)||0)]
+    ['진행',detailAct+'막 '+detailFloor+'층'],
+    ['레벨','Lv.'+(Math.max(1,Math.round(Number(summary.level)||1)))],
+    ['시간',fmtTime(summary.clearTime!=null?summary.clearTime:summary.elapsedSec)]
   ];
   const statLabels={
     maxHp:'최대 체력', damage:'공격력', attackSpeed:'초당 발사',
@@ -2359,12 +2397,12 @@ async function renderRankingList(){
       row.className='rank-row has-build';
       row.tabIndex=0;
       row.setAttribute('role','button');
-      row.setAttribute('aria-label',cleanLeaderboardName(d.nickname||d.name)+'님의 클리어 빌드 보기');
+      row.setAttribute('aria-label',cleanLeaderboardName(d.nickname||d.name)+'님의 '+rankDetailButtonText(d));
       row.innerHTML=
         '<div class="rank-no">#'+rank+'</div>'+
         '<div><div class="rank-name"></div><div class="rank-meta"></div></div>'+
         '<div class="rank-score">'+fmtScore(Number(d.score)||0)+'</div>'+
-        '<div class="rank-detail-hint">상세</div>';
+        '<div class="rank-detail-hint">'+rankBuildText(rankDetailButtonText(d))+'</div>';
       row.querySelector('.rank-name').textContent=visibleLeaderboardName(d.nickname||d.name,d.title);
       row.querySelector('.rank-meta').textContent=rankingReachedText(d);
       row.onclick=()=>openRankBuildDetail(d);
