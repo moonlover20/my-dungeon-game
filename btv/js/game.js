@@ -41,6 +41,7 @@ const SKILL_HUD_MARGIN_X=42;
 const SKILL_HUD_MARGIN_Y=42;
 const DODGE_READY_FX_DURATION=0.62;
 const BOSS_STUN_IMMUNITY_T=10;
+const ENEMY_SPAWN_SAFE_RADIUS=220;
 const CRIT_BASE_CHANCE=0.05;
 const CRIT_BASE_MULT=1.5;
 const CRIT_CHANCE_CAP=0.60;
@@ -110,8 +111,12 @@ const JAEMIN_SPRITE=new Image();let jaeminReady=false;JAEMIN_SPRITE.onload=()=>{
 const CLEAVER_SPRITE=new Image();let cleaverReady=false;CLEAVER_SPRITE.onload=()=>{cleaverReady=true;};CLEAVER_SPRITE.src="btv/assets/cleaver.png";
 const BOOMERANG_SPRITE=new Image();let boomerangReady=false;BOOMERANG_SPRITE.onload=()=>{boomerangReady=true;};BOOMERANG_SPRITE.src="btv/assets/boomerang.png";
 PLAYER_SPRITE.src="btv/assets/asset-021-de784e3d5a.png";
-let W=cvs.width, H=cvs.height;
-let BASE_W=W, BASE_H=H; const BOSS_ARENA_SCALE=1.3;
+const INTERNAL_GAME_W=1600, INTERNAL_GAME_H=900;
+let W=INTERNAL_GAME_W, H=INTERNAL_GAME_H;
+let BASE_W=W, BASE_H=H;
+const STAT_PANEL_COLLAPSED_KEY='btv_stat_panel_collapsed';
+let statPanelCollapsed=false;
+try{ statPanelCollapsed=localStorage.getItem(STAT_PANEL_COLLAPSED_KEY)==='true'; }catch(e){}
 let arenaResponsive=true; // 일반 필드에서만 화면에 맞춰 리사이즈(보스 아레나 제외)
 function setArena(w,h){
   if(cvs.width===w && cvs.height===h) return;
@@ -119,24 +124,26 @@ function setArena(w,h){
   if(typeof buildBackdrop==='function') buildBackdrop(act); // 새 크기에 맞춰 배경 재생성
 }
 // 가용 영역(스테이지 영역에서 능력치 패널 폭만 제외) 계산
+cvs.width=INTERNAL_GAME_W; cvs.height=INTERNAL_GAME_H;
 function computeFieldSize(){
   const wrap=document.getElementById('stageWrap');
   if(!wrap||!wrap.clientWidth) return {w:BASE_W,h:BASE_H};
   let availW=wrap.clientWidth, availH=wrap.clientHeight;
   const sp=document.getElementById('sidePanel');
   const inPlay = (typeof state!=='undefined' && state==='play' && typeof player==='object' && player && player.maxhp!=null);
-  const panelShown = ((sp && sp.classList.contains('show')) || inPlay) && window.innerWidth>880;
+  const panelShown = !statPanelCollapsed && ((sp && sp.classList.contains('show')) || inPlay) && window.innerWidth>880;
   if(panelShown) availW-=232; // 패널 + 여백
-  availW=Math.max(640, Math.min(2000, Math.round(availW)));
-  availH=Math.max(400, Math.min(1200, Math.round(availH)));
-  return {w:availW,h:availH};
+  availW=Math.max(320, Math.round(availW));
+  availH=Math.max(180, Math.round(availH));
+  const scale=Math.max(0.1,Math.min(availW/INTERNAL_GAME_W,availH/INTERNAL_GAME_H));
+  return {w:Math.round(INTERNAL_GAME_W*scale),h:Math.round(INTERNAL_GAME_H*scale)};
 }
 // 일반 필드: 버퍼=표시영역(1:1, 레터박스 없음)으로 꽉 채움
 function fitField(){
   if(!arenaResponsive) return;
   const s=computeFieldSize();
   BASE_W=s.w; BASE_H=s.h;
-  setArena(s.w,s.h);
+  setArena(INTERNAL_GAME_W,INTERNAL_GAME_H);
   cvs.style.width=s.w+'px'; cvs.style.height=s.h+'px';
   if(typeof player==='object' && player){ player.x=clamp(player.x,16,W-16); player.y=clamp(player.y,16,H-16); }
 }
@@ -866,10 +873,21 @@ function handleEscape(e){
   }
   return false;
 }
+function isTypingInputActive(){
+  const el=document.activeElement;
+  if(!el) return false;
+  const tag=(el.tagName||'').toLowerCase();
+  return tag==='input'||tag==='textarea'||tag==='select'||el.isContentEditable;
+}
 window.addEventListener('keydown',e=>{
   const k=e.key.toLowerCase();
   if(k==='escape'){
     handleEscape(e);
+    return;
+  }
+  if(k==='c' && !e.repeat && !isTypingInputActive() && typeof toggleStatPanel==='function' && statPanelEligible()){
+    toggleStatPanel();
+    e.preventDefault();
     return;
   }
   keys[k]=true;
@@ -2819,8 +2837,8 @@ function startCombat(kind, fresh){
   lastRoomKind=kind;
   // 보스/중간보스전은 회피 공간을 넓혀준다
   const bigArena=(kind==='boss'||kind==='midboss');
-  arenaResponsive=!bigArena;
-  if(bigArena){
+  arenaResponsive=true;
+  if(false){
     const s=computeFieldSize();
     setArena(Math.round(s.w*BOSS_ARENA_SCALE), Math.round(s.h*BOSS_ARENA_SCALE));
     cvs.style.width=''; cvs.style.height=''; // 보스 아레나는 비율 유지하며 맞춤 축소
@@ -2876,7 +2894,7 @@ function startCombat(kind, fresh){
     }else if(kind==='elite'){
       // 자잘자 정예전 — 전용 엘리트 노드에서만 등장 (잡몹 소수 + 자잘자)
       const minions=clamp(Math.round(count*0.6),1,6);
-      for(let i=0;i<minions;i++) spawnEnemy(pickNormalEnemyForRoom(act,row,roomSpawnCounts), rand(60,W-60), rand(60,H-180), diff);
+      for(let i=0;i<minions;i++) spawnRandomEnemy(pickNormalEnemyForRoom(act,row,roomSpawnCounts), diff, 60, H-180);
       if(act===2){
         // 2막 엘리트: 양갱
         spawnEnemy('kkotchung', W/2, 140, diff);
@@ -2898,14 +2916,14 @@ function startCombat(kind, fresh){
         beep(330,0.5,'triangle',0.05); beep(440,0.55,'sine',0.035); // "징—"
       }
     }else{
-      for(let i=0;i<count;i++) spawnEnemy(pickNormalEnemyForRoom(act,row,roomSpawnCounts), rand(60,W-60), rand(60,H-180), diff);
+      for(let i=0;i<count;i++) spawnRandomEnemy(pickNormalEnemyForRoom(act,row,roomSpawnCounts), diff, 60, H-180);
     }
   }
   // ── 이벤트 모디파이어 소비/적용 ──
   combatRewardMul=1; combatChallenge=null; combatSpecialReward=null; combatTookHit=false; player._fireHandicap=1; combatTempAlly=false;
   if(nextCombatMods){
     const M=nextCombatMods; nextCombatMods=null;
-    if(M.cntMul && enemies.length){ const extra=Math.round(enemies.length*(M.cntMul-1)); for(let i=0;i<extra;i++){ spawnEnemy(pickNormalEnemyForRoom(act,row,roomSpawnCounts), rand(60,W-60), rand(60,H-180), diff); } }
+    if(M.cntMul && enemies.length){ const extra=Math.round(enemies.length*(M.cntMul-1)); for(let i=0;i<extra;i++){ spawnRandomEnemy(pickNormalEnemyForRoom(act,row,roomSpawnCounts), diff, 60, H-180); } }
     if(M.hpMul||M.spdMul||M.atkMul){ enemies.forEach(o=>{ if(!o.midboss){ if(M.hpMul){o.hp*=M.hpMul;o.maxhp*=M.hpMul;} if(M.spdMul){o.spd*=M.spdMul; if(o._spd0!=null)o._spd0*=M.spdMul;} if(M.atkMul){o.dmg=Math.round((o.dmg||0)*M.atkMul); if(o.touchDmg!=null)o.touchDmg=Math.round(o.touchDmg*M.atkMul); if(o.bodyDmg!=null)o.bodyDmg=Math.round(o.bodyDmg*M.atkMul); if(o.contactDmg!=null)o.contactDmg=Math.round(o.contactDmg*M.atkMul);} } }); }
     if(M.fireHandicap) player._fireHandicap=M.fireHandicap;
     if(M.rewardMul) combatRewardMul=M.rewardMul;
@@ -2916,11 +2934,28 @@ function startCombat(kind, fresh){
   }
   if(player.roomShield>0) player.buffs.shield=Math.max(player.buffs.shield,player.roomShield);
   updateHUD();
-  // 방 입장 즉시 능력치 패널을 우측에 띄운다 (state 갱신 순서와 무관하게 강제 표시)
-  { const sp=$('sidePanel'), sw=$('stageWrap');
-    if(sp){ renderSidePanel(); sp.classList.add('show'); if(sw) sw.classList.add('with-side'); } }
+  refreshSidePanel();
 }
 
+function safeRandomSpawnPoint(xMin,xMax,yMin,yMax,minDist){
+  const lx=Math.min(xMin,xMax), hx=Math.max(xMin,xMax);
+  const ly=Math.min(yMin,yMax), hy=Math.max(yMin,yMax);
+  const safe=Math.max(0,minDist||ENEMY_SPAWN_SAFE_RADIUS);
+  const px=player&&Number.isFinite(player.x)?player.x:W/2;
+  const py=player&&Number.isFinite(player.y)?player.y:H/2;
+  let best={x:rand(lx,hx),y:rand(ly,hy)}, bestD=dist2(best.x,best.y,px,py);
+  for(let i=0;i<28;i++){
+    const p={x:rand(lx,hx),y:rand(ly,hy)};
+    const d=dist2(p.x,p.y,px,py);
+    if(d>=safe*safe) return p;
+    if(d>bestD){ best=p; bestD=d; }
+  }
+  return best;
+}
+function spawnRandomEnemy(type,diff,yMin,yMax,minDist){
+  const p=safeRandomSpawnPoint(60,W-60,yMin==null?60:yMin,yMax==null?H-180:yMax,minDist);
+  spawnEnemy(type,p.x,p.y,diff);
+}
 function spawnEnemy(type,x,y,diff){
   const d=ENEMY_TYPES[type];
   const isSummonedType=(typeof SUMMON_TYPES!=='undefined'&&SUMMON_TYPES.has(type));
@@ -3378,7 +3413,7 @@ function spawnStallReinforcements(){
   const diff=1+(act-1)*0.6+currentRow*0.08;
   const n=act>=2?3:2;
   for(let i=0;i<n;i++){
-    spawnEnemy(pickNormalEnemyForRoom(act,currentRow,roomSpawnCounts), rand(60,W-60), rand(80,H-180), diff);
+    spawnRandomEnemy(pickNormalEnemyForRoom(act,currentRow,roomSpawnCounts), diff, 80, H-180);
     const e=enemies[enemies.length-1];
     e._stallReinforcement=true;
     e.label='난입 시청자';
@@ -3684,7 +3719,7 @@ function updateBoss(dt){
   // 접촉
   if(dist2(b.x,b.y,player.x,player.y)<(b.r+player.r)**2) hurtPlayer(intentDamage(b,b.enraged?38:28), boss?boss.name:'\uC2DC\uCCAD\uC790');
   if(b.attackT<=0){
-    const rate=(b.enraged?1.1:1.6)/(b.intentSpeedMul||1);
+    const rate=(b.enraged?1.3:1.6)/(b.intentSpeedMul||1);
     b.attackT=rate;
     if(b.pattern==='split'||b.pattern==='chaos'){
       for(let i=0;i<8;i++) enemyShootAt(b, b.x+Math.cos(i/8*TAU)*100, b.y+Math.sin(i/8*TAU)*100, 200,8);
@@ -8578,9 +8613,53 @@ function show(st){
 function refreshSidePanel(){
   const sp=$('sidePanel'); if(!sp) return;
   const sw=$('stageWrap');
-  // 게임이 시작된 이후로는 항상 표시 (타이틀 화면 'start' 및 player 미초기화 시에만 숨김)
-  if(state!=='title' && state!=='start' && player && player.maxhp!=null){ renderSidePanel(); sp.classList.add('show'); if(sw) sw.classList.add('with-side'); }
-  else { sp.classList.remove('show'); if(sw) sw.classList.remove('with-side'); }
+  const eligible=statPanelEligible();
+  if(eligible){
+    renderSidePanel();
+    sp.classList.toggle('show',!statPanelCollapsed);
+    sp.classList.toggle('is-collapsed',statPanelCollapsed);
+    if(sw) sw.classList.toggle('with-side',!statPanelCollapsed);
+  }else{
+    sp.classList.remove('show','is-collapsed');
+    if(sw) sw.classList.remove('with-side');
+  }
+  syncStatPanelTab(eligible);
+}
+function statPanelEligible(){
+  if(!(player && player.maxhp!=null)) return false;
+  if(state==='title'||state==='start'||state==='end') return false;
+  if(isOpen('ovSettings')||isOpen('ovRanking')||isOpen('ovAchievements')||isOpen('ovDatabase')||isOpen('ovHelp')) return false;
+  return true;
+}
+function saveStatPanelCollapsed(){
+  try{ localStorage.setItem(STAT_PANEL_COLLAPSED_KEY,statPanelCollapsed?'true':'false'); }catch(e){}
+}
+function setStatPanelCollapsed(v){
+  statPanelCollapsed=!!v;
+  saveStatPanelCollapsed();
+  refreshSidePanel();
+  if(typeof fitField==='function') fitField();
+}
+function toggleStatPanel(){
+  if(!statPanelEligible()) return;
+  setStatPanelCollapsed(!statPanelCollapsed);
+}
+function getStatPanelTab(){
+  let tab=$('statPanelTab');
+  if(!tab){
+    tab=document.createElement('button');
+    tab.id='statPanelTab';
+    tab.type='button';
+    tab.textContent='STAT ▶';
+    tab.setAttribute('aria-label','능력치 패널 열기');
+    tab.onclick=()=>setStatPanelCollapsed(false);
+    document.body.appendChild(tab);
+  }
+  return tab;
+}
+function syncStatPanelTab(eligible){
+  const tab=getStatPanelTab();
+  tab.classList.toggle('show',!!eligible && statPanelCollapsed);
 }
 
 const INTRO_SEEN_KEY='btv_introSeen_v3';
@@ -9284,7 +9363,7 @@ function renderSidePanel(previewPk){
       aft=spStats(cl); aftE=spEffects(cl);
     }catch(e){ aft=null; aftE=null; }
   }
-  let h='<div class="sp-header"><span class="sp-header-mark" aria-hidden="true">◆</span><span class="sp-header-title">내 능력치</span><span class="sp-header-chip">STAT</span>'+(aft?'<span class="sp-preview">미리보기</span>':'')+'</div>';
+  let h='<div class="sp-header"><span class="sp-header-mark" aria-hidden="true">◆</span><span class="sp-header-title">내 능력치</span><span class="sp-header-chip">STAT</span><button class="sp-collapse-btn" type="button" title="접기 [C]" aria-label="능력치 패널 접기">◀</button>'+(aft?'<span class="sp-preview">미리보기</span>':'')+'</div>';
   cur.forEach((r,i)=>{
     const kind=spKindFromLabel(r[0]);
     let val='<b>'+spEsc(r[1])+'</b>';
@@ -9306,7 +9385,7 @@ function renderSidePanel(previewPk){
     h+='<div class="sp-title sp-subtitle"><span aria-hidden="true">◇</span> 유물 '+p.relics.length+'</div>';
     h+='<div class="sp-relics">'+p.relics.map(r=>'<span title="'+((r.name||'').replace(/"/g,'')+' - '+(r.desc||'').replace(/"/g,''))+'">'+relicIconHTML(r,'relic-pix-sm')+'</span>').join('')+'</div>';
   }
-  const el=$('sidePanel'); if(el) el.innerHTML=h;
+  const el=$('sidePanel'); if(el){ el.innerHTML=h; const btn=el.querySelector('.sp-collapse-btn'); if(btn) btn.onclick=()=>setStatPanelCollapsed(true); }
 }
 function renderInventory(){
   const p=player;
