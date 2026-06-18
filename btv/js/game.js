@@ -1385,7 +1385,6 @@ function achievementRewardKinds(id){
   const kinds=[];
   const start=START_BONUS_REWARDS[id]||'';
   if(start.indexOf('시작 골드')>=0) kinds.push({key:'gold',label:'시작 골드'});
-  if(start.indexOf('시작 XP')>=0) kinds.push({key:'xp',label:'시작 XP'});
   if(start.indexOf('시작 포션')>=0) kinds.push({key:'potion',label:'시작 포션'});
   if(start.indexOf('시작 최대 체력')>=0) kinds.push({key:'hp',label:'시작 체력'});
   if(start.indexOf('트리포인트')>=0) kinds.push({key:'tree',label:'트리포인트'});
@@ -1399,7 +1398,7 @@ function rewardBadgeHTML(id){
   return '<div class="ach-reward-badges">'+kinds.map(k=>'<em class="ach-reward-badge '+k.key+'">'+k.label+'</em>').join('')+'</div>';
 }
 function computeStartBonusSummary(){
-  const bonus={gold:0,xp:0,potions:0,maxhp:0,treePoints:0};
+  const bonus={gold:0,potions:0,maxhp:0,treePoints:0};
   if(isAchievementUnlocked('first_play')) bonus.gold+=10;
   if(isAchievementUnlocked('first_kill')) bonus.gold+=10;
   if(isAchievementUnlocked('kill_100')) bonus.gold+=30;
@@ -1408,13 +1407,6 @@ function computeStartBonusSummary(){
   if(isAchievementUnlocked('greedy_exists')) bonus.gold+=10;
   if(isAchievementUnlocked('lonely_intruder')) bonus.gold+=10;
   if(isAchievementUnlocked('clear_act1')) bonus.potions+=1;
-  if(isAchievementUnlocked('clear_act2')) bonus.xp+=30;
-  if(isAchievementUnlocked('level_20')) bonus.xp+=20;
-  if(isAchievementUnlocked('berserk_kill')) bonus.xp+=10;
-  if(isAchievementUnlocked('legend_exists')) bonus.xp+=10;
-  if(isAchievementUnlocked('mythic_exists')) bonus.xp+=10;
-  if(isAchievementUnlocked('chosen_broadcast')) bonus.xp+=10;
-  if(isAchievementUnlocked('quick_room_clear')) bonus.xp+=10;
   if(isAchievementUnlocked('one_hp_survive')) bonus.maxhp+=5;
   if(isAchievementUnlocked('clear_game')) bonus.treePoints+=1;
   return bonus;
@@ -1425,7 +1417,6 @@ function renderStartBonusSummary(){
   const b=computeStartBonusSummary();
   const chips=[];
   if(b.gold) chips.push(['gold','시작 골드 +'+b.gold]);
-  if(b.xp) chips.push(['xp','시작 XP +'+b.xp]);
   if(b.potions) chips.push(['potion','시작 포션 +'+b.potions]);
   if(b.maxhp) chips.push(['hp','시작 최대 체력 +'+b.maxhp]);
   if(b.treePoints) chips.push(['tree','시작 트리포인트 +'+b.treePoints]);
@@ -1569,7 +1560,6 @@ function applyStartBonuses(){
   const bonus=computeStartBonusSummary();
   addGold(bonus.gold,'other');
   for(let i=0;i<bonus.potions;i++) addPotion(rollPotion());
-  if(bonus.xp) gainXP(bonus.xp);
   if(bonus.maxhp){ player.maxhp+=bonus.maxhp; player.hp+=bonus.maxhp; }
   treePoints+=bonus.treePoints;
   updateHUD();
