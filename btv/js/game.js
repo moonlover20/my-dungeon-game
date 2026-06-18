@@ -35,6 +35,12 @@ const MIN_PLAYER_BULLET_SPEED=250;
 const MAX_PLAYER_BULLET_SPEED=850;
 const MIN_PLAYER_SHOOT_COOLDOWN=0.09;
 const BASE_PLAYER_MOVE_SPEED=175;
+const DASH_FX_SCALE=1.75;
+const SKILL_HUD_SCALE=1.35;
+const SKILL_HUD_MARGIN_X=42;
+const SKILL_HUD_MARGIN_Y=42;
+const DODGE_READY_FX_DURATION=0.62;
+const BOSS_STUN_IMMUNITY_T=10;
 const CRIT_BASE_CHANCE=0.05;
 const CRIT_BASE_MULT=1.5;
 const CRIT_CHANCE_CAP=0.60;
@@ -407,14 +413,14 @@ const ENEMY_TYPES={
   goblin_bomber  :{name:"블페러", r:19.5, hp:22, spd:100, dmg:6,  color:"#9aa83f", xp:11, ai:"chase", explode:true, label:"블페러"},
   hoonsangtae   :{name:"\uD6C8\uC0C1\uD0DC", r:44.2, hp:48, spd:55, dmg:10, color:"#e25572", xp:38, ai:"cleaver_thrower", range:320, cool:1.55, label:"\uD6C8\uC0C1\uD0DC"},
   jaemin        :{name:"\uC7AC\uBBFC", r:20.8, hp:42, spd:68, dmg:9, color:"#f0a84a", xp:36, ai:"boomerang_thrower", range:300, cool:2.15, label:"\uC7AC\uBBFC"},
-  sniper_viewer :{name:"\uC800\uACA9\uB7EC", r:19.5, hp:34, spd:28, dmg:13, color:"#d83a3a", xp:42, ai:"sniper_laser", range:520, cool:3.0, label:"\uC800\uACA9\uB7EC"},
+  sniper_viewer :{name:"\uC800\uACA9\uB7EC", r:19.5, hp:34, spd:28, dmg:13, touchDmg:10, color:"#d83a3a", xp:42, ai:"sniper_laser", range:520, cool:3.0, label:"\uC800\uACA9\uB7EC"},
   stream_watcher:{name:"\uBC29\uD50C\uB7EC", r:19.5, hp:40, spd:44, dmg:6, color:"#4fc0d8", xp:34, ai:"movement_lock", range:360, cool:4.0, label:"\uBC29\uD50C\uB7EC"},
-  rhino_beetle   :{name:"자잘자",   r:27, hp:140, spd:68, dmg:16, color:"#3a2418", xp:24, ai:"charge", armor:0.15, label:"자잘자"},
+  rhino_beetle   :{name:"자잘자",   r:27, hp:140, spd:68, dmg:16, touchDmg:16, color:"#3a2418", xp:24, ai:"charge", armor:0.15, label:"자잘자"},
   earthworm      :{name:"지렁이", r:12, hp:10, spd:74, dmg:6, color:"#e87a8a", xp:0, ai:"erratic", label:"지렁이"},
   hyechul        :{name:"혜철이", r:52, hp:300, spd:42, dmg:15, color:"#c0392b", xp:150, ai:"hyechul", label:"혜철이"},
   zergling       :{name:"저글링", r:14, hp:12, spd:120, dmg:7, color:"#c98bff", xp:0, ai:"charge", label:"저글링"},
   mutalisk       :{name:"뮤탈", r:16, hp:16, spd:130, dmg:8, color:"#b97a4a", xp:0, ai:"chase", label:"뮤탈"},
-  ultra          :{name:"울트라", r:26, hp:95, spd:52, dmg:20, color:"#8a6f4a", xp:0, ai:"chase", armor:0.25, label:"울트라"},
+  ultra          :{name:"울트라", r:26, hp:95, spd:52, dmg:20, touchDmg:20, color:"#8a6f4a", xp:0, ai:"chase", armor:0.25, label:"울트라"},
   zerg_egg       :{name:"저그 알", r:18, hp:9, spd:0, dmg:0, color:"#b8772a", xp:0, ai:"egg", label:"알"},
   // === 2막: 망자의 폐허 ===
   skeleton_warrior:{name:"스켈레톤 워리어",r:15,hp:30, spd:64,dmg:11,color:"#e8e3d2",xp:9,  ai:"chase"},
@@ -432,18 +438,18 @@ const ENEMY_TYPES={
   elf_melee   :{name:"엘프 검사",  r:14,hp:26,spd:82,dmg:11,color:"#bfe3a0",xp:11,ai:"chase"},
   elf_ranged  :{name:"엘프 궁수",  r:14,hp:22,spd:54,dmg:0, color:"#a8d98a",xp:12,ai:"shooter",range:360,cool:1.3},
   // === 2막 (봉식 월드): 광천김 소굴 ===
-  gwangcheon_gim:{name:"광천김", r:18, hp:58,  spd:40, dmg:7,  color:"#3f7a34", xp:88,  ai:"shooter", range:330, cool:1.6, label:"광천김"},
-  reura         :{name:"러라",   r:15, hp:56,  spd:90, dmg:10, color:"#ffd166", xp:84,  ai:"chase", lunge:true, label:"러라"},
-  namu          :{name:"나무",   r:22, hp:72,  spd:30, dmg:13, color:"#5fa84a", xp:96, ai:"chase",   label:"나무"},
+  gwangcheon_gim:{name:"광천김", r:18, hp:58,  spd:40, dmg:7,  touchDmg:7,  color:"#3f7a34", xp:88,  ai:"shooter", range:330, cool:1.6, label:"광천김"},
+  reura         :{name:"러라",   r:15, hp:56,  spd:90, dmg:10, touchDmg:10, color:"#ffd166", xp:84,  ai:"chase", lunge:true, label:"러라"},
+  namu          :{name:"나무",   r:22, hp:72,  spd:30, dmg:13, touchDmg:13, color:"#5fa84a", xp:96, ai:"chase",   label:"나무"},
   ketter        :{name:"케터",   r:16, hp:54,  spd:58, dmg:8,  color:"#7ed957", xp:86,  ai:"orbit", range:260, cool:1.35, label:"케터"},
   // --- 2막 어려운 적 ---
-  pobear        :{name:"포베어", r:26, hp:125, spd:58, dmg:17, color:"#c8884a", xp:330, ai:"charge", armor:0.08, label:"포베어"},
-  blackstar     :{name:"흑별",   r:21, hp:110, spd:42, dmg:13, color:"#17111f", xp:315, ai:"orbit", range:270, cool:1.25, label:"흑별"},
-  killjoy       :{name:"킬조이", r:17, hp:100, spd:104,dmg:14, color:"#38e8ff", xp:320, ai:"shooter", range:380, cool:0.95, label:"킬조이"},
+  pobear        :{name:"포베어", r:26, hp:125, spd:58, dmg:17, touchDmg:13, color:"#c8884a", xp:330, ai:"charge", armor:0.08, label:"포베어"},
+  blackstar     :{name:"흑별",   r:21, hp:110, spd:42, dmg:13, touchDmg:10, color:"#17111f", xp:315, ai:"orbit", range:270, cool:1.25, label:"흑별"},
+  killjoy       :{name:"킬조이", r:17, hp:100, spd:104,dmg:14, touchDmg:10, color:"#38e8ff", xp:320, ai:"shooter", range:380, cool:0.95, label:"킬조이"},
   apple         :{name:"사과",   r:20, hp:112, spd:64, dmg:15, color:"#ff4d6d", xp:310, ai:"erratic", range:300, cool:1.4, label:"사과"},
-  yanggaeng     :{name:"박제인간", r:58, hp:1450, spd:48, dmg:17, color:"#111111", xp:2200, ai:"bagjein", cool:1.7, label:"박제인간"},
+  yanggaeng     :{name:"박제인간", r:58, hp:1450, spd:48, dmg:17, touchDmg:17, color:"#111111", xp:2200, ai:"bagjein", cool:1.7, label:"박제인간"},
   // === 2막 엘리트: 양갱 (3페이즈) ===
-  kkotchung     :{name:"양갱", r:32, hp:240, spd:50, dmg:11, color:"#f7a8d0", xp:900,  ai:"kkotchung", cool:1.4, label:"미주"},
+  kkotchung     :{name:"양갱", r:32, hp:240, spd:50, dmg:11, touchDmg:11, color:"#f7a8d0", xp:900,  ai:"kkotchung", cool:1.4, label:"미주"},
 };
 const ACT_POOLS=[
   { normal:["goblin_warrior","goblin_archer","goblin_shaman","goblin_bomber"], elite:["rhino_beetle"] },
@@ -624,7 +630,7 @@ const RELICS=[
   {id:"skewer",name:"꼬치 막대기",icon:"🍢",desc:"투사체가 적 1명을 관통.",cls:"boon",apply:p=>{p.pierce+=1;}},
   {id:"long_skewer",name:"긴 꼬치",icon:"🍡",desc:"투사체 관통 +2.",cls:"boon",apply:p=>{p.pierce+=2;}},
   // ===== 축복: 군중제어/폭발 =====
-  {id:"stun_bell",name:"기절의 종",icon:"🔔",desc:"명중 시 25% 확률로 적 기절.",cls:"boon",apply:p=>{p.stunChance+=0.25;}},
+  {id:"stun_bell",name:"기절의 종",icon:"🔔",desc:"명중 시 15% 확률로 적 기절.",cls:"boon",apply:p=>{p.stunChance+=0.15;}},
   {id:"chain_bomb",name:"연쇄 폭탄",icon:"💣",desc:"적 처치 시 주변에 폭발 피해.",cls:"boon",apply:p=>{p.explodeKill+=24;}},
   // ===== 축복: 생존 =====
   {id:"bread",name:"곰팡이 핀 식빵",icon:"🍞",desc:"최대 체력 +25.",cls:"boon",apply:p=>{p.maxhp+=25;p.hp+=25;}},
@@ -1641,8 +1647,15 @@ function applyEnemyDirectDamage(o,dmg,color,opts){
 function intentDamage(e,dmg){
   return dmg*((e&&e.atkBuffT>0)?1.2:1)*((e&&e.intentDmgMul)||1);
 }
+function enemyTouchBaseDamage(e){
+  return e?(e.touchDmg ?? e.bodyDmg ?? e.contactDmg ?? e.dmg ?? 0):0;
+}
+// 몸박 밸런스 메모(어려움 후반, 생성 피해 스케일 2.2 * hard 피해 2.7 = 5.94, 방어/받피 전)
+// 저격러 77.2 -> 59.4 / 자잘자 일반 95.0 -> 95.0 / 자잘자 엘리트 142.6 -> 133.1
+// 울트라 118.8 -> 118.8 / 광천김 41.6 -> 41.6 / 러라 59.4 -> 59.4
+// 나무 77.2 -> 77.2 / 포베어 101.0 -> 77.2 / 박제인간 101.0 -> 101.0
 function enemyTouchDamage(e){
-  const d=intentDamage(e,e&&e.dmg||0);
+  const d=intentDamage(e,enemyTouchBaseDamage(e));
   if(e) e.intentDmgMul=1;
   return d;
 }
@@ -2567,7 +2580,7 @@ function resetPlayer(){
     shieldRegen:0,shieldRegenT:0,hitShield:0,
     lastStand:false,usedLastStand:false,
     dodgeBlast:0,dodgeHaste:false,dodgeIframeBonus:0,
-    dodgeCharges:1,dodgeMaxCharges:1,minion:null,
+    dodgeCharges:1,dodgeMaxCharges:1,dashFxTrailT:0,dodgeReadyFxT:0,minion:null,
     // === 신규 퍼 스탯 ===
     goldPower:0, statusDmgMul:0, critHeal:0, chainLightning:0,
     chainKillLightning:0, critExplodeMul:0, recoveryMul:1, roomClearHeal:0, roomEntryHeal:0, shopCostMul:1, timeStop:0,
@@ -2879,7 +2892,7 @@ function startCombat(kind, fresh){
         spawnEnemy('rhino_beetle', W/2, 120, diff);
         const ze=enemies[enemies.length-1]; roomHadElite=true;
         ze.elite=true; ze.eliteViewer=true; ze.label='자잘자';
-        ze.hp*=2.1; ze.maxhp*=2.1; ze.dmg=Math.round(ze.dmg*1.5); ze.r+=5; ze.xp=120; ze.coolT=1.0;
+        ze.hp*=2.1; ze.maxhp*=2.1; ze.dmg=Math.round(ze.dmg*1.5); ze.touchDmg=Math.round(enemyTouchBaseDamage(ze)*1.4); ze.r+=5; ze.xp=120; ze.coolT=1.0;
         ze.x=W/2; ze.y=190; ze.intro=true; ze.introScale=0; ze.stunT=4; ze.tauntedHalf=false;
         eliteIntro={t:0, ze:ze, warn:null, landed:false, banner:0, tensionDone:false};
         beep(330,0.5,'triangle',0.05); beep(440,0.55,'sine',0.035); // "징—"
@@ -2893,7 +2906,7 @@ function startCombat(kind, fresh){
   if(nextCombatMods){
     const M=nextCombatMods; nextCombatMods=null;
     if(M.cntMul && enemies.length){ const extra=Math.round(enemies.length*(M.cntMul-1)); for(let i=0;i<extra;i++){ spawnEnemy(pickNormalEnemyForRoom(act,row,roomSpawnCounts), rand(60,W-60), rand(60,H-180), diff); } }
-    if(M.hpMul||M.spdMul||M.atkMul){ enemies.forEach(o=>{ if(!o.midboss){ if(M.hpMul){o.hp*=M.hpMul;o.maxhp*=M.hpMul;} if(M.spdMul){o.spd*=M.spdMul; if(o._spd0!=null)o._spd0*=M.spdMul;} if(M.atkMul){o.dmg=Math.round((o.dmg||0)*M.atkMul);} } }); }
+    if(M.hpMul||M.spdMul||M.atkMul){ enemies.forEach(o=>{ if(!o.midboss){ if(M.hpMul){o.hp*=M.hpMul;o.maxhp*=M.hpMul;} if(M.spdMul){o.spd*=M.spdMul; if(o._spd0!=null)o._spd0*=M.spdMul;} if(M.atkMul){o.dmg=Math.round((o.dmg||0)*M.atkMul); if(o.touchDmg!=null)o.touchDmg=Math.round(o.touchDmg*M.atkMul); if(o.bodyDmg!=null)o.bodyDmg=Math.round(o.bodyDmg*M.atkMul); if(o.contactDmg!=null)o.contactDmg=Math.round(o.contactDmg*M.atkMul);} } }); }
     if(M.fireHandicap) player._fireHandicap=M.fireHandicap;
     if(M.rewardMul) combatRewardMul=M.rewardMul;
     if(M.challenge) combatChallenge=M.challenge;
@@ -2911,10 +2924,13 @@ function startCombat(kind, fresh){
 function spawnEnemy(type,x,y,diff){
   const d=ENEMY_TYPES[type];
   const isSummonedType=(typeof SUMMON_TYPES!=='undefined'&&SUMMON_TYPES.has(type));
+  const dmgScale=Math.min(diff,2.2);
+  const touchBase=d.touchDmg ?? d.bodyDmg ?? d.contactDmg;
   markDiscovered('enemies', type);
   enemies.push({
     type,sprite:type,name:d.name,x,y,r:d.r,
-    hp:d.hp*diff*diffSet.hp,maxhp:d.hp*diff*diffSet.hp,spd:d.spd*diffSet.spd,dmg:d.dmg*Math.min(diff,2.2),
+    hp:d.hp*diff*diffSet.hp,maxhp:d.hp*diff*diffSet.hp,spd:d.spd*diffSet.spd,dmg:d.dmg*dmgScale,
+    touchDmg:touchBase==null?undefined:touchBase*dmgScale,
     color:d.color,xp:d.xp,ai:d.ai,range:d.range||0,cool:d.cool||0,coolT:rand(0,1.2),
     explode:d.explode,armor:d.armor||0,label:d.label,canLunge:d.lunge,vx:0,vy:0,wob:rand(0,TAU),hitT:0,
     summoned:!!(d.summoned||isSummonedType),noKillScore:!!(d.noKillScore||isSummonedType),
@@ -3011,6 +3027,74 @@ function burst(x,y,color,n,spd){
   // 파티클 상한선: 폭발이 겹칠 때 프레임 드롭 방지
   if(particles.length>200) particles.splice(0, particles.length-200);
 }
+const dashFx=[];
+function spawnDashFx(kind,x,y,dx,dy){
+  const max=kind==='trail'?0.2:(kind==='end'?0.24:0.28);
+  dashFx.push({kind,x,y,dx:dx||0,dy:dy||-1,t:0,max,seed:rand(0,TAU)});
+  if(dashFx.length>42) dashFx.splice(0,dashFx.length-42);
+}
+function updateDashFx(dt){
+  for(let i=dashFx.length-1;i>=0;i--){
+    const fx=dashFx[i];
+    fx.t+=dt;
+    if(fx.t>=fx.max) dashFx.splice(i,1);
+  }
+}
+function drawDashFx(){
+  if(!dashFx.length) return;
+  ctx.save();
+  ctx.lineCap='round';
+  ctx.lineJoin='round';
+  for(const fx of dashFx){
+    const k=clamp(fx.t/fx.max,0,1);
+    const fade=1-k;
+    const sc=DASH_FX_SCALE;
+    const a=Math.atan2(fx.dy,fx.dx);
+    ctx.save();
+    ctx.translate(fx.x,fx.y);
+    ctx.rotate(a);
+    if(fx.kind==='trail'){
+      ctx.globalAlpha=0.44*fade;
+      ctx.shadowColor='#8be8ff';
+      ctx.shadowBlur=18;
+      ctx.fillStyle='#38e8ff';
+      ctx.beginPath();
+      ctx.ellipse(-18*sc*fade,0,30*sc*fade,8*sc*fade,0,0,TAU);
+      ctx.fill();
+      ctx.globalAlpha=0.8*fade;
+      ctx.strokeStyle='#eafaff';
+      ctx.lineWidth=2.5;
+      ctx.beginPath();
+      ctx.moveTo(-42*sc*fade,0);
+      ctx.lineTo(-8*sc*fade,0);
+      ctx.stroke();
+    } else {
+      const endMul=fx.kind==='end'?0.72:1;
+      const r=(18+32*k)*sc*endMul;
+      ctx.globalAlpha=0.28*fade;
+      ctx.fillStyle=fx.kind==='end'?'#eafaff':'#38e8ff';
+      ctx.shadowColor='#8be8ff';
+      ctx.shadowBlur=24;
+      ctx.beginPath();
+      ctx.arc(0,0,r*0.72,0,TAU);
+      ctx.fill();
+      ctx.globalAlpha=0.95*fade;
+      ctx.strokeStyle='#eafaff';
+      ctx.lineWidth=(5-2*k)*endMul;
+      ctx.beginPath();
+      ctx.arc(0,0,r,0,TAU);
+      ctx.stroke();
+      ctx.globalAlpha=0.65*fade;
+      ctx.strokeStyle='#38e8ff';
+      ctx.lineWidth=2;
+      ctx.beginPath();
+      ctx.arc(0,0,r*1.32,0,TAU);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+  ctx.restore();
+}
 function floatGold(x,y,amt){
   pickups.push({x,y,type:'gold',amt,r:8,vx:rand(-40,40),vy:rand(-90,-40),life:14,bob:rand(0,TAU)});
 }
@@ -3071,8 +3155,11 @@ function hurtPlayer(dmg, src){
   updateHUD();
 }
 function isBossLike(e){ return e.midboss||e.eliteViewer||e.type==='hyechul'; }
+function hasBossStunImmunity(e){ return !!e&&(e===boss||e.boss||e.isBoss||e.midboss||e.type==='hyechul'); }
 function applyShockStun(target){
   if(player.stunChance<=0 || !target) return;
+  const bossGrade=hasBossStunImmunity(target);
+  if(bossGrade&&(target.stunImmuneT||0)>0) return;
   let chance=player.stunChance, stunTime=0.6;
   if(target===boss || target.isBoss){
     chance*=0.25;
@@ -3081,7 +3168,10 @@ function applyShockStun(target){
     chance*=0.5;
     stunTime*=0.6;
   }
-  if(Math.random()<chance) target.stunT=Math.max(target.stunT||0,stunTime);
+  if(Math.random()<chance){
+    target.stunT=Math.max(target.stunT||0,stunTime);
+    if(bossGrade) target.stunImmuneT=BOSS_STUN_IMMUNITY_T;
+  }
 }
 function targetHasStatus(e){
   return (e.burnT>0)||(e.chillT>0)||(e.psT>0)||(e.stunT>0);
@@ -3096,6 +3186,7 @@ function applyBulletStatuses(e){
 }
 function updateBossStatuses(b,dt){
   if(!b) return false;
+  if((b.stunImmuneT=(b.stunImmuneT||0))>0) b.stunImmuneT=Math.max(0,b.stunImmuneT-dt);
   if((b.chillT=(b.chillT||0))>0) b.chillT-=dt;
   if((b.burnT=(b.burnT||0))>0){
     b.burnT-=dt;
@@ -3152,7 +3243,7 @@ function projectileCloseMul(target,bullet,bossTarget){
   if(!target||!bullet||!player.closeProjectileDmgMul) return 1;
   const sx=bullet.sx==null?player.x:bullet.sx;
   const sy=bullet.sy==null?player.y:bullet.sy;
-  const close=dist2(sx,sy,target.x,target.y)<=160*160;
+  const close=dist2(sx,sy,target.x,target.y)<=240*240;
   if(!close) return 1;
   const bonus=player.closeProjectileDmgMul*(bossTarget?0.5:1);
   return 1+bonus;
@@ -3274,6 +3365,9 @@ function applyStallRage(){
     if(e._spd0!=null) e._spd0*=2;
     if(e.cool) e.cool=Math.max(0.25,e.cool*0.3);
     e.dmg=Math.max(1,Math.round((e.dmg||1)*2));
+    if(e.touchDmg!=null) e.touchDmg=Math.max(1,Math.round(e.touchDmg*2));
+    if(e.bodyDmg!=null) e.bodyDmg=Math.max(1,Math.round(e.bodyDmg*2));
+    if(e.contactDmg!=null) e.contactDmg=Math.max(1,Math.round(e.contactDmg*2));
   });
 }
 function spawnStallReinforcements(){
@@ -3907,7 +4001,16 @@ function update(dt){
       burst(player.x,player.y,'#5dff9b',12,170);
     }
   }
-  if(player.dodgeCharges<player.dodgeMaxCharges){ if(player.dodgeCd>0) player.dodgeCd-=dt; if(player.dodgeCd<=0){ player.dodgeCharges++; if(player.dodgeCharges<player.dodgeMaxCharges) player.dodgeCd=10*playerDodgeCooldownMul(player); updateHUD(); } }
+  if(player.dodgeCharges<player.dodgeMaxCharges){
+    if(player.dodgeCd>0) player.dodgeCd-=dt;
+    if(player.dodgeCd<=0){
+      player.dodgeCharges++;
+      player.dodgeReadyFxT=DODGE_READY_FX_DURATION;
+      if(typeof beep==='function'){ beep(880,0.06,'sine',0.045); beep(1320,0.08,'triangle',0.035); }
+      if(player.dodgeCharges<player.dodgeMaxCharges) player.dodgeCd=10*playerDodgeCooldownMul(player);
+      updateHUD();
+    }
+  }
   if(player.shieldRegen>0){ player.shieldRegenT=(player.shieldRegenT||0)+dt; if(player.shieldRegenT>=player.shieldRegen){ player.shieldRegenT=0; player.hitShield=Math.min((player.hitShield||0)+1,1); } }
   if(player.minion){ const mn=player.minion; mn.ang=(mn.ang||0)+dt*2.2; mn.x=player.x+Math.cos(mn.ang)*48; mn.y=player.y+Math.sin(mn.ang)*48; mn.fireT=(mn.fireT||0)-dt; if(mn.fireT<=0){ let tx=null,ty=null,bd=1e9; for(const e of enemies){ const d2=dist2(mn.x,mn.y,e.x,e.y); if(d2<bd){bd=d2;tx=e.x;ty=e.y;} } if(boss){ const d2=dist2(mn.x,mn.y,boss.x,boss.y); if(d2<bd){bd=d2;tx=boss.x;ty=boss.y;} } if(tx!==null && bd<200000){ const ma=Math.atan2(ty-mn.y,tx-mn.x); pBullets.push({x:mn.x,y:mn.y,vx:Math.cos(ma)*520,vy:Math.sin(ma)*520,r:5,dmg:Math.max(2,player.dmg*currentAttackMul()*0.55),life:1.0,bounce:0,pierce:0,hitSet:new Set(),crit:false,homing:0}); mn.fireT=0.6; } else mn.fireT=0.3; } }
   updateStallWatch(dt);
@@ -3929,12 +4032,15 @@ function update(dt){
   if(player.moveLockT>0) player.moveLockT=Math.max(0,player.moveLockT-dt);
   if(player.moveLockImmuneT>0) player.moveLockImmuneT=Math.max(0,player.moveLockImmuneT-dt);
   if(player.slowDebuffT>0) player.slowDebuffT=Math.max(0,player.slowDebuffT-dt);
+  if(player.dodgeReadyFxT>0) player.dodgeReadyFxT=Math.max(0,player.dodgeReadyFxT-dt);
   if(hitFlash>0) hitFlash-=dt;
   if(screenShake>0) screenShake=Math.max(0,screenShake-dt*40);
   if(bossBanner>0) bossBanner-=dt;
+  updateDashFx(dt);
 
   // 구르기
-  if(player.dodging>0){ player.dodging-=dt; }
+  const wasDashActive=player.dodging>0;
+  if(player.dodging>0){ player.dodging=Math.max(0,player.dodging-dt); }
   if(!keys[' ']) dodgeLatch=false;   // 스페이스 떼면 재장전
   if(keys[' ']&&!dodgeLatch&&player.dodgeCharges>0&&player.dodging<=0&&!(player.moveLockT>0)){
     dodgeLatch=true;
@@ -3949,6 +4055,8 @@ function update(dt){
     if(typeof GL!=='undefined'&&GL.keyRev>0){ mvx=-mvx; mvy=-mvy; }
     if(mvx===0&&mvy===0){ mvx=Math.cos(player.facing); mvy=Math.sin(player.facing); }
     const m=Math.hypot(mvx,mvy)||1; player.dvx=mvx/m; player.dvy=mvy/m;
+    player.dashFxTrailT=0;
+    spawnDashFx('start',player.x,player.y,player.dvx,player.dvy);
     burst(player.x,player.y,'#38e8ff',8,120);
   }
 
@@ -3960,10 +4068,21 @@ function update(dt){
   const moveLocked=(player.moveLockT||0)>0;
   const m=moveLocked?0:mRaw;
   let sp=playerMoveSpeed(player)*(player._creepSlow?0.5:1)*(player._slowField?0.5:1)*(player.slowDebuffT>0?0.7:1); if(typeof gSlow!=='undefined'&&gSlow.length&&gSlow.some(f=>dist2(f.x,f.y,player.x,player.y)<f.r*f.r)) sp*=0.45;
-  if(player.dodging>0&&!moveLocked){ player.x+=player.dvx*520*dt; player.y+=player.dvy*520*dt; }
+  if(player.dodging>0&&!moveLocked){
+    player.x+=player.dvx*520*dt; player.y+=player.dvy*520*dt;
+    player.dashFxTrailT=(player.dashFxTrailT||0)-dt;
+    if(player.dashFxTrailT<=0){
+      spawnDashFx('trail',player.x-player.dvx*18,player.y-player.dvy*18,player.dvx,player.dvy);
+      player.dashFxTrailT=0.035;
+    }
+  }
   else if(m>0){ player.x+=(mvx/m)*sp*dt; player.y+=(mvy/m)*sp*dt; if(tutorial)tutorial.moved=true; }
   player.x=clamp(player.x,player.r,W-player.r);
   player.y=clamp(player.y,player.r,H-player.r);
+  if(wasDashActive&&player.dodging<=0){
+    spawnDashFx('end',player.x,player.y,player.dvx,player.dvy);
+    player.dashFxTrailT=0;
+  }
 
   // 발사
   if(player.fireTimer>0) player.fireTimer-=dt;
@@ -4059,6 +4178,7 @@ function update(dt){
     if((e.psT=(e.psT||0))>0){ e.psT-=dt; const pdmg=(e.psStacks||0)*(e.psDmg||0)*dt; e.hp-=pdmg; e.hitT=Math.max(e.hitT,0.04); e._psPopT=(e._psPopT||0)-dt; if(e._psPopT<=0){ e._psPopT=0.35; if(GS.dmgNum&&typeof spawnDmgNum==='function') spawnDmgNum(e.x,e.y-e.r-4,Math.max(1,Math.round((e.psStacks||0)*(e.psDmg||0)*0.35)),false,'poison'); } if(e.hp<=0){ handleEnemyDefeat(e); continue; } } else { e.psStacks=0; e._psPopT=0; }
     const a=Math.atan2(player.y-e.y,player.x-e.x);
     const d=Math.hypot(player.x-e.x,player.y-e.y);
+    if((e.stunImmuneT=(e.stunImmuneT||0))>0) e.stunImmuneT=Math.max(0,e.stunImmuneT-dt);
     if((e.stunT=(e.stunT||0))>0){ e.stunT-=dt; }
     else if(e.ai==='chase'){
       if((e.lungeA=e.lungeA||0)>0){ const lm=(e.type==='goblin_warrior')?5.2:4.0; e.lungeA-=dt; e.x+=e.lvx*e.spd*lm*dt; e.y+=e.lvy*e.spd*lm*dt;
@@ -4769,7 +4889,7 @@ function update(dt){
     }
     e.x=clamp(e.x,e.r,W-e.r); e.y=clamp(e.y,e.r,H-e.r);
     // 접촉 데미지
-    if(e.dmg>0 && dist2(e.x,e.y,player.x,player.y)<(e.r+player.r)**2){
+    if(enemyTouchBaseDamage(e)>0 && dist2(e.x,e.y,player.x,player.y)<(e.r+player.r)**2){
       const canContactHit=player.iframes<=0&&player.dodging<=0&&player.buffs.shield<=0;
       hurtPlayer(enemyTouchDamage(e), e.name||e.label||'시청자');
       if(e.type==='goblin_bomber'&&canContactHit){ const ka=Math.atan2(e.y-player.y,e.x-player.x); e.x=clamp(e.x+Math.cos(ka)*86,e.r,W-e.r); e.y=clamp(e.y+Math.sin(ka)*86,e.r,H-e.r); e.stunT=Math.max(e.stunT||0,0.28); e._fuse=false; e._fuseT=0; }
@@ -4889,8 +5009,7 @@ function rollNodeType(row){
   const bag=[];
   for(let i=0;i<42;i++) bag.push('fight');
   for(let i=0;i<24;i++) bag.push('event');
-  if(row>=1) for(let i=0;i<11;i++) bag.push('shop');
-  if(row>=2) for(let i=0;i<4;i++) bag.push('campfire');
+  if(row>=1) for(let i=0;i<15;i++) bag.push('shop');
   return pick(bag);
 }
 function isProtectedMapNode(n){
@@ -6417,7 +6536,7 @@ const LEVEL_PERKS=[
   // ===== 신화 Myth =====
   {g:'mythic',icon:'🔱',name:'다중 사격',desc:'투사체 +1발',apply:p=>{p.shots+=1;}},
   {g:'mythic',icon:'👁️',name:'유도의 눈',desc:'투사체가 적을 강하게 추적',skip:p=>p.homing>0,apply:p=>{p.homing=12;}},
-  {g:'mythic',icon:'🍷',name:'유리 대포',desc:'공격력 +5, 받는 피해 +30%',skip:p=>p.glassCannon,apply:p=>{p.glassCannon=true;p.dmg+=5;p.armor-=0.3;}},
+  {g:'mythic',icon:'🍷',name:'얇은 유리 대포',desc:'공격력 +7, 최대 체력 -30%',skip:p=>p.glassCannon,apply:p=>{p.glassCannon=true;p.dmg+=7;p.maxhp=Math.max(1,Math.round(p.maxhp*0.7));p.hp=Math.min(p.hp,p.maxhp);}},
   {g:'mythic',icon:'🤝',name:'구독자 소환',desc:'따라다니며 자동 공격하는 구독자',skip:p=>!!p.minion,apply:p=>{p.minion={ang:0,fireT:0,x:p.x,y:p.y};}},
 ];
 const TREE_ONLY_PERK_IDS=new Set([
@@ -7792,6 +7911,25 @@ function drawPlayer(){
   if(p.iframes>0 && Math.floor(p.iframes*20)%2===0) alpha=0.4;
   // 무적 오라
   if((p.buffs && p.buffs.shield>0)||(p.hitShield||0)>0||(p.overhealShield||0)>0){ ctx.globalAlpha=0.45; circle(0,0,p.r+9,null,'#bff8ff'); ctx.globalAlpha=1; }
+  if(p.dodging>0){
+    const pulse=0.55+0.45*Math.sin(performance.now()/45);
+    ctx.save();
+    ctx.globalAlpha=0.78;
+    ctx.shadowColor='#bff8ff';
+    ctx.shadowBlur=24;
+    ctx.strokeStyle='#eafaff';
+    ctx.lineWidth=4;
+    ctx.beginPath();
+    ctx.arc(0,0,p.r+12+pulse*4,0,TAU);
+    ctx.stroke();
+    ctx.globalAlpha=0.62;
+    ctx.strokeStyle='#38e8ff';
+    ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.arc(0,0,p.r+21+pulse*7,0,TAU);
+    ctx.stroke();
+    ctx.restore();
+  }
   // 조준 무기 (스프라이트 뒤에서 삐져나옴)
   ctx.save(); ctx.rotate(p.facing);
   ctx.fillStyle='#e9e4f5'; ctx.fillRect(p.r+1,-3,15,6);
@@ -8273,6 +8411,7 @@ function draw(){
     ctx.save();ctx.shadowColor=b.crit?'#ffd34d':'#38e8ff';ctx.shadowBlur=8;
     circle(b.x,b.y,b.r,b.crit?'#ffe28a':'#bff8ff',b.crit?'#a8740a':'#1d8fa0'); ctx.restore();
   }
+  drawDashFx();
   // 플레이어
   if(state!=='start'&&state!=='end') drawPlayer();
   // 파티클
@@ -8290,26 +8429,88 @@ function draw(){
   if(bossEvolve) drawBossEvolve();
   // 베인Q 쿨다운 인디케이터 (아이콘 + 방사형 쿨)
   if(state==='play'){
-    const sz=46, ix=14, iy=H-sz-14, cx=ix+sz/2, cy=iy+sz/2;
+    const sz=Math.round(46*SKILL_HUD_SCALE);
+    const ix=clamp(SKILL_HUD_MARGIN_X,12,Math.max(12,W-sz-12));
+    const iy=clamp(H-sz-SKILL_HUD_MARGIN_Y,12,Math.max(12,H-sz-12));
+    const cx=ix+sz/2, cy=iy+sz/2;
     const maxCharges=Math.max(1,player.dodgeMaxCharges||1);
     const charges=clamp(player.dodgeCharges||0,0,maxCharges);
     const cdMax=Math.max(0.01,10*playerDodgeCooldownMul(player)), ready=charges>0;
     const rem=charges>=maxCharges?0:clamp(player.dodgeCd/cdMax,0,1);
+    const readyFx=clamp((player.dodgeReadyFxT||0)/DODGE_READY_FX_DURATION,0,1);
+    ctx.save();
+    ctx.fillStyle='rgba(5,12,20,0.72)';
+    ctx.fillRect(ix-8,iy-24,sz+16,sz+32);
+    ctx.strokeStyle=ready?'rgba(56,232,255,0.55)':'rgba(105,93,140,0.42)';
+    ctx.lineWidth=2;
+    ctx.strokeRect(ix-8,iy-24,sz+16,sz+32);
+    ctx.restore();
     ctx.save();
     ctx.beginPath(); ctx.rect(ix,iy,sz,sz); ctx.clip();
     ctx.fillStyle='#0a0712'; ctx.fillRect(ix,iy,sz,sz);
     if(vqReady) ctx.drawImage(VAYNEQ_ICON,ix,iy,sz,sz);
     else { ctx.fillStyle='#16384a'; ctx.fillRect(ix,iy,sz,sz); }
-    if(rem>0){ ctx.fillStyle='rgba(6,4,12,0.7)'; ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,sz,-Math.PI/2,-Math.PI/2+rem*TAU); ctx.closePath(); ctx.fill(); }
+    if(rem>0){
+      ctx.fillStyle='rgba(6,4,12,0.78)';
+      ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,sz,-Math.PI/2,-Math.PI/2+rem*TAU); ctx.closePath(); ctx.fill();
+    }
     ctx.restore();
-    ctx.lineWidth=2.5; ctx.strokeStyle=ready?'#38e8ff':'#3a3550'; ctx.strokeRect(ix,iy,sz,sz);
-    if(ready){ ctx.save(); ctx.shadowColor='#38e8ff'; ctx.shadowBlur=8; ctx.strokeStyle='#38e8ff'; ctx.strokeRect(ix,iy,sz,sz); ctx.restore(); }
-    else { ctx.fillStyle='#fff'; ctx.font='bold 15px Courier New'; ctx.textAlign='center'; ctx.fillText(player.dodgeCd.toFixed(1), cx, cy+2); ctx.textAlign='left'; }
-    ctx.fillStyle='rgba(5,16,25,0.82)'; ctx.fillRect(ix+4,iy+sz-16,sz-8,12);
-    ctx.fillStyle=ready?'#38e8ff':'#9b8fc4'; ctx.font='bold 10px Courier New'; ctx.textAlign='center';
-    ctx.fillText('Q '+charges+'/'+maxCharges, cx, iy+sz-6);
+    if(readyFx>0){
+      const k=1-readyFx;
+      ctx.save();
+      ctx.globalAlpha=0.22*readyFx;
+      ctx.fillStyle='#ffd34d';
+      ctx.shadowColor='#ffd34d';
+      ctx.shadowBlur=26;
+      ctx.beginPath();
+      ctx.arc(cx,cy,sz*(0.58+0.22*k),0,TAU);
+      ctx.fill();
+      ctx.globalAlpha=readyFx;
+      ctx.strokeStyle='#fff1a8';
+      ctx.lineWidth=5+3*readyFx;
+      ctx.beginPath();
+      ctx.arc(cx,cy,sz*(0.54+0.42*k),0,TAU);
+      ctx.stroke();
+      ctx.strokeStyle='#ffd34d';
+      ctx.lineWidth=2.5;
+      ctx.beginPath();
+      ctx.arc(cx,cy,sz*(0.7+0.56*k),0,TAU);
+      ctx.stroke();
+      for(let i=0;i<8;i++){
+        const a=i*TAU/8+k*0.7;
+        const r1=sz*(0.66+0.22*k);
+        const r2=sz*(0.88+0.4*k);
+        ctx.beginPath();
+        ctx.moveTo(cx+Math.cos(a)*r1,cy+Math.sin(a)*r1);
+        ctx.lineTo(cx+Math.cos(a)*r2,cy+Math.sin(a)*r2);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+    ctx.lineWidth=ready?4:3; ctx.strokeStyle=ready?'#38e8ff':'#4d4566'; ctx.strokeRect(ix,iy,sz,sz);
+    if(ready){
+      ctx.save();
+      ctx.shadowColor='#38e8ff'; ctx.shadowBlur=18; ctx.strokeStyle='#eafaff'; ctx.lineWidth=2.5;
+      ctx.strokeRect(ix+3,iy+3,sz-6,sz-6);
+      ctx.restore();
+    }
+    else {
+      ctx.fillStyle='#fff'; ctx.strokeStyle='#02050a'; ctx.lineWidth=5; ctx.font='bold 20px Courier New'; ctx.textAlign='center';
+      const txt=player.dodgeCd.toFixed(1);
+      ctx.strokeText(txt, cx, cy+7);
+      ctx.fillText(txt, cx, cy+7);
+      ctx.textAlign='left';
+    }
+    ctx.fillStyle='rgba(5,16,25,0.88)'; ctx.fillRect(ix+5,iy+sz-20,sz-10,16);
+    ctx.fillStyle=ready?'#eafaff':'#c9c0e8'; ctx.font='bold 12px Courier New'; ctx.textAlign='center';
+    ctx.strokeStyle='#02050a'; ctx.lineWidth=3;
+    ctx.strokeText('Q '+charges+'/'+maxCharges, cx, iy+sz-7);
+    ctx.fillText('Q '+charges+'/'+maxCharges, cx, iy+sz-7);
     ctx.textAlign='left';
-    ctx.fillText('베인Q [SPACE]', ix, iy-6);
+    ctx.fillStyle=ready?'#8be8ff':'#b9acd8'; ctx.font='bold 12px sans-serif';
+    ctx.strokeStyle='#02050a'; ctx.lineWidth=3;
+    ctx.strokeText('베인Q  SPACE', ix, iy-8);
+    ctx.fillText('베인Q  SPACE', ix, iy-8);
   }
   drawTutorial();
   if(typeof drawFpsOverlay==='function') drawFpsOverlay();
@@ -9016,7 +9217,7 @@ function spEffects(p){
   add(p.damageTakenMul>1,'⚠️','받는 피해 +'+pc(p.damageTakenMul-1),'리스크','탐욕/계약류로 받는 피해 증가','taken-risk');
   add(effectiveArmor(p)<0,'⚠️','받는 피해 +'+pc(-effectiveArmor(p)),'방어 리스크','방어 수치가 음수라 받는 피해 증가','armor-risk');
   add(p.recoveryMul<1,'🌑','회복 효과 '+pc(p.recoveryMul),'공허의 심장','회복 효과 감소 리스크','recovery-risk');
-  add(p.glassCannon||hasRelic('glass'),'🍷','유리 대포','유리 대포','공격력 대폭 증가, 최대 체력/받는 피해 리스크','glass-cannon');
+  add(p.glassCannon||hasRelic('glass'),'🍷','유리 대포','유리 대포','공격력 대폭 증가, 최대 체력 리스크','glass-cannon');
   add(hasRelic('bizarre_mask'),'🎭','기괴한 가면','기괴한 가면','공격력 +35%, 최대 체력 -20%','bizarre-mask');
 
   add(p.crowdRage>0,'😡','분노','분노','주변 적이 많을수록 공격력 증가');
