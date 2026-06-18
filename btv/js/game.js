@@ -3347,24 +3347,6 @@ async function loadRankingSummaries(api){
   const season=rankingSeason;
   if(!leaderboardSplitReadDenied){
     try{
-      const q=api.fs.query(
-        api.fs.collection(api.db,LEADERBOARD_SUMMARY_COLLECTION),
-        api.fs.where('difficultyKey','==',rankingDifficulty),
-        api.fs.orderBy('score','desc'),
-        api.fs.limit(200)
-      );
-      const snap=await api.fs.getDocs(q);
-      const records=snap.docs.map(doc=>normalizeRankingRecord(Object.assign({id:doc.id,runId:doc.id},doc.data())))
-        .filter(d=>recordSeason(d)===season)
-        .slice(0,10);
-      if(records.length) return sortRankingRecords(records).slice(0,10);
-    }catch(e){
-      if(isFirestorePermissionError(e)) leaderboardSplitReadDenied=true;
-      else console.warn('leaderboard summary query failed',e);
-    }
-  }
-  if(!leaderboardSplitReadDenied){
-    try{
       const q=api.fs.query(api.fs.collection(api.db,LEADERBOARD_SUMMARY_COLLECTION),api.fs.orderBy('score','desc'),api.fs.limit(200));
       const snap=await api.fs.getDocs(q);
       const records=snap.docs.map(doc=>normalizeRankingRecord(Object.assign({id:doc.id,runId:doc.id},doc.data())))
@@ -3373,7 +3355,7 @@ async function loadRankingSummaries(api){
       if(records.length) return sortRankingRecords(records).slice(0,10);
     }catch(e){
       if(isFirestorePermissionError(e)) leaderboardSplitReadDenied=true;
-      else console.warn('leaderboard summary fallback failed',e);
+      else console.warn('leaderboard summary query failed',e);
     }
   }
   const q=api.fs.query(api.fs.collection(api.db,leaderboardCollectionFor(rankingDifficulty)),api.fs.orderBy('score','desc'),api.fs.limit(200));
