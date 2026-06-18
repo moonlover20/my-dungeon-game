@@ -11,7 +11,7 @@ const START_BONUS_REWARDS={
   clear_game:'시작 트리포인트 +1'
 };
 const ACHIEVEMENT_RELIC_IDS=[
-  'kijo_mask','viewer_slayer_mic','abstinence_chalice','chat_window_grinder',
+  'kijo_mask','viewer_slayer_mic','abstinence_chalice',
   'hyechul_egg','yanggaeng_black_thread','seungwoo_broken_monitor','moving_afterimage',
   'clutch_heart','clip_dodge_instinct','collector_showcase','mythic_vault','curse_crown',
   'direction_compass','whale_card','no_spend_wallet','hardcore_transmitter','nohit_wings'
@@ -22,7 +22,7 @@ const ACHIEVEMENTS=[
   {id:'kill_100',name:'100 처치',desc:'누적 처치 100회를 달성한다.',reward:'시작 골드 +30'},
   {id:'kill_500',name:'500 처치',desc:'누적 처치 500회를 달성한다.',reward:'시작 골드 +30'},
   {id:'kill_1000',name:'1000 처치',desc:'누적 처치 1000회를 달성한다.',reward:'유물 해금: 시청자 학살자의 마이크'},
-  {id:'kill_3000',name:'3000 처치',desc:'누적 처치 3000회를 달성한다.',reward:'유물 해금: 채팅창 분쇄기'},
+  {id:'kill_3000',name:'3000 처치',desc:'누적 처치 3000회를 달성한다.',reward:'업적'},
   {id:'defeat_kijo',name:'키죠 격파',desc:'키죠를 쓰러뜨린다.',reward:'유물 해금: 키죠의 가면',spoiler:true,spoilerTerms:['키죠'],hiddenName:'??? 격파',hiddenDesc:'???를 쓰러뜨린다.',hiddenRelicName:'???의 가면'},
   {id:'defeat_hyechul',name:'혜철이 격파',desc:'혜철이를 쓰러뜨린다.',reward:'유물 해금: 혜철이의 알',spoiler:true,spoilerTerms:['혜철이'],hiddenName:'??? 격파',hiddenDesc:'???를 쓰러뜨린다.',hiddenRelicName:'???의 알'},
   {id:'defeat_yanggaeng',name:'박제인간 격파',desc:'박제인간을 쓰러뜨린다.',reward:'유물 해금: 박제인의 검은 실',spoiler:true,spoilerTerms:['박제인간','박제인'],hiddenName:'??? 격파',hiddenDesc:'???을 쓰러뜨린다.',hiddenRelicName:'???의 검은 실'},
@@ -105,7 +105,6 @@ const RELIC_REWARDS={
   defeat_kijo:'kijo_mask',
   kill_1000:'viewer_slayer_mic',
   no_potion_clear:'abstinence_chalice',
-  kill_3000:'chat_window_grinder',
   defeat_hyechul:'hyechul_egg',
   defeat_yanggaeng:'yanggaeng_black_thread',
   defeat_seungwoo:'seungwoo_broken_monitor',
