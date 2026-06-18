@@ -517,10 +517,12 @@ function pickNormalEnemyForRoom(a,row,counts){
   }
   return pick((pool&&pool.normal)||[]);
 }
+const DB_HIDDEN_ENEMY_IDS=new Set(['slime_green','slime_red','slime_yellow','elf_melee','elf_ranged','giant_golem','eldritch']);
+const DB_HIDDEN_BOSS_KEYS=new Set(['steel_lord','bear']);
 const DB_EXTRA_ENEMY_IDS=['hyechul','yanggaeng','earthworm','zergling','mutalisk','ultra','zerg_egg'];
 const DB_ENEMY_IDS=(function(){
   const ids=[], seen=new Set();
-  const add=id=>{ if(id && ENEMY_TYPES[id] && !seen.has(id)){ seen.add(id); ids.push(id); } };
+  const add=id=>{ if(id && ENEMY_TYPES[id] && !DB_HIDDEN_ENEMY_IDS.has(id) && !seen.has(id)){ seen.add(id); ids.push(id); } };
   ACT_POOLS.forEach(pool=>{
     (pool.normal||[]).forEach(add);
     (pool.elite||[]).forEach(add);
@@ -549,6 +551,8 @@ function normalizeDbDiscovered(data){
     const seen=new Set();
     base[type]=arr.map(id=>String(id||'')).filter(id=>{
       if(!id || seen.has(id)) return false;
+      if(type==='enemies' && DB_HIDDEN_ENEMY_IDS.has(id)) return false;
+      if(type==='bosses' && DB_HIDDEN_BOSS_KEYS.has(id)) return false;
       seen.add(id);
       return true;
     });
@@ -575,6 +579,8 @@ function saveDbDiscovered(){
 function markDiscovered(type,id){
   if(DB_DISCOVERY_TYPES.indexOf(type)<0 || !id) return false;
   const key=String(id);
+  if(type==='enemies' && DB_HIDDEN_ENEMY_IDS.has(key)) return false;
+  if(type==='bosses' && DB_HIDDEN_BOSS_KEYS.has(key)) return false;
   if(!Array.isArray(dbDiscovered[type])) dbDiscovered[type]=[];
   if(dbDiscovered[type].indexOf(key)>=0) return false;
   dbDiscovered[type].push(key);
@@ -11698,11 +11704,23 @@ function dbEnemyGrade(id){
   if(ACT1_LATE_ENEMY_IDS.indexOf(id)>=0) return '강한 적';
   return '일반';
 }
+const DB_GRADE_ORDER={common:0,rare:1,epic:2,legend:3,mythic:4};
+function dbGradeRank(key){
+  return DB_GRADE_ORDER[String(key||'rare')] ?? DB_GRADE_ORDER.rare;
+}
+function dbRelicSort(a,b){
+  const ar=dbGradeRank(TIER_OF[a&&a.id]||'rare'), br=dbGradeRank(TIER_OF[b&&b.id]||'rare');
+  return ar-br || String(a&&a.name||'').localeCompare(String(b&&b.name||''),'ko');
+}
+function dbPerkSort(a,b){
+  const ar=dbGradeRank(a&&a.g), br=dbGradeRank(b&&b.g);
+  return ar-br || String(a&&a.name||'').localeCompare(String(b&&b.name||''),'ko');
+}
 function databaseRows(){
   const ov=$('ovDatabase');
   const tab=ov?(ov.dataset.tab||'relics'):'relics';
   if(tab==='perks'){
-    return LEVEL_PERKS.filter(pk=>!TREE_ONLY_PERK_IDS.has(perkId(pk))).map(pk=>{
+    return LEVEL_PERKS.filter(pk=>!TREE_ONLY_PERK_IDS.has(perkId(pk))).slice().sort(dbPerkSort).map(pk=>{
       if(!isDiscovered('perks',perkId(pk))) return dbLockedRow();
       const t=PERK_TIERS[pk.g]||{};
       return {
@@ -11729,7 +11747,7 @@ function databaseRows(){
     });
   }
   if(tab==='bosses'){
-    return BOSSES.map(b=>{
+    return BOSSES.filter(b=>!DB_HIDDEN_BOSS_KEYS.has(b.key)).map(b=>{
       if(!isDiscovered('bosses',b.key)) return dbLockedRow();
       const img=dbSpriteSrc(b.sprite||b.key);
       return {
@@ -11753,7 +11771,7 @@ function databaseRows(){
       };
     });
   }
-  return RELICS.map(r=>{
+  return RELICS.slice().sort(dbRelicSort).map(r=>{
     if(!isDiscovered('relics',r.id)) return dbLockedRow();
     return {
       cls:r.cls||'',
@@ -11768,7 +11786,7 @@ function databaseRows(){
 function devUnlockDatabase(){
   dbDiscovered=emptyDbDiscovered();
   DB_ENEMY_IDS.forEach(id=>dbDiscovered.enemies.push(id));
-  BOSSES.forEach(b=>dbDiscovered.bosses.push(b.key));
+  BOSSES.filter(b=>!DB_HIDDEN_BOSS_KEYS.has(b.key)).forEach(b=>dbDiscovered.bosses.push(b.key));
   RELICS.forEach(r=>dbDiscovered.relics.push(r.id));
   POTIONS.forEach(p=>dbDiscovered.potions.push(p.id));
   LEVEL_PERKS.forEach(pk=>dbDiscovered.perks.push(perkId(pk)));
