@@ -1678,6 +1678,7 @@ const TRAINING_DEFS=[
   {id:'focus',name:'집중 훈련',icon:'🎯',desc:'치명타 확률 +3%. 이번 런 동안 영구 유지.',baseCost:220,bonusText:c=>'+'+Math.round(c*3)+'%'},
   {id:'defense',name:'방어 훈련',icon:'🛡️',desc:'받는 피해 -3%. 이번 런 동안 영구 유지.',baseCost:200,bonusText:c=>'+'+Math.round(c*3)+'%'}
 ];
+const TRAINING_PRICE_MUL=0.70;
 function shopText(v){
   return String(v==null?'':v).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 }
@@ -1695,7 +1696,7 @@ function trainingCount(id,p){ return ensureTrainingState(p||player)[id]||0; }
 function trainingIsMaxed(id,p){ return trainingCount(id,p)>=TRAINING_MAX_PURCHASES; }
 function trainingPrice(def,p){
   const count=trainingCount(def.id,p||player);
-  return Math.max(1,Math.round(shopPrice(def.baseCost)*(1+count*0.35)));
+  return Math.max(1,Math.round(shopPrice(def.baseCost)*(1+count*0.35)*TRAINING_PRICE_MUL));
 }
 function trainingPct(n){ return (n>=0?'+':'')+Math.round((Number(n)||0)*100)+'%'; }
 function trainingPriceIncreaseText(count){
@@ -1767,7 +1768,7 @@ function getTrainingTooltipData(trainingKey){
   const count=trainingCount(id,player);
   const maxed=trainingIsMaxed(id,player);
   const cost=maxed?0:trainingPrice(def,player);
-  const nextCost=maxed?0:Math.max(1,Math.round(shopPrice(def.baseCost)*(1+(count+1)*0.35)));
+  const nextCost=maxed?0:Math.max(1,Math.round(shopPrice(def.baseCost)*(1+(count+1)*0.35)*TRAINING_PRICE_MUL));
   const goldNow=Number(gold)||0;
   const state=trainingNextState(id,player);
   const rows=[
@@ -8184,7 +8185,7 @@ const SHOP_QUOTES=[
 let currentShopItems=[];
 let shopPurchaseLock=false;
 const SHOP_PRICE_MUL=1.00;
-const ACT2_SHOP_PRICE_MUL=1.20;
+const ACT2_SHOP_PRICE_MUL=1.00;
 const SHOP_STOCK_COST_MUL=[1,1.3,1.6];
 function shopPrice(base){
   const disc=nextShopDiscount>0?Math.max(0,1-nextShopDiscount):1;
@@ -8194,15 +8195,15 @@ function shopPrice(base){
   return Math.max(1,Math.round(safeBase*costMul*disc*SHOP_PRICE_MUL*actMul));
 }
 function shopRelicPrice(r){
-  return shopPrice((88+act*20+Math.random()*20)*relicTier(r).costMul*2.5);
+  return shopPrice((88+act*20+Math.random()*20)*relicTier(r).costMul*2.2);
 }
 function rollShopChestRelic(){
   const owned=new Set(player.relics.map(r=>r.id));
-  const chestWeights={common:10,rare:25,epic:40,legend:20,mythic:5};
+  const chestWeights={common:20,rare:35,epic:32,legend:11,mythic:2};
   const candidates=RELICS.filter(r=>!owned.has(r.id)&&isRelicUnlockedByAchievement(r.id)&&chestWeights[TIER_OF[r.id]||'rare']>0);
   if(!candidates.length) return null;
   const roll=Math.random()*100;
-  const target=roll<10?'common':roll<35?'rare':roll<75?'epic':roll<95?'legend':'mythic';
+  const target=roll<20?'common':roll<55?'rare':roll<87?'epic':roll<98?'legend':'mythic';
   let pool=candidates.filter(r=>(TIER_OF[r.id]||'rare')===target);
   if(!pool.length) return weightedTake(candidates.slice(),r=>chestWeights[TIER_OF[r.id]||'rare']||1);
   return pick(pool);
@@ -8451,7 +8452,7 @@ function openShop(after){
     addStockedShopSpecial(items,{name:'재도전권',icon:'🎟️',desc:'재도전 가능 횟수 +1',baseCost:155,grade:{name:'편의',col:'#40bbff'},skipBuyBanner:true,
       buy:()=>{const ok=grantRetryCharge(1,'상점 재도전권'); if(ok) banner('🎟️ 재도전 +1','다시 한 번 기회가 생겼다',1500); return ok;}});
   }
-  addStockedShopSpecial(items,{name:'수상한 상자',icon:'🎁',desc:'일반~신화 유물 중 하나를 획득합니다. 일반 상점보다 고등급 확률이 높습니다.',baseCost:360,grade:{name:'고급 상자',col:'#c98bff'},skipBuyBanner:true,
+  addStockedShopSpecial(items,{name:'수상한 상자',icon:'🎁',desc:'일반~신화 유물 중 하나를 획득합니다. 일반 상점보다 고등급 확률이 높습니다.',baseCost:320,grade:{name:'고급 상자',col:'#c98bff'},skipBuyBanner:true,
     buy:()=>buyMysteryBoxRelic()});
   items.trainingBought=false;
   items.mysteryLog=[];
