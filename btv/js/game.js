@@ -915,220 +915,6 @@ function relicCardHTML(r){
     '<div class="desc">'+r.desc+'</div>';
 }
 
-const RELIC_RARITY_CLASS={common:'common',rare:'rare',epic:'epic',legend:'legendary',mythic:'mythic'};
-let relicTooltipEl=null;
-let relicTooltipTarget=null;
-let relicTooltipTimer=0;
-let relicTooltipHideTimer=0;
-let relicTooltipPoint={x:0,y:0};
-const TooltipManager={
-  active:null,
-  setActive(kind){
-    if(this.active&&this.active!==kind){
-      if(this.active==='relic'&&typeof hideRelicTooltip==='function') hideRelicTooltip(true);
-      if(this.active==='special'&&typeof hideSpecialEffectTooltip==='function') hideSpecialEffectTooltip(true);
-      if(this.active==='training'&&typeof hideTrainingTooltip==='function') hideTrainingTooltip(true);
-      if(this.active==='stat'&&typeof hideStatTooltip==='function') hideStatTooltip(true);
-    }
-    this.active=kind||null;
-  },
-  clear(kind){
-    if(!kind||this.active===kind) this.active=null;
-  },
-  hideAll(){
-    if(typeof hideRelicTooltip==='function') hideRelicTooltip(true);
-    if(typeof hideSpecialEffectTooltip==='function') hideSpecialEffectTooltip(true);
-    if(typeof hideTrainingTooltip==='function') hideTrainingTooltip(true);
-    if(typeof hideStatTooltip==='function') hideStatTooltip(true);
-    this.active=null;
-  }
-};
-
-function getRelicById(relicId){
-  return (RELICS||[]).find(r=>r&&r.id===relicId)||null;
-}
-function relicRarityKey(r){
-  return TIER_OF[r&&r.id]||'rare';
-}
-function relicRarityClass(r){
-  return 'rarity-'+(RELIC_RARITY_CLASS[relicRarityKey(r)]||'rare');
-}
-function fmtRelicPct(n){
-  const v=Math.round((Number(n)||0)*100);
-  return (v>0?'+':'')+v+'%';
-}
-function relicShortLine(r){
-  const desc=String(r&&r.desc||'').trim();
-  if(!desc) return '유물 효과 적용';
-  const m=desc.match(/^(.+?[.!?。]|.+?%)(\s|$)/);
-  return (m?m[1]:desc).replace(/\s+/g,' ').trim();
-}
-function relicDetailText(r){
-  const hay=((r&&r.name)||'')+' '+((r&&r.desc)||'');
-  const bits=[];
-  if(/골드|금화|탐욕/.test(hay)) bits.push('골드 획득 보너스와 합산되어 전투 보상에 반영됩니다.');
-  if(/공격|피해|대미지|딜|보스/.test(hay)) bits.push('공격 관련 보너스는 현재 화력 계산에 합산되어 적용됩니다.');
-  if(/치명타|크리/.test(hay)) bits.push('치명타 확률 또는 치명타 피해 계수에 반영되는 전투 강화 유물입니다.');
-  if(/이동|속도|신발|군화|잔상/.test(hay)) bits.push('이동 관련 보너스는 현재 이동 속도 계산에 즉시 반영됩니다.');
-  if(/발사|연사|투사체|탄/.test(hay)) bits.push('발사와 투사체 관련 수치를 바꿔 전투 리듬을 달라지게 합니다.');
-  if(/받는 피해|방어|피해 감소|피부|방패|등딱지/.test(hay)) bits.push('방어 수치에 반영되며 음수일 경우 받는 피해가 증가합니다.');
-  if(/체력|회복|재생|흡혈/.test(hay)) bits.push('생존 관련 수치를 바꿔 전투 지속력에 영향을 줍니다.');
-  if(!bits.length) bits.push('획득 즉시 캐릭터 능력치나 전투 규칙에 반영됩니다.');
-  return bits.slice(0,2).join(' ');
-}
-function relicDynamicInfo(r){
-  const p=(typeof player==='object'&&player)?player:null;
-  if(!p||!r) return [];
-  const hay=((r.id||'')+' '+(r.name||'')+' '+(r.desc||'')).toLowerCase();
-  const info=[];
-  const add=(label,value)=>info.push({label,value});
-  if(/골드|금화|gold|greed|clover|pig|wallet|card|ring|magnet|showcase/.test(hay)){
-    add('현재 총 골드 보너스',fmtRelicPct((Number(p.goldMul)||1)-1));
-  }
-  if(/공격|피해|대미지|딜|boss|보스|dmg|damage|coupon|glass|berserk|all_in|contract|monitor|showcase|transmitter/.test(hay)){
-    add('현재 총 공격 보너스',fmtRelicPct(currentAttackMul(p)-1));
-  }
-  if(/치명타|크리|crit|clover|glasses|hammer|thin_glass|vault|eye|monitor|void/.test(hay)){
-    add('현재 총 치명타 확률',Math.round(clamp(Number(p.critChance)||0,0,CRIT_CHANCE_CAP)*100)+'%');
-    if(/피해|hammer|vault|critmult|치명타 피해/.test(hay)){
-      add('현재 치명타 피해', 'x'+clamp(Number(p.critMult)||CRIT_BASE_MULT,1,CRIT_MULT_CAP).toFixed(1));
-    }
-  }
-  if(/이동|속도|신발|군화|잔상|move|speed|sneaker|boots|slippery|legs|adrenaline|compass|wings|ammo/.test(hay)){
-    const base=Number(p.spd)||BASE_PLAYER_MOVE_SPEED;
-    add('현재 총 이동속도 보너스',fmtRelicPct((playerMoveSpeed(p)/base)-1));
-  }
-  if(/발사|연사|fire|redbull|adrenaline|trigger|recoil|cheat|sniper|nuke/.test(hay)){
-    add('현재 발사속도 보너스',fmtRelicPct((Number(p.fireAdd)||0)+(Number(p.potionFireAdd)||0)));
-  }
-  if(/경험치|xp|book|compass/.test(hay)){
-    add('현재 총 경험치 보너스',fmtRelicPct((Number(p.xpMul)||1)-1));
-  }
-  if(/보스|boss|giant|kijo|transmitter/.test(hay)){
-    add('현재 보스 피해 보너스',fmtRelicPct((Number(p.bossDmgMul)||1)-1));
-  }
-  if(/방어|받는 피해|피해 감소|armor|shield|skin|turtle|mushroom|mask|crown|berserk|all_in|contract|glass/.test(hay)){
-    const armor=effectiveArmor(p);
-    add(armor>=0?'현재 피해 감소':'현재 받는 피해 증가',armorDisplayValue(armor));
-  }
-  return info.slice(0,4);
-}
-function getRelicTooltipData(relicOrId,opts){
-  const r=typeof relicOrId==='string'?getRelicById(relicOrId):relicOrId;
-  if(!r){
-    return {title:'알 수 없는 유물',rarity:'common',rarityName:'유물',icon:'?',shortLine:'유물 정보를 찾을 수 없습니다.',description:'데이터가 없는 유물에도 툴팁 오류가 나지 않도록 기본 정보를 표시합니다.',dynamicInfo:[]};
-  }
-  const tier=relicTier(r)||TIERS.rare;
-  return {
-    title:r.name||'이름 없는 유물',
-    rarity:relicRarityKey(r),
-    rarityName:(tier.name||'유물')+' 유물',
-    icon:relicIconHTML(r,'relic-pix-lg'),
-    shortLine:relicShortLine(r),
-    description:relicDetailText(r),
-    dynamicInfo:opts&&opts.static?[]:relicDynamicInfo(r)
-  };
-}
-function ensureRelicTooltip(){
-  if(relicTooltipEl&&document.body.contains(relicTooltipEl)) return relicTooltipEl;
-  relicTooltipEl=document.getElementById('relicTooltip');
-  if(relicTooltipEl) return relicTooltipEl;
-  relicTooltipEl=document.createElement('div');
-  relicTooltipEl.id='relicTooltip';
-  relicTooltipEl.className='relic-tooltip hidden';
-  relicTooltipEl.setAttribute('role','tooltip');
-  document.body.appendChild(relicTooltipEl);
-  return relicTooltipEl;
-}
-function renderRelicTooltip(data){
-  const dyn=(data.dynamicInfo||[]).map(row=>
-    '<div class="relic-tooltip-dyn-row"><span>'+spEsc(row.label||'현재 수치')+'</span><b>'+spEsc(row.value==null?'':row.value)+'</b></div>'
-  ).join('');
-  return '<div class="relic-tooltip-head">'+
-      '<div class="relic-tooltip-icon">'+data.icon+'</div>'+
-      '<div class="relic-tooltip-title"><b>'+spEsc(data.title)+'</b><span>'+spEsc(data.rarityName)+'</span></div>'+
-    '</div>'+
-    '<div class="relic-tooltip-line"></div>'+
-    '<div class="relic-tooltip-short">'+spEsc(data.shortLine)+'</div>'+
-    '<div class="relic-tooltip-desc">'+spEsc(data.description)+'</div>'+
-    (dyn?'<div class="relic-tooltip-dyn">'+dyn+'</div>':'');
-}
-function positionRelicTooltip(evt){
-  const tip=ensureRelicTooltip();
-  if(evt&&evt.clientX!=null) relicTooltipPoint={x:evt.clientX,y:evt.clientY};
-  const margin=14;
-  const gap=14;
-  const rect=tip.getBoundingClientRect();
-  let x=relicTooltipPoint.x+gap;
-  let y=relicTooltipPoint.y+gap;
-  if(x+rect.width+margin>window.innerWidth) x=relicTooltipPoint.x-rect.width-gap;
-  if(y+rect.height+margin>window.innerHeight) y=relicTooltipPoint.y-rect.height-gap;
-  x=clamp(x,margin,Math.max(margin,window.innerWidth-rect.width-margin));
-  y=clamp(y,margin,Math.max(margin,window.innerHeight-rect.height-margin));
-  tip.style.left=Math.round(x)+'px';
-  tip.style.top=Math.round(y)+'px';
-}
-function showRelicTooltip(targetEl,tooltipData,evt){
-  clearTimeout(relicTooltipHideTimer);
-  TooltipManager.setActive('relic');
-  relicTooltipTarget=targetEl;
-  const tip=ensureRelicTooltip();
-  const r=getRelicById(targetEl&&targetEl.dataset&&targetEl.dataset.relicId);
-  const cls='rarity-'+(RELIC_RARITY_CLASS[(tooltipData&&tooltipData.rarity)||relicRarityKey(r)]||'rare');
-  tip.className='relic-tooltip '+cls;
-  tip.innerHTML=renderRelicTooltip(tooltipData);
-  tip.classList.remove('hidden','show');
-  positionRelicTooltip(evt);
-  requestAnimationFrame(()=>tip.classList.add('show'));
-}
-function hideRelicTooltip(instant){
-  clearTimeout(relicTooltipTimer);
-  relicTooltipTarget=null;
-  if(!relicTooltipEl) return;
-  relicTooltipEl.classList.remove('show');
-  TooltipManager.clear('relic');
-  if(instant){
-    clearTimeout(relicTooltipHideTimer);
-    relicTooltipEl.classList.add('hidden');
-    return;
-  }
-  relicTooltipHideTimer=setTimeout(()=>{
-    if(relicTooltipEl&&!relicTooltipEl.classList.contains('show')) relicTooltipEl.classList.add('hidden');
-  },110);
-}
-function initRelicTooltipEvents(){
-  if(document.body&&document.body.dataset.relicTooltipEvents==='1') return;
-  if(!document.body) return;
-  document.body.dataset.relicTooltipEvents='1';
-  document.addEventListener('mouseover',evt=>{
-    const target=evt.target&&evt.target.closest&&evt.target.closest('[data-relic-id]');
-    if(!target) return;
-    if(relicTooltipTarget===target) return;
-    clearTimeout(relicTooltipTimer);
-    relicTooltipPoint={x:evt.clientX,y:evt.clientY};
-    relicTooltipTimer=setTimeout(()=>showRelicTooltip(target,getRelicTooltipData(target.dataset.relicId,{static:target.dataset.relicStatic==='1'}),evt),110);
-  });
-  document.addEventListener('mousemove',evt=>{
-    if(relicTooltipTarget&&!document.body.contains(relicTooltipTarget)) hideRelicTooltip();
-    else if(relicTooltipTarget) positionRelicTooltip(evt);
-  });
-  document.addEventListener('mouseout',evt=>{
-    const target=evt.target&&evt.target.closest&&evt.target.closest('[data-relic-id]');
-    if(!target) return;
-    if(evt.relatedTarget&&target.contains(evt.relatedTarget)) return;
-    hideRelicTooltip();
-  });
-  document.addEventListener('focusin',evt=>{
-    const target=evt.target&&evt.target.closest&&evt.target.closest('[data-relic-id]');
-    if(target) showRelicTooltip(target,getRelicTooltipData(target.dataset.relicId,{static:target.dataset.relicStatic==='1'}),{clientX:target.getBoundingClientRect().right,clientY:target.getBoundingClientRect().top});
-  });
-  document.addEventListener('focusout',evt=>{
-    if(evt.target&&evt.target.closest&&evt.target.closest('[data-relic-id]')) hideRelicTooltip();
-  });
-  window.addEventListener('blur',hideRelicTooltip);
-  window.addEventListener('resize',()=>TooltipManager.hideAll());
-}
-
 // ---------- 입력 ----------
 
 // ===== JS: Input handling and runtime state =====
@@ -2010,96 +1796,6 @@ function trainingPreviewRows(def,p){
   }
   return rows;
 }
-function trainingNextState(id,p){
-  p=p||player;
-  const cur={
-    maxhp:Number(p.maxhp)||0,
-    hp:Number(p.hp)||0,
-    atkBonus:Number(p.trainingAtkBonus)||0,
-    speedBonus:Number(p.trainingSpeedBonus)||0,
-    focusBonus:Number(p.trainingFocusBonus)||0,
-    critChance:clamp(Number(p.critChance)||0,0,CRIT_CHANCE_CAP),
-    defenseBonus:Number(p.trainingDefenseBonus)||0,
-    armor:effectiveArmor(p)
-  };
-  const next=Object.assign({},cur);
-  if(id==='hp'){
-    next.maxhp=cur.maxhp+15;
-    next.hp=Math.min(next.maxhp,cur.hp+15);
-  }else if(id==='atk'){
-    next.atkBonus=cur.atkBonus+0.03;
-  }else if(id==='speed'){
-    next.speedBonus=cur.speedBonus+0.04;
-  }else if(id==='focus'){
-    next.focusBonus=cur.focusBonus+0.03;
-    next.critChance=clamp(cur.critChance+0.03,0,CRIT_CHANCE_CAP);
-  }else if(id==='defense'){
-    next.defenseBonus=cur.defenseBonus+0.03;
-    next.armor=clamp((Number(p.armor)||0)+0.03+(Number(p.potionArmor)||0),-1,0.85);
-  }
-  return {current:cur,next};
-}
-function getTrainingTooltipData(trainingKey){
-  const id=String(trainingKey||'').replace(/^training-/,'');
-  const def=trainingDefById(id);
-  if(!def){
-    return {title:'훈련',totalText:'-',description:'훈련 정보를 찾을 수 없습니다.',breakdown:[{label:'출처 정보',value:'없음',sourceType:'기타'}],formulaText:'구버전 데이터도 안전하게 무시합니다.',kind:'training'};
-  }
-  const count=trainingCount(id,player);
-  const maxed=trainingIsMaxed(id,player);
-  const cost=maxed?0:trainingPrice(def,player);
-  const nextCost=maxed?0:Math.max(1,Math.round(shopPrice(def.baseCost)*(1+(count+1)*0.35)));
-  const goldNow=Number(gold)||0;
-  const state=trainingNextState(id,player);
-  const rows=[
-    {label:'구매 횟수',value:count+' / '+TRAINING_MAX_PURCHASES,sourceType:'훈련'},
-    {label:'현재 가격',value:maxed?'MAX':cost+'G',sourceType:goldNow>=cost||maxed?'상점':'골드 부족'}
-  ];
-  let valueText=def.desc||'이번 런 동안 영구 유지됩니다.';
-  if(id==='hp'){
-    valueText='최대 체력 +15, 즉시 체력 +15 회복';
-    rows.unshift(
-      {label:'최대 체력',value:Math.round(state.current.maxhp)+' -> '+Math.round(state.next.maxhp),sourceType:'구매 후'},
-      {label:'현재 체력',value:Math.round(state.current.hp)+' -> '+Math.round(state.next.hp),sourceType:'구매 후'}
-    );
-  }else if(id==='atk'){
-    valueText='공격력 +3%';
-    rows.unshift(
-      {label:'현재 보너스',value:trainingPct(state.current.atkBonus),sourceType:'훈련'},
-      {label:'구매 후',value:trainingPct(state.next.atkBonus),sourceType:'예상'}
-    );
-  }else if(id==='speed'){
-    valueText='이동속도 +4%';
-    rows.unshift(
-      {label:'현재 보너스',value:trainingPct(state.current.speedBonus),sourceType:'훈련'},
-      {label:'구매 후',value:trainingPct(state.next.speedBonus),sourceType:'예상'}
-    );
-  }else if(id==='focus'){
-    valueText='치명타 확률 +3%';
-    rows.unshift(
-      {label:'현재 치명타',value:trainingPct(state.current.critChance),sourceType:'전투값'},
-      {label:'구매 후 치명타',value:trainingPct(state.next.critChance),sourceType:'예상'}
-    );
-  }else if(id==='defense'){
-    valueText='받는 피해 -3%';
-    rows.unshift(
-      {label:'현재 피해 감소',value:armorDisplayValue(state.current.armor),sourceType:'전투값'},
-      {label:'구매 후 피해 감소',value:armorDisplayValue(state.next.armor),sourceType:'예상'}
-    );
-  }
-  rows.push({label:'다음 구매 가격',value:maxed?'MAX':nextCost+'G',sourceType:'가격 증가'});
-  if(maxed) rows.push({label:'상태',value:'최대 단련 완료',sourceType:'완료'});
-  else if(goldNow<cost) rows.push({label:'상태',value:'골드 부족',sourceType:'주의'});
-  else rows.push({label:'상태',value:'구매 가능',sourceType:'상점'});
-  return {
-    title:def.name,
-    totalText:maxed?'MAX':(goldNow<cost?'골드 부족':cost+'G'),
-    description:valueText+' · 이번 런 동안 영구 유지됩니다.',
-    breakdown:rows,
-    formulaText:maxed?'최대 단련 완료':'반복 구매 시 가격이 증가합니다. 현재 가격 보정: '+trainingPriceIncreaseText(count),
-    kind:'training'
-  };
-}
 function trainingShopDetailsHTML(def,count,maxed,cost){
   const rows=trainingPreviewRows(def,player).map(row=>
     '<div class="shop-detail-row"><span>'+shopText(row[0])+'</span><b>'+shopText(row[1])+'</b></div>'
@@ -2176,556 +1872,6 @@ function armorDisplayLabel(v){
 }
 function armorDisplayValue(v){
   return (v<0?'+':'')+Math.round(Math.abs(v)*100)+'%';
-}
-
-let specialEffectTooltipEl=null;
-let specialEffectTooltipTarget=null;
-let specialEffectTooltipTimer=0;
-let specialEffectTooltipHideTimer=0;
-let specialEffectTooltipPoint={x:0,y:0};
-
-function specialPctText(n){
-  const v=Math.round((Number(n)||0)*100);
-  return (v>0?'+':'')+v+'%';
-}
-function specialSignedText(n,suffix){
-  const v=Math.round((Number(n)||0)*10)/10;
-  return (v>0?'+':'')+(Number.isInteger(v)?String(v):v.toFixed(1))+(suffix||'');
-}
-function specialSourceType(type){
-  return type||'기타 효과';
-}
-function sourceDeltaFromApply(source,field){
-  if(!source||!source.apply||!field) return 0;
-  const src=String(source.apply);
-  const re=new RegExp('p\\.'+field+'\\s*([+\\-])=\\s*(-?\\d+(?:\\.\\d+)?)','g');
-  let m,total=0;
-  while((m=re.exec(src))){
-    const n=Number(m[2])||0;
-    total+=m[1]==='-'?-n:n;
-  }
-  return total;
-}
-function addSpecialPart(parts,label,value,sourceType){
-  const n=Number(value)||0;
-  if(Math.abs(n)<1e-9) return;
-  parts.push({label:label||'출처 불명',value:n,sourceType:specialSourceType(sourceType)});
-}
-function collectAppliedSourceParts(field,p){
-  p=p||player;
-  const parts=[];
-  (p.relics||[]).forEach(r=>addSpecialPart(parts,r&&r.name,sourceDeltaFromApply(r,field),'유물'));
-  const perkIds=new Set(Array.isArray(p.perkIds)?p.perkIds.filter(Boolean):[]);
-  if(typeof LEVEL_PERKS!=='undefined'){
-    LEVEL_PERKS.forEach(pk=>{
-      if(perkIds.has(perkId(pk))) addSpecialPart(parts,pk.name,sourceDeltaFromApply(pk,field),'레벨업 특성');
-    });
-  }
-  if(typeof TREE_NODES!=='undefined'&&typeof treeUnlocked!=='undefined'){
-    TREE_NODES.forEach(node=>{
-      if(node&&node.id!=='hub'&&treeUnlocked.has(node.id)) addSpecialPart(parts,node.name,sourceDeltaFromApply(node,field),'패시브 노드');
-    });
-  }
-  return parts;
-}
-function addTrainingPart(parts,id,label,value){
-  const count=trainingCount(id,player);
-  if(count>0) addSpecialPart(parts,label,value,'훈련');
-}
-function addPotionBuffParts(parts,field){
-  (player.potionBuffs||[]).forEach(b=>{
-    if((b.t||0)<=0) return;
-    if(field==='atkMul') addSpecialPart(parts,b.name||b.label||'포션 효과',b.atkMul||0,'포션');
-    else if(field==='fireAdd') addSpecialPart(parts,b.name||b.label||'포션 효과',b.fireAdd||0,'포션');
-    else if(field==='armor') addSpecialPart(parts,b.name||b.label||'포션 효과',b.armor||0,'포션');
-  });
-}
-function sumSpecialParts(parts){
-  return (parts||[]).reduce((sum,row)=>sum+(Number(row.value)||0),0);
-}
-function addRemainderPart(parts,total,label){
-  const diff=(Number(total)||0)-sumSpecialParts(parts);
-  if(Math.abs(diff)>=0.005) addSpecialPart(parts,label||'기타 효과',diff,'기타 효과');
-}
-function specialPartsToText(parts,formatFn){
-  return (parts||[]).map(row=>({
-    label:row.label||'출처 불명',
-    value:formatFn?formatFn(row.value):String(row.value),
-    sourceType:specialSourceType(row.sourceType)
-  }));
-}
-function getGoldBonusBreakdown(){
-  const total=(Number(player.goldMul)||1)-1;
-  const parts=collectAppliedSourceParts('goldMul',player);
-  addRemainderPart(parts,total,'기타 골드 보너스');
-  return {total,parts};
-}
-function getRegenBreakdown(){
-  const base=BASE_NATURAL_REGEN;
-  const parts=[{label:'기본 재생',value:base,sourceType:'기본 효과'}];
-  collectAppliedSourceParts('regen',player).forEach(row=>parts.push(row));
-  if(player.redPulseBuff>0) addSpecialPart(parts,'붉은 맥박 발동',player.redPulseRegen||0,'임시 효과');
-  const beforeMul=sumSpecialParts(parts);
-  const regenMul=statMulFromBonus(statBonusFromMul(player.regenMul),0);
-  if(Math.abs(regenMul-1)>0.005) addSpecialPart(parts,'재생 배율 보정',beforeMul*(regenMul-1),'패시브 노드');
-  const afterMul=beforeMul*regenMul;
-  if(player.regenOverload&&player.hp<=player.maxhp*0.5&&afterMul>0) addSpecialPart(parts,'재생 과부하',afterMul*0.5,'패시브 노드');
-  if(player===player&&typeof isStallRegenSuppressed==='function'&&effectiveRegen(player)>0&&isStallRegenSuppressed()){
-    addSpecialPart(parts,'장기 전투 억제',effectiveRegen(player)-sumSpecialParts(parts),'시스템');
-  }
-  const total=effectiveRegen(player);
-  addRemainderPart(parts,total,'기타 재생 효과');
-  return {total,parts};
-}
-function getAttackBonusBreakdown(){
-  const total=currentAttackMul(player)-1;
-  const parts=[];
-  collectAppliedSourceParts('dmgMul',player).forEach(row=>parts.push(row));
-  collectAppliedSourceParts('dmgAdd',player).forEach(row=>parts.push(row));
-  addTrainingPart(parts,'atk','공격 훈련',Number(player.trainingAtkBonus)||0);
-  addPotionBuffParts(parts,'atkMul');
-  if(player.noPotionDmgMul&&(!player.potions||player.potions.length===0)) addSpecialPart(parts,'금욕의 성배',statBonusFromMul(player.noPotionDmgMul),'유물');
-  if(player.investmentReturn&&gold>=150) addSpecialPart(parts,'투자 수익',0.10,'패시브 노드');
-  addRemainderPart(parts,total,'기타 공격 보너스');
-  return {total,parts};
-}
-function getCritChanceBreakdown(){
-  const total=clamp(Number(player.critChance)||0,0,CRIT_CHANCE_CAP);
-  const parts=[{label:'기본 치명타',value:CRIT_BASE_CHANCE,sourceType:'기본 효과'}];
-  collectAppliedSourceParts('critChance',player).forEach(row=>parts.push(row));
-  addTrainingPart(parts,'focus','집중 훈련',Number(player.trainingFocusBonus)||0);
-  addRemainderPart(parts,total,'기타 치명타 보너스');
-  return {total,parts};
-}
-function getCritDamageBreakdown(){
-  const total=clamp(Number(player.critMult)||CRIT_BASE_MULT,1,CRIT_MULT_CAP);
-  const parts=[{label:'기본 치명타 피해',value:CRIT_BASE_MULT,sourceType:'기본 효과'}];
-  collectAppliedSourceParts('critMult',player).forEach(row=>parts.push(row));
-  addRemainderPart(parts,total,'기타 치명타 피해');
-  return {total,parts};
-}
-function getMoveSpeedBreakdown(){
-  const base=Number(player.spd)||BASE_PLAYER_MOVE_SPEED;
-  const total=(playerMoveSpeed(player)/base)-1;
-  const parts=[];
-  collectAppliedSourceParts('moveSpeedAdd',player).forEach(row=>parts.push(row));
-  addTrainingPart(parts,'speed','민첩 훈련',Number(player.trainingSpeedBonus)||0);
-  addRemainderPart(parts,total,'기타 이동 보너스');
-  return {total,parts,base,final:playerMoveSpeed(player)};
-}
-function getFireRateBreakdown(){
-  const fireHandicap=Number(player._fireHandicap)||1;
-  const total=(Number(player.fireAdd)||0)+(Number(player.potionFireAdd)||0)
-    +(player.buffs&&player.buffs.haste>0?1:0)
-    +(player.perfectDodgeFireT>0?0.20:0)
-    +(fireHandicap!==1?((1/fireHandicap)-1):0);
-  const parts=collectAppliedSourceParts('fireAdd',player);
-  addPotionBuffParts(parts,'fireAdd');
-  if(player.buffs&&player.buffs.haste>0) addSpecialPart(parts,'가속 버프',1,'임시 효과');
-  if(player.perfectDodgeFireT>0) addSpecialPart(parts,'완벽 회피 발동',0.20,'패시브 노드');
-  addRemainderPart(parts,total,'기타 발사속도 보너스');
-  return {total,parts};
-}
-function getArmorBreakdown(){
-  const total=effectiveArmor(player);
-  const parts=collectAppliedSourceParts('armor',player);
-  addTrainingPart(parts,'defense','방어 훈련',Number(player.trainingDefenseBonus)||0);
-  addPotionBuffParts(parts,'armor');
-  addRemainderPart(parts,total,'기타 방어 효과');
-  return {total,parts};
-}
-function getXpBonusBreakdown(){
-  const total=(Number(player.xpMul)||1)-1;
-  const parts=collectAppliedSourceParts('xpMul',player);
-  addRemainderPart(parts,total,'기타 경험치 보너스');
-  return {total,parts};
-}
-function getSpecialScalarBreakdown(field,totalBase){
-  const total=Number(player[field])-(totalBase==null?0:totalBase);
-  const parts=collectAppliedSourceParts(field,player);
-  addRemainderPart(parts,total,'기타 효과');
-  return {total,parts};
-}
-function getSpecialEffectTooltipData(effectKey){
-  const key=String(effectKey||'');
-  let b=null, title='특수 효과', totalText='', description='현재 적용 중인 특수 효과입니다.', formulaText='적용 방식: 현재 값 기준', kind='special';
-  const pct=specialPctText;
-  const perSec=v=>specialSignedText(v,'/초');
-  if(key==='regen'){
-    b=getRegenBreakdown(); title='체력 재생 '+perSec(b.total); totalText=perSec(b.total); description='현재 적용 중인 자연 재생 효과입니다.'; formulaText='적용 방식: 초당 회복'; kind='regen';
-    return {title,totalText,description,breakdown:specialPartsToText(b.parts,perSec),formulaText,kind};
-  }
-  if(key==='goldGain'||key==='광부'){
-    b=getGoldBonusBreakdown(); title='골드 획득 '+pct(b.total); totalText=pct(b.total); description='현재 적용 중인 골드 획득 보너스입니다.'; formulaText='적용 방식: 합연산 · 최종 처치 골드 배율 x'+(1+b.total).toFixed(2); kind='gold';
-    return {title,totalText,description,breakdown:specialPartsToText(b.parts,pct),formulaText,kind};
-  }
-  if(key==='atkBonus'||key==='attackBonus'){
-    b=getAttackBonusBreakdown(); title='공격 보너스 '+pct(b.total); totalText=pct(b.total); description='현재 공격력 배율에 반영되는 보너스입니다.'; formulaText='적용 방식: 합연산 후 최소 배율 보정 · 현재 배율 x'+currentAttackMul(player).toFixed(2); kind='attack';
-    return {title,totalText,description,breakdown:specialPartsToText(b.parts,pct),formulaText,kind};
-  }
-  if(key==='critChance'||key==='crit-chance'){
-    b=getCritChanceBreakdown(); title='치명타 확률 '+pct(b.total); totalText=pct(b.total); description='직접 피해에 적용되는 현재 치명타 확률입니다.'; formulaText='적용 방식: 합연산 · 상한 '+pct(CRIT_CHANCE_CAP); kind='crit';
-    return {title,totalText,description,breakdown:specialPartsToText(b.parts,pct),formulaText,kind};
-  }
-  if(key==='critDamage'||key==='crit-mult'){
-    b=getCritDamageBreakdown(); title='치명타 피해 '+Math.round(b.total*100)+'%'; totalText='x'+b.total.toFixed(1); description='직접 피해 치명타에 적용되는 피해 배율입니다.'; formulaText='적용 방식: 배율 합산 · 상한 x'+CRIT_MULT_CAP.toFixed(1); kind='crit';
-    return {title,totalText,description,breakdown:specialPartsToText(b.parts,v=>'x'+(Number(v)||0).toFixed(1)),formulaText,kind};
-  }
-  if(key==='moveSpeed'||key==='move-speed'){
-    b=getMoveSpeedBreakdown(); title='이동속도 보너스 '+pct(b.total); totalText=Math.round(b.final); description='현재 이동 속도 계산에 반영되는 보너스입니다.'; formulaText='적용 방식: 기본 이동속도 '+Math.round(b.base)+' × 보너스 = '+Math.round(b.final); kind='speed';
-    return {title,totalText,description,breakdown:specialPartsToText(b.parts,pct),formulaText,kind};
-  }
-  if(key==='fireRate'||key==='fire-rate'){
-    b=getFireRateBreakdown(); title='발사속도 보너스 '+pct(b.total); totalText=pct(b.total); description='현재 초당 발사 계산에 반영되는 보너스입니다.'; formulaText='적용 방식: 합연산 · 현재 초당 '+playerFireRate(player).toFixed(1)+'발'; kind='attack';
-    return {title,totalText,description,breakdown:specialPartsToText(b.parts,pct),formulaText,kind};
-  }
-  if(key==='damageReduction'||key==='armor'||key==='armor-risk'){
-    b=getArmorBreakdown(); title=armorDisplayLabel(b.total)+' '+armorDisplayValue(b.total); totalText=armorDisplayValue(b.total); description='현재 받는 피해 계산에 반영되는 방어 수치입니다.'; formulaText='적용 방식: 합연산 · -값이면 받는 피해 증가'; kind='armor';
-    return {title,totalText,description,breakdown:specialPartsToText(b.parts,pct),formulaText,kind};
-  }
-  if(key==='xpGain'||key==='xp-boost'){
-    b=getXpBonusBreakdown(); title='경험치 획득 '+pct(b.total); totalText=pct(b.total); description='현재 적용 중인 경험치 획득 보너스입니다.'; formulaText='적용 방식: 합연산 · 최종 경험치 배율 x'+(1+b.total).toFixed(2); kind='gold';
-    return {title,totalText,description,breakdown:specialPartsToText(b.parts,pct),formulaText,kind};
-  }
-  if(key==='bossDmg'){
-    b=getSpecialScalarBreakdown('bossDmgMul',1); title='보스 피해 '+pct(b.total); totalText=pct(b.total); description='보스와 정예에게 적용되는 추가 피해입니다.'; formulaText='적용 방식: 합연산'; kind='attack';
-    return {title,totalText,description,breakdown:specialPartsToText(b.parts,pct),formulaText,kind};
-  }
-  if(key.indexOf('potion-buff:')===0){
-    const bId=key.slice('potion-buff:'.length);
-    const buff=(player.potionBuffs||[]).find(x=>(x.id||[x.atkFlat,x.atkMul,x.fireAdd,x.armor,x.regen].join(':'))===bId);
-    const label=buff&&(buff.label||buff.name)||'포션 효과';
-    const val=buff&&buff.regen?perSec(buff.regen):(buff&&buff.atkMul?pct(buff.atkMul):(buff&&buff.fireAdd?pct(buff.fireAdd):(buff&&buff.armor?pct(buff.armor):'')));
-    return {title:label,totalText:val||'ON',description:(buff&&buff.desc)||'포션으로 적용 중인 임시 효과입니다.',breakdown:[{label:(buff&&buff.name)||'포션',value:val||'ON',sourceType:'포션'}],formulaText:'적용 방식: 지속시간 '+Math.max(0,Math.ceil(buff&&buff.t||0))+'초 남음',kind:'special'};
-  }
-  return {title:'특수 효과',totalText:'ON',description:'현재 적용 중인 특수 효과입니다.',breakdown:[{label:'출처 정보',value:'확인 필요',sourceType:'기타 효과'}],formulaText:'적용 방식: 효과별 규칙 적용',kind:'special'};
-}
-function statKeyFromLabel(label){
-  return ((String(label||'').match(/^(\S+)/)||[])[1]||'special').trim();
-}
-function statNameFromLabel(label){
-  return String(label||'').replace(/^\S+\s*/,'').trim()||'능력치';
-}
-function statRowByKey(statKey,p){
-  const key=String(statKey||'');
-  return (spStats(p||player)||[]).find(row=>statKeyFromLabel(row&&row[0])===key)||null;
-}
-function getMaxHpBreakdown(){
-  const total=Number(player.maxhp)||0;
-  const parts=[{label:'기본 최대 체력',value:70,sourceType:'기본'}];
-  const hpTraining=trainingCount('hp',player)*15;
-  if(hpTraining>0) parts.push({label:'체력 훈련',value:hpTraining,sourceType:'훈련'});
-  collectAppliedSourceParts('maxhp',player).forEach(row=>parts.push(row));
-  addRemainderPart(parts,total,'기타 최대 체력');
-  return {total,parts};
-}
-function getProjectileBreakdown(){
-  const total=(player.shots||1)+(player.shadowBarrageT>0?(player.shadowBarrageExtraShots||1):0);
-  const parts=[{label:'기본 투사체',value:1,sourceType:'기본'}];
-  if((player.shots||1)>1) parts.push({label:'영구 투사체 증가',value:(player.shots||1)-1,sourceType:'유물/특성'});
-  if(player.shadowBarrageT>0) parts.push({label:'그림자 난무',value:player.shadowBarrageExtraShots||1,sourceType:'일시 효과'});
-  addRemainderPart(parts,total,'기타 투사체');
-  return {total,parts};
-}
-function getStatBreakdown(statKey){
-  const key=String(statKey||'');
-  if(key==='hp') return getMaxHpBreakdown();
-  if(key==='attack') return getAttackBonusBreakdown();
-  if(key==='crit') return getCritChanceBreakdown();
-  if(key==='crit-dmg') return getCritDamageBreakdown();
-  if(key==='fire-rate') return getFireRateBreakdown();
-  if(key==='shots') return getProjectileBreakdown();
-  if(key==='speed') return getMoveSpeedBreakdown();
-  if(key==='armor') return getArmorBreakdown();
-  if(key==='regen') return getRegenBreakdown();
-  if(key==='gold') return getGoldBonusBreakdown();
-  return {total:0,parts:[]};
-}
-function getStatTooltipData(statKey){
-  const key=String(statKey||'');
-  const row=statRowByKey(key,player);
-  const titleName=row?statNameFromLabel(row[0]):'능력치';
-  const totalText=row?String(row[1]):'-';
-  const pct=specialPctText;
-  const flat=v=>String(Math.round((Number(v)||0)*10)/10).replace(/\.0$/,'');
-  const perSec=v=>specialSignedText(v,'/초');
-  let description='현재 최종 능력치입니다.';
-  let formulaText='적용 방식: 실제 전투 계산값을 기준으로 표시';
-  let breakdown=[];
-  let kind=spIconClass(key,'','',key);
-  if(key==='hp'){
-    const b=getMaxHpBreakdown();
-    description='현재 최대 체력입니다.';
-    breakdown=specialPartsToText(b.parts,flat);
-    formulaText='적용 방식: 기본 체력에 훈련, 유물, 특성 보너스를 합산';
-  }else if(key==='attack'){
-    const base=(Number(player.dmg)||0)+(Number(player.potionAtkFlat)||0);
-    const b=getAttackBonusBreakdown();
-    breakdown=[
-      {label:'현재 공격력 기반값',value:base.toFixed(1),sourceType:'기본/일시'},
-      {label:'공격 배율',value:'x'+currentAttackMul(player).toFixed(2),sourceType:'합산'}
-    ].concat(specialPartsToText(b.parts,pct));
-    description='현재 최종 공격력입니다.';
-    formulaText='적용 방식: 기반값 '+base.toFixed(1)+' x 공격 배율 '+currentAttackMul(player).toFixed(2)+' = '+totalText;
-  }else if(key==='crit'){
-    const b=getCritChanceBreakdown();
-    breakdown=specialPartsToText(b.parts,pct);
-    description='현재 치명타 확률입니다.';
-    formulaText='적용 방식: 합연산 · 상한 '+pct(CRIT_CHANCE_CAP);
-  }else if(key==='crit-dmg'){
-    const b=getCritDamageBreakdown();
-    breakdown=specialPartsToText(b.parts,v=>'x'+(Number(v)||0).toFixed(1));
-    description='치명타가 발생했을 때 적용되는 피해 배율입니다.';
-    formulaText='적용 방식: 배율 합산 · 상한 x'+CRIT_MULT_CAP.toFixed(1);
-  }else if(key==='fire-rate'){
-    const b=getFireRateBreakdown();
-    breakdown=[{label:'기본 발사 쿨다운',value:playerShootCooldown(Object.assign({},player,{fireAdd:0,potionFireAdd:0,_fireHandicap:1})).toFixed(2)+'초',sourceType:'기본'}]
-      .concat(specialPartsToText(b.parts,pct));
-    description='현재 초당 발사 수입니다.';
-    formulaText='적용 방식: 발사 쿨다운 보정 후 1 / 쿨다운 = '+totalText;
-  }else if(key==='shots'){
-    const b=getProjectileBreakdown();
-    breakdown=specialPartsToText(b.parts,v=>(Number(v)||0)+'발');
-    description='한 번에 발사되는 현재 투사체 수입니다.';
-    formulaText='적용 방식: 기본 투사체와 추가 투사체를 합산';
-  }else if(key==='speed'){
-    const b=getMoveSpeedBreakdown();
-    breakdown=[{label:'기본 이동속도',value:Math.round(b.base),sourceType:'기본'}].concat(specialPartsToText(b.parts,pct));
-    description='현재 최종 이동속도입니다.';
-    formulaText='적용 방식: 기본 이동속도 '+Math.round(b.base)+' x 이동 보너스 = '+Math.round(b.final);
-  }else if(key==='armor'){
-    const b=getArmorBreakdown();
-    breakdown=specialPartsToText(b.parts,pct);
-    description='현재 받는 피해를 줄이거나 늘리는 방어 수치입니다.';
-    formulaText='적용 방식: 합연산 · 최종 적용 '+armorDisplayLabel(b.total)+' '+armorDisplayValue(b.total);
-  }else if(key==='regen'){
-    const b=getRegenBreakdown();
-    breakdown=specialPartsToText(b.parts,perSec);
-    description='현재 초당 체력 재생량입니다.';
-    formulaText='적용 방식: 기본 재생과 추가 재생을 합산 후 배율 보정';
-  }else{
-    breakdown=[{label:'현재 값',value:totalText,sourceType:'기타'}];
-  }
-  if(!breakdown.length) breakdown=[{label:'현재 값',value:totalText,sourceType:'기타'}];
-  return {
-    title:titleName+' '+totalText,
-    totalText,
-    description,
-    breakdown,
-    formulaText,
-    kind:kind||'special'
-  };
-}
-function ensureSpecialEffectTooltip(){
-  if(specialEffectTooltipEl&&document.body.contains(specialEffectTooltipEl)) return specialEffectTooltipEl;
-  specialEffectTooltipEl=document.getElementById('specialEffectTooltip');
-  if(specialEffectTooltipEl) return specialEffectTooltipEl;
-  specialEffectTooltipEl=document.createElement('div');
-  specialEffectTooltipEl.id='specialEffectTooltip';
-  specialEffectTooltipEl.className='special-tooltip hidden';
-  specialEffectTooltipEl.setAttribute('role','tooltip');
-  document.body.appendChild(specialEffectTooltipEl);
-  return specialEffectTooltipEl;
-}
-function renderSpecialEffectTooltip(data){
-  const rows=(data.breakdown||[]).map(row=>
-    '<div class="special-tooltip-row"><span>'+spEsc(row.label||'출처 불명')+'</span><b>'+spEsc(row.value==null?'':row.value)+'</b><em>'+spEsc(row.sourceType||'기타 효과')+'</em></div>'
-  ).join('');
-  return '<div class="special-tooltip-head"><div><b>'+spEsc(data.title)+'</b><span>'+spEsc(data.description)+'</span></div><strong>'+spEsc(data.totalText||'')+'</strong></div>'+
-    '<div class="special-tooltip-line"></div>'+
-    '<div class="special-tooltip-section-title">구성</div>'+
-    '<div class="special-tooltip-breakdown">'+(rows||'<div class="special-tooltip-row"><span>출처 정보 없음</span><b>-</b><em>기타 효과</em></div>')+'</div>'+
-    '<div class="special-tooltip-final"><span>최종 적용</span><b>'+spEsc(data.totalText||'ON')+'</b></div>'+
-    '<div class="special-tooltip-formula">'+spEsc(data.formulaText||'적용 방식: 효과별 규칙 적용')+'</div>';
-}
-function positionSpecialEffectTooltip(evt){
-  const tip=ensureSpecialEffectTooltip();
-  if(evt&&evt.clientX!=null) specialEffectTooltipPoint={x:evt.clientX,y:evt.clientY};
-  const margin=14,gap=14,rect=tip.getBoundingClientRect();
-  let x=specialEffectTooltipPoint.x+gap,y=specialEffectTooltipPoint.y+gap;
-  if(x+rect.width+margin>window.innerWidth) x=specialEffectTooltipPoint.x-rect.width-gap;
-  if(y+rect.height+margin>window.innerHeight) y=specialEffectTooltipPoint.y-rect.height-gap;
-  x=clamp(x,margin,Math.max(margin,window.innerWidth-rect.width-margin));
-  y=clamp(y,margin,Math.max(margin,window.innerHeight-rect.height-margin));
-  tip.style.left=Math.round(x)+'px';
-  tip.style.top=Math.round(y)+'px';
-}
-function showSpecialEffectTooltip(targetEl,tooltipData,evt){
-  clearTimeout(specialEffectTooltipHideTimer);
-  TooltipManager.setActive('special');
-  specialEffectTooltipTarget=targetEl;
-  const tip=ensureSpecialEffectTooltip();
-  tip.className='special-tooltip effect-'+(tooltipData.kind||'special');
-  tip.innerHTML=renderSpecialEffectTooltip(tooltipData);
-  tip.classList.remove('hidden','show');
-  positionSpecialEffectTooltip(evt);
-  requestAnimationFrame(()=>tip.classList.add('show'));
-}
-function hideSpecialEffectTooltip(instant){
-  clearTimeout(specialEffectTooltipTimer);
-  specialEffectTooltipTarget=null;
-  if(!specialEffectTooltipEl) return;
-  specialEffectTooltipEl.classList.remove('show');
-  TooltipManager.clear('special');
-  if(instant){
-    clearTimeout(specialEffectTooltipHideTimer);
-    specialEffectTooltipEl.classList.add('hidden');
-    return;
-  }
-  specialEffectTooltipHideTimer=setTimeout(()=>{
-    if(specialEffectTooltipEl&&!specialEffectTooltipEl.classList.contains('show')) specialEffectTooltipEl.classList.add('hidden');
-  },110);
-}
-function initSpecialEffectTooltipEvents(){
-  if(document.body&&document.body.dataset.specialTooltipEvents==='1') return;
-  if(!document.body) return;
-  document.body.dataset.specialTooltipEvents='1';
-  document.addEventListener('mouseover',evt=>{
-    const target=evt.target&&evt.target.closest&&evt.target.closest('[data-effect-key]');
-    if(!target) return;
-    if(specialEffectTooltipTarget===target) return;
-    clearTimeout(specialEffectTooltipTimer);
-    specialEffectTooltipPoint={x:evt.clientX,y:evt.clientY};
-    specialEffectTooltipTimer=setTimeout(()=>showSpecialEffectTooltip(target,getSpecialEffectTooltipData(target.dataset.effectKey),evt),110);
-  });
-  document.addEventListener('mousemove',evt=>{
-    if(specialEffectTooltipTarget&&!document.body.contains(specialEffectTooltipTarget)) hideSpecialEffectTooltip();
-    else if(specialEffectTooltipTarget) positionSpecialEffectTooltip(evt);
-  });
-  document.addEventListener('mouseout',evt=>{
-    const target=evt.target&&evt.target.closest&&evt.target.closest('[data-effect-key]');
-    if(!target) return;
-    if(evt.relatedTarget&&target.contains(evt.relatedTarget)) return;
-    hideSpecialEffectTooltip();
-  });
-  document.addEventListener('focusin',evt=>{
-    const target=evt.target&&evt.target.closest&&evt.target.closest('[data-effect-key]');
-    if(target) showSpecialEffectTooltip(target,getSpecialEffectTooltipData(target.dataset.effectKey),{clientX:target.getBoundingClientRect().right,clientY:target.getBoundingClientRect().top});
-  });
-  document.addEventListener('focusout',evt=>{
-    if(evt.target&&evt.target.closest&&evt.target.closest('[data-effect-key]')) hideSpecialEffectTooltip();
-  });
-  window.addEventListener('blur',hideSpecialEffectTooltip);
-}
-let trainingTooltipTarget=null;
-let trainingTooltipTimer=0;
-let statTooltipTarget=null;
-let statTooltipTimer=0;
-function showTrainingTooltip(targetEl,tooltipData,evt){
-  clearTimeout(specialEffectTooltipHideTimer);
-  TooltipManager.setActive('training');
-  trainingTooltipTarget=targetEl;
-  const tip=ensureSpecialEffectTooltip();
-  tip.className='special-tooltip effect-training';
-  tip.innerHTML=renderSpecialEffectTooltip(tooltipData);
-  tip.classList.remove('hidden','show');
-  positionSpecialEffectTooltip(evt);
-  requestAnimationFrame(()=>tip.classList.add('show'));
-}
-function hideTrainingTooltip(instant){
-  clearTimeout(trainingTooltipTimer);
-  trainingTooltipTarget=null;
-  if(!specialEffectTooltipEl) return;
-  if(TooltipManager.active!=='training') return;
-  specialEffectTooltipEl.classList.remove('show');
-  TooltipManager.clear('training');
-  if(instant){
-    clearTimeout(specialEffectTooltipHideTimer);
-    specialEffectTooltipEl.classList.add('hidden');
-    return;
-  }
-  specialEffectTooltipHideTimer=setTimeout(()=>{
-    if(specialEffectTooltipEl&&!specialEffectTooltipEl.classList.contains('show')) specialEffectTooltipEl.classList.add('hidden');
-  },110);
-}
-function showStatTooltip(targetEl,tooltipData,evt){
-  clearTimeout(specialEffectTooltipHideTimer);
-  TooltipManager.setActive('stat');
-  statTooltipTarget=targetEl;
-  const tip=ensureSpecialEffectTooltip();
-  tip.className='special-tooltip effect-'+(tooltipData.kind||'stat');
-  tip.innerHTML=renderSpecialEffectTooltip(tooltipData);
-  tip.classList.remove('hidden','show');
-  positionSpecialEffectTooltip(evt);
-  requestAnimationFrame(()=>tip.classList.add('show'));
-}
-function hideStatTooltip(instant){
-  clearTimeout(statTooltipTimer);
-  statTooltipTarget=null;
-  if(!specialEffectTooltipEl) return;
-  if(TooltipManager.active!=='stat') return;
-  specialEffectTooltipEl.classList.remove('show');
-  TooltipManager.clear('stat');
-  if(instant){
-    clearTimeout(specialEffectTooltipHideTimer);
-    specialEffectTooltipEl.classList.add('hidden');
-    return;
-  }
-  specialEffectTooltipHideTimer=setTimeout(()=>{
-    if(specialEffectTooltipEl&&!specialEffectTooltipEl.classList.contains('show')) specialEffectTooltipEl.classList.add('hidden');
-  },110);
-}
-function initTrainingTooltipEvents(){
-  if(document.body&&document.body.dataset.trainingTooltipEvents==='1') return;
-  if(!document.body) return;
-  document.body.dataset.trainingTooltipEvents='1';
-  document.addEventListener('mouseover',evt=>{
-    const target=evt.target&&evt.target.closest&&evt.target.closest('[data-training-key]');
-    if(!target) return;
-    if(trainingTooltipTarget===target) return;
-    clearTimeout(trainingTooltipTimer);
-    specialEffectTooltipPoint={x:evt.clientX,y:evt.clientY};
-    trainingTooltipTimer=setTimeout(()=>showTrainingTooltip(target,getTrainingTooltipData(target.dataset.trainingKey),evt),110);
-  });
-  document.addEventListener('mousemove',evt=>{
-    if(trainingTooltipTarget&&!document.body.contains(trainingTooltipTarget)) hideTrainingTooltip();
-    else if(trainingTooltipTarget) positionSpecialEffectTooltip(evt);
-  });
-  document.addEventListener('mouseout',evt=>{
-    const target=evt.target&&evt.target.closest&&evt.target.closest('[data-training-key]');
-    if(!target) return;
-    if(evt.relatedTarget&&target.contains(evt.relatedTarget)) return;
-    hideTrainingTooltip();
-  });
-  document.addEventListener('focusin',evt=>{
-    const target=evt.target&&evt.target.closest&&evt.target.closest('[data-training-key]');
-    if(target) showTrainingTooltip(target,getTrainingTooltipData(target.dataset.trainingKey),{clientX:target.getBoundingClientRect().right,clientY:target.getBoundingClientRect().top});
-  });
-  document.addEventListener('focusout',evt=>{
-    if(evt.target&&evt.target.closest&&evt.target.closest('[data-training-key]')) hideTrainingTooltip();
-  });
-  window.addEventListener('blur',hideTrainingTooltip);
-}
-function initStatTooltipEvents(){
-  if(document.body&&document.body.dataset.statTooltipEvents==='1') return;
-  if(!document.body) return;
-  document.body.dataset.statTooltipEvents='1';
-  document.addEventListener('mouseover',evt=>{
-    const target=evt.target&&evt.target.closest&&evt.target.closest('[data-stat-key]');
-    if(!target) return;
-    if(statTooltipTarget===target) return;
-    clearTimeout(statTooltipTimer);
-    specialEffectTooltipPoint={x:evt.clientX,y:evt.clientY};
-    statTooltipTimer=setTimeout(()=>showStatTooltip(target,getStatTooltipData(target.dataset.statKey),evt),110);
-  });
-  document.addEventListener('mousemove',evt=>{
-    if(statTooltipTarget&&!document.body.contains(statTooltipTarget)) hideStatTooltip();
-    else if(statTooltipTarget) positionSpecialEffectTooltip(evt);
-  });
-  document.addEventListener('mouseout',evt=>{
-    const target=evt.target&&evt.target.closest&&evt.target.closest('[data-stat-key]');
-    if(!target) return;
-    if(evt.relatedTarget&&target.contains(evt.relatedTarget)) return;
-    hideStatTooltip();
-  });
-  document.addEventListener('focusin',evt=>{
-    const target=evt.target&&evt.target.closest&&evt.target.closest('[data-stat-key]');
-    if(target) showStatTooltip(target,getStatTooltipData(target.dataset.statKey),{clientX:target.getBoundingClientRect().right,clientY:target.getBoundingClientRect().top});
-  });
-  document.addEventListener('focusout',evt=>{
-    if(evt.target&&evt.target.closest&&evt.target.closest('[data-stat-key]')) hideStatTooltip();
-  });
-  window.addEventListener('blur',hideStatTooltip);
 }
 function effectiveCritChance(target,bullet){
   let chance=(player&&player.critChance!=null)?player.critChance:CRIT_BASE_CHANCE;
@@ -3101,7 +2247,6 @@ function renderAchievements(){
       const achUnlocked=achId?isAchievementUnlocked(achId):owned;
       const row=document.createElement('div');
       row.className='ach-row ach-card ach-relic-row relic-'+(TIER_OF[id]||'rare')+(owned?' unlocked':' locked');
-      if(owned){ row.dataset.relicId=id; row.dataset.relicStatic='1'; }
       row.innerHTML='<div class="ach-medal">'+(owned?relicIconHTML(r,'relic-pix-lg'):'🔒')+'</div><div class="ach-card-main">'+
         '<div class="ach-card-top"><b>'+formatAchievementRelicName(id,owned)+'</b><strong>'+(owned?'해금 완료':'잠금')+'</strong></div>'+
         '<span>'+(owned?r.desc:'업적 보상으로 해금되는 유물입니다.')+'</span>'+
@@ -3359,9 +2504,7 @@ function rankBuildPill(kind,id){
     }
   }
   const safeTip=rankBuildText(tip||name).replace(/\n/g,'&#10;');
-  const relicAttr=kind==='relic'?' data-relic-id="'+rankBuildText(id)+'" data-relic-static="1"':'';
-  const titleAttr=kind==='relic'?'':' title="'+safeTip+'"';
-  return '<span class="rank-build-pill"'+relicAttr+titleAttr+' aria-label="'+safeTip+'">'+icon+'<span>'+rankBuildText(name)+'</span></span>';
+  return '<span class="rank-build-pill" title="'+safeTip+'" aria-label="'+safeTip+'">'+icon+'<span>'+rankBuildText(name)+'</span></span>';
 }
 function renderRankBuildList(kind,ids){
   ids=Array.isArray(ids)?ids.filter(Boolean):[];
@@ -3715,7 +2858,13 @@ async function renderRankingList(){
 }
 const player={};
 let enemies=[], pBullets=[], eBullets=[], pickups=[], particles=[];
-let totalKills=0, kills=0, gold=0, level=1, xp=0, xpNext=20;
+const EARLY_XP_NEXT = [35,55,80,115];
+function getXpNextForLevel(level, previousXpNext){
+  const idx = Math.max(1, Math.round(Number(level)||1)) - 1;
+  if(idx >= 0 && idx < EARLY_XP_NEXT.length) return EARLY_XP_NEXT[idx];
+  return Math.round(previousXpNext * 1.35 + 8);
+}
+let totalKills=0, kills=0, gold=0, level=1, xp=0, xpNext=getXpNextForLevel(1, 0);
 let playerAttackSeq=0;
 let runStartedAt=0, runHits=0, runShopPurchases=0, runShopSpent=0;
 let runStats=normalizeRunStats(null);
@@ -4129,7 +3278,7 @@ function startCombat(kind, fresh){
         showBossIntroLine('kkotchung',680);
         const ze=enemies[enemies.length-1]; roomHadElite=true; roomEliteKind='yanggaeng';
         ze.elite=true; ze.eliteViewer=true; ze.eliteKind='yanggaeng'; ze.label='양갱';
-        ze.hp*=1.75; ze.maxhp*=1.75; ze.dmg=Math.round(ze.dmg*1.4); ze.r+=5; ze.xp=90; ze.coolT=1.0;
+        ze.hp*=1.75; ze.maxhp*=1.75; ze.dmg=Math.round(ze.dmg*1.4); ze.r+=5; ze.xp=900; ze.coolT=1.0;
         ze.x=W/2; ze.y=190; ze.intro=true; ze.introScale=0; ze.stunT=4; ze.tauntedHalf=false;
         ze.atkT=1.8; ze.atkN=0; ze.enr=false; ze.enrShown=false;
         ze.phase=1; ze.phaseHp=[0.66,0.33]; ze.climaxT=0; ze.eyeOrbs=[];
@@ -4775,7 +3924,7 @@ function enemyBulletSpore(x,y,a){
 function gainXP(n){
   xp+=n*statMulFromBonus(statBonusFromMul(player.xpMul),0);
   while(xp>=xpNext){
-    xp-=xpNext; level++; xpNext=Math.round(xpNext*1.35+8);
+    xp-=xpNext; level++; xpNext=getXpNextForLevel(level, xpNext);
     player.maxhp+=5;                               // 최대체력 소폭 증가
     player.dmg+=0.5;                                // 공격력 소폭 증가 (고정값)
     healPlayer(11);  // 회복 + 늘어난 최대체력만큼
@@ -6881,7 +6030,6 @@ function eventOfferRelics(n,opts,tag,sub,after){
   picks.forEach(r=>{
     const el=document.createElement('button');
     el.className='choice relic-'+(TIER_OF[r.id]||'rare');
-    el.dataset.relicId=r.id;
     el.style.borderColor=relicTier(r).col;
     el.innerHTML=relicCardHTML(r);
     el.onclick=()=>takeRelic(r);
@@ -8206,7 +7354,6 @@ function offerRelics(n,tag,sub,after,opts){
   picks.forEach(r=>{
     const el=document.createElement('button');
     el.className='choice relic-'+(TIER_OF[r.id]||'rare');
-    el.dataset.relicId=r.id;
     el.style.borderColor=relicTier(r).col;
     el.innerHTML=relicCardHTML(r);
     el.onclick=()=>takeRelic(r);
@@ -8297,7 +7444,7 @@ function ensureMysteryBoxOverlay(){
 }
 function renderMysteryBoxResultHTML(r,isNew){
   const t=relicTier(r);
-  return '<div class="mystery-box-result-card rarity-'+mysteryBoxRarityKey(r)+'" data-relic-id="'+spEsc(r.id||'')+'" style="--mystery-rarity:'+spEsc(t.col)+'">'+
+  return '<div class="mystery-box-result-card rarity-'+mysteryBoxRarityKey(r)+'" style="--mystery-rarity:'+spEsc(t.col)+'">'+
     '<div class="mystery-box-badges">'+
       (isNew?'<span class="mystery-new">NEW</span><span class="mystery-new note">도감 등록!</span>':'')+
     '</div>'+
@@ -8569,10 +7716,7 @@ function shopCard(it,items,idx){
   const shopLocked=!!shopPurchaseLock||!!mysteryBoxCutsceneActive;
   const blocked=disabled||trainingLocked||pending||shopLocked;
   el.className='shop-card '+it.kind+(sold?' sold':'')+(trainingLocked?' training-locked':'')+(pending?' pending':'')+(blocked&&!sold?' disabled':'')+(it.relic?' relic-'+(TIER_OF[it.relic.id]||'rare'):'')+(potionGrade?' potion-'+potionGrade:'');
-  if(it.relic) el.dataset.relicId=it.relic.id;
-  if(it.kind==='training'&&it.trainingId) el.dataset.trainingKey=it.trainingId;
-  el.disabled=it.kind==='training'?false:blocked;
-  el.setAttribute('aria-disabled',blocked?'true':'false');
+  el.disabled=blocked;
   el.style.setProperty('--shop-border',grade?grade.col:'#7e6cb0');
   el.style.animationDelay=(idx*55)+'ms';
   const icon=it.relic?relicIconHTML(it.relic,'relic-pix-lg'):(it.potion?potionIconHTML(it.potion,'potion-pix-lg'):shopSpecialIconHTML(it));
@@ -10204,7 +9348,7 @@ function skipCutscene(){
 
 // ===== JS: Overlay state machine and UI wiring =====
 const overlays={title:'ovTitle',start:'ovStart',map:'ovMap',relic:'ovRelic',shop:'ovShop',event:'ovEvent',inv:'ovInv',level:'ovLevel',reward:'ovReward',end:'ovEnd',ranking:'ovRanking',achievements:'ovAchievements',database:'ovDatabase',help:'ovHelp',story:'ovStory',entrance:'ovEntrance',tierIntro:'ovTierIntro',taunt:'ovTaunt',campfire:'ovCampfire'};
-function hideAll(){ if(typeof TooltipManager!=='undefined') TooltipManager.hideAll(); Object.values(overlays).forEach(id=>$(id).classList.add('hidden')); if(typeof evStopScene==='function') evStopScene(); }
+function hideAll(){ Object.values(overlays).forEach(id=>$(id).classList.add('hidden')); if(typeof evStopScene==='function') evStopScene(); }
 function syncChrome(){ document.body.classList.toggle('title-mode', state==='title'||state==='start'); }
 function show(st){
   hideAll();
@@ -10852,18 +9996,8 @@ function spEffects(p){
   const regen=effectiveRegen(p);
   const critChance=clamp(p.critChance,0,CRIT_CHANCE_CAP);
   const critMult=clamp(p.critMult,1,CRIT_MULT_CAP);
-  const atkBonus=currentAttackMul(p)-1;
-  const moveBase=Number(p.spd)||BASE_PLAYER_MOVE_SPEED;
-  const moveBonus=(playerMoveSpeed(p)/moveBase)-1;
-  const fireHandicap=Number(p._fireHandicap)||1;
-  const fireBonus=(Number(p.fireAdd)||0)+(Number(p.potionFireAdd)||0)+(buffs.haste>0?1:0)+(p.perfectDodgeFireT>0?0.20:0)+(fireHandicap!==1?((1/fireHandicap)-1):0);
-  const armorNow=effectiveArmor(p);
-  add(Math.abs(atkBonus)>0.005,'⚔️','공격 '+pc(atkBonus),'공격 보너스','현재 공격력 배율에 반영되는 합산 보너스','atkBonus');
-  add(critChance>CRIT_BASE_CHANCE,'🎯','치명타 '+pc(critChance),'치명타','직접 피해에만 적용. 최종 상한 '+pc(CRIT_CHANCE_CAP),'critChance');
-  add(critMult>CRIT_BASE_MULT,'💥','치명피해 '+Math.round(critMult*100)+'%','치명타 피해','직접 피해 치명타 배율. 최종 상한 '+Math.round(CRIT_MULT_CAP*100)+'%','critDamage');
-  add(Math.abs(fireBonus)>0.005,'⚡','발사속도 '+pc(fireBonus),'발사속도','현재 초당 발사 계산에 반영되는 보너스','fireRate');
-  add(Math.abs(moveBonus)>0.005,'💨','이동 '+pc(moveBonus),'이동속도','현재 이동 속도 계산에 반영되는 보너스','moveSpeed');
-  add(Math.abs(armorNow)>0.005,'🛡️',(armorNow>=0?'피해 감소 ':'받는 피해 +')+armorDisplayValue(armorNow).replace(/^\+/,''),'방어','현재 받는 피해 계산에 반영되는 방어 수치','damageReduction');
+  add(critChance>CRIT_BASE_CHANCE,'🎯','치명타 '+pc(critChance),'치명타','직접 피해에만 적용. 최종 상한 '+pc(CRIT_CHANCE_CAP),'crit-chance');
+  add(critMult>CRIT_BASE_MULT,'💥','치명피해 '+Math.round(critMult*100)+'%','치명타 피해','직접 피해 치명타 배율. 최종 상한 '+Math.round(CRIT_MULT_CAP*100)+'%','crit-mult');
   add(p.nonCritDmgMul<1,'🎲','비치명타 피해 '+pc(p.nonCritDmgMul),'도박사의 칼날','치명타 확률/피해 증가 대신 비치명타 피해 감소','noncrit-penalty');
   add(p.redPulseRegen>0,'🩸','붉은 맥박'+(p.redPulseBuff>0?timeLabel(p.redPulseBuff):''),'붉은 맥박','치명타 적중 시 재생 +'+p.redPulseRegen+'/초, 3초 지속, 내부쿨 6초','red-pulse');
   add(p.redPulseBuff>0,'🌿','맥박 재생 +'+p.redPulseRegen+'/초'+timeLabel(p.redPulseBuff),'붉은 맥박','현재 발동 중인 치명타 재생 버프','red-pulse-active');
@@ -10913,9 +10047,9 @@ function spEffects(p){
 
   add(p.investmentReturn,'💰','투자 수익 '+(gold>=150?'ON':'골드 150 필요'),'투자 수익','골드 150 이상 보유 시 공격력 +10%','investment-return');
   add(p.goldPower>0,'💸','현질의 힘','현질의 힘','보유 골드 100당 공격력 증가. 최대 +30%','gold-power');
-  add(p.goldMul>1,'🧲','골드 +'+pc(p.goldMul-1),'광부','골드 획득량 증가','goldGain');
+  add(p.goldMul>1,'🧲','골드 +'+pc(p.goldMul-1),'광부','골드 획득량 증가');
   add(p.noPotionDmgMul>1,'🏆','금욕의 성배 '+((!p.potions||p.potions.length===0)?'ON':'포션 보유 중'),'금욕의 성배','포션 0개 보유 시 공격력 +'+pc(p.noPotionDmgMul-1),'no-potion');
-  add(p.xpMul>1,'📈','경험치 +'+pc(p.xpMul-1),'경험치 부스트','경험치 획득량 증가','xpGain');
+  add(p.xpMul>1,'📈','경험치 +'+pc(p.xpMul-1),'경험치 부스트','경험치 획득량 증가','xp-boost');
   add(p.donateChance>0,'💸','도네 '+pc(p.donateChance),'도네 알림','적 처치 시 확률로 골드');
   add(p.greedContract,'💎','탐욕의 계약','탐욕의 계약','골드 획득 +40%, 받는 피해 +10%','greed-contract');
   add(p.shopCostMul>1,'💎','상점가 +'+pc(p.shopCostMul-1),'탐욕의 반지','상점 가격 증가 리스크','shop-risk');
@@ -10927,7 +10061,7 @@ function spEffects(p){
 
   add(p.crowdRage>0,'😡','분노','분노','주변 적이 많을수록 공격력 증가');
   add(p.lowHpMul>0,'🆘','저체력 폭주','저체력 폭주','체력이 낮을수록 공격력 증가');
-  add(p.bossDmgMul>1,'🗡️','거인사냥 +'+pc(p.bossDmgMul-1),'거인 사냥','보스·정예에게 추가 피해','bossDmg');
+  add(p.bossDmgMul>1,'🗡️','거인사냥 +'+pc(p.bossDmgMul-1),'거인 사냥','보스·정예에게 추가 피해');
   add(p.execThreshold>0,'✂️','처형 '+pc(p.execThreshold),'클립 박제','체력이 낮은 잡몹 즉시 처치');
   add(p.thorns>0,'🌵','가시 '+p.thorns,'가시 갑옷','접촉한 적에게 반사 피해');
   add(p.minion,'🤝','구독자','구독자 소환','자동 공격 분신을 소환');
@@ -10992,18 +10126,17 @@ function renderSidePanel(previewPk){
   let h='<div class="sp-header"><span class="sp-header-mark" aria-hidden="true">◆</span><span class="sp-header-title">내 능력치</span><span class="sp-header-chip">STAT</span><button class="sp-collapse-btn" type="button" title="접기 [C]" aria-label="능력치 패널 접기">◀</button>'+(aft?'<span class="sp-preview">미리보기</span>':'')+'</div>';
   cur.forEach((r,i)=>{
     const kind=spKindFromLabel(r[0]);
-    const statKey=statKeyFromLabel(r[0]);
     let val='<b>'+spEsc(r[1])+'</b>';
     if(aft){
       const dv=aft[i][2]-r[2];
       if(Math.abs(dv)>1e-9) val='<b class="sp-old">'+spEsc(r[1])+'</b> <b class="sp-new">→ '+spEsc(aft[i][1])+'</b>';
     }
-    h+='<div class="sp-row sp-kind-'+spEsc(kind)+'" data-stat-key="'+spEsc(statKey)+'" aria-label="'+spEsc(statNameFromLabel(r[0]))+'"><span class="sp-label">'+spLabelHTML(r[0])+'</span><span class="sp-value">'+val+'</span></div>';
+    h+='<div class="sp-row sp-kind-'+spEsc(kind)+'"><span class="sp-label">'+spLabelHTML(r[0])+'</span><span class="sp-value">'+val+'</span></div>';
   });
   if(curT.length){
     h+='<div class="sp-title sp-subtitle sp-training-title"><span aria-hidden="true">◇</span> 훈련</div>';
     h+='<div class="sp-effects sp-training-effects">';
-    curT.forEach(fx=>{ const kind=spIconClass(fx.ic,fx.t,fx.pn,fx.k); const ic='<span class="sp-effect-ico" aria-hidden="true">'+spIconHTML(kind)+'</span>'; h+='<span class="sp-effect sp-kind-'+spEsc(kind)+'" data-training-key="'+spEsc(fx.k||'')+'" aria-label="'+spEsc(fx.t||'훈련')+'">'+ic+'<span class="sp-effect-text">'+spEsc(fx.t)+'</span></span>'; });
+    curT.forEach(fx=>{ const kind=spIconClass(fx.ic,fx.t,fx.pn,fx.k); const ic='<span class="sp-effect-ico" aria-hidden="true">'+spIconHTML(kind)+'</span>'; h+='<span class="sp-effect sp-kind-'+spEsc(kind)+'" title="'+spEsc(fx.d||'')+'">'+ic+'<span class="sp-effect-text">'+spEsc(fx.t)+'</span></span>'; });
     h+='</div>';
   }
   const shownE=(aftE&&aftE.length)?aftE:curE;
@@ -11011,12 +10144,12 @@ function renderSidePanel(previewPk){
     const curKeys=curE.map(x=>x.t);
     h+='<div class="sp-title sp-subtitle"><span aria-hidden="true">◇</span> 특수 효과</div>';
     h+='<div class="sp-effects">';
-    shownE.forEach(fx=>{ const isNew=aftE&&!curKeys.includes(fx.t); const kind=spIconClass(fx.ic,fx.t,fx.pn,fx.k); const ic='<span class="sp-effect-ico" aria-hidden="true">'+spIconHTML(kind)+'</span>'; h+='<span class="sp-effect sp-kind-'+spEsc(kind)+(isNew?' is-new':'')+'" data-effect-key="'+spEsc(fx.k||fx.t||'')+'" aria-label="'+spEsc(fx.t||'특수 효과')+'">'+ic+'<span class="sp-effect-text">'+spEsc(fx.t)+'</span></span>'; });
+    shownE.forEach(fx=>{ const isNew=aftE&&!curKeys.includes(fx.t); const kind=spIconClass(fx.ic,fx.t,fx.pn,fx.k); const ic='<span class="sp-effect-ico" aria-hidden="true">'+spIconHTML(kind)+'</span>'; h+='<span class="sp-effect sp-kind-'+spEsc(kind)+(isNew?' is-new':'')+'" title="'+spEsc(fx.d||'')+'">'+ic+'<span class="sp-effect-text">'+spEsc(fx.t)+'</span></span>'; });
     h+='</div>';
   }
   if(p.relics&&p.relics.length){
     h+='<div class="sp-title sp-subtitle"><span aria-hidden="true">◇</span> 유물 '+p.relics.length+'</div>';
-    h+='<div class="sp-relics">'+p.relics.map(r=>'<span data-relic-id="'+spEsc(r.id||'')+'" aria-label="'+spEsc(r.name||'유물')+'">'+relicIconHTML(r,'relic-pix-sm')+'</span>').join('')+'</div>';
+    h+='<div class="sp-relics">'+p.relics.map(r=>'<span title="'+((r.name||'').replace(/"/g,'')+' - '+(r.desc||'').replace(/"/g,''))+'">'+relicIconHTML(r,'relic-pix-sm')+'</span>').join('')+'</div>';
   }
   const el=$('sidePanel'); if(el){ el.innerHTML=h; const btn=el.querySelector('.sp-collapse-btn'); if(btn) btn.onclick=()=>setStatPanelCollapsed(true); }
 }
@@ -11032,7 +10165,7 @@ function renderInventoryTrainingSection(){
   section.innerHTML=
     '<h3 style="margin-top:16px">훈련</h3>'+
     '<div class="invgrid inv-training-grid">'+rows.map(({def,count})=>
-      '<div class="statchip training-chip" data-training-key="'+spEsc(def.id)+'"><span class="sk">'+spEsc(def.name)+'</span><span class="sv">'+spEsc(def.bonusText(count))+'</span></div>'
+      '<div class="statchip training-chip"><span class="sk">'+spEsc(def.name)+'</span><span class="sv">'+spEsc(def.bonusText(count))+'</span></div>'
     ).join('')+'</div>';
   if(before&&before.parentNode) before.parentNode.insertBefore(section,before);
 }
@@ -11085,7 +10218,7 @@ function renderInventory(){
   $('invRelicCount').textContent='('+p.relics.length+'개)';
   const rc=$('invRelics'); rc.innerHTML='';
   if(p.relics.length===0){ rc.innerHTML='<div style="color:var(--muted);font-size:12px">아직 없음 — 엘리트·보스·상점·제단에서 유물을 얻는다</div>'; }
-  p.relics.forEach(r=>{ const t=relicTier(r); const d=document.createElement('div'); d.className='relicrow relic-'+(TIER_OF[r.id]||'rare'); d.dataset.relicId=r.id; d.style.borderColor=t.col; d.innerHTML='<span class="ri">'+relicIconHTML(r,'relic-pix-lg')+'</span><span><b>'+r.name+'</b> <span class="grade" style="color:'+t.col+'">['+t.name+']</span>'+(r.cls==='curse'?' <span style="color:#ff6b6b;font-size:10px">⚠저주</span>':'')+'<br><span class="rd">'+r.desc+'</span></span>'; rc.appendChild(d); });
+  p.relics.forEach(r=>{ const t=relicTier(r); const d=document.createElement('div'); d.className='relicrow relic-'+(TIER_OF[r.id]||'rare'); d.style.borderColor=t.col; d.innerHTML='<span class="ri">'+relicIconHTML(r,'relic-pix-lg')+'</span><span><b>'+r.name+'</b> <span class="grade" style="color:'+t.col+'">['+t.name+']</span>'+(r.cls==='curse'?' <span style="color:#ff6b6b;font-size:10px">⚠저주</span>':'')+'<br><span class="rd">'+r.desc+'</span></span>'; rc.appendChild(d); });
 }
 function openInventory(){ if(state!=='play'&&state!=='map')return; prevState=state; renderInventory(); show('inv'); }
 function closeInventory(){ hideAll(); if(prevState==='map'){ show('map'); } else { state=(prevState&&prevState!=='inv')?prevState:'play'; } }
@@ -11321,7 +10454,7 @@ function newGame(){
   startBGM();
   runActive=true;
   pendingRunBuildSnapshot=null;
-  act=1; currentRow=0; kills=0; totalKills=0; gold=0; level=1; xp=0; xpNext=20; pendingLevels=0; retries=0; runHits=0; runShopPurchases=0; runShopSpent=0; runStartedAt=performance.now(); treePoints=0; treeUnlocked=new Set(['hub']);
+  act=1; currentRow=0; kills=0; totalKills=0; gold=0; level=1; xp=0; xpNext=getXpNextForLevel(1, 0); pendingLevels=0; retries=0; runHits=0; runShopPurchases=0; runShopSpent=0; runStartedAt=performance.now(); treePoints=0; treeUnlocked=new Set(['hub']);
   resetRunStats();
   resetPlayer();
   runPotionUsed=false;
@@ -11360,7 +10493,7 @@ function newGameSkip(){
   clearRunCheckpoint();
   startBGM();
   runActive=true;
-  act=1; currentRow=0; kills=0; totalKills=0; gold=0; level=1; xp=0; xpNext=20; pendingLevels=0; retries=0; runHits=0; runShopPurchases=0; runShopSpent=0; runStartedAt=performance.now(); treePoints=0; treeUnlocked=new Set(['hub']);
+  act=1; currentRow=0; kills=0; totalKills=0; gold=0; level=1; xp=0; xpNext=getXpNextForLevel(1, 0); pendingLevels=0; retries=0; runHits=0; runShopPurchases=0; runShopSpent=0; runStartedAt=performance.now(); treePoints=0; treeUnlocked=new Set(['hub']);
   resetRunStats();
   resetPlayer();
   runPotionUsed=false;
@@ -11678,7 +10811,6 @@ function databaseRows(){
     if(!isDiscovered('relics',r.id)) return dbLockedRow();
     return {
       cls:r.cls||'',
-      relicId:r.id,
       icon:relicIconHTML(r,'relic-pix-lg'),
       name:r.name,
       desc:r.desc,
@@ -11855,7 +10987,6 @@ function renderDatabase(){
   rows.forEach(row=>{
     const el=document.createElement('div');
     el.className='db-row '+(row.cls||'');
-    if(row.relicId){ el.dataset.relicId=row.relicId; el.dataset.relicStatic='1'; }
     el.innerHTML='<div class="db-icon">'+row.icon+'</div><div><b>'+dbText(row.name)+'</b><span>'+dbText(row.desc)+'</span><small>'+dbText(row.meta)+'</small></div>';
     body.appendChild(el);
   });
@@ -11882,10 +11013,6 @@ function closeDatabaseTab(){
   if(window.startTitleScene) window.startTitleScene();
 }
 function bootGame(){
-  initRelicTooltipEvents();
-  initSpecialEffectTooltipEvents();
-  initTrainingTooltipEvents();
-  initStatTooltipEvents();
   buildDiffButtons();
   refreshLoadButton();
   loadUserProgress();
