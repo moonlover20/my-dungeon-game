@@ -2772,6 +2772,42 @@ function banner(big,small,ms){
 }
 
 // ---------- 전투 구역 시작 ----------
+const BOSS_INTRO_LINES={
+  yanggaeng:{name:'박제인간',line:'저희... 친해요?',tone:'slow',ms:2300},
+  hyechul:{name:'혜철이',line:'에그는... 곧 깨어나.',tone:'dark',ms:2100},
+  kijo:{name:'키죠',line:'보지 마.',sub:'키죠의 마안이 열렸다.',tone:'purple',glitch:true,ms:2100},
+  rhino_beetle:{name:'자잘자',line:'oof.',sub:'자잘자가 돌진 준비를 합니다.',ms:1800},
+  kkotchung:{name:'양갱',line:'@#$#@@...',tone:'dark',glitch:true,ms:1900},
+  seungwoo:{name:'승우',line:'(하아...)',sub:'승우가 천천히 눈을 뜹니다.',tone:'dark',ms:2200}
+};
+let bossIntroSeen={};
+function showBossIntroLine(id,delay){
+  const data=BOSS_INTRO_LINES[id];
+  if(!data||bossIntroSeen[id]) return;
+  bossIntroSeen[id]=true;
+  setTimeout(()=>{
+    if(state!=='play'||roomCleared) return;
+    const box=$('bossIntroQuote'); if(!box) return;
+    const name=box.querySelector('.boss-intro-name'), line=box.querySelector('.boss-intro-line'), sub=box.querySelector('.boss-intro-sub');
+    if(name) name.textContent=data.name||id;
+    if(line) line.textContent=data.line||'';
+    if(sub) sub.textContent=data.sub||'';
+    box.className='';
+    if(data.tone) box.classList.add(data.tone);
+    if(data.glitch) box.classList.add('glitch');
+    box.classList.add('show');
+    clearTimeout(box._t);
+    box._t=setTimeout(()=>box.classList.remove('show'),data.ms||2000);
+    if(data.glitch||data.tone==='purple'){
+      const fx=$('glitchFx'), app=$('app');
+      if(fx){ fx.classList.remove('on'); void fx.offsetWidth; fx.classList.add('on'); }
+      if(app){ app.classList.remove('glitching'); void app.offsetWidth; app.classList.add('glitching'); setTimeout(()=>app.classList.remove('glitching'),720); }
+    }else if(data.tone==='dark'||data.tone==='slow'){
+      hitFlash=Math.max(hitFlash||0,0.22);
+      screenShake=Math.max(screenShake||0,4);
+    }
+  },delay||0);
+}
 let lastRoomKind=null, cutsceneT=0, roomEntryHp=0, roomStartedAt=0, retries=0;
 // ── 방 입장 시점의 진행 상태 스냅샷 (재도전 시 무한 레벨업 방지) ──
 let roomEntrySnap=null;
@@ -2953,6 +2989,8 @@ function startCombat(kind, fresh){
   enemies=[]; pBullets=[]; eBullets=[]; pickups=[]; particles=[]; hazards=[]; floatBubbles=[]; kijoMasks=[]; kijoGazes=[]; kijoParades=[]; kijoLaserWarns=[];
   player.x=W/2; player.y=H-90;
   roomCleared=false; roomIsBoss=(kind==='boss'); roomIsMidboss=(kind==='midboss'); kills=0; boss=null; roomHadElite=false; roomEliteKind=null; eliteIntro=null; timeScale=1; slowmoT=0;
+  bossIntroSeen={};
+  { const biq=$('bossIntroQuote'); if(biq){ biq.className=''; clearTimeout(biq._t); } }
   roomStartedAt=performance.now();
   resetStallWatch();
   // GL/gView 리셋 (승우 외 보스전 잔여 효과 제거)
@@ -2966,6 +3004,7 @@ function startCombat(kind, fresh){
   if(kind==='boss'){
     const b=BOSSES[ACT_BOSS[Math.min(act-1,ACT_BOSS.length-1)]];
     boss=spawnBoss(b);
+    showBossIntroLine(b.key,520);
     bossBanner=2.4; sfx.boss();
     banner(act+"막 보스 · "+b.name, b.title, 2400);
     showEntrance("👑 "+act+"막 보스 등장", b.name, b.quip||b.title||"");
@@ -2981,6 +3020,7 @@ function startCombat(kind, fresh){
     if(kind==='midboss'){
       if(act>=2){
         spawnEnemy('yanggaeng', W/2, 150, diff);
+        showBossIntroLine('yanggaeng',520);
         const eb=enemies[enemies.length-1];
         eb.elite=true; eb.midboss=true; eb.label='박제인간'; eb.atkT=1.8; eb.atkN=0; eb.spinAng=0;
         banner("중간보스 · 박제인간","정지된 음악, 멈춰진 시간",1800);
@@ -2988,6 +3028,7 @@ function startCombat(kind, fresh){
         showEntrance("⚠️ 중간보스 등장","박제인간","B면 — 되감을 수 없는 홈");
       } else {
         spawnEnemy('hyechul', W/2, 140, diff);
+        showBossIntroLine('hyechul',520);
         const eb=enemies[enemies.length-1];
         eb.elite=true; eb.midboss=true; eb.label='혜철이'; eb.phase=1;
         eb.summonT=12; eb.atkT=2.0; eb.atkN=0; eb.climaxT=0;
@@ -3002,6 +3043,7 @@ function startCombat(kind, fresh){
       if(act===2){
         // 2막 엘리트: 양갱
         spawnEnemy('kkotchung', W/2, 140, diff);
+        showBossIntroLine('kkotchung',680);
         const ze=enemies[enemies.length-1]; roomHadElite=true; roomEliteKind='yanggaeng';
         ze.elite=true; ze.eliteViewer=true; ze.eliteKind='yanggaeng'; ze.label='양갱';
         ze.hp*=1.75; ze.maxhp*=1.75; ze.dmg=Math.round(ze.dmg*1.4); ze.r+=5; ze.xp=90; ze.coolT=1.0;
@@ -3012,6 +3054,7 @@ function startCombat(kind, fresh){
         beep(523,0.3,'sine',0.05); beep(392,0.5,'sine',0.035); // 달콤한 척 하는 음
       } else {
         spawnEnemy('rhino_beetle', W/2, 120, diff);
+        showBossIntroLine('rhino_beetle',680);
         const ze=enemies[enemies.length-1]; roomHadElite=true; roomEliteKind='jajalja';
         ze.elite=true; ze.eliteViewer=true; ze.eliteKind='jajalja'; ze.label='자잘자';
         ze.hp*=2.1; ze.maxhp*=2.1; ze.dmg=Math.round(ze.dmg*1.5); ze.touchDmg=Math.round(enemyTouchBaseDamage(ze)*1.4); ze.r+=5; ze.xp=120; ze.coolT=1.0;
