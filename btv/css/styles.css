@@ -165,6 +165,14 @@
   .shop-sold{position:absolute;inset:auto 8px 8px 8px;background:rgba(0,0,0,.62);border:1px solid rgba(255,255,255,.18);color:#ddd;padding:5px 8px;font-size:12px;font-weight:bold;letter-spacing:3px;}
   .shop-icon{height:52px;display:grid;place-items:center;margin:12px 0 6px;font-size:34px;line-height:1;}
   .shop-icon .relic-pix-lg{width:42px;height:42px;}
+  .shop-special-pix,.tree-node-pix,.map-node-pix{object-fit:contain;image-rendering:pixelated;image-rendering:crisp-edges;}
+  .shop-special-pix{display:block;width:44px;height:44px;filter:drop-shadow(2px 2px 0 rgba(0,0,0,.55)) drop-shadow(0 0 8px rgba(255,211,77,.18));}
+  .potion-pix{display:block;width:28px;height:28px;object-fit:contain;image-rendering:pixelated;image-rendering:crisp-edges;filter:drop-shadow(2px 2px 0 rgba(0,0,0,.55)) drop-shadow(0 0 6px rgba(139,232,255,.18));}
+  .potion-pix-lg{width:44px;height:44px;}
+  .potion-pix-sm{width:20px;height:20px;}
+  .potion-pix-hud{width:25px;height:25px;}
+  .potion-pix-fallback{display:grid;place-items:center;font-size:14px;line-height:1;}
+  .shop-icon .potion-pix-lg{width:46px;height:46px;}
   .shop-card .shop-name{font-weight:bold;font-size:14px!important;color:#fff;line-height:1.28;word-break:normal;overflow-wrap:anywhere;max-width:100%;margin:0 auto;text-wrap:balance;}
   .shop-grade{min-height:17px;margin-top:3px;font-size:10px;font-weight:bold;letter-spacing:1px;}
   .shop-desc{margin-top:5px;color:var(--muted);font-size:11.5px;line-height:1.45;word-break:keep-all;overflow-wrap:break-word;}
@@ -540,6 +548,7 @@
     image-rendering:crisp-edges;
     flex:0 0 auto;
   }
+  .rank-build-pill .potion-pix{width:18px;height:18px;}
   .rank-build-empty{
     padding:20px 12px;
     color:#9db5d8;
@@ -721,7 +730,7 @@
   .db-row.boon{border-color:#2f6f5a;}
   .db-row.curse{border-color:#6f2f4d;}
   .db-icon{font-size:24px;text-align:center;line-height:1;}
-  .db-icon .pk-img,.db-icon .db-sprite-img{width:28px;height:28px;object-fit:contain;image-rendering:pixelated;image-rendering:crisp-edges;display:block;margin:0 auto;}
+  .db-icon .pk-img,.db-icon .db-sprite-img,.db-icon .potion-pix{width:28px;height:28px;object-fit:contain;image-rendering:pixelated;image-rendering:crisp-edges;display:block;margin:0 auto;}
   .db-color-icon,.db-lock{display:grid;place-items:center;width:30px;height:30px;margin:0 auto;border:2px solid #594b87;background:#10182f;color:#f7f2ff;font-weight:900;box-shadow:0 2px 0 #050714;}
   .db-color-icon{border-color:var(--db-col);box-shadow:0 2px 0 #050714,0 0 12px color-mix(in srgb,var(--db-col) 50%,transparent);}
   .db-row.locked{border-color:#2a3558;background:linear-gradient(180deg,#11182e,#0c1224);}
@@ -850,7 +859,7 @@
   .iconbtn:hover{border-color:var(--neon);}
   /* 포션 슬롯 */
   #potionSlots{display:flex;gap:6px;}
-  .pslot .picon{width:24px;height:24px;image-rendering:pixelated;display:block;margin:0 auto;}
+  .pslot .picon,.pslot .potion-pix{width:25px;height:25px;image-rendering:pixelated;image-rendering:crisp-edges;display:block;margin:0 auto;}
   .hud-label .hicon{width:15px;height:15px;image-rendering:pixelated;vertical-align:-2px;margin-right:4px;}
   .pslot{width:34px;height:34px;border:2px solid var(--line);background:#0e0a18;display:flex;
     align-items:center;justify-content:center;font-size:17px;cursor:pointer;position:relative;box-shadow:0 3px 0 #120c20;}
@@ -917,6 +926,7 @@
   }
   @keyframes mapRoadFlow{to{stroke-dashoffset:-34;}}
   .mapnode{transition:transform .1s;}
+  #mapSvg .map-node-pix{image-rendering:pixelated;image-rendering:crisp-edges;}
   .campfire-box{background:radial-gradient(circle at 50% 28%, #3a1e0e 0%, #1c100a 72%);border:1px solid #5a3418;}
   .campfire-art{position:relative;height:118px;display:flex;align-items:flex-end;justify-content:center;margin-bottom:6px;}
   .cf-glow{position:absolute;bottom:4px;width:190px;height:120px;background:radial-gradient(circle, rgba(255,150,50,.55), transparent 70%);filter:blur(7px);animation:cfGlow 1.7s ease-in-out infinite;}
@@ -1133,9 +1143,9 @@
   .relicrow{display:flex;gap:10px;align-items:flex-start;background:#1a1330;border:1px solid var(--line);padding:8px 10px;}
   .relicrow.curse{border-color:#5a2740;}
   .relicrow .ri{font-size:20px;line-height:1;}
-  .relic-pix{width:20px;height:20px;image-rendering:pixelated;vertical-align:-4px;}
-  .relic-pix-lg{width:26px;height:26px;image-rendering:pixelated;vertical-align:-4px;}
-  .relic-pix-sm{width:17px;height:17px;image-rendering:pixelated;vertical-align:-3px;}
+  .relic-pix{width:20px;height:20px;object-fit:contain;image-rendering:pixelated;image-rendering:crisp-edges;vertical-align:-4px;}
+  .relic-pix-lg{width:26px;height:26px;object-fit:contain;image-rendering:pixelated;image-rendering:crisp-edges;vertical-align:-4px;}
+  .relic-pix-sm{width:17px;height:17px;object-fit:contain;image-rendering:pixelated;image-rendering:crisp-edges;vertical-align:-3px;}
   .relicrow .rd{color:var(--muted);font-size:11px;}
   .grade{font-size:11px;font-weight:bold;}
   .choice.relic-legend{box-shadow:0 4px 0 #120c20, 0 0 14px #ffd34d55;}
