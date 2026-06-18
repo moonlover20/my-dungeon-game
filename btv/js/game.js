@@ -613,59 +613,6 @@ function relicOfferWeight(r,opts){
   const tier=TIER_OF[r.id]||'rare';
   return opts&&opts.weights&&opts.weights[tier]!=null?opts.weights[tier]:relicWeight(r);
 }
-const RELIC_PIXDATA=[{n:"사장님이 미쳤어요 쿠폰",p:{"y":"#e0b341","d":"#2c2c2a"},g:["................","................","......yyyyyyyy..",".....yyyyyyyyy..","....yyyyyyyyyy..","...yydyyyyyyyy..","..yyddyyyyyyyy..",".yyddyyyyyyyyy..","..yyddyyyyyyyy..","...yydyyyyyyyy..","....yyyyyyyyyy..",".....yyyyyyyyy..","......yyyyyyyy..","................","................","................"]},
-{n:"저격수의 집중",p:{"r":"#e24b4a","w":"#eef2f8","X":"#2c2c2a"},g:["................",".....rrrrr......","...rrrrrrrrr....","..rrrwwwwwrrr...","..rrwwwwwwwrr...",".rrwwwrrrwwwrr..",".rrwwrrXrrwwrr..",".rrwwwrrrwwwrr..","..rrwwwwwwwrr...","..rrrwwwwwrrr...","...rrrrrrrrr....",".....rrrrr......","................","................","................","................"]},
-{n:"대구경 탄두",p:{"r":"#b85c3c","h":"#d88a6a","d":"#7a3b22"},g:["................","................","................","..hhhhhhhhhhhh..","..rrrrrrrrrrrh..","..rrrddrrrrrrh..","..rrrrrrrrrrrh..","..rrrrrrrddrrh..","..rrrrrrrrrrrh..","..rrddrrrrrrrh..","..rrrrrrrrrrrh..","..dddddddddddd..","................","................","................","................"]},
-{n:"분노의 대왕탄",p:{"y":"#ffd24a","o":"#ef9f27","w":"#fff2b0"},g:["................",".......yy.......","....y..oo..y....",".....y.oo.y.....","......yooy......","..yyyyoooyyyy...","...yoowwooy.....","...yowwwwoy.....","...yoowwooy.....","..yyyyoooyyyy...","......yooy......",".....y.oo.y.....","....y..oo..y....",".......yy.......","................","................"]},
-{n:"막판 뒤집기",p:{"b":"#e0997b","h":"#f5c4b3","d":"#993c1d"},g:["................","................","................","...bbbbbbbbb....","..bbhhhhhhhbb...","..bhdhdhdhdhb...","..bhhhhhhhhhb...","..bhdhdhdhdhb...","..bbhhhhhhhbb...","...bbbbbbbbb....","................","................","................","................","................","................"]},
-{n:"거인 사냥꾼",p:{"h":"#eef2f8","s":"#a9b2bf","G":"#e0b341","o":"#9a6a1d","B":"#7c4f2c"},g:["..............h.",".............hsh","............hsh.","...........hsh..","..........hsh...",".........hsh....","........hsh.....",".......hsh......","......GGGGG.....",".....GoooG......",".......B........","......BBB.......",".......B........","......GGG.......","................","................"]},
-{n:"정밀 조준경",p:{"g":"#378add","w":"#cce4ff","h":"#5f5e5a"},g:["................","...gggg.........","..g....g........",".g..ww..g.......",".g.w....g.......","g.......g.......","g.......g.......","g.......g.......",".g.....g........","..g...gg........","...gggg.hh......",".......h.hh.....","........h.hh....",".........h.hh...","..........h.h...","................"]},
-{n:"한 방 망치",p:{"s":"#a9b2bf","h":"#eef2f8","d":"#5f5e5a","B":"#7c4f2c"},g:["................","...ssssssss.....","..ssssssssss....","..shsssssssd....","..ssssssssssd...","..ssssssssssd...","....ddsBBsdd....","......BBBB......","......BBBB......",".......BB.......",".......BB.......",".......BB.......",".......BB.......",".......BB.......","................","................"]},
-{n:"네잎클로버",p:{"g":"#639922","h":"#aee05a","c":"#3b6d11","s":"#6b4a2b"},g:["................","...gg....gg.....","..gggg..gggg....",".ggggg..ggggg...",".gggggh.ggggg...","..gggg..gggg....","....g.cc.g......","..gggg..gggg....",".ggggg..ggggg...",".ggggg..ggggg...","..gggg..gggg....","...gg.ss.gg.....",".....ss.........","......s.........","................","................"]},
-{n:"수상한 에너지드링크",p:{"c":"#d3d1c7","l":"#f7a8ab","L":"#e24b4a","s":"#85b7eb"},g:["................","..........ss....",".........ss.....","........ss......",".......ss.......","..ccccccccc.....","..clllllllc.....","..cLLLLLLLc.....","..cLLLLLLLc.....","..cLLLLLLLc.....","...cLLLLLc......","...cLLLLLc......","....ccccc.......","................","................","................"]},
-{n:"아드레날린 주사",p:{"p":"#888780","b":"#b4b2a9","L":"#ffd24a","n":"#c8ccd4"},g:["................","................","..p.............","..p.bbbbbbbb....","..p.bLLLLLLb....","..pppLLLLLLb.nnn","..p.bLLLLLLb....","..p.bbbbbbbb....","..p.............","................","................","................","................","................","................","................"]},
-{n:"가속 탄두",p:{"Y":"#ffd24a","o":"#d9971f","w":"#fff2b0"},g:["................","........YY......",".......YYo......","......YYo.......",".....YYo........","....YYYYo.......","...YYYYYo.......","...wYYYo........",".....YYo........","....YYo.........","...YYo..........","..YYo...........",".YYo............",".Yo.............","................","................"]},
-{n:"세 갈래 포크",p:{"s":"#c8ccd4","d":"#888780"},g:["................","...s..s..s......","...s..s..s......","...s..s..s......","...sssssss......","....sssss.......",".....sss........",".....sss........",".....sss........",".....sss........",".....sss........",".....sss........",".....sss........",".....sss........","................","................"]},
-{n:"사두 작살",p:{"s":"#a9b2bf","G":"#e0b341","d":"#5f5e5a"},g:["................",".s...s...s...s..",".s...s...s...s..",".ss..s...s..ss..","..s..s...s..s...","..sssssssssss...","......GGG.......",".......s........",".......s........",".......s........",".......s........",".......s........","......ddd.......","................","................","................"]},
-{n:"백발백중 등총",p:{"h":"#85b7eb","s":"#cce4ff"},g:["................","................","....h.....h.....","...hh.....hh....","..hhhsssssshhh..","...hh.....hh....","....h.....h.....","................","................","................","................","................","................","................","................","................"]},
-{n:"유도의 눈",p:{"w":"#eef2f8","b":"#85b7eb","B":"#378add","p":"#042c53"},g:["................","................","....wwwwww......","..wwwwwwwwww....",".wwwwbbbbwww....",".wwwbBBBBbww....","wwwbBBppBBbww...",".wwwbBBBBbww....",".wwwwbbbbww.....","..wwwwwwww......","....wwww........","................","................","................","................","................"]},
-{n:"탱탱볼 코어",p:{"R":"#e24b4a","h":"#f7a8ab","d":"#a32d2d","a":"#85b7eb"},g:["................","................","......ddd.......",".....dRRRd......",".....dRhRd......",".....dRRRd......","......ddd.......",".......a.......",".....a...a.....","....a.....a....","................","................","................","................","................","................"]},
-{n:"슈퍼 탱탱볼",p:{"P":"#7f77dd","h":"#cecbf6","d":"#3c3489","a":"#85b7eb"},g:["................","................","......ddd.......",".....dPPPd......",".....dPhPd......",".....dPPPd......","......ddd.......","....a.....a.....","...a.......a....","..a.........a...",".a...........a..","................","................","................","................","................"]},
-{n:"꼬치 막대기",p:{"O":"#e8c39a","h":"#fff2d8","p":"#ed93b1","s":"#7c4f2c"},g:["................",".......s........",".......s........","....OOOOOO......","...OOOOOOOO.....","...OOhOOpOO.....","...OOOOpOOO.....","...OOOOOOOO.....","....OOOOOO......",".......s........",".......s........",".......s........",".......s........","................","................","................"]},
-{n:"긴 꼬치",p:{"p":"#f4c0d1","g":"#c0dd97","w":"#eef2f8","s":"#7c4f2c"},g:["................",".......s........",".....ppppp......",".....ppppp......",".....ppppp......",".......s........",".....ggggg......",".....ggggg......",".....ggggg......",".......s........",".....wwwww......",".....wwwww......",".....wwwww......",".......s........","................","................"]},
-{n:"기절의 종",p:{"a":"#854f0b","y":"#ef9f27","w":"#fac775"},g:["................",".......y........","......yyy.......",".....ywwwy......","....ywwwwwy.....","...ywwwwwwwy....","...ywwwwwwwy....","..ywwwwwwwwwy...","..ywwwwwwwwwy...",".ayyyyyyyyyyya..","................",".......aa.......","......ayya......",".......aa.......","................","................"]},
-{n:"연쇄 폭탄",p:{"K":"#2c2c2a","h":"#5f5e5a","y":"#ffd24a","o":"#ef9f27","w":"#fff2b0"},g:["................","...........w....","..........yw....",".........yo.....","........y.......",".......w........","....KKKKKK......","...KKKKKKKK.....","..KKKKKKKKKK....","..KKhKKKKKKK....","..KKKKKKKKKK....","..KKKKKKKKKK....","...KKKKKKKK.....","....KKKKKK......","................","................"]},
-{n:"곰팡이 핀 식빵",p:{"c":"#b07c4a","h":"#f0d9a8","m":"#639922"},g:["................","................","....ccccccc.....","...ccccccccc....","..cchhhhhhcc....","..chhmhhhhhc....",".cchhhhhhhhcc...",".chhhhhhmhhc....",".chhhhhhhhhhc...",".chhmhhhhhhc....",".cchhhhhhhhcc...","..cccccccccc....","................","................","................","................"]},
-{n:"거대한 심장",p:{"H":"#e24b4a","o":"#ef9f27","w":"#fff2b0"},g:["................",".....o..o......","....ooo.ooo.....","...HH.ooo.HH....","..HHHHoooHHHH...","..HHHHHHHHHHHH..","..HHHHHHHHHHHH..","...HHHHHHHHHH...","....HHHHHHHH....",".....HHHHHH.....","......HHHH......",".......HH.......","................","................","................","................"]},
-{n:"자연의 가호",p:{"g":"#3b6d11","l":"#7cbf2e","h":"#aee05a","s":"#6b4a2b"},g:["................",".......l........","......lhl.......",".....lhhhl......","....lhhglhl.....","...lhglllghl....","...lhlllllhl....","....lhgllhl.....",".....glhlg......","......sss.......",".......s........",".......s........",".......s........","......sss.......","................","................"]},
-{n:"강철 피부",p:{"s":"#888780","h":"#b4b2a9","d":"#5f5e5a"},g:["................","................",".....sssss......","...ssssssss.....","..ssshsssss.s...",".ssshhhssssss...",".ssssssssssss...",".ssssssssssss...",".sssssssssssd...",".ssssssssssdd...","..dddddddddd....","................","................","................","................","................"]},
-{n:"모기향 (역효과)",p:{"K":"#2c2c2a","w":"#b5d4f4"},g:["................","...w......w.....","..ww......ww....","..ww.KKK..ww....","...wKKKKKw......","....KKKKK.......","....KKKKK.......","...K.KKK.K......","..K..KKK..K.....",".K...KKK...K....",".....K.........","....K..........","...K...........","................","................","................"]},
-{n:"흡혈귀 송곳니",p:{"K":"#2c2c2a","r":"#e24b4a"},g:["................","................","K....KKKK....K..","KK..KKKKKK..KK..","KKKKKKKKKKKKKK..",".KKKKKKKKKKKK...","..KKKrKKrKKK....","...KKKKKKKK.....","....KKKKKK......",".....KKKK.......","......KK........","................","................","................","................","................"]},
-{n:"수호천사",p:{"Y":"#e0b341","w":"#eef2f8","o":"#9a6a1d"},g:["................","....YYYYYY......","...Yo....oY.....","...Y......Y.....","...Yo....oY.....","....YYYYYY......","................","...w......w.....","..ww.wwww.ww....",".ww.wwwwww.ww...","..w.wwwwww.w....","....wwwwww......",".....wwww.......","................","................","................"]},
-{n:"선제 방패",p:{"d":"#274a6e","f":"#4f86c6","h":"#9cc4ee"},g:["................","...dddddddd.....","..dffffffffd....","..dfhffffffd....","..dffffffffd....","..dffffffffd....","..dffffffffd....","...dffffffd.....","...dffffffd.....","....dffffd......","....dffffd......",".....dffd.......","......dd........","................","................","................"]},
-{n:"한 짝뿐인 운동화",p:{"B":"#d85a30","w":"#eef2f8","d":"#993c1d"},g:["................","......w.........","....wwww........","..wwww..BB......",".ww....BBBB.....","......BBBBBB....","......BBBBBB....","......BBBBBB....",".....BBBBBBB....","....BBBBBBBBB...","...BBBBBBBBBBB..","..wwwwwwwwwwww..","..wddddddddddw.","................","................","................"]},
-{n:"베인Q 숙련",p:{"p":"#5dcaa5","h":"#9fe1cb"},g:["................",".....ppppp......","...pp.....pp....","..p.........p...",".p...........p..",".p....p..p...pp.",".p...........ppp",".p...........p..","..p.........p...","...pp.....pp....",".....ppppp......","................","................","................","................","................"]},
-{n:"강력 자석",p:{"R":"#e24b4a","s":"#c8ccd4","h":"#eef2f8","d":"#a32d2d"},g:["................","...RRRRRRRRRR...","..RRRRRRRRRRRR..","..RRRd....dRRR..","..RRRd....dRRR..","..RRRd....dRRR..","..RRRd....dRRR..","..RRRd....dRRR..","..RRRd....dRRR..","..RRRd....dRRR..","..sss......sss..","..sss......sss..","..hhs......shh..","................","................","................"]},
-{n:"초강력 자석",p:{"Y":"#ffd24a","w":"#fff2b0"},g:["................",".......Y........",".......Y........","......YYY.......","......YYY.......","..YYYYYwYYYYY...","...YYYYwYYYY....","....YYYwYYY.....","....YYYYYYY.....","...YYYY.YYYY....","..YYY....YYY....","..YY......YY....","................","................","................","................"]},
-{n:"황금 돼지 저금통",p:{"P":"#f4c0d1","S":"#ed93b1","n":"#993556","d":"#72243e"},g:["................","................","...d......d.....","..PP......PP....",".PPPPPPPPPPPP...",".PPPPddddPPPP...",".PPPPPPPPPPPPP..","PPnPPPPPPPPPnP..","PPPPPPPPPPPPPP..","PPPPPPSSPPPPPP..","PPPPPPnnPPPPPP..",".PPPPPPPPPPPP...","..P.PP..PP.P...","..P.PP..PP.P...","................","................"]},
-{n:"경험의 서",p:{"b":"#378add","w":"#eef2f8","l":"#888780"},g:["................","................","...bb....bb.....","..bwwb..bwwb....",".bwwwwbbwwwwb...",".bwllwbbwllwb...",".bwwwwbbwwwwb...",".bwllwbbwllwb...",".bwwwwbbwwwwb...",".bwllwbbwllwb...",".bwwwwbbwwwwb...",".bbbbbbbbbbbb...","................","................","................","................"]},
-{n:"비상용 물약 벨트",p:{"c":"#7c4f2c","n":"#b5d4f4","g":"#b5d4f4","L":"#97c459"},g:["................","......cccc......","......cccc......",".......nn.......",".......nn.......","......gLLg......",".....gLLLLg.....","....gLLLLLLg....","...gLLLLLLLLg...","...gLLLLLLLLg...","...gLLLLLLLLg...","...gLLLLLLLLg...","....gLLLLLLg....",".....gLLLLg.....","......gggg......","................"]},
-{n:"유리 대포",p:{"P":"#7f77dd","w":"#eef2f8","p":"#534ab7","s":"#9a6a1d"},g:["................",".....ppppp......","...ppPPPPPpp....","..pPPwwPPPPPp...","..pPwwPPPPPPp...",".pPPPPPPPPPPPp..",".pPPPPPPPPPPPp..",".pPPPPPPPPPPPp..","..pPPPPPPPPPp...","...ppPPPPPpp....",".....ppppp......","....sssssss.....","...sssssssss....","................","................","................"]},
-{n:"광전사의 분노",p:{"R":"#b51d2d","r":"#e24b4a","w":"#f7a8ab","d":"#791f1f"},g:["................",".......d........",".......d........","......drd.......","......drd.......",".....drRrd......",".....drRrd......","....drRRRrd.....","...drRRRRRrd....","...drRwRRRrd....","...drRwRRRrd....","...drRRRRRrd....","....drRRRrd.....",".....dddrd......",".......dd.......","................"]},
-{n:"무거운 탄약",p:{"K":"#2c2c2a","s":"#888780"},g:["................","................","................",".KK........KK...","KKKK......KKKK..","KKKK......KKKK..","KKKKssssssKKKK..","KKKKssssssKKKK..","KKKK......KKKK..","KKKK......KKKK..",".KK........KK...","................","................","................","................","................"]},
-{n:"예민한 방아쇠",p:{"K":"#444441","h":"#888780"},g:["................","................","..KKKKKKKKKK....","..KhKKKKKKKK....","..KKKKKKKKKKK...","..KKK..KKKKK....","..KKK.K........","..KKKKK........","...KKKK........","...KKKK........","...KKKK........","................","................","................","................","................"]},
-{n:"강한 반동",p:{"w":"#85b7eb","h":"#b5d4f4","d":"#185fa5"},g:["................","..hhhhhhhhhh....","...wwwwwwww.....","...dwwwwwd......","....wwwww.......","....dwwwd.......",".....wwww.......","......www.......",".....ddw........","......ww........",".......w........",".......d........","................","................","................","................"]},
-{n:"치트키 (가짜)",p:{"d":"#2c2c2a","w":"#b4b2a9"},g:["................","................","................","..dddddddddddd..","..dwdwdwdwdwdd..","..dddddddddddd..","..dwdwdwdwdwdd..","..dddddddddddd..","..dwwwwwwwwwdd..","..dddddddddddd..","................","................","................","................","................","................"]},
-{n:"모 아니면 도",p:{"w":"#eef2f8","K":"#2c2c2a"},g:["................","....wwwwww......","...wwwwwwww.....","..wwwwwwwwww....","..wwKKwwKKww....","..wwKKwwKKww....","..wwwwwwwwww....","...wwwKKwww.....","...wwwwwwww.....","....wKwKwKw.....","....wwwwwww.....","................","................","................","................","................"]},
-{n:"더 얇은 유리",p:{"b":"#7c4f2c","G":"#b5d4f4","w":"#eef2f8"},g:["................","................","..bbbbbbbbbbbb..","..bGGGGbGGGGGb..","..bGwGGbGGGGGb..","..bGGGGbGGGGGb..","..bbbbbbbbbbbb..","..bGGGGbGGGGGb..","..bGGGGbGGGGGb..","..bGGGGbGGGGGb..","..bbbbbbbbbbbb..","................","................","................","................","................"]},
-{n:"시한폭탄 심장",p:{"d":"#444441","w":"#eef2f8","r":"#e24b4a"},g:["................",".......dd.......",".....dddddd.....","....dwwwwwwd....","...dwwwwwwwwd...","...dwwwrwwwwd...","...dwwwrwwwwd...","...dwwwrrrwwd...","...dwwwwwwwwd...","....dwwwwwwd....",".....dddddd.....","................","................","................","................","................"]},
-{n:"탐욕의 손",p:{"G":"#e0b341","d":"#9a6a1d","Y":"#fff0b8"},g:["................","................","..GGGGGGGGGG....","..GddddddddG....","..Gd..YY..dG....","..Gd.Y..Y.dG....","..Gd..YY..dG....","..Gd....Y.dG....","..Gd.Y..Y.dG....","..Gd..YY..dG....","..GddddddddG....","..GGGGGGGGGG....","................","................","................","................"]},
-{n:"미끄러운 신발",p:{"c":"#85b7eb","h":"#cce4ff","w":"#ffffff"},g:["................","................","...cccccccc.....","..chhhhhhhhc....","..chwhhhhhhc....","..chhhhhhhhc....","..chhhhhhhhc....","..chhhhhhhhc....","..chhhhhhhhc....","..chhhhhhhhc....","...cccccccc.....","................","................","................","................","................"]},
-{n:"유리 다리",p:{"s":"#b5d4f4","w":"#eef2f8"},g:["................","......ssss......","......ssss......","......ssss......","......ssss......","......ssss......","......ssss......","......ssss......","......ssss......","......ssss......","......ssss......","......ssssss....","......ssssssss..","......ssss......","................","................"]},
-{n:"거북이 등딱지",p:{"S":"#639922","d":"#3b6d11","l":"#27500a","g":"#97c459"},g:["................","................","........gg......","...l..SSSSSS..l.","..ll.SSdSdSSS.l.",".....SdSdSdS....",".....SSdSdSS....","..ll.SSSSSS..ll.","...l........l...","................","................","................","................","................","................","................"]},
-{n:"올인",p:{"d":"#444441","w":"#eef2f8","r":"#e24b4a","L":"#888780","o":"#e24b4a","G":"#e0b341"},g:["................","...dddddddd.....","..dddddddddd.o..","..dwwwwwwwwd.L..","..dwrwrwrwwd.L..","..dwwwwwwwwd.L..","..dddddddddd....","..d.dddddd.d....","..d.dGdGd..d....","..dddddddddd....","...d......d.....","................","................","................","................","................"]},
-{n:"도박꾼의 주사위",p:{"w":"#eef2f8","d":"#e24b4a"},g:["................","................","...wwwwwwww.....","..wwwwwwwwww....","..wdwwwwwwdw....","..wwwwwwwwww....","..wwwwddwwww....","..wwwwddwwww....","..wdwwwwwwdw....","..wwwwwwwwww....","...wwwwwwww.....","................","................","................","................","................"]},
-{n:"저주받은 가면",p:{"r":"#e24b4a","W":"#ffffff","K":"#2c2c2a","w":"#eef2f8"},g:["................","..rrrrrrrrrr....",".rrrrrrrrrrrr...",".rWWrrrrrrWWr...",".rWKrrrrrrKWr...",".rrrrrKKrrrrr...",".rrrrrrrrrrrr...","..rrrrKKrrrr....","...rrrKKrrr.....","....rrrrrr......","....wwwwww......","....wKwKww......",".....wwww.......","................","................","................"]}];
 // 16×16 픽셀 그리드 → data URL 렌더 (업로드된 픽셀아트 세트)
 function pixNormName(s){ return (s||'').replace(/\s+/g,''); }
 function miniPixelIconData(name,c,c2,mark){
@@ -752,17 +699,6 @@ function miniPixelIconSrc(c,c2,mark){
   d.g.forEach((row,y)=>{ for(let x=0;x<16;x++){ const ch=row[x]; if(ch&&ch!=='.'&&d.p[ch]){ cx.fillStyle=d.p[ch]; cx.fillRect(x,y,1,1); } } });
   return MINI_PIX_SRC_CACHE[key]=cv.toDataURL('image/png');
 }
-const EXTRA_RELIC_PIX=[
-  ['모기향(역효과)','#2a2638','#b9f2ff','fang'],['키죠의 가면','#402443','#f4efff','mask'],['시청자 학살자의 마이크','#34233c','#ffdf6b','mic'],['금욕의 성배','#3a2a22','#ffd86b','cup'],
-  ['채팅창 분쇄기','#31354a','#f4f8ff','scroll'],['혜철이의 알','#3b3046','#fff3bd','egg'],['박제인의 검은 실','#2d2135','#9ee4ff','thread'],['승우의 깨진 모니터','#1d3044','#7ee7ff','monitor'],
-  ['무빙의 잔상','#172c42','#9ef4ff','wind'],['딸피의 심장','#3d1d35','#ff6d8d','heart'],['클립각 회피본능','#252a42','#86eaff','film'],['수집가의 진열장','#32273f','#ffd363','case'],
-  ['신화 보관함','#302043','#ffc95a','vault'],['저주의 왕관','#3b1d36','#ffcf5e','crown'],['방향성 나침반','#25314b','#80e5ff','compass'],['큰손 카드','#2f2543','#ffe38a','card'],
-  ['무소비의 지갑','#2d2639','#dcb36a','wallet'],['하드코어 송출기','#301f37','#ff6b8b','tower'],['무피격의 날개','#26314b','#e9fbff','wing'],['번개의 병','#1d3242','#72e5ff','bottle'],
-  ['기괴한 가면','#36213f','#ff8ee4','mask'],['피의 성배','#3d1b2c','#ff6681','cup'],['공허의 심장','#211b36','#9c7cff','void'],['수호자의 방패','#26314a','#8ed6ff','shield'],
-  ['탐욕의 반지','#342a22','#ffd85b','ring'],['폭발 탄환','#3b2630','#ff9161','bullet'],['시간 왜곡기','#25213f','#b9a2ff','clock'],['낡은 군화','#332b28','#c59b72','boot'],
-  ['이상한 버섯','#302341','#ff7b86','mushroom'],['사냥꾼의 눈','#1f3040','#92e7ff','eye'],['응급 키트','#293246','#f7f9ff','kit'],['치트키(가짜)','#262435','#d6d9e7','keyboard'],
-  ['악마의 계약','#3d1e2c','#ff6a7f','contract'],['죽음의 서약','#242436','#f1f2f7','skull'],['피의 갈증','#3d1b27','#ff5c73','fang']
-];
 EXTRA_RELIC_PIX.forEach(([n,c,c2,m])=>{ if(!RELIC_PIXDATA.some(d=>pixNormName(d.n)===pixNormName(n))) RELIC_PIXDATA.push(miniPixelIconData(n,c,c2,m)); });
 const RELIC_PIX={};
 (function buildRelicPix(){
@@ -1152,129 +1088,6 @@ let leaderboardSplitReadDenied=false;
 let leaderboardSplitWriteDenied=false;
 const USER_PROGRESS_COLLECTION='user_progress';
 const USER_PROGRESS_LOCAL_KEY='btvUserProgressBackup';
-const START_BONUS_REWARDS={
-  first_play:'시작 골드 +10',
-  first_kill:'시작 골드 +10',
-  kill_100:'시작 골드 +30',
-  kill_500:'시작 골드 +30',
-  gold_1000:'시작 골드 +30',
-  clear_act1:'시작 포션 +1',
-  clear_act2:'시작 XP +30',
-  level_20:'시작 XP +20',
-  berserk_kill:'시작 XP +10',
-  legend_exists:'시작 XP +10',
-  mythic_exists:'시작 XP +10',
-  greedy_exists:'시작 골드 +10',
-  chosen_broadcast:'시작 XP +10',
-  quick_room_clear:'시작 XP +10',
-  lonely_intruder:'시작 골드 +10',
-  one_hp_survive:'시작 최대 체력 +5',
-  clear_game:'시작 트리포인트 +1'
-};
-const ACHIEVEMENT_RELIC_IDS=[
-  'kijo_mask','viewer_slayer_mic','abstinence_chalice','chat_window_grinder',
-  'hyechul_egg','yanggaeng_black_thread','seungwoo_broken_monitor','moving_afterimage',
-  'clutch_heart','clip_dodge_instinct','collector_showcase','mythic_vault','curse_crown',
-  'direction_compass','whale_card','no_spend_wallet','hardcore_transmitter','nohit_wings'
-];
-const ACHIEVEMENTS=[
-  {id:'first_play',name:'첫 방송',desc:'처음 게임을 시작한다.',reward:'시작 골드 +10'},
-  {id:'first_kill',name:'첫 처치',desc:'처음으로 시청자를 처치한다.',reward:'시작 골드 +10'},
-  {id:'kill_100',name:'100 처치',desc:'누적 처치 100회를 달성한다.',reward:'시작 골드 +30'},
-  {id:'kill_500',name:'500 처치',desc:'누적 처치 500회를 달성한다.',reward:'시작 골드 +30'},
-  {id:'kill_1000',name:'1000 처치',desc:'누적 처치 1000회를 달성한다.',reward:'유물 해금: 시청자 학살자의 마이크'},
-  {id:'kill_3000',name:'3000 처치',desc:'누적 처치 3000회를 달성한다.',reward:'유물 해금: 채팅창 분쇄기'},
-  {id:'defeat_kijo',name:'키죠 격파',desc:'키죠를 쓰러뜨린다.',reward:'유물 해금: 키죠의 가면',spoiler:true,spoilerTerms:['키죠'],hiddenName:'??? 격파',hiddenDesc:'???를 쓰러뜨린다.',hiddenRelicName:'???의 가면'},
-  {id:'defeat_hyechul',name:'혜철이 격파',desc:'혜철이를 쓰러뜨린다.',reward:'유물 해금: 혜철이의 알',spoiler:true,spoilerTerms:['혜철이'],hiddenName:'??? 격파',hiddenDesc:'???를 쓰러뜨린다.',hiddenRelicName:'???의 알'},
-  {id:'defeat_yanggaeng',name:'박제인간 격파',desc:'박제인간을 쓰러뜨린다.',reward:'유물 해금: 박제인의 검은 실',spoiler:true,spoilerTerms:['박제인간','박제인'],hiddenName:'??? 격파',hiddenDesc:'???을 쓰러뜨린다.',hiddenRelicName:'???의 검은 실'},
-  {id:'clear_act1',name:'1막 클리어',desc:'1막 보스를 격파한다.',reward:'시작 포션 +1'},
-  {id:'clear_act2',name:'2막 클리어',desc:'2막 보스를 격파한다.',reward:'시작 XP +30'},
-  {id:'defeat_seungwoo',name:'승우 격파',desc:'승우를 쓰러뜨린다.',reward:'유물 해금: 승우의 깨진 모니터',spoiler:true,spoilerTerms:['승우'],hiddenName:'??? 격파',hiddenDesc:'???를 쓰러뜨린다.',hiddenRelicName:'???의 깨진 모니터'},
-  {id:'clear_game',name:'게임 클리어',desc:'최종 보스를 쓰러뜨리고 방송을 지킨다.',reward:'시작 트리포인트 +1'},
-  {id:'hard_clear',name:'어려움 클리어',desc:'어려움 난이도로 게임을 클리어한다.',reward:'유물 해금: 하드코어 송출기'},
-  {id:'no_potion_clear',name:'무포션 클리어',desc:'포션을 사용하지 않고 게임을 클리어한다.',reward:'유물 해금: 금욕의 성배'},
-  {id:'no_hit_boss',name:'노히트 보스',desc:'보스 전투를 한 대도 맞지 않고 클리어한다.',reward:'유물 해금: 무피격의 날개'},
-  {id:'no_hit_room',name:'무피격 방 클리어',desc:'일반 전투를 한 대도 맞지 않고 클리어한다.',reward:'유물 해금: 무빙의 잔상'},
-  {id:'clutch_room',name:'딸피 클리어',desc:'체력 10% 이하로 방을 클리어한다.',reward:'유물 해금: 딸피의 심장'},
-  {id:'one_hp_survive',name:'1 HP 생존',desc:'체력 1 상태로 생존하거나 방을 클리어한다.',reward:'시작 최대 체력 +5'},
-  {id:'low_hit_clear',name:'클린 클리어',desc:'피격 5회 이하로 게임을 클리어한다.',reward:'유물 해금: 클립각 회피본능'},
-  {id:'relic_10',name:'수집가',desc:'한 런에서 유물 10개를 보유한다.',reward:'유물 해금: 수집가의 진열장'},
-  {id:'mythic_3',name:'신화 보관자',desc:'한 런에서 신화 유물 3개를 보유한다.',reward:'유물 해금: 신화 보관함'},
-  {id:'curse_3_clear',name:'저주받은 클리어',desc:'저주 유물 3개 이상 보유하고 게임을 클리어한다.',reward:'유물 해금: 저주의 왕관'},
-  {id:'first_keystone',name:'첫 키스톤',desc:'패시브 트리 키스톤을 1개 해금한다.',reward:'유물 해금: 방향성 나침반'},
-  {id:'level_20',name:'레벨 20',desc:'한 런에서 20레벨을 달성한다.',reward:'시작 XP +20'},
-  {id:'berserk_kill',name:'분노를 잠재우다',desc:'광폭화된 적을 처치한다.',reward:'시작 XP +10',spoiler:true,hiddenName:'???',hiddenDesc:'???'},
-  {id:'legend_exists',name:'전설은 실존한다',desc:'첫 특성 선택지에서 전설 특성을 발견한다.',reward:'시작 XP +10',spoiler:true,hiddenName:'???',hiddenDesc:'???'},
-  {id:'mythic_exists',name:'신화는 실존한다',desc:'첫 특성 선택지에서 신화 특성을 발견한다.',reward:'시작 XP +10',spoiler:true,hiddenName:'???',hiddenDesc:'???'},
-  {id:'greedy_exists',name:'욕심은 실존한다',desc:'첫 특성 선택지에서 전설/신화 특성이 2개 이상 등장한다.',reward:'시작 골드 +10',spoiler:true,hiddenName:'???',hiddenDesc:'???'},
-  {id:'chosen_broadcast',name:'선택받은 방송',desc:'첫 특성 선택지 3개가 모두 영웅 이상으로 등장한다.',reward:'시작 XP +10',spoiler:true,hiddenName:'???',hiddenDesc:'???'},
-  {id:'quick_room_clear',name:'한 방 컷',desc:'일반 전투를 10초 이내에 클리어한다.',reward:'시작 XP +10',spoiler:true,hiddenName:'???',hiddenDesc:'???'},
-  {id:'lonely_intruder',name:'혼자 왔니?',desc:'존버 난입 시청자를 처치한다.',reward:'시작 골드 +10',spoiler:true,hiddenName:'???',hiddenDesc:'???'},
-  {id:'gold_1000',name:'천 골드',desc:'한 런에서 골드 1000 이상을 보유한다.',reward:'시작 골드 +30'},
-  {id:'shop_spend_1000',name:'큰손',desc:'상점에서 누적 1000G를 사용한다.',reward:'유물 해금: 큰손 카드'},
-  {id:'no_shop_clear',name:'무소비 클리어',desc:'상점 구매 없이 게임을 클리어한다.',reward:'유물 해금: 무소비의 지갑'},
-];
-const ACHIEVEMENT_CATEGORY_ORDER=['progress','kills','bosses','combat','build','economy','clear'];
-const ACHIEVEMENT_CATEGORY_LABELS={
-  progress:'진행',
-  kills:'처치',
-  bosses:'보스',
-  combat:'전투 도전',
-  build:'빌드',
-  economy:'경제',
-  clear:'클리어 도전'
-};
-const ACHIEVEMENT_CATEGORIES={
-  first_play:'progress',first_kill:'progress',clear_act1:'progress',clear_act2:'progress',level_20:'progress',
-  kill_100:'kills',kill_500:'kills',kill_1000:'kills',kill_3000:'kills',
-  defeat_kijo:'bosses',defeat_hyechul:'bosses',defeat_yanggaeng:'bosses',defeat_seungwoo:'bosses',
-  no_hit_boss:'combat',no_hit_room:'combat',clutch_room:'combat',one_hp_survive:'combat',berserk_kill:'combat',legend_exists:'combat',mythic_exists:'combat',greedy_exists:'combat',chosen_broadcast:'combat',quick_room_clear:'combat',lonely_intruder:'combat',
-  relic_10:'build',mythic_3:'build',curse_3_clear:'build',first_keystone:'build',
-  gold_1000:'economy',shop_spend_1000:'economy',
-  clear_game:'clear',hard_clear:'clear',no_potion_clear:'clear',low_hit_clear:'clear',no_shop_clear:'clear'
-};
-const TITLE_REWARDS={
-  first_play:{id:'first_broadcast',name:'첫방송'},
-  first_kill:{id:'rookie_hunter',name:'초보사냥꾼'},
-  kill_3000:{id:'chat_grinder',name:'채팅 분쇄자'},
-  defeat_kijo:{id:'mask_breaker',name:'가면 파쇄자'},
-  defeat_hyechul:{id:'egg_hunter',name:'알 사냥꾼'},
-  defeat_yanggaeng:{id:'black_thread_cutter',name:'검은 실 절단자'},
-  defeat_seungwoo:{id:'monitor_breaker',name:'모니터 브레이커'},
-  clear_game:{id:'broadcast_survivor',name:'방송생존자'},
-  hard_clear:{id:'hardcore_broadcaster',name:'하드코어 송출자'},
-  no_potion_clear:{id:'dry_clearer',name:'무포션 수행자'},
-  no_hit_boss:{id:'nohit_master',name:'노히트장인'},
-  no_hit_room:{id:'moving_master',name:'무빙 장인'},
-  clutch_room:{id:'clutch_survivor',name:'딸피 생존자'},
-  low_hit_clear:{id:'clip_dodger',name:'클립각 회피자'},
-  relic_10:{id:'showcase_owner',name:'진열장 주인'},
-  mythic_3:{id:'mythic_keeper',name:'신화 보관자'},
-  curse_3_clear:{id:'curse_crowned',name:'저주받은 왕관'},
-  shop_spend_1000:{id:'big_spender',name:'큰손 후원자'},
-  no_shop_clear:{id:'no_spend_ascetic',name:'무소비 수행자'}
-};
-const TITLE_LIST=Object.values(TITLE_REWARDS);
-const RELIC_REWARDS={
-  defeat_kijo:'kijo_mask',
-  kill_1000:'viewer_slayer_mic',
-  no_potion_clear:'abstinence_chalice',
-  kill_3000:'chat_window_grinder',
-  defeat_hyechul:'hyechul_egg',
-  defeat_yanggaeng:'yanggaeng_black_thread',
-  defeat_seungwoo:'seungwoo_broken_monitor',
-  no_hit_room:'moving_afterimage',
-  clutch_room:'clutch_heart',
-  low_hit_clear:'clip_dodge_instinct',
-  relic_10:'collector_showcase',
-  mythic_3:'mythic_vault',
-  curse_3_clear:'curse_crown',
-  first_keystone:'direction_compass',
-  shop_spend_1000:'whale_card',
-  no_shop_clear:'no_spend_wallet',
-  hard_clear:'hardcore_transmitter',
-  no_hit_boss:'nohit_wings'
-};
 let userProgress={
   uid:null,
   achievements:{},
@@ -3686,6 +3499,7 @@ let hazards=[];
 let kijoMasks=[], kijoGazes=[], kijoParades=[], kijoLaserWarns=[];
 let stallTimer=0, stallWarned=false, stallRegenWarned=false, stallRaged=false, stallReinforced=false;
 let tierIntroShown=false;
+let treeIntroShown=false;
 let screenShake=0, hitFlash=0;
 // ── 이벤트 → 다음 전투/보상에 적용되는 모디파이어 ──
 let nextCombatMods=null;      // {hpMul,spdMul,atkMul,cntMul,fireHandicap,rewardMul,ally,challenge,specialReward,banner}
@@ -3759,10 +3573,12 @@ function updateHUD(){
     if(treePoints>0){
       treeBadge.style.display='inline-block';
       treeBadge.textContent=treePoints;
-      treeBtn.classList.add('tree-btn-glow');
+      treeBtn.classList.add('has-points','tree-btn-glow');
+      treeBadge.classList.add('has-points');
     } else {
       treeBadge.style.display='none';
-      treeBtn.classList.remove('tree-btn-glow');
+      treeBtn.classList.remove('has-points','tree-btn-glow');
+      treeBadge.classList.remove('has-points');
     }
   }
 }
@@ -3841,7 +3657,7 @@ function snapshotProgress(){
     xp, level, xpNext, pendingLevels, gold, totalKills,
     runStats:getRunStatsSnapshot(),
     runShopPurchases, runShopSpent,
-    treePoints, treeUnlocked: new Set(treeUnlocked),
+    treePoints, treeUnlocked: new Set(treeUnlocked), treeIntroShown,
     player:Object.assign({}, player, {
       relics:player.relics.slice(),
       perkIds:(player.perkIds||[]).slice(),
@@ -3859,6 +3675,7 @@ function restoreProgress(){
   runShopPurchases=Number(s.runShopPurchases)||0;
   runShopSpent=Number(s.runShopSpent)||0;
   if(s.treePoints!=null){ treePoints=s.treePoints; treeUnlocked=new Set(s.treeUnlocked); }
+  treeIntroShown=!!s.treeIntroShown;
   Object.assign(player, s.player, {
     relics:s.player.relics.slice(),
     perkIds:(s.player.perkIds||[]).slice(),
@@ -3964,7 +3781,7 @@ function saveRunCheckpoint(){
       diffKey:diffSet&&diffSet.key?diffSet.key:'easy',
       act,currentRow,kills,totalKills,gold,level,xp,xpNext,pendingLevels,retries,runHits,runShopPurchases,runShopSpent,elapsed,
       runStats:getRunStatsSnapshot(),
-      runPotionUsed,eliteViewerSpawns,tierIntroShown,shopIntroShown,
+      runPotionUsed,eliteViewerSpawns,tierIntroShown,treeIntroShown,shopIntroShown,
       treePoints,treeUnlocked:[...treeUnlocked],
       nextCombatMods:nextCombatMods?clonePlain(nextCombatMods):null,
       combatRewardMul,nextShopDiscount,nextGoldPenalty,
@@ -3988,7 +3805,7 @@ function loadRunCheckpoint(){
     gold=data.gold||0; level=data.level||1; xp=data.xp||0; xpNext=data.xpNext||20; pendingLevels=data.pendingLevels||0;
     retries=data.retries||0; runHits=data.runHits||0; runShopPurchases=data.runShopPurchases||0; runShopSpent=data.runShopSpent||0; runStats=normalizeRunStats(data.runStats); runStartedAt=performance.now()-(data.elapsed||0);
     runPotionUsed=!!data.runPotionUsed; eliteViewerSpawns=data.eliteViewerSpawns||0;
-    tierIntroShown=!!data.tierIntroShown; shopIntroShown=!!data.shopIntroShown;
+    tierIntroShown=!!data.tierIntroShown; treeIntroShown=!!data.treeIntroShown; shopIntroShown=!!data.shopIntroShown;
     treePoints=data.treePoints||0; treeUnlocked=new Set(data.treeUnlocked&&data.treeUnlocked.length?data.treeUnlocked:['hub']);
     nextCombatMods=data.nextCombatMods||null; combatRewardMul=data.combatRewardMul||1; nextShopDiscount=data.nextShopDiscount||0; nextGoldPenalty=data.nextGoldPenalty||0;
     restorePlayerFromSave(data.player);
@@ -8073,6 +7890,15 @@ function perkEntranceFx(picks){
     if(isMyth) setTimeout(()=>beep(1320,0.6,'triangle',0.045),210);
   }catch(e){}
 }
+function shouldShowTreeIntro(){
+  return !treeIntroShown && treePoints > 0 && state !== 'title' && state !== 'start';
+}
+function showTreeIntro(){
+  if(!shouldShowTreeIntro()) return false;
+  treeIntroShown=true;
+  show('treeIntro');
+  return true;
+}
 function showLevelUp(){
   if(!tierIntroShown){ tierIntroShown=true; show('tierIntro'); return; }
   const picks=rollPerks(3);
@@ -8111,7 +7937,9 @@ function pickLevelPerk(pk){
   if(id&&player.perkIds.indexOf(id)<0) player.perkIds.push(id);
   pk.apply(player); sfx.pick(); banner(pk.icon+' '+pk.name,'특성 획득',1100);
   pendingLevels--; updateHUD();
-  if(pendingLevels>0) showLevelUp(); else { hideAll(); state='play'; syncChrome(); }
+  if(pendingLevels>0) showLevelUp();
+  else if(showTreeIntro()) return;
+  else { hideAll(); state='play'; syncChrome(); }
 }
 // ---------- 일반 전투 보상 ----------
 const SMALL_REWARDS=[
@@ -10156,7 +9984,7 @@ function skipCutscene(){
 // ---------- 오버레이 제어 ----------
 
 // ===== JS: Overlay state machine and UI wiring =====
-const overlays={title:'ovTitle',start:'ovStart',map:'ovMap',relic:'ovRelic',shop:'ovShop',event:'ovEvent',inv:'ovInv',level:'ovLevel',reward:'ovReward',end:'ovEnd',ranking:'ovRanking',achievements:'ovAchievements',database:'ovDatabase',help:'ovHelp',story:'ovStory',entrance:'ovEntrance',tierIntro:'ovTierIntro',taunt:'ovTaunt',campfire:'ovCampfire'};
+const overlays={title:'ovTitle',start:'ovStart',map:'ovMap',relic:'ovRelic',shop:'ovShop',event:'ovEvent',inv:'ovInv',level:'ovLevel',reward:'ovReward',end:'ovEnd',ranking:'ovRanking',achievements:'ovAchievements',database:'ovDatabase',help:'ovHelp',story:'ovStory',entrance:'ovEntrance',tierIntro:'ovTierIntro',treeIntro:'ovTreeIntro',taunt:'ovTaunt',campfire:'ovCampfire'};
 function hideAll(){ if(typeof TooltipManager!=='undefined') TooltipManager.hideAll(); Object.values(overlays).forEach(id=>{ const el=$(id); if(el) el.classList.add('hidden'); }); if(typeof evStopScene==='function') evStopScene(); }
 function syncChrome(){ document.body.classList.toggle('title-mode', state==='title'||state==='start'); }
 function show(st){
@@ -11282,7 +11110,7 @@ function newGame(){
   unlockAchievement('first_play');
   applyStartBonuses();
   enemies=[];pBullets=[];eBullets=[];pickups=[];particles=[];boss=null;floatBubbles=[];lastKiller=null;
-  pendingNode=null; roomCleared=true; tierIntroShown=false; shopIntroShown=false; eliteViewerSpawns=0;
+  pendingNode=null; roomCleared=true; tierIntroShown=false; treeIntroShown=false; shopIntroShown=false; eliteViewerSpawns=0;
   tutorial={active:true,moved:false,shot:false,dodged:false,tabbed:false,doneAt:0};
   genMap();
   startTutorial();
@@ -11321,7 +11149,7 @@ function newGameSkip(){
   unlockAchievement('first_play');
   applyStartBonuses();
   enemies=[];pBullets=[];eBullets=[];pickups=[];particles=[];boss=null;floatBubbles=[];lastKiller=null;
-  pendingNode=null; roomCleared=true; tierIntroShown=false; shopIntroShown=false; eliteViewerSpawns=0;
+  pendingNode=null; roomCleared=true; tierIntroShown=false; treeIntroShown=false; shopIntroShown=false; eliteViewerSpawns=0;
   tutorial={active:false,moved:true,shot:true,dodged:true,tabbed:true,doneAt:0};
   tutorialMode=false; tutorialDoneFlag=true;
   genMap();
@@ -11385,6 +11213,8 @@ function wireMainControls(){
   $('skipTutBtn').onclick=()=>{ if(tutorialMode) finishTutorial(); };
   { const _scb=$('skipCutBtn'); if(_scb) _scb.onclick=skipCutscene; }
   $('tierIntroBtn').onclick=()=>{ showLevelUp(); };
+  { const tb=$('treeIntroOpenBtn'); if(tb) tb.onclick=()=>{ hideAll(); state='play'; syncChrome(); openTree(); }; }
+  { const tb=$('treeIntroLaterBtn'); if(tb) tb.onclick=()=>{ hideAll(); state='play'; syncChrome(); }; }
   $('helpBtn').onclick=()=>{ prevState=state; show('help'); };
   $('invClose').onclick=closeInventory;
   $('helpClose').onclick=()=>{ $('ovHelp').classList.add('hidden'); if(prevState&&prevState!=='help'){ if(overlays[prevState]&&prevState!=='play')show(prevState); else {hideAll();state=prevState;} } };
