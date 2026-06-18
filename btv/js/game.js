@@ -1012,7 +1012,7 @@ function handleEscape(e){
     resumeGame();
     return true;
   }
-  if(state==='play'){
+  if(state==='play'||state==='map'){
     if(recoverInvisiblePause()) return true;
     togglePause();
     return true;
@@ -1953,6 +1953,17 @@ function armorDisplayLabel(v){
 function armorDisplayValue(v){
   return (v<0?'+':'')+Math.round(Math.abs(v)*100)+'%';
 }
+function incomingDamageMul(p){
+  p=p||player;
+  return Math.max(0,(1-effectiveArmor(p))*curseDamageTakenMul(p));
+}
+function incomingDamageDisplayLabel(mul){
+  return mul>1?'받는 피해':'피해 감소';
+}
+function incomingDamageDisplayValue(mul){
+  const diff=Math.abs((Number(mul)||1)-1);
+  return (mul>1?'+':'')+Math.round(diff*100)+'%';
+}
 
 let specialEffectTooltipEl=null;
 let specialEffectTooltipTarget=null;
@@ -2322,8 +2333,11 @@ function getStatTooltipData(statKey){
   }else if(key==='armor'){
     const b=getArmorBreakdown();
     breakdown=specialPartsToText(b.parts,pct);
-    description='현재 받는 피해를 줄이거나 늘리는 방어 수치입니다.';
-    formulaText='적용 방식: 합연산 · 최종 적용 '+armorDisplayLabel(b.total)+' '+armorDisplayValue(b.total);
+    const takenMul=curseDamageTakenMul(player);
+    if(Math.abs(takenMul-1)>0.005) breakdown.push({label:'받는 피해 배율',value:pct(takenMul-1),sourceType:'리스크'});
+    const finalMul=incomingDamageMul(player);
+    description='현재 최종 받는 피해 보정입니다.';
+    formulaText='적용 방식: (1 - 방어 수치) x 받는 피해 배율 = '+incomingDamageDisplayLabel(finalMul)+' '+incomingDamageDisplayValue(finalMul);
   }else if(key==='regen'){
     const b=getRegenBreakdown();
     breakdown=specialPartsToText(b.parts,perSec);
@@ -10108,7 +10122,7 @@ let last=performance.now();
 let paused=false;
 function togglePause(){
   if(paused){ resumeGame(); return; }
-  if(state!=='play') return;          // 전투 화면에서만 일시정지 가능
+  if(state!=='play'&&state!=='map') return; // 전투/맵 화면에서 일시정지 가능
   paused=true;
   const ov=$('ovPause'); if(ov) ov.classList.remove('hidden');
   mouseDown=false; autoFire=false;     // 멈출 때 발사 입력 해제
@@ -10758,7 +10772,7 @@ function spStats(p){
   const regen=effectiveRegen(p);
   const shots=(p.shots||1)+(p.shadowBarrageT>0?(p.shadowBarrageExtraShots||1):0);
   const atk=(p.dmg+(p.potionAtkFlat||0))*currentAttackMul(p);
-  const armor=effectiveArmor(p);
+  const incomingMul=incomingDamageMul(p);
   return [
     ['hp 최대체력', Math.round(p.maxhp), p.maxhp],
     ['attack 공격력', atk.toFixed(1), atk],
@@ -10767,7 +10781,7 @@ function spStats(p){
     ['fire-rate 초당발사', playerFireRate(p).toFixed(1)+'발', playerFireRate(p)],
     ['shots 투사체', shots+'발', shots],
     ['speed 이동', Math.round(playerMoveSpeed(p)), playerMoveSpeed(p)],
-    ['armor '+armorDisplayLabel(armor), armorDisplayValue(armor), armor],
+    ['armor '+incomingDamageDisplayLabel(incomingMul), incomingDamageDisplayValue(incomingMul), 1-incomingMul],
     ['regen 재생', fmtSignedNumber(regen)+'/초', regen],
   ];
 }
@@ -10805,19 +10819,12 @@ function spEffects(p){
   const fireHandicap=Number(p._fireHandicap)||1;
   const fireBonus=(Number(p.fireAdd)||0)+(Number(p.potionFireAdd)||0)+(buffs.haste>0?DODGE_HASTE_FIRE_ADD:0)+(p.perfectDodgeFireT>0?0.20:0)+(fireHandicap!==1?((1/fireHandicap)-1):0);
   const armorNow=effectiveArmor(p);
-  add(Math.abs(atkBonus)>0.005,'⚔️','공격 '+pc(atkBonus),'공격 보너스','현재 공격력 배율에 반영되는 합산 보너스','atkBonus');
-  add(critChance>CRIT_BASE_CHANCE,'🎯','치명타 '+pc(critChance),'치명타','직접 피해에만 적용. 최종 상한 '+pc(CRIT_CHANCE_CAP),'critChance');
-  add(critMult>CRIT_BASE_MULT,'💥','치명피해 '+Math.round(critMult*100)+'%','치명타 피해','직접 피해 치명타 배율. 최종 상한 '+Math.round(CRIT_MULT_CAP*100)+'%','critDamage');
-  add(Math.abs(fireBonus)>0.005,'⚡','발사속도 '+pc(fireBonus),'발사속도','현재 초당 발사 계산에 반영되는 보너스','fireRate');
-  add(Math.abs(moveBonus)>0.005,'💨','이동 '+pc(moveBonus),'이동속도','현재 이동 속도 계산에 반영되는 보너스','moveSpeed');
-  add(Math.abs(armorNow)>0.005,'🛡️',(armorNow>=0?'피해 감소 ':'받는 피해 +')+armorDisplayValue(armorNow).replace(/^\+/,''),'방어','현재 받는 피해 계산에 반영되는 방어 수치','damageReduction');
   add(p.nonCritDmgMul<1,'🎲','비치명타 피해 '+pc(p.nonCritDmgMul),'도박사의 칼날','치명타 확률/피해 증가 대신 비치명타 피해 감소','noncrit-penalty');
   add(p.redPulseRegen>0,'🩸','붉은 맥박'+(p.redPulseBuff>0?timeLabel(p.redPulseBuff):''),'붉은 맥박','치명타 적중 시 재생 +'+p.redPulseRegen+'/초, 3초 지속, 내부쿨 6초','red-pulse');
   add(p.redPulseBuff>0,'🌿','맥박 재생 +'+p.redPulseRegen+'/초'+timeLabel(p.redPulseBuff),'붉은 맥박','현재 발동 중인 치명타 재생 버프','red-pulse-active');
   add(p.critHeal>0,'💉','치명타 회복 +'+p.critHeal,'치명 흡혈','치명타 적중 시 체력 '+p.critHeal+' 회복','crit-heal');
   add(p.critExplodeMul>0,'🧨','치명타 폭발','작렬탄','치명타 발생 시 작은 폭발','crit-explode');
 
-  add(p.shots>1,'🔱','다중사격 '+p.shots+'발','다중 사격','한 번에 여러 발을 동시에 발사','multi-shot');
   add(p.closeProjectileDmgMul>0,'🔱','근거리 투사체 +'+pc(p.closeProjectileDmgMul),'근거리 투사체','가까운 거리 투사체 피해 증가. 보스 대상은 절반','shotgun-mastery');
   add(p.barrageFocus,'🎯','탄막 집중','탄막 집중','같은 발사 묶음 추가 투사체 보정 100/45/30/15, 추가 투사체 치명타 +'+pc(p.extraProjectileCritChance||0),'barrage-focus');
   add(p.pierce>0,'🍢','관통 '+p.pierce,'관통','탄이 적을 뚫고 지나간다','pierce');
@@ -10851,7 +10858,6 @@ function spEffects(p){
   add(p.dodgeIframeBonus>0,'👻','잔상 +'+p.dodgeIframeBonus.toFixed(1)+'초','잔상','회피 무적 시간 +0.1초. 중복 가능','dodge-iframe');
   add(p.dodgeCdMul<1,'🌀','그림자보법','그림자 보법','회피 쿨다운 감소','dodge-cd');
 
-  add(regen!==0,'🌿','재생 '+fmtSignedNumber(regen)+'/초','재생','자연재생 + 유물/특성/임시 재생 합산','regen');
   add(p.regenOverload,'🌿','재생 과부하','재생 과부하','체력 50% 이하일 때 양수 재생 효과 +50%','regen-overload');
   add(p.lifesteal>0,'🩸','확률 회복 '+pc(p.lifesteal),'확률 회복','적 처치 시 확률로 체력 회복','lifesteal');
   add(p.healOnKill>0,'💚','처치 회복 '+p.healOnKill,'처치 회복','적 처치 시 체력 회복','heal-on-kill');
@@ -10878,12 +10884,7 @@ function spEffects(p){
   add(p.donateChance>0,'💸','도네 '+pc(p.donateChance),'도네 알림','적 처치 시 확률로 골드','donate');
   add(p.greedContract,'💎','탐욕의 계약','탐욕의 계약','골드 획득 +40%, 받는 피해 +10%','greed-contract');
   add(p.shopCostMul>1,'💎','상점가 +'+pc(p.shopCostMul-1),'탐욕의 반지','상점 가격 증가 리스크','shop-risk');
-  add(p.damageTakenMul>1,'⚠️','받는 피해 +'+pc(p.damageTakenMul-1),'리스크','탐욕/계약류로 받는 피해 증가','taken-risk');
-  add(effectiveArmor(p)<0,'⚠️','받는 피해 +'+pc(-effectiveArmor(p)),'방어 리스크','방어 수치가 음수라 받는 피해 증가','armor-risk');
   add(p.recoveryMul<1,'🌑','회복 효과 '+pc(p.recoveryMul),'공허의 심장','회복 효과 감소 리스크','recovery-risk');
-  add(p.glassCannon||hasRelic('glass'),'🍷','유리 대포','유리 대포','공격력 +70%, 최대 체력 -40%','glass-cannon');
-  add(hasRelic('bizarre_mask'),'🎭','기괴한 가면','기괴한 가면','공격력 +50%, 관통 +1','bizarre-mask');
-
   add(p.crowdRage>0,'😡','분노 '+pc(p.crowdRage)+'/마리','분노','주변 적 1마리당 공격력 +3%, 최대 10마리. 찍을 때마다 +3%씩 누적','crowd-rage');
   add(p.lowHpMul>0,'🆘','저체력 폭주','저체력 폭주','체력이 낮을수록 공격력 증가','low-hp');
   add(p.bossDmgMul>1,'🗡️','거인사냥 +'+pc(p.bossDmgMul-1),'거인 사냥','보스·정예에게 추가 피해','bossDmg');
@@ -11375,6 +11376,20 @@ function returnToTitleScreen(){
   if(window.startTitleScene) window.startTitleScene();
   startBGM();
 }
+function saveAndReturnToTitleScreen(){
+  if(state==='map') saveRunCheckpoint();
+  else refreshLoadButton();
+  introFxReset();
+  paused=false; mouseDown=false; autoFire=false; runActive=false;
+  roomIsBoss=false; roomIsMidboss=false; cutsceneT=0; bossEvolve=null;
+  enemies=[]; pBullets=[]; eBullets=[]; pickups=[]; particles=[]; boss=null; floatBubbles=[];
+  const po=$('ovPause'); if(po) po.classList.add('hidden');
+  hideAll();
+  show('title');
+  refreshLoadButton();
+  if(window.startTitleScene) window.startTitleScene();
+  startBGM();
+}
 function wireMainControls(){
   $('retryBtn').onclick=()=>{
     if(diffSet.maxRetries !== Infinity && retries >= diffSet.maxRetries){ banner('재도전 불가','횟수를 모두 소진했습니다',1400); return; }
@@ -11389,7 +11404,7 @@ function wireMainControls(){
     newGameSkip();
   };
   { const tb=$('titleBtn'); if(tb) tb.onclick=returnToTitleScreen; }
-  { const peb=$('pauseExitBtn'); if(peb) peb.onclick=returnToTitleScreen; }
+  { const peb=$('pauseExitBtn'); if(peb) peb.onclick=saveAndReturnToTitleScreen; }
   $('muteBtn').onclick=function(){ if(typeof openSettings==='function') openSettings(); };
   // 구 soundPanel 컨트롤 - 패널이 DOM에 존재할 때만 배선 (설정창과 독립적으로 동작)
   { const sc=$('soundClose'); if(sc) sc.onclick=()=>{ const sp=$('soundPanel'); if(sp) sp.style.display='none'; }; }
