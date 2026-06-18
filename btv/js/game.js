@@ -790,6 +790,103 @@ const RELIC_PIXDATA=[{n:"사장님이 미쳤어요 쿠폰",p:{"y":"#e0b341","d":
 {n:"도박꾼의 주사위",p:{"w":"#eef2f8","d":"#e24b4a"},g:["................","................","...wwwwwwww.....","..wwwwwwwwww....","..wdwwwwwwdw....","..wwwwwwwwww....","..wwwwddwwww....","..wwwwddwwww....","..wdwwwwwwdw....","..wwwwwwwwww....","...wwwwwwww.....","................","................","................","................","................"]},
 {n:"저주받은 가면",p:{"r":"#e24b4a","W":"#ffffff","K":"#2c2c2a","w":"#eef2f8"},g:["................","..rrrrrrrrrr....",".rrrrrrrrrrrr...",".rWWrrrrrrWWr...",".rWKrrrrrrKWr...",".rrrrrKKrrrrr...",".rrrrrrrrrrrr...","..rrrrKKrrrr....","...rrrKKrrr.....","....rrrrrr......","....wwwwww......","....wKwKww......",".....wwww.......","................","................","................"]}];
 // 16×16 픽셀 그리드 → data URL 렌더 (업로드된 픽셀아트 세트)
+function pixNormName(s){ return (s||'').replace(/\s+/g,''); }
+function miniPixelIconData(name,c,c2,mark){
+  const rows=[
+    '................',
+    '.....kkkkkk.....',
+    '...kkbbbbbbkk...',
+    '..kbbbbbbbbbbk..',
+    '.kbbbbbbbbbbbbk.',
+    '.kbbbbbbbbbbbbk.',
+    '.kbbbbbbbbbbbbk.',
+    '.kbbbbbbbbbbbbk.',
+    '.kbbbbbbbbbbbbk.',
+    '.kbbbbbbbbbbbbk.',
+    '..kbbbbbbbbbbk..',
+    '...kkbbbbbbkk...',
+    '.....kkkkkk.....',
+    '................',
+    '................',
+    '................'
+  ].map(r=>r.split(''));
+  const set=(x,y,ch)=>{ if(x>=0&&x<16&&y>=0&&y<16) rows[y][x]=ch; };
+  const rect=(x,y,w,h,ch)=>{ for(let yy=y;yy<y+h;yy++) for(let xx=x;xx<x+w;xx++) set(xx,yy,ch); };
+  const line=(x1,y1,x2,y2,ch)=>{
+    let dx=Math.abs(x2-x1), sx=x1<x2?1:-1, dy=-Math.abs(y2-y1), sy=y1<y2?1:-1, err=dx+dy;
+    while(true){ set(x1,y1,ch); if(x1===x2&&y1===y2) break; const e2=2*err; if(e2>=dy){ err+=dy; x1+=sx; } if(e2<=dx){ err+=dx; y1+=sy; } }
+  };
+  const plus=(x,y,ch)=>{ rect(x-1,y,3,1,ch); rect(x,y-1,1,3,ch); };
+  switch(mark){
+    case 'flame': line(7,3,5,8,'y'); line(8,3,10,8,'r'); rect(5,8,6,3,'r'); rect(7,6,2,5,'y'); break;
+    case 'bolt': line(9,3,6,7,'y'); line(6,7,9,7,'y'); line(9,7,6,12,'y'); break;
+    case 'heart': rect(4,5,3,2,'r'); rect(9,5,3,2,'r'); rect(4,7,8,2,'r'); rect(5,9,6,1,'r'); rect(6,10,4,1,'r'); rect(7,11,2,1,'r'); break;
+    case 'cup': rect(4,4,8,5,'y'); rect(5,9,6,1,'y'); rect(7,10,2,2,'y'); rect(5,12,6,1,'y'); rect(6,5,4,2,'w'); break;
+    case 'mask': rect(4,5,3,2,'w'); rect(9,5,3,2,'w'); set(5,6,'k'); set(10,6,'k'); rect(6,9,4,1,'r'); break;
+    case 'mic': rect(6,3,4,6,'w'); rect(7,9,2,3,'y'); rect(5,12,6,1,'y'); rect(6,5,4,1,'k'); break;
+    case 'scroll': rect(4,4,8,8,'w'); line(6,6,10,6,'d'); line(6,8,11,8,'d'); line(6,10,9,10,'d'); set(5,5,'r'); break;
+    case 'egg': rect(6,3,4,1,'w'); rect(5,4,6,2,'w'); rect(4,6,8,4,'w'); rect(5,10,6,2,'w'); set(8,5,'y'); set(7,8,'y'); break;
+    case 'thread': line(3,10,12,4,'h'); line(4,4,12,11,'h'); set(6,7,'y'); set(10,7,'y'); break;
+    case 'monitor': rect(3,4,10,7,'d'); rect(4,5,8,5,'h'); line(8,5,6,10,'r'); rect(6,12,4,1,'d'); break;
+    case 'wind': line(3,5,11,5,'h'); line(5,8,13,8,'h'); line(2,11,9,11,'h'); set(12,4,'w'); set(10,7,'w'); break;
+    case 'film': rect(3,4,10,8,'d'); rect(5,5,6,6,'h'); for(let y=5;y<11;y+=2){ set(4,y,'k'); set(11,y,'k'); } break;
+    case 'case': rect(4,5,8,6,'y'); rect(6,3,4,2,'y'); line(4,7,11,7,'d'); break;
+    case 'vault': rect(4,4,8,8,'d'); rect(6,6,4,4,'h'); plus(8,8,'y'); break;
+    case 'crown': rect(4,8,8,3,'y'); set(4,7,'y'); set(7,5,'y'); set(11,7,'y'); set(5,6,'y'); set(10,6,'y'); break;
+    case 'compass': line(8,3,12,8,'y'); line(12,8,8,12,'y'); line(8,12,4,8,'y'); line(4,8,8,3,'y'); line(8,5,7,10,'w'); break;
+    case 'card': rect(4,4,8,8,'w'); line(5,6,10,6,'y'); set(6,9,'r'); set(9,9,'r'); break;
+    case 'wallet': rect(3,6,10,5,'d'); rect(5,4,7,3,'y'); set(11,8,'y'); break;
+    case 'tower': rect(7,4,2,8,'d'); line(4,3,8,6,'h'); line(12,3,8,6,'h'); plus(8,3,'y'); break;
+    case 'wing': line(7,8,3,4,'w'); line(7,8,3,10,'w'); line(9,8,13,4,'w'); line(9,8,13,10,'w'); line(5,6,3,8,'h'); line(11,6,13,8,'h'); break;
+    case 'bottle': rect(6,3,4,2,'d'); rect(5,5,6,7,'h'); line(9,6,7,9,'y'); line(7,9,10,9,'y'); break;
+    case 'shield': rect(5,4,6,5,'h'); rect(6,9,4,2,'h'); set(7,11,'h'); set(8,11,'h'); line(8,4,8,11,'w'); break;
+    case 'ring': rect(5,5,6,2,'y'); rect(4,7,2,4,'y'); rect(10,7,2,4,'y'); rect(6,11,4,1,'y'); rect(7,7,2,3,'k'); break;
+    case 'bullet': rect(5,6,7,4,'y'); rect(4,7,1,2,'w'); set(12,7,'r'); set(12,8,'r'); break;
+    case 'clock': rect(5,4,6,1,'y'); rect(4,5,8,6,'y'); rect(5,11,6,1,'y'); line(8,7,8,5,'w'); line(8,7,10,9,'w'); break;
+    case 'boot': rect(5,4,4,7,'d'); rect(5,10,7,2,'d'); rect(9,8,2,2,'h'); break;
+    case 'mushroom': rect(4,5,8,3,'r'); rect(5,4,6,1,'r'); rect(7,8,3,4,'w'); set(5,6,'w'); set(10,6,'w'); break;
+    case 'eye': line(3,8,6,5,'w'); line(6,5,10,5,'w'); line(10,5,13,8,'w'); line(3,8,6,11,'w'); line(6,11,10,11,'w'); line(10,11,13,8,'w'); rect(7,7,2,2,'h'); set(8,8,'k'); break;
+    case 'kit': rect(4,5,8,6,'w'); rect(6,3,4,2,'w'); plus(8,8,'r'); break;
+    case 'keyboard': rect(3,5,10,6,'d'); for(let y=6;y<10;y+=2) for(let x=4;x<12;x+=2) set(x,y,'w'); break;
+    case 'contract': rect(5,3,7,9,'w'); line(7,6,11,6,'d'); line(7,8,10,8,'d'); line(7,10,11,10,'d'); set(5,4,'r'); break;
+    case 'skull': rect(5,4,6,5,'w'); rect(6,9,4,3,'w'); set(6,6,'k'); set(9,6,'k'); set(8,8,'k'); break;
+    case 'fang': line(5,4,7,12,'w'); line(10,4,8,12,'w'); set(7,12,'r'); set(8,12,'r'); break;
+    case 'void': rect(6,5,4,4,'p'); line(8,3,8,11,'h'); line(4,8,12,8,'h'); set(8,8,'k'); break;
+    case 'coin': rect(5,4,6,8,'y'); line(8,5,8,10,'w'); set(7,6,'w'); set(9,9,'w'); break;
+    case 'knife': line(4,11,12,3,'w'); line(5,12,13,4,'d'); rect(3,11,3,2,'y'); break;
+    case 'shotgun': rect(4,7,8,2,'d'); rect(10,6,3,1,'y'); rect(5,9,3,2,'y'); break;
+    case 'barrage': for(let y=4;y<=10;y+=3){ line(4,y,12,y,'y'); set(13,y,'w'); } break;
+    case 'corrode': rect(5,5,2,2,'g'); rect(9,4,3,3,'g'); rect(7,9,4,2,'g'); line(4,11,12,11,'h'); break;
+    case 'reload': line(5,5,10,5,'h'); line(10,5,12,8,'h'); line(12,8,9,11,'h'); line(9,11,5,10,'h'); set(11,6,'y'); set(12,6,'y'); break;
+    case 'dodge': line(4,5,11,5,'h'); line(3,8,10,8,'w'); line(5,11,12,11,'h'); break;
+    case 'regen': plus(8,8,'g'); line(6,5,9,3,'h'); line(10,5,12,4,'h'); break;
+    case 'invest': line(4,11,7,8,'y'); line(7,8,9,9,'y'); line(9,9,12,5,'y'); set(12,5,'w'); break;
+    case 'glass': line(4,4,11,11,'w'); line(11,4,5,10,'h'); line(8,3,8,12,'r'); break;
+    default: plus(8,8,'y'); line(5,5,11,11,'h'); break;
+  }
+  return {n:name,p:{k:'#090816',b:c,h:c2,w:'#f7fdff',y:'#ffd44f',r:'#ff5f7e',d:'#4b3b63',g:'#76d36a',p:'#7a54ff'},g:rows.map(r=>r.join(''))};
+}
+const MINI_PIX_SRC_CACHE={};
+function miniPixelIconSrc(c,c2,mark){
+  const key=c+'|'+c2+'|'+mark;
+  if(MINI_PIX_SRC_CACHE[key]) return MINI_PIX_SRC_CACHE[key];
+  const d=miniPixelIconData('',c,c2,mark), cv=document.createElement('canvas'); cv.width=16; cv.height=16;
+  const cx=cv.getContext('2d');
+  d.g.forEach((row,y)=>{ for(let x=0;x<16;x++){ const ch=row[x]; if(ch&&ch!=='.'&&d.p[ch]){ cx.fillStyle=d.p[ch]; cx.fillRect(x,y,1,1); } } });
+  return MINI_PIX_SRC_CACHE[key]=cv.toDataURL('image/png');
+}
+const EXTRA_RELIC_PIX=[
+  ['모기향(역효과)','#2a2638','#b9f2ff','fang'],['키죠의 가면','#402443','#f4efff','mask'],['시청자 학살자의 마이크','#34233c','#ffdf6b','mic'],['금욕의 성배','#3a2a22','#ffd86b','cup'],
+  ['채팅창 분쇄기','#31354a','#f4f8ff','scroll'],['혜철이의 알','#3b3046','#fff3bd','egg'],['박제인의 검은 실','#2d2135','#9ee4ff','thread'],['승우의 깨진 모니터','#1d3044','#7ee7ff','monitor'],
+  ['무빙의 잔상','#172c42','#9ef4ff','wind'],['딸피의 심장','#3d1d35','#ff6d8d','heart'],['클립각 회피본능','#252a42','#86eaff','film'],['수집가의 진열장','#32273f','#ffd363','case'],
+  ['신화 보관함','#302043','#ffc95a','vault'],['저주의 왕관','#3b1d36','#ffcf5e','crown'],['방향성 나침반','#25314b','#80e5ff','compass'],['큰손 카드','#2f2543','#ffe38a','card'],
+  ['무소비의 지갑','#2d2639','#dcb36a','wallet'],['하드코어 송출기','#301f37','#ff6b8b','tower'],['무피격의 날개','#26314b','#e9fbff','wing'],['번개의 병','#1d3242','#72e5ff','bottle'],
+  ['기괴한 가면','#36213f','#ff8ee4','mask'],['피의 성배','#3d1b2c','#ff6681','cup'],['공허의 심장','#211b36','#9c7cff','void'],['수호자의 방패','#26314a','#8ed6ff','shield'],
+  ['탐욕의 반지','#342a22','#ffd85b','ring'],['폭발 탄환','#3b2630','#ff9161','bullet'],['시간 왜곡기','#25213f','#b9a2ff','clock'],['낡은 군화','#332b28','#c59b72','boot'],
+  ['이상한 버섯','#302341','#ff7b86','mushroom'],['사냥꾼의 눈','#1f3040','#92e7ff','eye'],['응급 키트','#293246','#f7f9ff','kit'],['치트키(가짜)','#262435','#d6d9e7','keyboard'],
+  ['악마의 계약','#3d1e2c','#ff6a7f','contract'],['죽음의 서약','#242436','#f1f2f7','skull'],['피의 갈증','#3d1b27','#ff5c73','fang']
+];
+EXTRA_RELIC_PIX.forEach(([n,c,c2,m])=>{ if(!RELIC_PIXDATA.some(d=>pixNormName(d.n)===pixNormName(n))) RELIC_PIXDATA.push(miniPixelIconData(n,c,c2,m)); });
 const RELIC_PIX={};
 (function buildRelicPix(){
   const norm=s=>(s||'').replace(/\s+/g,'');
@@ -2213,9 +2310,10 @@ function rankBuildPill(kind,id){
       tip=(r.name||'')+' - '+(r.desc||'');
     }
   }else if(kind==='potion'){
-    const p=(POTIONS||[]).find(x=>x&&x.id===id);
+    const pid=potionCanonicalId(id);
+    const p=(POTIONS||[]).find(x=>x&&x.id===pid);
     if(p){
-      icon=POTION_PIX[p.id]?'<img src="'+rankBuildText(POTION_PIX[p.id])+'" alt="">':rankBuildText(p.icon||'');
+      icon=potionIconHTML(p,'potion-pix-sm');
       name=p.name;
       tip=(p.name||'')+' - '+(p.desc||'');
     }
@@ -2554,7 +2652,7 @@ let playerAttackSeq=0;
 let runStartedAt=0, runHits=0, runShopPurchases=0, runShopSpent=0;
 let pendingScoreData=null, pendingScoreWin=false, pendingScoreKiller='', pendingScoreSaved=false;
 let pendingRunBuildSnapshot=null;
-let roomCleared=false, roomIsBoss=false, boss=null, bossBanner=0, roomHadElite=false;
+let roomCleared=false, roomIsBoss=false, boss=null, bossBanner=0, roomHadElite=false, roomEliteKind=null;
 let eliteViewerSpawns=0;   // 자잘자(엘리트 시청자) 런 전체 출몰 횟수 — 최대 1회로 제한
 let roomIsMidboss=false, runActive=false;   // 음악 컨텍스트용 플래그
 let eliteIntro=null, slowmoT=0;
@@ -2651,7 +2749,7 @@ function renderPotions(){
     const p=player.potions&&player.potions[i];
     const el=document.createElement('div');
     el.className='pslot'+(p?'':' empty');
-    if(p){ el.innerHTML=(POTION_PIX[p.id]?('<img class="picon" src="'+POTION_PIX[p.id]+'">'):p.icon)+'<span class="key">'+(i+1)+'</span>'; el.title=p.name+' - '+p.desc; el.onclick=()=>usePotion(i); }
+    if(p){ el.innerHTML=potionIconHTML(p,'potion-pix-hud')+'<span class="key">'+(i+1)+'</span>'; el.title=p.name+' - '+p.desc; el.onclick=()=>usePotion(i); }
     else { el.textContent='·'; }
     cont.appendChild(el);
   }
@@ -2660,6 +2758,12 @@ function renderPotions(){
 // ---------- 배너 ----------
 const bannerEl=$('banner');
 function banner(big,small,ms){
+  if(big==='CLEAR' && roomHadElite) small=eliteClearText(currentEliteKind());
+  if(roomHadElite && ms===1400 && String(small||'').indexOf('+')>=0){
+    const m=String(small||'').match(/\+(\d+)/);
+    big=eliteRewardTitle(currentEliteKind());
+    small='골드 +'+(m?m[1]:'');
+  }
   bannerEl.querySelector('.big').textContent=big;
   bannerEl.querySelector('.small').textContent=small||'';
   bannerEl.classList.add('show');
@@ -2752,7 +2856,7 @@ function restorePlayerFromSave(data){
   player.perkIds=Array.isArray(player.perkIds)?player.perkIds.filter(Boolean):[];
   migrateTreeOnlyPerksToTree();
   player.relics=relicIds.map(id=>RELICS.find(r=>r.id===id)).filter(Boolean);
-  player.potions=potionIds.map(id=>POTIONS.find(pt=>pt.id===id)).filter(Boolean);
+  player.potions=potionIds.map(id=>POTIONS.find(pt=>pt.id===potionCanonicalId(id))).filter(Boolean);
   player.buffs=Object.assign({rage:0,haste:0,shield:0},player.buffs||{});
   player.potionBuffs=(player.potionBuffs||[]).map(b=>Object.assign({},b));
   player.minion=hasMinion?{ang:0,fireT:0,x:player.x,y:player.y}:null;
@@ -2820,7 +2924,7 @@ function loadRunCheckpoint(){
     if(!mapData) throw new Error('map restore failed');
     buildBackdrop(act);
     enemies=[]; pBullets=[]; eBullets=[]; pickups=[]; particles=[]; hazards=[]; floatBubbles=[]; kijoMasks=[]; kijoGazes=[]; kijoParades=[]; kijoLaserWarns=[];
-    boss=null; pendingNode=null; roomCleared=true; roomIsBoss=false; roomIsMidboss=false; roomHadElite=false; bossBanner=0; bossEvolve=null; cutsceneT=0;
+    boss=null; pendingNode=null; roomCleared=true; roomIsBoss=false; roomIsMidboss=false; roomHadElite=false; roomEliteKind=null; bossBanner=0; bossEvolve=null; cutsceneT=0;
     tutorialMode=false; tutorialDoneFlag=true; paused=false; mouseDown=false; autoFire=false; runActive=true; state='map';
     hideAll(); startBGM(); showMap(); banner('이어하기','저장된 진행을 불러왔다',1400);
     return true;
@@ -2848,7 +2952,7 @@ function startCombat(kind, fresh){
   if(fresh){ roomEntryHp=player.hp; snapshotProgress(); if(player.roomEntryHeal>0) healPlayer(player.roomEntryHeal,player.x,player.y); }
   enemies=[]; pBullets=[]; eBullets=[]; pickups=[]; particles=[]; hazards=[]; floatBubbles=[]; kijoMasks=[]; kijoGazes=[]; kijoParades=[]; kijoLaserWarns=[];
   player.x=W/2; player.y=H-90;
-  roomCleared=false; roomIsBoss=(kind==='boss'); roomIsMidboss=(kind==='midboss'); kills=0; boss=null; roomHadElite=false; eliteIntro=null; timeScale=1; slowmoT=0;
+  roomCleared=false; roomIsBoss=(kind==='boss'); roomIsMidboss=(kind==='midboss'); kills=0; boss=null; roomHadElite=false; roomEliteKind=null; eliteIntro=null; timeScale=1; slowmoT=0;
   roomStartedAt=performance.now();
   resetStallWatch();
   // GL/gView 리셋 (승우 외 보스전 잔여 효과 제거)
@@ -2898,8 +3002,8 @@ function startCombat(kind, fresh){
       if(act===2){
         // 2막 엘리트: 양갱
         spawnEnemy('kkotchung', W/2, 140, diff);
-        const ze=enemies[enemies.length-1]; roomHadElite=true;
-        ze.elite=true; ze.eliteViewer=true; ze.label='양갱';
+        const ze=enemies[enemies.length-1]; roomHadElite=true; roomEliteKind='yanggaeng';
+        ze.elite=true; ze.eliteViewer=true; ze.eliteKind='yanggaeng'; ze.label='양갱';
         ze.hp*=1.75; ze.maxhp*=1.75; ze.dmg=Math.round(ze.dmg*1.4); ze.r+=5; ze.xp=90; ze.coolT=1.0;
         ze.x=W/2; ze.y=190; ze.intro=true; ze.introScale=0; ze.stunT=4; ze.tauntedHalf=false;
         ze.atkT=1.8; ze.atkN=0; ze.enr=false; ze.enrShown=false;
@@ -2908,8 +3012,8 @@ function startCombat(kind, fresh){
         beep(523,0.3,'sine',0.05); beep(392,0.5,'sine',0.035); // 달콤한 척 하는 음
       } else {
         spawnEnemy('rhino_beetle', W/2, 120, diff);
-        const ze=enemies[enemies.length-1]; roomHadElite=true;
-        ze.elite=true; ze.eliteViewer=true; ze.label='자잘자';
+        const ze=enemies[enemies.length-1]; roomHadElite=true; roomEliteKind='jajalja';
+        ze.elite=true; ze.eliteViewer=true; ze.eliteKind='jajalja'; ze.label='자잘자';
         ze.hp*=2.1; ze.maxhp*=2.1; ze.dmg=Math.round(ze.dmg*1.5); ze.touchDmg=Math.round(enemyTouchBaseDamage(ze)*1.4); ze.r+=5; ze.xp=120; ze.coolT=1.0;
         ze.x=W/2; ze.y=190; ze.intro=true; ze.introScale=0; ze.stunT=4; ze.tauntedHalf=false;
         eliteIntro={t:0, ze:ze, warn:null, landed:false, banner:0, tensionDone:false};
@@ -3314,7 +3418,8 @@ function damageEnemy(e,dmg,crit,fromBullet,bullet){
   e.hp-=dmg*(1-(e.armor||0)); e.hitT=0.1; burst(e.x,e.y,crit?'#ffd34d':e.color,crit?8:4,crit?180:120); sfx.hit();
   if(typeof GS!=='undefined'&&GS.dmgNum&&typeof spawnDmgNum==='function') spawnDmgNum(e.x,e.y-(e.r||10),Math.round(dmg*(1-(e.armor||0))),crit);
   if(crit && player.critHeal>0){ healPlayer(player.critHeal,e.x,e.y); } // 치명 흡혈
-  if(e.eliteViewer && !e.tauntedHalf && e.hp<=e.maxhp*0.5){ e.tauntedHalf=true; e.taunt={t:4.6,text:'…봉식님? 저 때리시나요?'}; if(typeof sfx!=='undefined'&&sfx.vote) sfx.vote(); }
+  if(e.eliteViewer && eliteKindOf(e)==='yanggaeng' && !e.tauntedHalf && e.hp<=e.maxhp*0.5){ e.tauntedHalf=true; e.taunt={t:4.6,text:'…달콤한 척은 여기까지야.'}; if(typeof sfx!=='undefined'&&sfx.vote) sfx.vote(); }
+  else if(e.eliteViewer && !e.tauntedHalf && e.hp<=e.maxhp*0.5){ e.tauntedHalf=true; e.taunt={t:4.6,text:'…봉식님? 저 때리시나요?'}; if(typeof sfx!=='undefined'&&sfx.vote) sfx.vote(); }
   applyShockStun(e);
   // 나무: 피격 시 주변 몹 방어력 버프 (3초간 최대 3회 중첩)
   if(e.type==='namu' && e.hp>0){
@@ -3431,6 +3536,28 @@ function updateStallWatch(dt){
   if(!stallRaged&&stallTimer>=STALL_RAGE_T){ stallRaged=true; applyStallRage(); banner('남은 적 광폭화','재생 존버 견제',1400); }
   if(!stallReinforced&&stallTimer>=STALL_REINFORCE_T){ stallReinforced=true; spawnStallReinforcements(); }
 }
+function eliteKindOf(e){
+  if(e&&(e.eliteKind==='yanggaeng'||e.type==='kkotchung')) return 'yanggaeng';
+  if(e&&(e.eliteKind==='jajalja'||e.type==='rhino_beetle')) return 'jajalja';
+  return roomEliteKind||'jajalja';
+}
+function currentEliteKind(){
+  return roomEliteKind||eliteKindOf(eliteIntro&&eliteIntro.ze);
+}
+function eliteDisplayName(kind){
+  return kind==='yanggaeng'?'양갱':'자잘자';
+}
+function eliteClearText(kind){
+  return kind==='yanggaeng'?'양갱 격파!':'자잘자 격파!';
+}
+function eliteRewardTitle(kind){
+  return kind==='yanggaeng'?'🍯 양갱 보상':'⚔️ 자잘자 보상';
+}
+function eliteDefeatBubble(kind){
+  return kind==='yanggaeng'
+    ? pick(['말랑한 척했는데…','달콤하게 봐주려 했는데…','꽃이라고 얕봤지…','다음엔 더 끈적하게 올게요','흑임자 맛은 아직이야…'])
+    : pick(['로블록스 하러 가야겠다…','봉식님… 너무하시네요 Sadge','다음 생엔 더 셀게요…','채금 풀리면 또 봬요','이게 맞나요…? 운영자 호출']);
+}
 function killEnemy(e){
   const idx=enemies.indexOf(e); if(idx<0) return;
   const isSummon=SUMMON_TYPES.has(e.type)||e._stallReinforcement;
@@ -3464,6 +3591,11 @@ function killEnemy(e){
       }});
       burst(e.x,e.y,'#9b6bff',12,180);
     }
+  }
+  if(e.eliteViewer && eliteKindOf(e)==='yanggaeng'){
+    banner('양갱 처치!','',1100);
+    spawnDeathBubble(e.x, e.y-e.r-12, eliteDefeatBubble('yanggaeng'), 3.4);
+    e.eliteViewer=false;
   }
   if(e.eliteViewer){ banner('자잘자 처치!','',1100); spawnDeathBubble(e.x, e.y-e.r-12, pick(['로블록스 하러 가야겠다…','봉식님… 너무하시네요 Sadge','다음 생엔 더 셀게요…','채금 풀리면 또 봬요','이게 맞나요…? 운영자 호출']), 3.4); }
   if(!isSummon){
@@ -4985,7 +5117,84 @@ const MIDBOSS_ROW=7, CAMP1_ROW=6, CAMP2_ROW=13; // 중간보스 8층, 모닷불 
 const MAP_W=660, MAP_H=600, MAP_PADX=46, MAP_PADY=30;
 const NODE_ICON={fight:'⚔️',midboss:'🪲',shop:'🛒',event:'❓',boss:'👑',campfire:'🔥',elite:'💀'};
 const NODE_PIX={fight:'btv/assets/asset-022-6d0846faec.png',midboss:'btv/assets/asset-023-5c3a9b49e6.png',shop:'btv/assets/asset-024-6dde2d197f.png',event:'btv/assets/asset-025-d287a4d2cc.png',boss:'btv/assets/asset-026-81ae3723cc.png'};
-const POTION_PIX={heal:'btv/assets/asset-027-5b89f0a09f.png',rage:'btv/assets/asset-028-248f94d092.png',haste:'btv/assets/asset-029-a42512f36f.png',shield:'btv/assets/asset-030-261b152745.png'};
+NODE_PIX.campfire=miniPixelIconSrc('#3b2119','#ffb24a','flame');
+NODE_PIX.elite=miniPixelIconSrc('#361f32','#f1f2f7','skull');
+const POTION_PIX={
+  heal:{c:'#ff5f86',c2:'#fff3bf',m:'plus'},
+  combat:{c:'#ff4d4d',c2:'#ffd86b',m:'sword'},
+  swift:{c:'#ffd86b',c2:'#fff3bf',m:'bolt'},
+  dodge_refill:{c:'#38e8ff',c2:'#dffaff',m:'swirl'},
+  greater_heal:{c:'#5dff9b',c2:'#dffaff',m:'plus'},
+  fury:{c:'#ff7a2f',c2:'#ffd86b',m:'flame'},
+  focus:{c:'#5aa9ff',c2:'#dffaff',m:'target'},
+  ironclad:{c:'#9fb4d0',c2:'#dffaff',m:'shield'},
+  lightning_potion:{c:'#ffe45c',c2:'#ffffff',m:'bolt'},
+  bomb_potion:{c:'#ff7b55',c2:'#2a2038',m:'bomb'},
+  berserk_potion:{c:'#ff355d',c2:'#ffd86b',m:'claw'},
+  hyperfocus:{c:'#c98bff',c2:'#ffffff',m:'target'},
+  regen_potion:{c:'#47d66f',c2:'#dffaff',m:'leaf'},
+  barrier:{c:'#78f2ff',c2:'#ffffff',m:'shield'},
+  ghost:{c:'#cfd8ff',c2:'#ffffff',m:'ghost'},
+  holy:{c:'#fff3bf',c2:'#ffd86b',m:'cross'},
+  time_stop:{c:'#7d8cff',c2:'#dffaff',m:'hourglass'},
+  immortal:{c:'#f5f8ff',c2:'#8be8ff',m:'wing'},
+  chalice:{c:'#ffd86b',c2:'#fff3bf',m:'cup'},
+  awakening:{c:'#ff7ad9',c2:'#8be8ff',m:'star'}
+};
+const POTION_PIX_ALIAS={
+  rage:'fury',haste:'swift',shield:'ironclad',dodge:'dodge_refill',
+  lightning:'lightning_potion',bomb:'bomb_potion',berserk:'berserk_potion',
+  overfocus:'hyperfocus',regen:'regen_potion',timestop:'time_stop'
+};
+const POTION_PIX_CACHE={};
+function potionCanonicalId(id){
+  id=String(id||'');
+  return POTION_PIX_ALIAS[id]||id;
+}
+function potionPixMark(m,c){
+  const r=(x,y,w,h,col)=>'<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" fill="'+(col||c)+'"/>';
+  if(m==='plus') return r(7,5,2,7)+r(5,7,6,2);
+  if(m==='cross') return r(7,4,2,8)+r(5,6,6,2)+r(6,9,4,2);
+  if(m==='sword') return r(8,4,1,7)+r(7,5,3,1)+r(6,10,5,1)+r(7,11,1,2)+r(9,11,1,2);
+  if(m==='bolt') return r(8,4,3,1)+r(7,5,3,1)+r(6,6,3,1)+r(7,7,3,1)+r(8,8,2,1)+r(7,9,2,1)+r(6,10,2,1);
+  if(m==='swirl') return r(5,6,5,1)+r(4,7,1,3)+r(9,7,1,1)+r(6,9,4,1)+r(6,8,1,1)+r(8,10,1,1);
+  if(m==='flame') return r(8,4,1,1)+r(7,5,2,2)+r(6,7,4,1)+r(5,8,6,3)+r(6,11,4,1);
+  if(m==='target') return r(6,5,4,1)+r(5,6,1,4)+r(10,6,1,4)+r(6,10,4,1)+r(7,7,2,2);
+  if(m==='shield') return r(5,5,6,2)+r(5,7,6,2)+r(6,9,4,2)+r(7,11,2,1);
+  if(m==='bomb') return r(6,7,5,4)+r(7,6,3,1)+r(10,5,2,1)+r(11,4,1,1);
+  if(m==='claw') return r(5,5,1,6)+r(8,4,1,7)+r(11,5,1,6);
+  if(m==='leaf') return r(6,8,1,4)+r(7,6,4,2)+r(8,8,3,1)+r(5,9,2,1);
+  if(m==='ghost') return r(5,5,6,5)+r(5,10,1,2)+r(7,10,1,1)+r(9,10,1,2)+r(6,7,1,1)+r(10,7,1,1);
+  if(m==='hourglass') return r(5,5,6,1)+r(6,6,4,1)+r(7,7,2,2)+r(6,9,4,1)+r(5,10,6,1);
+  if(m==='wing') return r(4,6,2,1)+r(5,7,2,1)+r(6,8,2,1)+r(9,8,2,1)+r(10,7,2,1)+r(11,6,2,1);
+  if(m==='cup') return r(5,5,6,1)+r(5,6,6,3)+r(6,9,4,1)+r(7,10,2,2)+r(6,12,4,1);
+  if(m==='star') return r(8,4,1,2)+r(6,6,5,1)+r(7,7,3,1)+r(5,8,7,1)+r(7,9,3,1)+r(6,10,1,1)+r(10,10,1,1);
+  return r(7,6,2,4);
+}
+function potionPixSrc(id){
+  const key=potionCanonicalId(id);
+  const spec=POTION_PIX[key];
+  if(!spec) return '';
+  if(POTION_PIX_CACHE[key]) return POTION_PIX_CACHE[key];
+  const svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" shape-rendering="crispEdges">'+
+    '<rect width="16" height="16" fill="none"/>'+
+    '<rect x="6" y="1" width="4" height="2" fill="#dffaff"/><rect x="5" y="3" width="6" height="1" fill="#39275f"/>'+
+    '<rect x="4" y="4" width="8" height="10" fill="#070914"/><rect x="5" y="5" width="6" height="8" fill="'+spec.c+'"/>'+
+    '<rect x="5" y="5" width="2" height="2" fill="'+spec.c2+'"/><rect x="10" y="6" width="1" height="6" fill="#000000" opacity=".22"/>'+
+    potionPixMark(spec.m,'#ffffff')+
+    '<rect x="4" y="4" width="8" height="1" fill="#dffaff"/><rect x="4" y="13" width="8" height="1" fill="#39275f"/>'+
+  '</svg>';
+  return POTION_PIX_CACHE[key]='data:image/svg+xml,'+encodeURIComponent(svg);
+}
+function potionIconHTML(potionOrId,sizeClass){
+  const rawId=typeof potionOrId==='string'?potionOrId:(potionOrId&&potionOrId.id);
+  const id=potionCanonicalId(rawId);
+  const pot=(typeof potionOrId==='object'&&potionOrId)||((typeof POTIONS!=='undefined'&&POTIONS.find)?POTIONS.find(p=>p&&p.id===id):null);
+  const src=potionPixSrc(id);
+  const cls='potion-pix '+(sizeClass||'');
+  if(src) return '<img class="'+rankBuildText(cls)+'" src="'+rankBuildText(src)+'" alt="">';
+  return '<span class="'+rankBuildText(cls+' potion-pix-fallback')+'">'+rankBuildText((pot&&pot.icon)||'🧪')+'</span>';
+}
 const NODE_COL ={fight:'#9b8fc4',midboss:'#ffae42',shop:'#5dff9b',event:'#8be8ff',boss:'#ff4d6d',campfire:'#ff8c3a',elite:'#ff4d4d'};
 let pendingNode=null;
 
@@ -5278,7 +5487,7 @@ function renderMap(){
     if(isCur) ring='<circle cx="'+n.x+'" cy="'+n.y+'" r="17" fill="none" stroke="#fff" stroke-width="2"/>';
     s+='<g class="mapnode'+(isReach?' reach':'')+'" data-id="'+n.id+'" opacity="'+op+'">'+ring+
        '<circle cx="'+n.x+'" cy="'+n.y+'" r="13" fill="#1a1330" stroke="'+col+'" stroke-width="2.5"/>'+
-       (NODE_PIX[n.type]?('<image href="'+NODE_PIX[n.type]+'" x="'+(n.x-9)+'" y="'+(n.y-9)+'" width="18" height="18" style="image-rendering:pixelated"/>'):('<text x="'+n.x+'" y="'+(n.y+4)+'" font-size="12" text-anchor="middle">'+(NODE_ICON[n.type]||'?')+'</text>'))+'</g>';
+       (NODE_PIX[n.type]?('<image class="map-node-pix" href="'+NODE_PIX[n.type]+'" x="'+(n.x-10)+'" y="'+(n.y-10)+'" width="20" height="20" style="image-rendering:pixelated"/>'):('<text x="'+n.x+'" y="'+(n.y+4)+'" font-size="12" text-anchor="middle">'+(NODE_ICON[n.type]||'?')+'</text>'))+'</g>';
   });
   s+='</svg>';
   cont.innerHTML=s;
@@ -6487,7 +6696,7 @@ function usePotion(i){
   if(!p) return;
   runPotionUsed=true;
   p.use(player); sfx.pick();
-  banner(p.icon+' '+p.name,'사용',1000);
+  banner(p.name,'사용',1000);
   player.potions.splice(i,1); renderPotions(); updateHUD();
 }
 
@@ -6500,6 +6709,15 @@ const PERK_TIERS={
   mythic:{name:'신화', col:'#ff4d4d', weight:2},
 };
 const PERK_ICONS={"공격 특화":"btv/assets/asset-031-ae9039d98c.png","속사 특화":"btv/assets/asset-032-bfe2caed63.png","민첩 특화":"btv/assets/asset-033-e918978065.png","활력":"btv/assets/asset-034-56af33bbb6.png","방어 특화":"btv/assets/asset-035-f6e8be3ed5.png","광부":"btv/assets/asset-036-43798a2b09.png","대구경":"btv/assets/asset-037-a9d64b9689.png","재생":"btv/assets/asset-038-4746fa1204.png","경험치 부스트":"btv/assets/asset-039-88b1c0dbbe.png","도네 알림":"btv/assets/asset-040-cd1043c117.png","정밀 조준":"btv/assets/asset-041-05dcac0760.png","흡혈":"btv/assets/asset-042-f5a4bea336.png","충격파":"btv/assets/asset-043-9d9658dacd.png","관통":"btv/assets/asset-044-01948011af.png","반사":"btv/assets/asset-045-7621967172.png","연사":"btv/assets/asset-046-e68f91aaca.png","강철 체력":"btv/assets/asset-047-e0c650b661.png","거인 사냥":"btv/assets/asset-048-b6639c1f84.png","고속탄":"btv/assets/asset-049-92535813ed.png","화염탄":"btv/assets/asset-050-045d77fc4d.png","빙결탄":"btv/assets/asset-051-64010bc748.png","독침":"btv/assets/asset-052-d0c547eb8c.png","가시 갑옷":"btv/assets/asset-053-0db346b7c5.png","흡성":"btv/assets/asset-054-8b0a2a1723.png","추진력":"btv/assets/asset-055-3728ea6cff.png","잔상":"btv/assets/asset-056-698506bda6.png","맹공":"btv/assets/asset-057-c012209117.png","유도의 눈":"btv/assets/asset-058-05b6a83b89.png","연쇄 폭발":"btv/assets/asset-059-907ab157cf.png","흡혈귀":"btv/assets/asset-060-89ca5a31a0.png","그림자 보법":"btv/assets/asset-061-6ec81227e2.png","쌍방향 사격":"btv/assets/asset-062-90c3808337.png","더블탭":"btv/assets/asset-063-3a82467274.png","막판 정신력":"btv/assets/asset-064-2a1779ad5a.png","저체력 폭주":"btv/assets/asset-065-8ff4412553.png","처단":"btv/assets/asset-066-ed78891301.png","분노":"btv/assets/asset-067-871c1d2406.png","불사":"btv/assets/asset-068-5ce5921aad.png","치명 일격":"btv/assets/asset-069-5861e7f2e5.png","폭주":"btv/assets/asset-070-b47b63302a.png","작렬탄":"btv/assets/asset-071-239f04c3d8.png","이중 도약":"btv/assets/asset-072-f42df54136.png","재충전 보호막":"btv/assets/asset-073-b3d22fea42.png","다중 사격":"btv/assets/asset-074-86dfa25e6d.png","유리 대포":"btv/assets/asset-076-a90164b8c5.png","구독자 소환":"btv/assets/asset-077-0df9827940.png"};
+const EXTRA_PERK_ICON_SPECS=[
+  ['점화','#3a2430','#ffb45f','flame'],['현질의 힘','#33293c','#ffd85b','coin'],['치명 흡혈','#3b1e32','#ff6b88','fang'],['감전 연쇄','#263249','#78e6ff','bolt'],
+  ['클립 박제','#292b43','#9ceeff','film'],['사형 선고','#30243a','#f0f2fa','skull'],['확산','#29323c','#84dc70','corrode'],['얇은 유리 대포','#34243f','#f2f5ff','glass'],
+  ['예리한 감각','#1f3040','#9eeaff','eye'],['급소 타격','#31283c','#f8f9ff','knife'],['붉은 맥박','#3c1e32','#ff6383','heart'],['도박사의 칼날','#33253b','#ffd56c','card'],
+  ['산탄 숙련','#2f2b38','#d7c09a','shotgun'],['탄막 집중','#292945','#ffd65a','barrage'],['원소 과부하','#32244a','#b89cff','flame'],['부식 확산','#27343b','#85d96f','corrode'],
+  ['구르기 장전','#203042','#8eefff','reload'],['완벽 회피','#203348','#b9f7ff','dodge'],['그림자 탄막','#221d36','#9f88ff','barrage'],['재생 과부하','#22372e','#8de276','regen'],
+  ['흡혈 보호막','#2d263f','#ff7f94','shield'],['투자 수익','#332d3b','#ffe071','invest'],['탐욕의 계약','#35283d','#ffd85a','contract']
+];
+EXTRA_PERK_ICON_SPECS.forEach(([n,c,c2,m])=>{ if(!PERK_ICONS[n]) PERK_ICONS[n]=miniPixelIconSrc(c,c2,m); });
 const LEVEL_PERKS=[
   // ===== 일반 Common =====
   {g:'common',icon:'⚔️',name:'공격 특화',desc:'공격력 +1',apply:p=>{p.dmg+=1;}},
@@ -6981,6 +7199,17 @@ function renderShop(items){
     cont.appendChild(wrap);
   });
 }
+const SHOP_SPECIAL_PIX={
+  '체력 강화':miniPixelIconSrc('#3a2136','#ff6e8c','heart'),
+  '경험치 북':miniPixelIconSrc('#29334a','#9ee7ff','scroll'),
+  '재도전권':miniPixelIconSrc('#2d2942','#ffd96b','card'),
+  '수상한 상자':miniPixelIconSrc('#302244','#c98bff','case')
+};
+function shopSpecialIconHTML(it){
+  const src=it&&it.kind==='special'?SHOP_SPECIAL_PIX[it.name]:null;
+  if(src) return '<img class="shop-special-pix" src="'+src+'" alt="">';
+  return it&&it.icon?it.icon:'?';
+}
 function shopCard(it,items,idx){
   const el=document.createElement('button');
   const rt=it.relic?relicTier(it.relic):null;
@@ -6995,7 +7224,7 @@ function shopCard(it,items,idx){
   el.className='shop-card '+it.kind+(sold?' sold':'')+(disabled&&!sold?' disabled':'')+(it.relic?' relic-'+(TIER_OF[it.relic.id]||'rare'):'')+(potionGrade?' potion-'+potionGrade:'');
   el.style.setProperty('--shop-border',grade?grade.col:'#7e6cb0');
   el.style.animationDelay=(idx*55)+'ms';
-  const icon=it.relic?relicIconHTML(it.relic,'relic-pix-lg'):it.icon;
+  const icon=it.relic?relicIconHTML(it.relic,'relic-pix-lg'):(it.potion?potionIconHTML(it.potion,'potion-pix-lg'):shopSpecialIconHTML(it));
   el.innerHTML=
     '<span class="shop-price">'+it.cost+'G</span>'+
     (sold?'<span class="shop-sold">품절</span>':'')+
@@ -7015,7 +7244,7 @@ function shopCard(it,items,idx){
     recordShopSpend(it.cost);
     it.bought=true;
     sfx.coin();
-    if(!it.skipBuyBanner) banner(it.icon+' 구매!','',1000);
+    if(!it.skipBuyBanner) banner((it.potion||it.kind==='special'?it.name:it.icon)+' 구매!','',1000);
     updateHUD();
     renderShop(items);
   };
@@ -8025,7 +8254,7 @@ function updateEliteIntro(dt){
     ze.intro=false; ze.introScale=1; ze.stunT=0;
     enemies.forEach(o=>{ o.stunT=0; o.coolT=rand(0.4,1.2); });
     eliteIntro=null; timeScale=0.4; slowmoT=0.3;
-    banner('교전 시작','자잘자',900);
+    banner('교전 시작',eliteDisplayName(currentEliteKind()),900);
   }
 }
 function drawEliteIntro(){
@@ -9989,7 +10218,7 @@ function databaseRows(){
       if(!isDiscovered('potions',p.id)) return dbLockedRow();
       return {
         cls:'',
-        icon:POTION_PIX[p.id]?dbImg(POTION_PIX[p.id],'pk-img'):dbText(p.icon||'🧪'),
+        icon:potionIconHTML(p,'potion-pix-sm'),
         name:p.name,
         desc:p.desc,
         meta:'['+(POTION_RARITIES[p.rarity]?.name||'포션')+'] 사용 키: 포션 슬롯 1 / 2 / 3'
@@ -10692,9 +10921,33 @@ const TREE_PIXEL_PATTERNS = {
   boot:{p:['...111...','...122...','...122...','...122...','..1222...','.1222221.','122222221','111111111','.........'],c:{1:'#f3d98b',2:'#8fb7d9'}},
   gun:{p:['111111...','1222221..','11112221.','...122221','...1111..','..11.....','.11......','.........','.........'],c:{1:'#d8d2bf',2:'#5c6575'}},
   swirl:{p:['..1111...','.122221..','12...221.','1..11221.','1.122211.','12221..1.','.122221..','..1111...','.........'],c:{1:'#c98bff',2:'#8fb7d9'}},
+  sword:{p:['.....1...','....12...','...122...','..122....','.122.....','122......','.1.......','2........','.........'],c:{1:'#f7f3dd',2:'#d79b4b'}},
+  arrow:{p:['....1....','...121...','..12221..','....2....','....2....','....2....','....2....','...222...','.........'],c:{1:'#fff0a8',2:'#8fb7d9'}},
+  crown:{p:['1...2...1','11.222.11','122222221','122222221','.1111111.','.........','.........','.........','.........'],c:{1:'#fff0a8',2:'#d7b657'}},
+  gem:{p:['..11111..','.1222221.','122222221','122121221','.1222221.','..12221..','...121...','....1....','.........'],c:{1:'#c98bff',2:'#11131a'}},
+  armor:{p:['..11111..','.1222221.','122222221','122121221','122222221','.1222221.','..12221..','...111...','.........'],c:{1:'#d8d2bf',2:'#5c6575'}},
+  contract:{p:['.111111..','12222221.','12211221.','12222221.','12111221.','12222221.','12221111.','.1111.2.','.........'],c:{1:'#f3d98b',2:'#5f8cff'}},
+};
+const TREE_NODE_PIX={
+  hub:'tower',
+  shot:'arrow', status:'fire', gold:'coin', survive:'shield', speed:'boot',
+  s_speed1:'bolt', s_speed2:'bolt', s_size1:'orb', s_size2:'orb', s_spread:'split', s_shots1:'split', s_shots2:'split',
+  s_back:'back', s_stable_barrage:'split', s_overcharge_round:'gun',
+  sharp_senses:'target', weakpoint_strike:'target', red_pulse:'blood', gamblers_blade:'sword', shotgun_mastery:'split', barrage_focus:'split',
+  t_burn1:'fire', t_burn2:'fire', t_poison1:'poison', t_poison2:'poison', t_chill:'frost', t_dmg:'bomb', t_stun:'bell', t_spread:'wave',
+  t_venom_mature:'poison', t_frost_mark:'frost', elemental_overload:'bolt', corrosive_spread:'poison',
+  g_gold1:'coin', g_gold2:'coin', g_xp1:'chart', g_xp2:'chart', g_donate:'donate', g_power:'card', g_magnet:'magnet', g_jackpot:'slot',
+  investment_return:'coin', greed_contract:'contract',
+  v_hp1:'heart', v_hp2:'heart', v_armor1:'armor', v_armor2:'armor', v_regen:'leaf', v_steal:'blood', v_thorns:'thorn', v_undead:'skull',
+  v_blood_cycle:'blood', v_shield_training:'armor', regen_overload:'leaf', vamp_shield:'shield',
+  m_spd1:'boot', m_spd2:'boot', m_fire1:'gun', m_fire2:'gun', m_dodge:'swirl', m_dtap:'target', m_charge2:'orb', m_blitz:'bolt',
+  m_risky_roll:'swirl', m_dash_shot:'gun', dodge_reload:'swirl', perfect_dodge:'swirl', shadow_barrage:'split'
 };
 function treePixelKey(node){
   const id=node.id;
+  if(node.iconKey && TREE_PIXEL_PATTERNS[node.iconKey]) return node.iconKey;
+  if(TREE_NODE_PIX[id] && TREE_PIXEL_PATTERNS[TREE_NODE_PIX[id]]) return TREE_NODE_PIX[id];
+  if(TREE_NODE_PIX[node.branch] && TREE_PIXEL_PATTERNS[TREE_NODE_PIX[node.branch]]) return TREE_NODE_PIX[node.branch];
   if(id==='hub') return 'hub';
   if(id==='sharp_senses'||id==='weakpoint_strike'||id==='barrage_focus') return 'target';
   if(id==='red_pulse'||id==='gamblers_blade') return 'blood';
