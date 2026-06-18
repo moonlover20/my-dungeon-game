@@ -1261,6 +1261,16 @@ let progressSaveTimer=null;
 let progressRemoteDisabled=false;
 let scoreSubmitSeq=0;
 let rankingDifficulty='easy';
+const FALLBACK_CURRENT_SEASON=2;
+function getCurrentSeason(){
+  const s=Math.floor(Number(window.CURRENT_SEASON));
+  return (s>=1)?s:FALLBACK_CURRENT_SEASON;
+}
+function recordSeason(d){
+  const s=Math.floor(Number(d&&d.seasonId));
+  return (s>=1)?s:1;
+}
+let rankingSeason=getCurrentSeason();
 const rankingBuildCache=new Map();
 let leaderboardSplitReadDenied=false;
 let leaderboardSplitWriteDenied=false;
@@ -3198,6 +3208,22 @@ function setRankingDifficulty(key){
     btn.classList.toggle('active',btn.dataset.diff===rankingDifficulty);
   });
 }
+function setRankingSeason(s){
+  s=Math.floor(Number(s));
+  rankingSeason=(s>=1)?s:getCurrentSeason();
+  const sel=$('rankingSeasonSel'); if(sel) sel.value=String(rankingSeason);
+}
+function populateSeasonSelector(){
+  const sel=$('rankingSeasonSel'); if(!sel) return;
+  const cur=getCurrentSeason();
+  let html='';
+  for(let s=cur;s>=1;s--){
+    const label=(s===cur)?('시즌 '+s+' (진행중)'):('시즌 '+s);
+    html+='<option value="'+s+'"'+(s===rankingSeason?' selected':'')+'>'+label+'</option>';
+  }
+  sel.innerHTML=html;
+  sel.value=String(rankingSeason);
+}
 function rankingReachedText(data){
   return getRankSummaryText(data);
 }
@@ -3311,6 +3337,7 @@ function normalizeRankingRecord(data){
     if(d.hits==null) d.hits=breakdown.hits;
     if(d.retries==null) d.retries=breakdown.retries;
   }
+  d.seasonId=recordSeason(d);
   return d;
 }
 function sortRankingRecords(records){
@@ -3556,16 +3583,19 @@ async function openRankBuildDetail(summary){
   }
 }
 async function loadRankingSummaries(api){
+  const season=rankingSeason;
   if(!leaderboardSplitReadDenied){
     try{
       const q=api.fs.query(
         api.fs.collection(api.db,LEADERBOARD_SUMMARY_COLLECTION),
         api.fs.where('difficultyKey','==',rankingDifficulty),
         api.fs.orderBy('score','desc'),
-        api.fs.limit(50)
+        api.fs.limit(200)
       );
       const snap=await api.fs.getDocs(q);
-      const records=snap.docs.map(doc=>normalizeRankingRecord(Object.assign({id:doc.id,runId:doc.id},doc.data())));
+      const records=snap.docs.map(doc=>normalizeRankingRecord(Object.assign({id:doc.id,runId:doc.id},doc.data())))
+        .filter(d=>recordSeason(d)===season)
+        .slice(0,10);
       if(records.length) return sortRankingRecords(records).slice(0,10);
     }catch(e){
       if(isFirestorePermissionError(e)) leaderboardSplitReadDenied=true;
@@ -3574,10 +3604,10 @@ async function loadRankingSummaries(api){
   }
   if(!leaderboardSplitReadDenied){
     try{
-      const q=api.fs.query(api.fs.collection(api.db,LEADERBOARD_SUMMARY_COLLECTION),api.fs.orderBy('score','desc'),api.fs.limit(50));
+      const q=api.fs.query(api.fs.collection(api.db,LEADERBOARD_SUMMARY_COLLECTION),api.fs.orderBy('score','desc'),api.fs.limit(200));
       const snap=await api.fs.getDocs(q);
       const records=snap.docs.map(doc=>normalizeRankingRecord(Object.assign({id:doc.id,runId:doc.id},doc.data())))
-        .filter(d=>(d.difficultyKey||'easy')===rankingDifficulty)
+        .filter(d=>(d.difficultyKey||'easy')===rankingDifficulty && recordSeason(d)===season)
         .slice(0,10);
       if(records.length) return sortRankingRecords(records).slice(0,10);
     }catch(e){
@@ -3585,9 +3615,9 @@ async function loadRankingSummaries(api){
       else console.warn('leaderboard summary fallback failed',e);
     }
   }
-  const q=api.fs.query(api.fs.collection(api.db,leaderboardCollectionFor(rankingDifficulty)),api.fs.orderBy('score','desc'),api.fs.limit(50));
+  const q=api.fs.query(api.fs.collection(api.db,leaderboardCollectionFor(rankingDifficulty)),api.fs.orderBy('score','desc'),api.fs.limit(200));
   const snap=await api.fs.getDocs(q);
-  return sortRankingRecords(snap.docs.map(doc=>normalizeRankingRecord(Object.assign({id:doc.id},doc.data())))).slice(0,10);
+  return sortRankingRecords(snap.docs.map(doc=>normalizeRankingRecord(Object.assign({id:doc.id},doc.data()))).filter(d=>recordSeason(d)===season)).slice(0,10);
 }
 async function saveLegacyRunScore(){
   const summary=arguments[0]||{};
@@ -3612,6 +3642,7 @@ async function saveLegacyRunScore(){
     retries:Math.max(0,Math.round(Number(summary.retries)||0)),
     score:clamp(Math.round(Number(summary.score)||0),0,SCORE_MAX),
     title:String(summaryData.title||''),
+    seasonId:Math.max(1,Math.floor(Number(summary.seasonId)||getCurrentSeason())),
     win:!!summary.win
   };
   await api.fs.addDoc(api.fs.collection(api.db,leaderboardCollectionFor(legacyData.difficultyKey)),legacyData);
@@ -3666,6 +3697,7 @@ async function saveRunScore(win,killer,scoreData,name){
       character:PLAYER_CHARACTER_NAME,
       goldStats:getRunGoldStatsSnapshot(),
       version:RUN_BUILD_VERSION,
+      seasonId:getCurrentSeason(),
       createdAt:new Date().toISOString()
     };
     const build=pendingRunBuildSnapshot||createRunBuildSnapshot(scoreData);
@@ -11534,6 +11566,8 @@ function openRankingTab(){
   $('ovTitle').classList.remove('hidden');
   $('ovRanking').classList.remove('hidden');
   setRankingDifficulty(diffSet&&diffSet.key?diffSet.key:rankingDifficulty);
+  rankingSeason=getCurrentSeason();
+  populateSeasonSelector();
   state='title';
   syncChrome();
   refreshTitleDisplay();
@@ -11897,6 +11931,7 @@ function bootGame(){
   { const ab=$('tmAchievements'); if(ab) ab.onclick=openAchievementsTab; }
   { const db=$('tmDatabase'); if(db) db.onclick=openDatabaseTab; }
   { const rc=$('rankingClose'); if(rc) rc.onclick=closeRankingTab; }
+  { const ss=$('rankingSeasonSel'); if(ss) ss.onchange=()=>{ setRankingSeason(ss.value); renderRankingList(); }; }
   { const rbc=$('rankBuildClose'); if(rbc) rbc.onclick=closeRankBuildModal; }
   { const ac=$('achClose'); if(ac) ac.onclick=closeAchievementsTab; }
   { const dc=$('databaseClose'); if(dc) dc.onclick=closeDatabaseTab; }
@@ -11909,8 +11944,7 @@ function bootGame(){
   });
   { const ds=$('databaseSearch'); if(ds) ds.addEventListener('input',renderDatabase); }
   document.querySelectorAll('.rank-tab').forEach(btn=>{
-    btn.onclick=()=>{ setRankingDifficulty(btn.dataset.diff); renderRankingList(); };
-  });
+    btn.onclick=()=>{ setRankingDifficulty(btn.dataset.diff); renderRankingList(); };  });
   // tmSettings는 wireSettings()에서 openSettings로 연결됨 (아래에서 재정의)
   $('tmExit').onclick=()=>{ try{ window.close(); }catch(e){} };
   $('diffBack').onclick=closeDifficultyTab;
