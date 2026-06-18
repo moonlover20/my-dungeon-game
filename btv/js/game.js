@@ -2053,7 +2053,7 @@ function getTrainingTooltipData(trainingKey){
   const id=String(trainingKey||'').replace(/^training-/,'');
   const def=trainingDefById(id);
   if(!def){
-    return {title:'훈련',totalText:'-',description:'훈련 정보를 찾을 수 없습니다.',breakdown:[{label:'출처 정보',value:'없음',sourceType:'기타'}],formulaText:'구버전 데이터도 안전하게 무시합니다.',kind:'training'};
+    return {title:'훈련',totalText:'-',description:'훈련 정보를 찾을 수 없습니다.',breakdown:[{label:'훈련 정보',value:'적용 안 됨',sourceType:'훈련'}],formulaText:'적용 방식: 현재 훈련 정보 기준',kind:'training'};
   }
   const count=trainingCount(id,player);
   const maxed=trainingIsMaxed(id,player);
@@ -2203,7 +2203,7 @@ function specialSignedText(n,suffix){
   return (v>0?'+':'')+(Number.isInteger(v)?String(v):v.toFixed(1))+(suffix||'');
 }
 function specialSourceType(type){
-  return type||'기타 효과';
+  return type||'패시브/기타';
 }
 function sourceDeltaFromApply(source,field){
   if(!source||!source.apply||!field) return 0;
@@ -2219,7 +2219,7 @@ function sourceDeltaFromApply(source,field){
 function addSpecialPart(parts,label,value,sourceType){
   const n=Number(value)||0;
   if(Math.abs(n)<1e-9) return;
-  parts.push({label:label||'출처 불명',value:n,sourceType:specialSourceType(sourceType)});
+  parts.push({label:label||'특수 효과',value:n,sourceType:specialSourceType(sourceType)});
 }
 function collectAppliedSourceParts(field,p){
   p=p||player;
@@ -2255,11 +2255,11 @@ function sumSpecialParts(parts){
 }
 function addRemainderPart(parts,total,label){
   const diff=(Number(total)||0)-sumSpecialParts(parts);
-  if(Math.abs(diff)>=0.005) addSpecialPart(parts,label||'기타 효과',diff,'기타 효과');
+  if(Math.abs(diff)>=0.005) addSpecialPart(parts,label||'특수 효과',diff,'패시브/기타');
 }
 function specialPartsToText(parts,formatFn){
   return (parts||[]).map(row=>({
-    label:row.label||'출처 불명',
+    label:row.label||'특수 효과',
     value:formatFn?formatFn(row.value):String(row.value),
     sourceType:specialSourceType(row.sourceType)
   }));
@@ -2353,7 +2353,7 @@ function getXpBonusBreakdown(){
 function getSpecialScalarBreakdown(field,totalBase){
   const total=Number(player[field])-(totalBase==null?0:totalBase);
   const parts=collectAppliedSourceParts(field,player);
-  addRemainderPart(parts,total,'기타 효과');
+  addRemainderPart(parts,total,'특수 효과');
   return {total,parts};
 }
 function getSpecialEffectTooltipData(effectKey){
@@ -2361,6 +2361,51 @@ function getSpecialEffectTooltipData(effectKey){
   let b=null, title='특수 효과', totalText='', description='현재 적용 중인 특수 효과입니다.', formulaText='적용 방식: 현재 값 기준', kind='special';
   const pct=specialPctText;
   const perSec=v=>specialSignedText(v,'/초');
+  const onText=v=>v||'적용 중';
+  const simpleSpecial=(cfg)=>{
+    const value=onText(typeof cfg.value==='function'?cfg.value():cfg.value);
+    return {
+      title:cfg.title||'특수 효과',
+      totalText:value,
+      description:cfg.description||'현재 적용 중인 특수 효과입니다.',
+      breakdown:[{label:cfg.label||cfg.title||'특수 효과',value,sourceType:cfg.sourceType||'패시브/기타'}],
+      formulaText:cfg.formulaText||'적용 방식: 효과별로 자동 적용됩니다',
+      kind:cfg.kind||'special'
+    };
+  };
+  const simpleSpecialMap={
+    'crit-heal':{title:'치명타 회복',value:()=>'+'+Math.round(Number(player.critHeal)||0),description:'치명타 적중 시 체력을 회복합니다.',formulaText:'적용 방식: 치명타 적중 시 회복량을 즉시 적용',kind:'regen'},
+    'crit-explode':{title:'치명타 폭발',value:'적용 중',description:'치명타 발생 시 작은 폭발을 일으킵니다.',formulaText:'적용 방식: 치명타 발생 위치에 추가 폭발 적용',kind:'crit'},
+    'multi-shot':{title:'다중사격',value:()=>Math.max(1,Number(player.shots)||1)+'발',description:'한 번에 여러 발을 동시에 발사합니다.',formulaText:'적용 방식: 기본 발사에 추가 투사체를 합산',kind:'shots'},
+    'pierce':{title:'관통',value:()=>Math.round(Number(player.pierce)||0)+'회',description:'탄이 적을 뚫고 지나갑니다.',formulaText:'적용 방식: 명중 후 남은 관통 횟수만큼 투사체 유지',kind:'shots'},
+    'bounce':{title:'반사',value:()=>Math.round(Number(player.bounce)||0)+'회',description:'탄이 벽이나 적에 튕깁니다.',formulaText:'적용 방식: 충돌 시 남은 반사 횟수만큼 방향 전환',kind:'shots'},
+    'homing':{title:'유도탄',value:'적용 중',description:'탄이 가까운 적을 추적합니다.',formulaText:'적용 방식: 비행 중 가까운 적 방향으로 자동 보정',kind:'shots'},
+    'back-shot':{title:'쌍방향 사격',value:'적용 중',description:'앞뒤로 동시에 발사합니다.',formulaText:'적용 방식: 발사 시 반대 방향 투사체를 함께 생성',kind:'shots'},
+    'burn':{title:'화염탄',value:'적용 중',description:'명중한 적에게 지속 화상 피해를 줍니다.',formulaText:'적용 방식: 명중 시 화상 상태를 부여하고 지속 피해 적용'},
+    'freeze':{title:'빙결탄',value:'적용 중',description:'명중한 적을 둔화시킵니다.',formulaText:'적용 방식: 명중 시 빙결/둔화 상태를 부여'},
+    'poison':{title:'독침',value:'적용 중',description:'명중한 적에게 지속 독 피해를 줍니다.',formulaText:'적용 방식: 명중 시 독 상태를 부여하고 지속 피해 적용'},
+    'status-damage':{title:'상태이상 피해',value:()=>pct(Number(player.statusDmgMul)||0),description:'상태이상에 걸린 적에게 주는 피해가 증가합니다.',formulaText:'적용 방식: 대상에게 상태이상이 있을 때 피해 보너스 적용',kind:'attack'},
+    'status-spread':{title:'상태 확산',value:'적용 중',description:'상태이상 적 처치 시 주변으로 효과를 전파합니다.',formulaText:'적용 방식: 처치 시 주변 적에게 상태이상 전파'},
+    'chain-lightning':{title:'감전 연쇄',value:()=>Math.round(Number(player.chainLightning)||0)+'회',description:'명중 시 근처 적에게 연쇄 번개를 전달합니다.',formulaText:'적용 방식: 명중 후 가까운 적에게 번개를 순차 적용',kind:'attack'},
+    'bullet-explode':{title:'작렬탄',value:'적용 중',description:'명중 지점에서 폭발 피해를 일으킵니다.',formulaText:'적용 방식: 투사체 명중 위치에 범위 피해 적용',kind:'attack'},
+    'explode-kill':{title:'연쇄 폭발',value:()=>Math.round(Number(player.explodeKill)||0),description:'적 처치 시 주변에 폭발을 일으킵니다.',formulaText:'적용 방식: 처치한 적 위치에 범위 폭발 적용',kind:'attack'},
+    'dodge-charges':{title:'이중 도약',value:()=>Math.max(1,Math.round(Number(player.dodgeMaxCharges)||1))+'회',description:'회피를 여러 번 충전해 사용할 수 있습니다.',formulaText:'적용 방식: 회피 최대 충전 횟수 증가',kind:'speed'},
+    'dodge-blast':{title:'처단',value:'적용 중',description:'회피 시 충격파를 발생시킵니다.',formulaText:'적용 방식: 회피 사용 위치에 충격파 적용',kind:'attack'},
+    'dodge-haste':{title:'추진력',value:'적용 중',description:'회피 직후 이동 속도가 빨라집니다.',formulaText:'적용 방식: 회피 직후 짧은 이동 가속 적용',kind:'speed'},
+    'dodge-iframe':{title:'잔상',value:'적용 중',description:'회피 무적 시간이 증가합니다.',formulaText:'적용 방식: 회피 중 무적 판정 시간을 추가 적용',kind:'speed'},
+    'dodge-cd':{title:'그림자 보법',value:()=>pct((Number(player.dodgeCdMul)||1)-1),description:'회피 쿨다운이 감소합니다.',formulaText:'적용 방식: 회피 재사용 대기시간 배율 보정',kind:'speed'},
+    'lifesteal':{title:'흡혈',value:()=>pct(Number(player.lifesteal)||0),description:'적 처치 시 체력을 회복합니다.',formulaText:'적용 방식: 처치 시 정해진 비율만큼 회복',kind:'regen'},
+    'heal-on-kill':{title:'흡성',value:()=> '+'+Math.round(Number(player.healOnKill)||0),description:'적 처치 시 체력을 회복합니다.',formulaText:'적용 방식: 처치 시 고정 회복량을 즉시 적용',kind:'regen'},
+    'shield-regen':{title:'재충전 보호막',value:'적용 중',description:'일정 시간마다 보호막을 충전합니다.',formulaText:'적용 방식: 정해진 주기마다 보호막 자동 충전',kind:'armor'},
+    'last-stand':{title:'막판 정신력',value:'적용 중',description:'치명적인 피해를 한 번 버팁니다.',formulaText:'적용 방식: 발동 조건 충족 시 체력 1로 생존',kind:'hp'},
+    'donate':{title:'도네 알림',value:()=>pct(Number(player.donateChance)||0),description:'적 처치 시 확률로 골드를 얻습니다.',formulaText:'적용 방식: 처치 시 확률 판정 후 골드 지급',kind:'gold'},
+    'crowd-rage':{title:'분노',value:'적용 중',description:'주변 적이 많을수록 공격력이 증가합니다.',formulaText:'적용 방식: 주변 적 수에 따라 공격 보너스 자동 반영',kind:'attack'},
+    'low-hp':{title:'저체력 폭주',value:()=>pct(Number(player.lowHpMul)||0),description:'체력이 낮을수록 공격력이 증가합니다.',formulaText:'적용 방식: 현재 체력 비율에 따라 공격 보너스 자동 반영',kind:'attack'},
+    'execute':{title:'처형',value:()=>pct(Number(player.execThreshold)||0),description:'체력이 낮은 잡몹을 즉시 처치합니다.',formulaText:'적용 방식: 대상 체력이 기준 이하이면 처형 적용',kind:'attack'},
+    'thorn':{title:'가시 갑옷',value:()=>Math.round(Number(player.thorns)||0),description:'접촉한 적에게 반사 피해를 줍니다.',formulaText:'적용 방식: 접촉 피해를 받을 때 반사 피해 적용',kind:'attack'},
+    'minion':{title:'구독자 소환',value:'적용 중',description:'자동으로 공격하는 분신을 소환합니다.',formulaText:'적용 방식: 소환된 분신이 자동 공격'}
+  };
+  if(simpleSpecialMap[key]) return simpleSpecial(simpleSpecialMap[key]);
   if(key==='regen'){
     b=getRegenBreakdown(); title='체력 재생 '+perSec(b.total); totalText=perSec(b.total); description='현재 적용 중인 자연 재생 효과입니다.'; formulaText='적용 방식: 초당 회복'; kind='regen';
     return {title,totalText,description,breakdown:specialPartsToText(b.parts,perSec),formulaText,kind};
@@ -2408,7 +2453,7 @@ function getSpecialEffectTooltipData(effectKey){
     const val=buff&&buff.regen?perSec(buff.regen):(buff&&buff.atkMul?pct(buff.atkMul):(buff&&buff.fireAdd?pct(buff.fireAdd):(buff&&buff.armor?pct(buff.armor):'')));
     return {title:label,totalText:val||'ON',description:(buff&&buff.desc)||'포션으로 적용 중인 임시 효과입니다.',breakdown:[{label:(buff&&buff.name)||'포션',value:val||'ON',sourceType:'포션'}],formulaText:'적용 방식: 지속시간 '+Math.max(0,Math.ceil(buff&&buff.t||0))+'초 남음',kind:'special'};
   }
-  return {title:'특수 효과',totalText:'ON',description:'현재 적용 중인 특수 효과입니다.',breakdown:[{label:'출처 정보',value:'확인 필요',sourceType:'기타 효과'}],formulaText:'적용 방식: 효과별 규칙 적용',kind:'special'};
+  return {title:'특수 효과',totalText:'적용 중',description:'현재 적용 중인 특수 효과입니다.',breakdown:[{label:'특수 효과',value:'적용 중',sourceType:'패시브/기타'}],formulaText:'적용 방식: 효과별로 자동 적용됩니다',kind:'special'};
 }
 function statKeyFromLabel(label){
   return ((String(label||'').match(/^(\S+)/)||[])[1]||'special').trim();
@@ -2539,12 +2584,12 @@ function ensureSpecialEffectTooltip(){
 }
 function renderSpecialEffectTooltip(data){
   const rows=(data.breakdown||[]).map(row=>
-    '<div class="special-tooltip-row"><span>'+spEsc(row.label||'출처 불명')+'</span><b>'+spEsc(row.value==null?'':row.value)+'</b><em>'+spEsc(row.sourceType||'기타 효과')+'</em></div>'
+    '<div class="special-tooltip-row"><span>'+spEsc(row.label||'특수 효과')+'</span><b>'+spEsc(row.value==null?'':row.value)+'</b><em>'+spEsc(row.sourceType||'패시브/기타')+'</em></div>'
   ).join('');
   return '<div class="special-tooltip-head"><div><b>'+spEsc(data.title)+'</b><span>'+spEsc(data.description)+'</span></div><strong>'+spEsc(data.totalText||'')+'</strong></div>'+
     '<div class="special-tooltip-line"></div>'+
     '<div class="special-tooltip-section-title">구성</div>'+
-    '<div class="special-tooltip-breakdown">'+(rows||'<div class="special-tooltip-row"><span>출처 정보 없음</span><b>-</b><em>기타 효과</em></div>')+'</div>'+
+    '<div class="special-tooltip-breakdown">'+(rows||'<div class="special-tooltip-row"><span>특수 효과</span><b>적용 중</b><em>패시브/기타</em></div>')+'</div>'+
     '<div class="special-tooltip-final"><span>최종 적용</span><b>'+spEsc(data.totalText||'ON')+'</b></div>'+
     '<div class="special-tooltip-formula">'+spEsc(data.formulaText||'적용 방식: 효과별 규칙 적용')+'</div>';
 }
@@ -10899,56 +10944,56 @@ function spEffects(p){
   add(p.nonCritDmgMul<1,'🎲','비치명타 피해 '+pc(p.nonCritDmgMul),'도박사의 칼날','치명타 확률/피해 증가 대신 비치명타 피해 감소','noncrit-penalty');
   add(p.redPulseRegen>0,'🩸','붉은 맥박'+(p.redPulseBuff>0?timeLabel(p.redPulseBuff):''),'붉은 맥박','치명타 적중 시 재생 +'+p.redPulseRegen+'/초, 3초 지속, 내부쿨 6초','red-pulse');
   add(p.redPulseBuff>0,'🌿','맥박 재생 +'+p.redPulseRegen+'/초'+timeLabel(p.redPulseBuff),'붉은 맥박','현재 발동 중인 치명타 재생 버프','red-pulse-active');
-  add(p.critHeal>0,'💉','치명타 회복 +'+p.critHeal,'치명 흡혈','치명타 적중 시 체력 회복');
-  add(p.critExplodeMul>0,'🧨','치명타 폭발','작렬탄','치명타 발생 시 작은 폭발');
+  add(p.critHeal>0,'💉','치명타 회복 +'+p.critHeal,'치명 흡혈','치명타 적중 시 체력 회복','crit-heal');
+  add(p.critExplodeMul>0,'🧨','치명타 폭발','작렬탄','치명타 발생 시 작은 폭발','crit-explode');
 
-  add(p.shots>1,'🔱','다중사격 '+p.shots+'발','다중 사격','한 번에 여러 발을 동시에 발사');
+  add(p.shots>1,'🔱','다중사격 '+p.shots+'발','다중 사격','한 번에 여러 발을 동시에 발사','multi-shot');
   add(p.closeProjectileDmgMul>0,'🔱','산탄 숙련 +'+pc(p.closeProjectileDmgMul),'산탄 숙련','가까운 거리 투사체 피해 증가. 보스 대상은 절반','shotgun-mastery');
   add(p.barrageFocus,'🎯','탄막 집중','탄막 집중','같은 발사 묶음 추가 투사체 보정 100/45/30/15, 추가 투사체 치명타 +'+pc(p.extraProjectileCritChance||0),'barrage-focus');
-  add(p.pierce>0,'🍢','관통 '+p.pierce,'관통','탄이 적을 뚫고 지나간다');
-  add(p.bounce>0,'🔴','반사 '+p.bounce,'반사','탄이 벽·적에 튕긴다');
-  add(p.homing>0,'👁️','유도탄','유도의 눈','탄이 가까운 적을 추적');
-  add(p.backShot,'🔙','쌍방향 사격','쌍방향 사격','앞뒤로 동시에 발사');
+  add(p.pierce>0,'🍢','관통 '+p.pierce,'관통','탄이 적을 뚫고 지나간다','pierce');
+  add(p.bounce>0,'🔴','반사 '+p.bounce,'반사','탄이 벽·적에 튕긴다','bounce');
+  add(p.homing>0,'👁️','유도탄','유도의 눈','탄이 가까운 적을 추적','homing');
+  add(p.backShot,'🔙','쌍방향 사격','쌍방향 사격','앞뒤로 동시에 발사','back-shot');
 
-  add(p.burn>0,'🔥','화염탄','화염탄','명중 시 지속 화상 피해');
-  add(p.chill>0,'❄️','빙결탄','빙결탄','명중한 적을 둔화시킨다');
-  add(p.poison>0,'🟢','독침','독침','명중 시 지속 독 피해');
-  add(p.statusDmgMul>0,'🔥','상태이상 피해 +'+pc(p.statusDmgMul),'점화','상태이상 적에게 주는 피해 증가');
+  add(p.burn>0,'🔥','화염탄','화염탄','명중 시 지속 화상 피해','burn');
+  add(p.chill>0,'❄️','빙결탄','빙결탄','명중한 적을 둔화시킨다','freeze');
+  add(p.poison>0,'🟢','독침','독침','명중 시 지속 독 피해','poison');
+  add(p.statusDmgMul>0,'🔥','상태이상 피해 +'+pc(p.statusDmgMul),'점화','상태이상 적에게 주는 피해 증가','status-damage');
   add(p.statusCritChance>0,'🔥','원소 과부하 +'+pc(p.statusCritChance),'원소 과부하','상태이상 걸린 적에게 치명타 확률 증가. 치명타 상한 적용','elemental-overload');
   add(p.corrosiveSpread,'🟢','부식 확산','부식 확산','상태이상 적 처치 시 독/화상 전이 강화. 직접 타격 피해 -8%','corrosive-spread');
-  add(p.statusSpread,'🌬️','상태 확산','확산','상태이상 적 처치 시 주변 전파');
-  add(p.chainLightning>0,'⚡','감전 연쇄 '+p.chainLightning,'감전 연쇄','명중 시 근처 적에게 연쇄 번개');
+  add(p.statusSpread,'🌬️','상태 확산','확산','상태이상 적 처치 시 주변 전파','status-spread');
+  add(p.chainLightning>0,'⚡','감전 연쇄 '+p.chainLightning,'감전 연쇄','명중 시 근처 적에게 연쇄 번개','chain-lightning');
   add(p.chainKillLightning>0,'⚡','번개의 병','번개의 병','처치 시 가장 가까운 적에게 1회 체인 번개. 처치 연쇄 폭딜은 직접 피해로 제한','lightning-bottle');
-  add(p.bulletExplode>0,'💢','작렬탄','작렬탄','명중 지점에서 폭발');
-  add(p.explodeKill>0,'💣','연쇄폭발','연쇄 폭발','적 처치 시 주변 폭발');
+  add(p.bulletExplode>0,'💢','작렬탄','작렬탄','명중 지점에서 폭발','bullet-explode');
+  add(p.explodeKill>0,'💣','연쇄폭발','연쇄 폭발','적 처치 시 주변 폭발','explode-kill');
 
   add(p.dodgeReload,'🌀','구르기 장전'+(p.dodgeReloadT>0?timeLabel(p.dodgeReloadT):''),'구르기 장전','베인Q 후 2초 안의 다음 탄 피해 +40%','dodge-reload');
   add(p.perfectDodge,'💨','완벽 회피'+(p.perfectDodgeFireT>0?timeLabel(p.perfectDodgeFireT):''),'완벽 회피','Q 이후 1초간 피격되지 않으면 3초 동안 발사속도 +20%','perfect-dodge');
   add(p.perfectDodgeArmed,'💨','회피 판정'+timeLabel(p.perfectDodgeCheckT),'완벽 회피','피격되지 않으면 발사속도 버프 발동','perfect-dodge-armed');
   add(p.shadowBarrage,'🌑','그림자 탄막'+(p.shadowBarrageT>0?timeLabel(p.shadowBarrageT):''),'그림자 탄막','Q 후 1초 동안 투사체 +'+(p.shadowBarrageExtraShots||1)+', 내부쿨 6초','shadow-barrage');
   add(p.shadowBarrageCd>0&&p.shadowBarrageT<=0,'🌑','탄막 쿨'+timeLabel(p.shadowBarrageCd),'그림자 탄막','내부쿨 대기 중','shadow-barrage-cd');
-  add(p.dodgeMaxCharges>1,'🌀','이중도약','이중 도약','회피를 2회까지 충전');
-  add(p.dodgeBlast>0,'💥','처단','처단','회피 시 충격파 발생');
-  add(p.dodgeHaste,'💨','추진력','추진력','회피 직후 이동 가속');
-  add(p.dodgeIframeBonus>0,'👻','잔상','잔상','회피 무적 시간 증가');
-  add(p.dodgeCdMul<1,'🌀','그림자보법','그림자 보법','회피 쿨다운 감소');
+  add(p.dodgeMaxCharges>1,'🌀','이중도약','이중 도약','회피를 2회까지 충전','dodge-charges');
+  add(p.dodgeBlast>0,'💥','처단','처단','회피 시 충격파 발생','dodge-blast');
+  add(p.dodgeHaste,'💨','추진력','추진력','회피 직후 이동 가속','dodge-haste');
+  add(p.dodgeIframeBonus>0,'👻','잔상','잔상','회피 무적 시간 증가','dodge-iframe');
+  add(p.dodgeCdMul<1,'🌀','그림자보법','그림자 보법','회피 쿨다운 감소','dodge-cd');
 
   add(regen!==0,'🌿','재생 '+fmtSignedNumber(regen)+'/초','재생','자연재생 + 유물/특성/임시 재생 합산','regen');
   add(p.regenOverload,'🌿','재생 과부하','재생 과부하','체력 50% 이하일 때 양수 재생 효과 +50%','regen-overload');
-  add(p.lifesteal>0,'🩸','흡혈 '+pc(p.lifesteal),'흡혈','적 처치 시 체력 회복');
-  add(p.healOnKill>0,'💚','흡성 '+p.healOnKill,'흡성','적 처치 시 체력 회복');
-  add(p.shieldRegen>0,'🔵','재충전 보호막','재충전 보호막','일정 시간마다 보호막 충전');
+  add(p.lifesteal>0,'🩸','흡혈 '+pc(p.lifesteal),'흡혈','적 처치 시 체력 회복','lifesteal');
+  add(p.healOnKill>0,'💚','흡성 '+p.healOnKill,'흡성','적 처치 시 체력 회복','heal-on-kill');
+  add(p.shieldRegen>0,'🔵','재충전 보호막','재충전 보호막','일정 시간마다 보호막 충전','shield-regen');
   add(p.hitShield>0,'🔵','피격 보호막 '+p.hitShield,'보호막 물약','피해를 무효화하는 보호막','hit-shield');
   add(p.overhealShieldRate>0,'🛡️','흡혈 보호막 '+Math.round(p.overhealShield||0)+'/'+Math.round(p.maxhp*(p.overhealShieldCap||0.2)),'흡혈 보호막','초과 회복량을 보호막으로 전환. 자연 재생 효과 -30%. 상한 최대 체력 20%','vamp-shield');
   add(p.deathWard>0,'🪽','불사 '+p.deathWard,'불사 물약','죽을 피해를 무시','death-ward');
-  add(p.lastStand,'🩹','막판 정신력','막판 정신력','치명타를 1회 체력 1로 버팀');
+  add(p.lastStand,'🩹','막판 정신력','막판 정신력','치명타를 1회 체력 1로 버팀','last-stand');
 
   add(p.investmentReturn,'💰','투자 수익 '+(gold>=150?'ON':'골드 150 필요'),'투자 수익','골드 150 이상 보유 시 공격력 +10%','investment-return');
   add(p.goldPower>0,'💸','현질의 힘','현질의 힘','보유 골드 100당 공격력 증가. 최대 +30%','gold-power');
   add(p.goldMul>1,'🧲','골드 +'+pc(p.goldMul-1),'광부','골드 획득량 증가','goldGain');
   add(p.noPotionDmgMul>1,'🏆','금욕의 성배 '+((!p.potions||p.potions.length===0)?'ON':'포션 보유 중'),'금욕의 성배','포션 0개 보유 시 공격력 +'+pc(p.noPotionDmgMul-1),'no-potion');
   add(p.xpMul>1,'📈','경험치 +'+pc(p.xpMul-1),'경험치 부스트','경험치 획득량 증가','xpGain');
-  add(p.donateChance>0,'💸','도네 '+pc(p.donateChance),'도네 알림','적 처치 시 확률로 골드');
+  add(p.donateChance>0,'💸','도네 '+pc(p.donateChance),'도네 알림','적 처치 시 확률로 골드','donate');
   add(p.greedContract,'💎','탐욕의 계약','탐욕의 계약','골드 획득 +40%, 받는 피해 +10%','greed-contract');
   add(p.shopCostMul>1,'💎','상점가 +'+pc(p.shopCostMul-1),'탐욕의 반지','상점 가격 증가 리스크','shop-risk');
   add(p.damageTakenMul>1,'⚠️','받는 피해 +'+pc(p.damageTakenMul-1),'리스크','탐욕/계약류로 받는 피해 증가','taken-risk');
@@ -10957,12 +11002,12 @@ function spEffects(p){
   add(p.glassCannon||hasRelic('glass'),'🍷','유리 대포','유리 대포','공격력 대폭 증가, 최대 체력 리스크','glass-cannon');
   add(hasRelic('bizarre_mask'),'🎭','기괴한 가면','기괴한 가면','공격력 +35%, 최대 체력 -20%','bizarre-mask');
 
-  add(p.crowdRage>0,'😡','분노','분노','주변 적이 많을수록 공격력 증가');
-  add(p.lowHpMul>0,'🆘','저체력 폭주','저체력 폭주','체력이 낮을수록 공격력 증가');
+  add(p.crowdRage>0,'😡','분노','분노','주변 적이 많을수록 공격력 증가','crowd-rage');
+  add(p.lowHpMul>0,'🆘','저체력 폭주','저체력 폭주','체력이 낮을수록 공격력 증가','low-hp');
   add(p.bossDmgMul>1,'🗡️','거인사냥 +'+pc(p.bossDmgMul-1),'거인 사냥','보스·정예에게 추가 피해','bossDmg');
-  add(p.execThreshold>0,'✂️','처형 '+pc(p.execThreshold),'클립 박제','체력이 낮은 잡몹 즉시 처치');
-  add(p.thorns>0,'🌵','가시 '+p.thorns,'가시 갑옷','접촉한 적에게 반사 피해');
-  add(p.minion,'🤝','구독자','구독자 소환','자동 공격 분신을 소환');
+  add(p.execThreshold>0,'✂️','처형 '+pc(p.execThreshold),'클립 박제','체력이 낮은 잡몹 즉시 처치','execute');
+  add(p.thorns>0,'🌵','가시 '+p.thorns,'가시 갑옷','접촉한 적에게 반사 피해','thorn');
+  add(p.minion,'🤝','구독자','구독자 소환','자동 공격 분신을 소환','minion');
 
   (p.potionBuffs||[]).forEach(b=>{
     if((b.t||0)<=0) return;
