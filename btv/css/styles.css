@@ -1756,7 +1756,7 @@
       #sidePanel.show{ display:block; }
       #sidePanel::before{ content:""; position:absolute; inset:4px; pointer-events:none; border:1px solid rgba(255,255,255,.13); box-shadow:inset 0 0 0 1px rgba(139,232,255,.14); }
       #sidePanel::after{ content:""; position:absolute; left:9px; right:9px; top:7px; height:2px; pointer-events:none; background:repeating-linear-gradient(90deg, rgba(255,255,255,.62) 0 4px, transparent 4px 8px); opacity:.22; }
-      #sidePanel .sp-header{ position:relative; display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:6px; margin:-1px 0 9px; padding:5px 6px 7px;
+      #sidePanel .sp-header{ position:relative; display:grid; grid-template-columns:auto 1fr auto auto; align-items:center; gap:6px; margin:-1px 0 9px; padding:5px 6px 7px;
         background:linear-gradient(180deg, #251456, #14102f); border:2px solid #c98bff; border-radius:0;
         box-shadow:0 3px 0 #060817, inset 0 0 0 1px rgba(139,232,255,.28); }
       #sidePanel .sp-header::after{ content:""; position:absolute; left:6px; right:6px; bottom:-6px; height:2px; background:repeating-linear-gradient(90deg, #8be8ff 0 8px, transparent 8px 12px); opacity:.7; }
@@ -1764,7 +1764,19 @@
       #sidePanel .sp-header-title{ color:#fff; font-weight:bold; font-size:13px; letter-spacing:1px; text-shadow:2px 2px 0 #100826, 0 0 10px rgba(201,139,255,.45); }
       #sidePanel .sp-header-chip,
       #sidePanel .sp-preview{ justify-self:end; border:1px solid #8be8ff; background:#08162a; color:#8be8ff; padding:1px 4px; font-size:9px; line-height:1.35; font-weight:bold; box-shadow:inset 0 -2px 0 rgba(56,232,255,.18); }
-      #sidePanel .sp-preview{ grid-column:2 / 4; justify-self:start; margin-left:14px; color:#5dff9b; border-color:#5dff9b; background:#09241a; }
+      #sidePanel .sp-preview{ grid-column:2 / 5; justify-self:start; margin-left:14px; color:#5dff9b; border-color:#5dff9b; background:#09241a; }
+      #sidePanel .sp-collapse-btn{ justify-self:end; width:24px; height:20px; padding:0; display:grid; place-items:center; cursor:pointer;
+        color:#fff3bf; font:700 12px/1 monospace; background:linear-gradient(180deg,#2d1a62,#100b29);
+        border:2px solid #ffd86b; border-radius:0; box-shadow:2px 2px 0 rgba(0,0,0,.68), inset 0 0 0 1px rgba(139,232,255,.18);
+        text-shadow:1px 1px 0 #050611,0 0 8px rgba(255,216,107,.42); }
+      #sidePanel .sp-collapse-btn:hover{ color:#fff; border-color:#fff3bf; box-shadow:2px 2px 0 rgba(0,0,0,.72),0 0 12px rgba(255,216,107,.28),inset 0 0 0 1px rgba(139,232,255,.26); }
+      #statPanelTab{ position:fixed; right:0; top:42%; z-index:70; display:none; min-height:86px; min-width:30px; padding:9px 4px;
+        writing-mode:vertical-rl; text-orientation:mixed; cursor:pointer; color:#8be8ff; font:700 11px/1.15 monospace; letter-spacing:1px;
+        background:linear-gradient(180deg,#251456,#0b0a1c); border:3px solid #75d7f4; border-right:0; border-radius:0;
+        box-shadow:0 0 0 2px #140b2d, -3px 3px 0 rgba(0,0,0,.62), 0 0 14px rgba(139,232,255,.24), inset 0 0 0 1px rgba(201,139,255,.26);
+        text-shadow:1px 1px 0 #050611,0 0 8px rgba(139,232,255,.58); }
+      #statPanelTab.show{ display:block; }
+      #statPanelTab:hover{ color:#fff; border-color:#dffaff; background:linear-gradient(180deg,#312070,#100d2c); box-shadow:0 0 0 2px #140b2d,-4px 4px 0 rgba(0,0,0,.68),0 0 18px rgba(139,232,255,.36),inset 0 0 0 1px rgba(255,255,255,.12); }
       #sidePanel .sp-title{ color:#c98bff; font-weight:bold; font-size:11px; margin:10px 0 6px; letter-spacing:.5px; text-shadow:0 0 8px rgba(201,139,255,.45); }
       #sidePanel .sp-subtitle{ display:flex; align-items:center; gap:5px; padding-top:8px; border-top:2px solid transparent; border-image:repeating-linear-gradient(90deg, rgba(139,232,255,.75) 0 8px, transparent 8px 13px) 2; }
       #sidePanel .sp-row{ --stat-accent:#8be8ff; display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:8px; min-height:25px;
@@ -1845,6 +1857,7 @@
         #sidePanel .sp-label{ grid-template-columns:19px minmax(0,1fr); gap:4px; }
         #sidePanel .sp-ico{ width:18px; height:18px; font-size:11px; }
         #sidePanel .sp-effect{ font-size:10px; min-height:20px; padding-right:5px; }
+        #statPanelTab{ top:36%; min-height:76px; min-width:28px; font-size:10px; padding:8px 3px; }
         #skipTutBtn{ top:8px !important; right:8px !important; padding:8px 11px !important; font-size:12px !important; }
       }
 
