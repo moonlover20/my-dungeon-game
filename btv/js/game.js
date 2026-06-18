@@ -47,7 +47,7 @@ const CRIT_BASE_MULT=1.5;
 const CRIT_CHANCE_CAP=0.60;
 const CRIT_MULT_CAP=3.5;
 const DODGE_HASTE_FIRE_ADD=0.50;
-const THORNS_DAMAGE_RADIUS=300;
+const THORNS_DAMAGE_RADIUS=200;
 function statBonusFromMul(v){
   const n=Number(v);
   return Number.isFinite(n)?n-1:0;
@@ -2112,7 +2112,7 @@ function getSpecialEffectTooltipData(effectKey){
     'crowd-rage':{title:'분노',value:()=>pct(Number(player.crowdRage)||0)+'/마리',description:'주변 적이 많을수록 공격력이 증가합니다.',formulaText:'적용 방식: 주변 적 1마리당 공격력 +3%, 최대 10마리. 중복 시 마리당 수치 누적',kind:'attack'},
     'low-hp':{title:'저체력 폭주',value:()=>pct(Number(player.lowHpMul)||0),description:'체력이 낮을수록 공격력이 증가합니다.',formulaText:'적용 방식: 현재 체력 비율에 따라 공격 보너스 자동 반영',kind:'attack'},
     'execute':{title:'처형',value:()=>pct(Number(player.execThreshold)||0),description:'체력이 낮은 잡몹을 즉시 처치합니다.',formulaText:'적용 방식: 대상 체력이 기준 이하이면 처형 적용',kind:'attack'},
-    'thorn':{title:'가시 갑옷',value:()=>Math.round(Number(player.thorns)||0),description:'피격 시 주변 300px 적에게 가시 피해를 줍니다.',formulaText:'적용 방식: 찍을 때마다 피해 +20, 피격 시 주변 300px 적에게 현재 가시 피해 적용',kind:'attack'},
+    'thorn':{title:'가시 갑옷',value:()=>Math.round(Number(player.thorns)||0),description:'피격 시 주변 200px 적에게 가시 피해를 줍니다.',formulaText:'적용 방식: 찍을 때마다 피해 +10, 피격 시 주변 200px 적에게 현재 가시 피해 적용',kind:'attack'},
     'minion':{title:'구독자 소환',value:'적용 중',description:'자동으로 공격하는 분신을 소환합니다.',formulaText:'적용 방식: 소환된 분신이 자동 공격'}
   };
   if(simpleSpecialMap[key]) return simpleSpecial(simpleSpecialMap[key]);
@@ -7669,7 +7669,7 @@ const LEVEL_PERKS=[
   {g:'rare',icon:'🔥',name:'화염탄',desc:'명중 시 3초간 화상. 찍을 때마다 화상 피해 +4.',apply:p=>{p.burn+=4;}},
   {g:'epic',icon:'❄️',name:'빙결탄',desc:'삭제된 레벨업 특성',removed:true,skip:()=>true,apply:p=>{}},
   {g:'rare',icon:'🟢',name:'독침',desc:'명중 시 4초간 독 부여. 최대 6스택. 찍을 때마다 스택당 독 피해 +3.',apply:p=>{p.poison+=3;}},
-  {g:'rare',icon:'🌵',name:'가시 갑옷',desc:'피격 시 주변 300px 적에게 가시 피해. 찍을 때마다 피해 +20.',apply:p=>{p.thorns+=20;}},
+  {g:'rare',icon:'🌵',name:'가시 갑옷',desc:'피격 시 주변 200px 적에게 가시 피해. 찍을 때마다 피해 +10.',apply:p=>{p.thorns+=10;}},
   {g:'rare',icon:'💨',name:'추진력',desc:'회피 후 2.5초 동안 발사속도 +50%.',skip:p=>p.dodgeHaste,apply:p=>{p.dodgeHaste=true;}},
   {g:'rare',icon:'👻',name:'잔상',desc:'회피 무적 시간 +0.1초. 중복 가능.',apply:p=>{p.dodgeIframeBonus+=0.1;}},
   {g:'rare',icon:'🧨',name:'점화',desc:'상태이상 피해 +10%',apply:p=>{p.statusDotDmgMul+=0.10;}},
@@ -10740,7 +10740,7 @@ function spEffects(p){
   add(p.lowHpMul>0,'🆘','저체력 폭주','저체력 폭주','체력이 낮을수록 공격력 증가','low-hp');
   add(p.bossDmgMul>1,'🗡️','거인사냥 +'+pc(p.bossDmgMul-1),'거인 사냥','보스·정예에게 추가 피해','bossDmg');
   add(p.execThreshold>0,'✂️','처형 '+pc(p.execThreshold),'처형','체력이 낮은 잡몹 즉시 처치','execute');
-  add(p.thorns>0,'🌵','가시 '+p.thorns,'가시 갑옷','피격 시 주변 300px 적에게 가시 피해','thorn');
+  add(p.thorns>0,'🌵','가시 '+p.thorns,'가시 갑옷','피격 시 주변 200px 적에게 가시 피해','thorn');
   add(p.minion,'🤝','구독자','구독자 소환','자동 공격 분신을 소환','minion');
 
   (p.potionBuffs||[]).forEach(b=>{
