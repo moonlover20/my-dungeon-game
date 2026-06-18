@@ -2147,6 +2147,66 @@
 }
 
 /* ── 트리 HUD 버튼 ── */
+/* Passive tree intro */
+#ovTreeIntro {
+  padding: 14px;
+}
+#ovTreeIntro .tree-intro-box {
+  width: min(680px, calc(100vw - 28px));
+  max-width: 680px;
+  max-height: 92vh;
+  overflow-y: auto;
+  text-align: left;
+  border-color: #ffd34d;
+  box-shadow: 0 8px 0 #120c20, 0 0 32px rgba(255,211,77,.18);
+}
+#ovTreeIntro .tag,
+#ovTreeIntro h2,
+#ovTreeIntro .tree-intro-lead {
+  text-align: center;
+}
+#ovTreeIntro h2 {
+  color: #fff7cf;
+  text-shadow: 0 0 14px rgba(255,211,77,.46);
+}
+.tree-intro-body {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin: 16px 2px 0;
+  color: #d9d4e8;
+  font-size: 13px;
+  line-height: 1.65;
+}
+.tree-intro-body p {
+  margin: 0;
+}
+.tree-intro-note,
+.tree-intro-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+  padding: 11px 12px;
+  background: rgba(13,8,32,.58);
+  border: 1px solid rgba(255,211,77,.28);
+}
+.tree-intro-note b,
+.tree-intro-list b {
+  color: #ffd34d;
+}
+.tree-intro-note span,
+.tree-intro-list span {
+  color: var(--muted);
+}
+.tree-intro-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+}
+
 #treeBtnHud {
   position: relative;
   background: #0d0820;
@@ -2168,7 +2228,8 @@
 }
 
 /* 포인트 있을 때 반짝이는 상태 */
-#treeBtnHud.tree-btn-glow {
+#treeBtnHud.tree-btn-glow,
+#treeBtnHud.has-points {
   border-color: #ffd34d;
   animation: treePulse 1.2s ease-in-out infinite;
 }
@@ -2196,6 +2257,9 @@
   pointer-events: none;
   animation: badgePop 0.3s cubic-bezier(0.175,0.885,0.32,1.275);
   box-shadow: 0 0 6px #ffd34daa;
+}
+.tree-pts-badge.has-points {
+  box-shadow: 0 0 8px #ffd34d, 0 0 14px rgba(255,211,77,.55);
 }
 @keyframes badgePop {
   0%   { transform: scale(0); }
