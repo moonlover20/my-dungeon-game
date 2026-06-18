@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>시청자를 막아라</title>
-<link rel="stylesheet" href="btv/css/styles.css?v=1.3.4">
+<link rel="stylesheet" href="btv/css/styles.css?v=1.3.5">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%2315101f'/%3E%3Crect x='5' y='1' width='6' height='1' fill='%239b8fc4'/%3E%3Crect x='3' y='2' width='10' height='1' fill='%239b8fc4'/%3E%3Crect x='2' y='3' width='12' height='1' fill='%239b8fc4'/%3E%3Crect x='2' y='4' width='12' height='1' fill='%239b8fc4'/%3E%3Crect x='2' y='5' width='12' height='1' fill='%239b8fc4'/%3E%3Crect x='3' y='4' width='3' height='3' fill='%2315101f'/%3E%3Crect x='10' y='4' width='3' height='3' fill='%2315101f'/%3E%3Crect x='3' y='4' width='3' height='3' fill='%23a02080'/%3E%3Crect x='10' y='4' width='3' height='3' fill='%23a02080'/%3E%3Crect x='2' y='6' width='12' height='1' fill='%239b8fc4'/%3E%3Crect x='2' y='7' width='12' height='1' fill='%239b8fc4'/%3E%3Crect x='3' y='8' width='10' height='1' fill='%239b8fc4'/%3E%3Crect x='4' y='9' width='8' height='1' fill='%239b8fc4'/%3E%3Crect x='4' y='10' width='3' height='1' fill='%239b8fc4'/%3E%3Crect x='9' y='10' width='3' height='1' fill='%239b8fc4'/%3E%3Crect x='4' y='11' width='3' height='3' fill='%239b8fc4'/%3E%3Crect x='9' y='11' width='3' height='3' fill='%239b8fc4'/%3E%3C/svg%3E">
 </head>
 <body>
@@ -158,7 +158,7 @@
             <div class="sub">Block the Viewers</div>
           </div>
           <div class="title-live title-info-card" aria-label="게임 소개">
-            <div class="title-live-head"><span><span class="ld"></span>LIVE</span><span class="title-version">v1.3.4</span></div>
+            <div class="title-live-head"><span><span class="ld"></span>LIVE</span><span class="title-version">v1.3.5</span></div>
             <div class="title-card-name">시청자를 막아라</div>
             <p class="title-card-desc">스트리머가 되어 끝없이 몰려오는 시청자를 막아내는 픽셀 로그라이크 액션 게임</p>
             <div class="title-info-grid">
@@ -193,7 +193,7 @@
             <button class="title-item" id="tmExit" style="font-size:clamp(15px,2.5vw,21px);color:#9b8fc4">EXIT</button>
           </div>
         </div>
-        <div style="position:fixed;bottom:12px;right:16px;font-family:'Courier New',monospace;font-size:11px;color:#3a2f50;letter-spacing:2px;pointer-events:none;z-index:1;" id="verTag">v1.3.4</div>
+        <div style="position:fixed;bottom:12px;right:16px;font-family:'Courier New',monospace;font-size:11px;color:#3a2f50;letter-spacing:2px;pointer-events:none;z-index:1;" id="verTag">v1.3.5</div>
       </div>
 
       <!-- START (난이도 선택) -->
@@ -423,6 +423,10 @@
             <button class="rank-tab" data-diff="normal">보통</button>
             <button class="rank-tab" data-diff="hard">어려움</button>
           </div>
+          <div class="ranking-season" style="display:flex;align-items:center;justify-content:center;gap:8px;margin:6px 0;">
+            <label for="rankingSeasonSel" style="color:var(--muted,#9aa);font-size:13px;">시즌</label>
+            <select id="rankingSeasonSel" style="font-family:inherit;background:var(--bg,#15101f);color:var(--neon,#38e8ff);border:1px solid var(--neon,#38e8ff);border-radius:6px;padding:4px 10px;cursor:pointer;"></select>
+          </div>
           <div class="ranking-screen">
             <div class="ranking-list pixel-scroll" id="rankingList">
               <div class="rank-empty">기록을 불러오는 중...</div>
@@ -519,7 +523,7 @@
 
 <!-- ===== JS: Game runtime ===== -->
 <script defer src="btv/js/firebase-config.public.js"></script>
-<script defer src="btv/js/game.js?v=1.3.4"></script>
+<script defer src="btv/js/game.js?v=1.3.5"></script>
 
       <!-- PASSIVE TREE -->
       <div class="hidden" id="ovTree" style="position:fixed;inset:0;z-index:500;background:rgba(5,3,10,0.97);display:flex;flex-direction:column;align-items:stretch;">
