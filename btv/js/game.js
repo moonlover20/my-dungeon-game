@@ -12857,4 +12857,44 @@ function initTreeEvents(){
   },{passive:false});
 }
 
+// ===== [DEV] 어려움 난이도 기준 보스/중간보스 체력 검증 =====
+// 사용: 콘솔에서 bossHpReport() 호출 → 표로 출력
+function bossHpReport(diffKey){
+  const D=(typeof DIFFS!=='undefined'&&DIFFS[diffKey||'hard'])||{hp:2.9};
+  const hardHp=D.hp;                                  // 난이도 체력 배율 (어려움=2.9)
+  const midRow=(typeof MIDBOSS_ROW!=='undefined')?MIDBOSS_ROW:7;
+  // spawnEnemy: hp = base * diff * diffSet.hp,  diff = 1+(act-1)*0.6+row*0.08
+  const enemyDiff=act=>1+(act-1)*0.6+midRow*0.08;
+  // spawnBoss: scale = (1+(act-1)*0.35) * diffSet.hp
+  const bossScale=act=>(1+(act-1)*0.35)*hardHp;
+  const findBoss=key=>(typeof BOSSES!=='undefined')&&BOSSES.find(b=>b.key===key);
+
+  // 혜철이(1막 중간보스, enemy, 3페이즈 동일 HP)
+  const hyBase=ENEMY_TYPES.hyechul.hp;
+  const hyPhase=hyBase*enemyDiff(1)*hardHp;
+  const hyTotal=hyPhase*3;
+  // 키죠(1막 보스)
+  const kijo=findBoss('kijo');
+  const kijoHp=kijo?kijo.hp*bossScale(1):0;
+  // 박제인간(2막 중간보스, enemy=yanggaeng)
+  const bjBase=ENEMY_TYPES.yanggaeng.hp;
+  const bjHp=bjBase*enemyDiff(2)*hardHp;
+  // 승우(2막 보스, phaseHp)
+  const sw=findBoss('seungwoo');
+  const swScale=bossScale(2);
+  const swPhases=sw&&sw.phaseHp?sw.phaseHp.map(v=>Math.round(v*swScale)):[];
+  const swTotal=swPhases.reduce((a,b)=>a+b,0);
+
+  const rows=[
+    {대상:'혜철이(1막 중보)', 기본:hyBase, '페이즈별':Math.round(hyPhase)+' ×3', '어려움 합산':Math.round(hyTotal)},
+    {대상:'키죠(1막 보스)',   기본:kijo&&kijo.hp, '페이즈별':'-', '어려움 합산':Math.round(kijoHp)},
+    {대상:'박제인간(2막 중보)',기본:bjBase, '페이즈별':'-', '어려움 합산':Math.round(bjHp)},
+    {대상:'승우(2막 보스)',   기본:sw&&sw.phaseHp&&sw.phaseHp.join('/'), '페이즈별':swPhases.join(' / '), '어려움 합산':Math.round(swTotal)},
+  ];
+  console.log('%c[보스 체력 검증 · '+(diffKey||'hard')+' / 체력배율 x'+hardHp+' / MIDBOSS_ROW='+midRow+']','color:#38e8ff;font-weight:bold');
+  if(console.table) console.table(rows); else console.log(rows);
+  return {hyechul:Math.round(hyTotal),kijo:Math.round(kijoHp),bagjein:Math.round(bjHp),seungwoo:{phases:swPhases,total:Math.round(swTotal)}};
+}
+if(typeof window!=='undefined') window.bossHpReport=bossHpReport;
+
 bootGame();
