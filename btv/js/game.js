@@ -6825,6 +6825,163 @@ function eventRemoveRandomRelicForGold(){
   updateHUD();
   finishNode();
 }
+function eventCleanRelicPool(opts){
+  opts=opts||{};
+  const owned=new Set(player.relics.map(r=>r.id));
+  return RELICS.filter(r=>{
+    if(!r||owned.has(r.id)||REMOVED_RELIC_IDS.has(r.id)||!isRelicUnlockedByAchievement(r.id)) return false;
+    const tier=TIER_OF[r.id]||'rare';
+    if(opts.tiers&&opts.tiers.indexOf(tier)<0) return false;
+    if(opts.curseOnly&&r.cls!=='curse') return false;
+    if(opts.noCurse&&r.cls==='curse') return false;
+    return true;
+  });
+}
+function eventRollCleanRelic(opts){
+  const pool=eventCleanRelicPool(opts);
+  return pool.length?weightedTake(pool.slice()):null;
+}
+function eventGiveCleanRelic(opts,after){
+  eventTakeRelic(eventRollCleanRelic(opts),after);
+}
+function eventHpCostCurrentPct(pct){
+  const loss=Math.max(1,Math.round(player.hp*pct));
+  player.hp=Math.max(1,player.hp-loss);
+  updateHUD();
+  return loss;
+}
+function eventRollBlackMarketRelic(){
+  const tiers=Math.random()<0.75?['epic']:(Math.random()<0.88?['legend']:['mythic']);
+  let r=eventRollCleanRelic({tiers:tiers});
+  if(!r) r=eventRollCleanRelic({tiers:['epic','legend','mythic']});
+  return r;
+}
+function eventGiveCurseThen(after){
+  const r=eventRollCleanRelic({curseOnly:true});
+  if(!r){
+    banner('저주 없음','가져갈 저주 유물이 없다',1200);
+    updateHUD();
+    finishNode();
+    return;
+  }
+  eventTakeRelic(r,after);
+}
+const EVENT_TRANSFORMABLE_PERK_NAMES=new Set([
+  '공격 특화','속사 특화','민첩 특화','활력','방어 특화','광부','대구경','재생','경험치 부스트','도네 알림',
+  '정밀 조준','충격파','관통','반사','연사','강철 체력','급소 연마','상점 눈썰미','전술 재정비','거인 사냥',
+  '고속탄','화염탄','독침','가시 갑옷','잔상','점화','부식 표식','맹공','그림자 보법','근접 난사',
+  '맹독 가열','저체력 폭주','처단','분노','치명 흡혈','치명 일격','폭주','처형 본능','다중 사격','방송 폭주'
+]);
+function eventIsTransformableLevelPerk(pk){
+  return !!(pk&&isLevelPerkCandidate(pk)&&EVENT_TRANSFORMABLE_PERK_NAMES.has(pk.name));
+}
+function eventUndoLevelPerkEffect(pk){
+  if(!eventIsTransformableLevelPerk(pk)) return false;
+  switch(pk.name){
+    case '공격 특화': player.dmg-=2; break;
+    case '속사 특화': player.fireAdd-=0.08; break;
+    case '민첩 특화': player.spd-=12; break;
+    case '활력': player.maxhp=Math.max(1,player.maxhp-15); player.hp=Math.min(player.hp,player.maxhp); break;
+    case '방어 특화': player.armor-=0.03; break;
+    case '광부': player.goldMul-=0.10; break;
+    case '대구경': player.bulletSize-=0.10; break;
+    case '재생': player.regen-=0.5; break;
+    case '경험치 부스트': player.xpMul-=0.10; break;
+    case '도네 알림': player.donateChance-=0.05; break;
+    case '정밀 조준': player.critChance-=0.05; break;
+    case '충격파': player.stunChance-=0.05; break;
+    case '관통': player.pierce-=1; break;
+    case '반사': player.bounce-=1; break;
+    case '연사': player.fireAdd-=0.16; break;
+    case '강철 체력': player.maxhp=Math.max(1,player.maxhp-35); player.hp=Math.min(player.hp,player.maxhp); break;
+    case '급소 연마': player.critMult-=0.20; break;
+    case '상점 눈썰미': player.shopCostMul+=0.10; break;
+    case '전술 재정비': player.roomEntryHeal-=8; break;
+    case '거인 사냥': player.bossDmgMul-=0.15; break;
+    case '고속탄': player.bulletSpeedMul-=0.20; break;
+    case '화염탄': player.burn-=4; break;
+    case '독침': player.poison-=3; break;
+    case '가시 갑옷': player.thorns-=7; break;
+    case '잔상': player.dodgeIframeBonus-=0.1; break;
+    case '점화': player.statusDotDmgMul-=0.10; break;
+    case '부식 표식': player.statusDmgMul-=0.08; break;
+    case '맹공': player.dmg-=4; break;
+    case '그림자 보법': player.dodgeCdMul+=0.15; break;
+    case '근접 난사': player.closeProjectileDmgMul-=0.20; break;
+    case '맹독 가열': player.statusDotDmgMul-=0.20; player.dmgAdd+=0.03; break;
+    case '저체력 폭주': player.lowHpMul-=0.4; break;
+    case '처단': player.dodgeBlast-=30; break;
+    case '분노': player.crowdRage-=0.03; break;
+    case '치명 흡혈': player.critHeal-=3; break;
+    case '치명 일격': player.critChance-=0.20; player.critMult-=0.5; break;
+    case '폭주': player.dmg-=6; break;
+    case '처형 본능': player.executeInstinctDmgMul-=0.25; break;
+    case '다중 사격': player.shots-=1; break;
+    case '방송 폭주': player.dmg-=8; player.fireAdd-=0.20; player.damageTakenMul-=0.15; break;
+    default: return false;
+  }
+  player.hp=Math.min(Math.max(1,player.hp),Math.max(1,player.maxhp));
+  syncDoomWorshipHp(player);
+  return true;
+}
+function eventOwnedPerkKeysExcept(oldId){
+  const keys=new Set();
+  sanitizeStoredLevelPerkIds(player.perkIds).forEach(id=>{
+    if(id===oldId) return;
+    const pk=perkByStoredId(id);
+    if(!pk) return;
+    keys.add(perkId(pk));
+    keys.add(pk.name);
+  });
+  return keys;
+}
+function eventPerkReplacementPool(oldPk){
+  const oldId=perkId(oldPk);
+  const owned=eventOwnedPerkKeysExcept(oldId);
+  return LEVEL_PERKS.filter(pk=>{
+    const id=perkId(pk);
+    return eventIsTransformableLevelPerk(pk)&&pk.g===oldPk.g&&id!==oldId&&!owned.has(id)&&!owned.has(pk.name)&&canRollPerk(pk,owned,level||1);
+  });
+}
+function eventTransformableOwnedPerks(){
+  return sanitizeStoredLevelPerkIds(player.perkIds)
+    .map(id=>perkByStoredId(id))
+    .filter(pk=>eventIsTransformableLevelPerk(pk)&&eventPerkReplacementPool(pk).length>0);
+}
+function eventCanTransformPerk(){
+  return eventTransformableOwnedPerks().length>0;
+}
+function eventTransformRandomPerk(){
+  const owned=eventTransformableOwnedPerks();
+  if(!owned.length){
+    banner('거울 침묵','변환 가능한 특성이 없다',1300);
+    updateHUD();
+    finishNode();
+    return;
+  }
+  const oldPk=pick(owned);
+  const oldId=perkId(oldPk);
+  const pool=eventPerkReplacementPool(oldPk);
+  const nextPk=pool.length?pick(pool):null;
+  if(!nextPk||!eventUndoLevelPerkEffect(oldPk)){
+    banner('거울 실패','변환 가능한 특성이 없다',1300);
+    updateHUD();
+    finishNode();
+    return;
+  }
+  const nextId=perkId(nextPk);
+  player.perkIds=sanitizeStoredLevelPerkIds(player.perkIds).map(id=>{
+    const pk=perkByStoredId(id);
+    return pk&&perkId(pk)===oldId?nextId:id;
+  });
+  nextPk.apply(player);
+  markDiscovered('perks',nextId);
+  syncDoomWorshipHp(player);
+  try{sfx.pick&&sfx.pick();}catch(e){}
+  banner('거울 변환',oldPk.name+' → '+nextPk.name,1800);
+  updateHUD();
+  finishNode();
+}
 // ================================================================
 //  EVENT_THEMES — 이벤트별 비주얼 테마 데이터
 //  tag 문자열의 이모지+텍스트로 매핑.
@@ -6884,6 +7041,10 @@ const EVENT_THEMES = {
   '🌫 검은 안개':     {scene:'mirror',  accent:'#668899', bg:'radial-gradient(ellipse at 50% 50%,#06080e 0%,#0a0814 60%)', tags:[{t:'도박',c:'#ffaa00',bg:'rgba(55,35,0,.55)'},{t:'혼돈',c:'#ff44cc',bg:'rgba(60,0,40,.55)'}]},
   '📦 고장난 보급 상자':{scene:'chest', accent:'#886644', bg:'radial-gradient(ellipse at 50% 65%,#120e08 0%,#0a0814 60%)', tags:[{t:'도박',c:'#ffaa00',bg:'rgba(55,35,0,.55)'}]},
   '⏳ 시간의 균열':   {scene:'storm',   accent:'#6688cc', bg:'radial-gradient(ellipse at 50% 30%,#080c18 0%,#0a0814 60%)', tags:[{t:'경험치',c:'#aadd40',bg:'rgba(30,50,0,.55)'},{t:'도박',c:'#ffaa00',bg:'rgba(55,35,0,.55)'}]},
+  '🪞 뒤틀린 거울':   {scene:'mirror',      accent:'#80e0e0', bg:'radial-gradient(ellipse at 50% 50%,#140820 0%,#0a0814 60%)', tags:[{t:'변환',c:'#ff44cc',bg:'rgba(60,0,40,.55)'},{t:'특성',c:'#aadd40',bg:'rgba(30,50,0,.55)'}]},
+  '🗿 잊힌 조각상':   {scene:'statue',      accent:'#c8a860', bg:'radial-gradient(ellipse at 50% 78%,#18140c 0%,#0a0814 60%)', tags:[{t:'저주',c:'#aa55ff',bg:'rgba(40,0,80,.55)'},{t:'제물',c:'#ffcc30',bg:'rgba(60,45,0,.55)'}]},
+  '📚 침묵의 도서관': {scene:'library',     accent:'#d7b657', bg:'radial-gradient(ellipse at 50% 45%,#081020 0%,#0a0814 60%)', tags:[{t:'특성',c:'#aadd40',bg:'rgba(30,50,0,.55)'},{t:'경험치',c:'#6688ff',bg:'rgba(0,15,60,.55)'}]},
+  '🕶 검은 시장':     {scene:'black_market',accent:'#d7b657', bg:'radial-gradient(ellipse at 50% 55%,#16081e 0%,#0a0814 60%)', tags:[{t:'상점',c:'#ffcc30',bg:'rgba(60,45,0,.55)'},{t:'도박',c:'#ffaa00',bg:'rgba(55,35,0,.55)'}]},
 };
 
 // ── 씬 씬 씬: 픽셀아트 캔버스 렌더러 ──────────────────────────
@@ -7177,6 +7338,122 @@ function evDrawScene(sceneId, canvas){
         ctx.fillRect(W*.16+i*W*.18,H*.30+Math.sin(t+i)*.5,10,10);
       }
     },
+    statue: (t)=>{
+      ctx.clearRect(0,0,W,H);
+      ctx.fillStyle='#07070b'; ctx.fillRect(0,0,W,H);
+      ctx.fillStyle='#121015'; ctx.fillRect(0,H*.64,W,H*.36);
+      ctx.fillStyle='rgba(80,60,120,.16)'; ctx.fillRect(W*.16,H*.10,W*.68,H*.68);
+      // 뒤쪽 사원 기둥
+      ctx.fillStyle='#17161d';
+      ctx.fillRect(W*.10,H*.18,12,H*.58); ctx.fillRect(W*.78,H*.18,12,H*.58);
+      ctx.fillStyle='#24222a';
+      ctx.fillRect(W*.08,H*.16,18,6); ctx.fillRect(W*.76,H*.16,18,6);
+      ctx.fillRect(W*.08,H*.74,18,7); ctx.fillRect(W*.76,H*.74,18,7);
+      // 석상 몸체와 얼굴
+      const glow=.72+Math.sin(t*2.2)*.18;
+      ctx.fillStyle='#34343c'; ctx.fillRect(W*.34,H*.34,W*.32,H*.34);
+      ctx.fillStyle='#46464e'; ctx.fillRect(W*.30,H*.18,W*.40,H*.25);
+      ctx.fillStyle='#565760'; ctx.fillRect(W*.34,H*.14,W*.32,H*.08);
+      ctx.fillStyle='#292a30'; ctx.fillRect(W*.37,H*.24,W*.08,H*.07); ctx.fillRect(W*.55,H*.24,W*.08,H*.07);
+      ctx.fillStyle=`rgba(255,210,70,${glow})`;
+      ctx.fillRect(W*.39,H*.26,8,3); ctx.fillRect(W*.56,H*.26,8,3);
+      ctx.fillStyle='#23242a'; ctx.fillRect(W*.44,H*.35,W*.12,3);
+      // 제단
+      ctx.fillStyle='#2a2217'; ctx.fillRect(W*.22,H*.68,W*.56,H*.13);
+      ctx.fillStyle='#4b3b22'; ctx.fillRect(W*.18,H*.63,W*.64,H*.07);
+      ctx.fillStyle=`rgba(170,80,255,${.18+Math.sin(t*1.7)*.08})`;
+      ctx.fillRect(W*.28,H*.66,W*.44,H*.09);
+      // 촛불과 저주 입자
+      for(let i=0;i<2;i++){
+        const x=i?W*.75:W*.20, f=Math.sin(t*3+i)*.18;
+        ctx.fillStyle='#2a2010'; ctx.fillRect(x,H*.54,6,H*.18);
+        ctx.fillStyle=`rgba(255,${150+Math.floor(f*40)},25,.9)`;
+        ctx.fillRect(x,H*.47,6,H*.10*(1+f));
+      }
+      for(let i=0;i<6;i++){
+        const px=W*.22+W*.56*((i*29+t*9)%100)/100;
+        const py=H*.16+H*.50*((i*17+t*7)%100)/100;
+        ctx.fillStyle=`rgba(180,90,255,${.18+Math.sin(t*2+i)*.18})`;
+        ctx.fillRect(px,py,3,3);
+      }
+    },
+    library: (t)=>{
+      ctx.clearRect(0,0,W,H);
+      ctx.fillStyle='#040712'; ctx.fillRect(0,0,W,H);
+      // 책장
+      ctx.fillStyle='#120c12'; ctx.fillRect(W*.06,H*.12,W*.88,H*.54);
+      ctx.fillStyle='#2a1b16'; ctx.fillRect(W*.08,H*.16,W*.84,4);
+      ctx.fillRect(W*.08,H*.34,W*.84,4); ctx.fillRect(W*.08,H*.52,W*.84,4);
+      const cols=['#3b2848','#523220','#283d50','#57451f','#1e3a32'];
+      for(let row=0;row<3;row++){
+        for(let i=0;i<11;i++){
+          const x=W*.10+i*W*.073, y=H*(.18+row*.18), h=H*.12+((i+row)%3)*3;
+          ctx.fillStyle=cols[(i+row)%cols.length];
+          ctx.fillRect(x,y,6,h);
+        }
+      }
+      // 열린 책
+      const bob=Math.sin(t*1.4)*1.5;
+      ctx.fillStyle='rgba(215,182,87,.16)'; ctx.fillRect(W*.25,H*.62+bob,W*.50,H*.20);
+      ctx.fillStyle='#d8c690'; ctx.fillRect(W*.24,H*.63+bob,W*.23,H*.17);
+      ctx.fillStyle='#cdb87e'; ctx.fillRect(W*.53,H*.63+bob,W*.23,H*.17);
+      ctx.fillStyle='#57451f'; ctx.fillRect(W*.48,H*.61+bob,W*.04,H*.20);
+      ctx.fillStyle='rgba(80,55,25,.55)';
+      for(let i=0;i<4;i++){
+        ctx.fillRect(W*.29,H*(.67+i*.03)+bob,W*.14,2);
+        ctx.fillRect(W*.57,H*(.67+i*.03)+bob,W*.14,2);
+      }
+      // 촛불
+      const f=Math.sin(t*3.1)*.18;
+      ctx.fillStyle='#2a2010'; ctx.fillRect(W*.80,H*.52,7,H*.18);
+      ctx.fillStyle=`rgba(255,${170+Math.floor(f*35)},45,.92)`;
+      ctx.fillRect(W*.80,H*.44,7,H*.11*(1+f));
+      ctx.fillStyle='rgba(255,210,80,.28)'; ctx.fillRect(W*.70,H*.38,W*.24,H*.32);
+      // 먼지와 페이지 빛
+      for(let i=0;i<12;i++){
+        const px=W*.12+W*.74*((i*37+t*5)%100)/100;
+        const py=H*.16+H*.58*((i*23+t*4)%100)/100;
+        ctx.fillStyle=`rgba(215,182,87,${.12+Math.sin(t*1.8+i)*.10})`;
+        ctx.fillRect(px,py,2,2);
+      }
+    },
+    black_market: (t)=>{
+      ctx.clearRect(0,0,W,H);
+      ctx.fillStyle='#07040d'; ctx.fillRect(0,0,W,H);
+      // 천막
+      ctx.fillStyle='#24102e'; ctx.fillRect(W*.08,H*.14,W*.84,H*.12);
+      ctx.fillStyle='#3a1746'; ctx.fillRect(W*.12,H*.10,W*.76,H*.08);
+      for(let i=0;i<5;i++){
+        ctx.fillStyle=i%2?'#1a0b24':'#422052';
+        ctx.fillRect(W*.12+i*W*.15,H*.18,W*.15,H*.11);
+      }
+      ctx.fillStyle='#12091a'; ctx.fillRect(W*.10,H*.28,W*.80,H*.50);
+      // 상인 후드
+      const eye=.72+Math.sin(t*2.4)*.22;
+      ctx.fillStyle='#09070d'; ctx.fillRect(W*.36,H*.24,W*.28,H*.30);
+      ctx.fillStyle='#1d1424'; ctx.fillRect(W*.32,H*.32,W*.36,H*.29);
+      ctx.fillStyle=`rgba(255,214,84,${eye})`;
+      ctx.fillRect(W*.42,H*.39,8,3); ctx.fillRect(W*.54,H*.39,8,3);
+      ctx.fillStyle='#050408'; ctx.fillRect(W*.41,H*.46,W*.20,3);
+      // 가판대
+      ctx.fillStyle='#2e1d10'; ctx.fillRect(W*.16,H*.60,W*.68,H*.20);
+      ctx.fillStyle='#4b2d16'; ctx.fillRect(W*.12,H*.56,W*.76,H*.07);
+      ctx.fillStyle='#1a1009'; ctx.fillRect(W*.20,H*.79,W*.10,H*.10); ctx.fillRect(W*.70,H*.79,W*.10,H*.10);
+      // 금화와 수상한 물건
+      for(let i=0;i<5;i++){
+        const x=W*.22+i*W*.10, y=H*.52+Math.sin(t*1.5+i)*1.2;
+        ctx.fillStyle='#d7b657'; ctx.fillRect(x,y,7,4);
+        ctx.fillStyle='#fff0a8'; ctx.fillRect(x+1,y,3,1);
+      }
+      ctx.fillStyle='#8b5cff'; ctx.fillRect(W*.66,H*.50,12,10);
+      ctx.fillStyle='rgba(139,92,255,.38)'; ctx.fillRect(W*.63,H*.47,18,16);
+      for(let i=0;i<7;i++){
+        const px=W*.15+W*.70*((i*31+t*8)%100)/100;
+        const py=H*.22+H*.48*((i*19+t*3)%100)/100;
+        ctx.fillStyle=`rgba(215,182,87,${.18+Math.sin(t*2+i)*.16})`;
+        ctx.fillRect(px,py,2,2);
+      }
+    },
     fireAltar: (t)=>{
       ctx.clearRect(0,0,W,H);
       ctx.fillStyle='#100400'; ctx.fillRect(0,0,W,H);
@@ -7431,8 +7708,8 @@ const EVENTS=[
    ]},
   {tag:'🎭 가면 상인',title:'이상한 가면을 쓴 상인',body:'상인은 웃는 얼굴과 우는 얼굴을 번갈아 보여준다. 진짜 물건은 비싸고, 공짜 물건은 수상하다.',
    choices:[
-     {t:'골드 100 지불 → 전설 유물 획득',disabled:()=>gold<100,f:()=>{spendGold(100,'event');updateHUD();eventGiveRelic({tiers:['legend']},finishNode);}},
-     {t:'최대 체력 10 감소 → 35% 신화, 실패 시 저주 유물',f:()=>{eventMaxHpDelta(-10);if(Math.random()<0.35) eventGiveRelic({tiers:['mythic']},finishNode); else eventGiveRelic({curseOnly:true},finishNode);}},
+     {t:'골드 250 지불 → 영웅 유물 획득',disabled:()=>gold<250,f:()=>{spendGold(250,'event');updateHUD();eventGiveRelic({tiers:['epic']},finishNode);}},
+     {t:'최대 체력 20 감소 → 35% 전설, 실패 시 저주 유물',f:()=>{eventMaxHpDelta(-20);if(Math.random()<0.35) eventGiveRelic({tiers:['legend']},finishNode); else eventGiveRelic({curseOnly:true},finishNode);}},
      {t:'거절',f:()=>finishNode()},
    ]},
   {tag:'💀 저주받은 보물상자',title:'잠긴 상자',body:'상자 안쪽에서 금속 긁히는 소리가 난다. 열면 유물, 부수면 안전한 돈이다.',
@@ -7474,8 +7751,8 @@ const EVENTS=[
    ]},
   {tag:'👑 왕의 보관함',title:'금빛 보관함',body:'묵직한 자물쇠가 왕관 모양으로 빛난다. 정식 열쇠는 비싸고, 힘으로 열면 피를 본다.',
    choices:[
-     {t:'열쇠 사용 — 150G → 신화 유물',disabled:()=>gold<150,f:()=>{spendGold(150,'event');updateHUD();eventGiveRelic({tiers:['mythic']},finishNode);}},
-     {t:'강제로 연다 → 체력 25% 손실, 전설 유물',f:()=>{eventHpCostPct(0.25);eventGiveRelic({tiers:['legend']},finishNode);}},
+     {t:'열쇠 사용 — 300G → 신화 유물',disabled:()=>gold<300,f:()=>{spendGold(300,'event');updateHUD();eventGiveRelic({tiers:['mythic']},finishNode);}},
+     {t:'강제로 연다 → 체력 50% 손실, 전설 유물',f:()=>{eventHpCostPct(0.50);eventGiveRelic({tiers:['legend']},finishNode);}},
      {t:'포기',f:()=>finishNode()},
    ]},
   {tag:'🧲 떠돌이 수집가',title:'낡은 배낭의 수집가',body:'수집가는 당신의 유물을 탐내고, 동시에 자기 물건도 팔고 싶어 한다.',
@@ -7496,7 +7773,7 @@ const EVENTS=[
    ]},
   {tag:'💎 탐욕의 신전',title:'황금빛 신전',body:'신전은 생명과 돈을 같은 무게로 잰다. 어느 쪽을 바칠지 정해야 한다.',
    choices:[
-     {t:'체력 20% 지불 → 골드 300',f:()=>{eventHpCostPct(0.20);addGold(300,'event');try{sfx.coin&&sfx.coin();}catch(e){}banner('탐욕의 축복','골드 +300',1600);updateHUD();finishNode();}},
+     {t:'체력 50% 지불 → 골드 300',f:()=>{eventHpCostPct(0.50);addGold(300,'event');try{sfx.coin&&sfx.coin();}catch(e){}banner('탐욕의 축복','골드 +300',1600);updateHUD();finishNode();}},
      {t:'골드 전부 포기 → 체력 완전 회복',disabled:()=>gold<=0,f:()=>{const spent=spendGold(gold,'event');player.hp=player.maxhp;banner('탐욕 정화','골드 -'+spent+' / 체력 완전 회복',1600);updateHUD();finishNode();}},
      {t:'떠난다',f:()=>finishNode()},
    ]},
@@ -7506,8 +7783,8 @@ const EVENTS=[
   // ====================================================
   {tag:'🏋 부서진 훈련장',title:'낡은 훈련장',body:'먼지가 쌓인 더미와 기계들이 여전히 돌아가고 있다. 무너질 것 같지만, 쓸 수는 있다.',
    choices:[
-     {t:'혹독한 훈련 — 체력 12% 감소, 경험치 +35',f:()=>{eventHpCostPct(0.12);gainXP(35);banner('혹독한 훈련','경험치 +35',1400);finishNode();}},
-     {t:'방어 훈련 — 현재 체력 -8, 최대 체력 +4',f:()=>{player.hp=Math.max(1,player.hp-8);player.maxhp+=4;player.hp=Math.min(player.hp,player.maxhp);banner('방어 훈련','최대 체력 +4',1400);updateHUD();finishNode();}},
+     {t:'혹독한 훈련 — 체력 12% 감소, 경험치 +60',f:()=>{eventHpCostPct(0.12);gainXP(60);banner('혹독한 훈련','경험치 +60',1400);finishNode();}},
+     {t:'방어 훈련 — 현재 체력 -15, 최대 체력 +15',f:()=>{player.hp=Math.max(1,player.hp-15);player.maxhp+=15;player.hp=Math.min(player.hp,player.maxhp);banner('방어 훈련','최대 체력 +15',1400);updateHUD();finishNode();}},
      {t:'그냥 지나간다',f:()=>finishNode()},
    ]},
   {tag:'🍲 수상한 요리사',title:'이상한 냄새의 요리',body:'웃는 얼굴의 요리사가 김이 모락모락 나는 냄비를 내민다. 뭘 넣었는지는 묻지 않는 게 나을 것 같다.',
@@ -7524,7 +7801,7 @@ const EVENTS=[
   {tag:'🗺 낡은 지도',title:'뜯긴 모퉁이의 지도',body:'피로 그린 것처럼 붉게 바랜 지도. 앞 길이 희미하게 보인다.',
    choices:[
      {t:'지도를 해독한다 — 골드 30 지불, 다음 전투 보상 골드 +25%',disabled:()=>gold<30,f:()=>{spendGold(30,'event');updateHUD();combatRewardMul=Math.max(combatRewardMul,1.25);banner('지도 해독','다음 보상 골드 +25%',1400);finishNode();}},
-     {t:'지도를 판다 — 골드 +45',f:()=>{addGold(45,'event');try{sfx.coin&&sfx.coin();}catch(e){}banner('지도 판매','골드 +45',1300);updateHUD();finishNode();}},
+     {t:'지도를 판다 — 골드 +70',f:()=>{addGold(70,'event');try{sfx.coin&&sfx.coin();}catch(e){}banner('지도 판매','골드 +70',1300);updateHUD();finishNode();}},
      {t:'찢긴 길을 따른다 — 다음 전투 보상 +50% / 적 체력 +20%',f:()=>{combatRewardMul=Math.max(combatRewardMul,1.5);nextCombatMods={hpMul:1.20,banner:{big:'험한 길',small:'적이 질겨졌다 / 보상 +50%'}};banner('험한 길','보상 +50% · 적 체력 +20%',1500);finishNode();}},
    ]},
   {tag:'🩸 피 묻은 우물',title:'찜찜한 우물',body:'우물 바닥에서 뭔가 붉은 것이 비쳐 올라온다. 마실 수도 씻을 수도 있다. 그게 뭔지는 몰라도.',
@@ -7589,7 +7866,7 @@ const EVENTS=[
        if(Math.random()<0.50){const pot=rollPotion();if(!addPotion(pot)){addGold(30,'event');updateHUD();banner('빈손','포션 슬롯 가득 — 골드 +30',1300);}else{banner('개봉 성공',pot.name+' 획득',1300);}}
        else{banner('빈 상자','아무것도 없었다',1300);}
        finishNode();}},
-    {t:'그냥 판다 — 골드 +35',f:()=>{addGold(35,'event');try{sfx.coin&&sfx.coin();}catch(e){}banner('상자 통째로 판매','골드 +35',1300);updateHUD();finishNode();}},
+    {t:'그냥 판다 — 골드 +90',f:()=>{addGold(90,'event');try{sfx.coin&&sfx.coin();}catch(e){}banner('상자 통째로 판매','골드 +90',1300);updateHUD();finishNode();}},
    ]},
   {tag:'⏳ 시간의 균열',title:'뒤틀린 시공간',body:'공기가 일렁인다. 시간이 이곳에서 잘못 흐르고 있다.',
    choices:[
@@ -7602,6 +7879,31 @@ const EVENTS=[
        combatRewardMul=Math.max(combatRewardMul,1.30);
        nextCombatMods={hpMul:1.15,banner:{big:'균열의 도박',small:'보상 +30% / 적 체력 +15%'}};
        banner('시간 도박','보상 +30% · 적 체력 +15%',1500);finishNode();}},
+   ]},
+  {id:'twisted_mirror',tag:'🪞 뒤틀린 거울',title:'뒤틀린 거울',body:'깨진 거울 속의 내가 다른 선택을 하고 있다.',
+   choices:[
+     {t:'거울을 들여다본다 — 체력 12%를 잃고 특성 1개 변환',disabled:()=>!eventCanTransformPerk(),f:()=>{eventHpCostCurrentPct(0.12);eventTransformRandomPerk();}},
+     {t:'초점을 맞춘다 — 골드 120을 내고 특성 1개 변환',disabled:()=>gold<120||!eventCanTransformPerk(),f:()=>{spendGold(120,'event');updateHUD();eventTransformRandomPerk();}},
+     {t:'거울을 깨고 떠난다',f:()=>finishNode()},
+   ]},
+  {id:'forgotten_statue',tag:'🗿 잊힌 조각상',title:'잊힌 조각상',body:'낡은 조각상이 희미하게 웃고 있다. 무언가를 바치면 축복을 줄 것 같다.',
+   choices:[
+     {t:'피를 바친다 — 최대 체력 +18, 저주 유물 획득',f:()=>{player.maxhp+=18;player.hp=Math.min(player.hp,player.maxhp);updateHUD();eventGiveCurseThen(finishNode);}},
+     {t:'금화를 바친다 — 골드 160 → 랜덤 유물',disabled:()=>gold<160,f:()=>{spendGold(160,'event');updateHUD();eventGiveCleanRelic({},finishNode);}},
+     {t:'고개를 숙이고 지나간다 — 체력 15 회복',f:()=>{healPlayer(15,player.x,player.y);banner('조각상의 온기','체력 +15',1300);finishNode();}},
+   ]},
+  {id:'silent_library',tag:'📚 침묵의 도서관',title:'침묵의 도서관',body:'먼지 쌓인 책들이 아무 소리 없이 펼쳐져 있다.',
+   choices:[
+     {t:'금지된 책을 읽는다 — 체력 20%를 잃고 경험치 +90',f:()=>{eventHpCostCurrentPct(0.20);gainXP(90);banner('금지된 지식','경험치 +90',1500);finishNode();}},
+     {t:'찢어진 책을 고른다 — 저주 유물 획득, 특성 선택 1회',f:()=>{eventGiveCurseThen(()=>{pendingLevels++;updateHUD();showLevelUp();});}},
+     {t:'책을 판다 — 골드 +80',f:()=>{addGold(80,'event');try{sfx.coin&&sfx.coin();}catch(e){}banner('책 판매','골드 +80',1300);updateHUD();finishNode();}},
+   ]},
+  {id:'black_market',tag:'🕶 검은 시장',title:'검은 시장',body:'그림자 속 상인이 속삭인다. “정가보다 싸게, 대신 안전은 보장 못 합니다.”',
+   choices:[
+     {t:'밀거래한다 — 골드 220 → 에픽 이상 유물',disabled:()=>gold<220,f:()=>{spendGold(220,'event');updateHUD();eventTakeRelic(eventRollBlackMarketRelic(),finishNode);}},
+     {t:'할인권을 산다 — 골드 80 → 다음 상점 가격 -35%',disabled:()=>gold<80,f:()=>{spendGold(80,'event');nextShopDiscount=Math.max(nextShopDiscount,0.35);banner('검은 할인권','다음 상점 가격 -35%',1500);updateHUD();finishNode();}},
+     {t:'훔친다 — 45% 확률 유물 획득, 실패 시 체력 30% 손실',f:()=>{if(Math.random()<0.45) eventGiveCleanRelic({},finishNode); else {const loss=eventHpCostCurrentPct(0.30);banner('도둑질 실패','체력 -'+loss,1500);finishNode();}}},
+     {t:'아무것도 사지 않는다',f:()=>finishNode()},
    ]},
 ];
 function startEvent(){
