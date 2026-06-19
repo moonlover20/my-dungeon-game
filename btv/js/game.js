@@ -113,6 +113,25 @@ const HOONSANGTAE_SPRITE=new Image();let hoonsangtaeReady=false;HOONSANGTAE_SPRI
 const JAEMIN_SPRITE=new Image();let jaeminReady=false;JAEMIN_SPRITE.onload=()=>{jaeminReady=true;};JAEMIN_SPRITE.src="btv/assets/jaemin.png?v=matte2";
 const CLEAVER_SPRITE=new Image();let cleaverReady=false;CLEAVER_SPRITE.onload=()=>{cleaverReady=true;};CLEAVER_SPRITE.src="btv/assets/cleaver.png";
 const BOOMERANG_SPRITE=new Image();let boomerangReady=false;BOOMERANG_SPRITE.onload=()=>{boomerangReady=true;};BOOMERANG_SPRITE.src="btv/assets/boomerang.png";
+const KILLJOY_SPRITE=new Image();let killjoyReady=false;KILLJOY_SPRITE.onload=()=>{killjoyReady=true;};KILLJOY_SPRITE.src="btv/assets/killjoy.png?v=1";
+const APPLE_SPRITE=new Image();let appleReady=false;APPLE_SPRITE.onload=()=>{appleReady=true;};APPLE_SPRITE.src="btv/assets/apple.png?v=1";
+const BLACKSTAR_SPRITE=new Image();let blackstarReady=false;BLACKSTAR_SPRITE.onload=()=>{blackstarReady=true;};BLACKSTAR_SPRITE.src="btv/assets/blackstar.png?v=1";
+const STREAM_WATCHER_SPRITE=new Image();let streamWatcherReady=false;STREAM_WATCHER_SPRITE.onload=()=>{streamWatcherReady=true;};STREAM_WATCHER_SPRITE.src="btv/assets/stream_watcher.png?v=1";
+const SNIPER_VIEWER_SPRITE=new Image();let sniperViewerReady=false;SNIPER_VIEWER_SPRITE.onload=()=>{sniperViewerReady=true;};SNIPER_VIEWER_SPRITE.src="btv/assets/sniper_viewer.png?v=1";
+const KETTER_SPRITE=new Image();let ketterReady=false;KETTER_SPRITE.onload=()=>{ketterReady=true;};KETTER_SPRITE.src="btv/assets/ketter.png?v=1";
+const ACT3_MAGNET_SPRITE=new Image();let act3MagnetReady=false;ACT3_MAGNET_SPRITE.onload=()=>{act3MagnetReady=true;};ACT3_MAGNET_SPRITE.src="btv/assets/act3_magnet.png?v=1";
+const ACT3_MIRROR_SPRITE=new Image();let act3MirrorReady=false;ACT3_MIRROR_SPRITE.onload=()=>{act3MirrorReady=true;};ACT3_MIRROR_SPRITE.src="btv/assets/act3_mirror.png?v=1";
+const ACT3_TRUCK_SPRITE=new Image();let act3TruckReady=false;ACT3_TRUCK_SPRITE.onload=()=>{act3TruckReady=true;};ACT3_TRUCK_SPRITE.src="btv/assets/act3_truck.png?v=1";
+const ACT3_BUFFERING_SPRITE=new Image();let act3BufferingReady=false;ACT3_BUFFERING_SPRITE.onload=()=>{act3BufferingReady=true;};ACT3_BUFFERING_SPRITE.src="btv/assets/act3_buffering.png?v=1";
+const ACT3_ALPPANO_SPRITE=new Image();let act3AlppanoReady=false;ACT3_ALPPANO_SPRITE.onload=()=>{act3AlppanoReady=true;};ACT3_ALPPANO_SPRITE.src="btv/assets/act3_alppano.png?v=1";
+const ACT3_CLONE_SPRITE=new Image();let act3CloneReady=false;ACT3_CLONE_SPRITE.onload=()=>{act3CloneReady=true;};ACT3_CLONE_SPRITE.src="btv/assets/act3_clone.png?v=1";
+const ACT3_DOMIN_SPRITE=new Image();let act3DominReady=false;ACT3_DOMIN_SPRITE.onload=()=>{act3DominReady=true;};ACT3_DOMIN_SPRITE.src="btv/assets/act3_domin.png?v=1";
+const ACT3_KULLJE_SPRITE=new Image();let act3KulljeReady=false;ACT3_KULLJE_SPRITE.onload=()=>{act3KulljeReady=true;};ACT3_KULLJE_SPRITE.src="btv/assets/act3_kullje.png?v=1";
+const ONSTER_P1_SPRITE=new Image();let onsterP1Ready=false;ONSTER_P1_SPRITE.onload=()=>{onsterP1Ready=true;};ONSTER_P1_SPRITE.src="btv/assets/onster_p1.png?v=1";
+const ONSTER_P2_SPRITE=new Image();let onsterP2Ready=false;ONSTER_P2_SPRITE.onload=()=>{onsterP2Ready=true;};ONSTER_P2_SPRITE.src="btv/assets/onster_p2.png?v=1";
+const SET_HYEONJIN_SPRITE=new Image();let setHyeonjinReady=false;SET_HYEONJIN_SPRITE.onload=()=>{setHyeonjinReady=true;};SET_HYEONJIN_SPRITE.src="btv/assets/set_hyeonjin.png?v=1";
+const SET_BEONGEOM_SPRITE=new Image();let setBeongeomReady=false;SET_BEONGEOM_SPRITE.onload=()=>{setBeongeomReady=true;};SET_BEONGEOM_SPRITE.src="btv/assets/set_beongeom.png?v=1";
+const SET_KEKERORO_SPRITE=new Image();let setKekeroroReady=false;SET_KEKERORO_SPRITE.onload=()=>{setKekeroroReady=true;};SET_KEKERORO_SPRITE.src="btv/assets/set_kekeroro.png?v=1";
 PLAYER_SPRITE.src="btv/assets/asset-021-de784e3d5a.png";
 const INTERNAL_GAME_W=1600, INTERNAL_GAME_H=900;
 let W=INTERNAL_GAME_W, H=INTERNAL_GAME_H;
@@ -303,10 +322,17 @@ const MUSIC = {
     intro:        'btv/assets/music/intro.mp3',
     act1:         'btv/assets/music/act1.mp3',
     act2:         'btv/assets/music/act2-maple-bg.mp3',
+    bgm_act3:     'btv/assets/music/bgm_act3.mp3',
     midboss:      'btv/assets/music/midboss.mp3',
     act2Midboss:  'btv/assets/music/act2-midboss-malkuth.mp3',
     boss:         'btv/assets/music/boss.mp3',
-    finalBoss:    'btv/assets/music/act2-final-boss.mp3'
+    finalBoss:    'btv/assets/music/act2-final-boss.mp3',
+    bgm_onster_sealed:   'btv/assets/music/bgm_onster_sealed.mp3',
+    bgm_onster_awakened: 'btv/assets/music/bgm_onster_awakened.mp3',
+    bgm_set_hyeonjin:    'btv/assets/music/bgm_set_hyeonjin.mp3',
+    bgm_set_beongeom:    'btv/assets/music/bgm_set_beongeom.mp3',
+    bgm_set_kekeroro:    'btv/assets/music/bgm_set_kekeroro.mp3',
+    bgm_final_clear:     'btv/assets/music/bgm_final_clear.mp3'
   },
   tightLoops:{
     midboss:{start:0.02,endPad:0.28},
@@ -328,10 +354,18 @@ const MUSIC = {
 // 현재 상황에 맞는 음악 키
 function desiredMusicKey(){
   if(state==='title'||state==='start') return 'main'; // 시작화면·난이도 선택 화면 → main.mp3
+  if((typeof act3FinalClearActive==='function'&&act3FinalClearActive())||(act>=MAX_ACT&&state==='end')) return 'bgm_final_clear';
   if(!runActive) return 'intro';   // 스토리·엔드 등 기타 비전투 화면
-  if(roomIsBoss) return act>=MAX_ACT ? 'finalBoss' : 'boss';
-  if(roomIsMidboss) return act>=2 ? 'act2Midboss' : 'midboss';
-  return act>=2 ? 'act2' : 'act1'; // 2막 일반 진행은 메이플 BGM 사용
+  if(roomIsBoss){
+    if(boss&&boss.key==='set3') return (boss.setPhase||1)===1?'bgm_set_hyeonjin':((boss.setPhase||1)===2?'bgm_set_beongeom':'bgm_set_kekeroro');
+    return act>=MAX_ACT ? 'finalBoss' : 'boss';
+  }
+  if(roomIsMidboss){
+    const mb=(enemies||[]).find(e=>e&&e.midboss);
+    if(mb&&mb.type==='onster') return (mb.phase||1)>=2?'bgm_onster_awakened':'bgm_onster_sealed';
+    return act>=2 ? 'act2Midboss' : 'midboss';
+  }
+  return act>=3 ? 'bgm_act3' : (act>=2 ? 'act2' : 'act1');
 }
 // 첫 사용자 제스처에서 모든 트랙 재생 권한 확보
 function unlockMusic(){
@@ -530,7 +564,7 @@ const RELICS=[
   {id:"fork",name:"세 갈래 포크",icon:"🍴",desc:"투사체 +1발, 공격력 +20%.",cls:"boon",apply:p=>{p.shots+=1;p.dmgAdd+=0.20;}},
   {id:"harpoon",name:"사두 작살",icon:"🔱",desc:"투사체 +2발, 공격력 +10%.",cls:"boon",apply:p=>{p.shots+=2;p.dmgAdd+=0.10;}},
   {id:"back_gun",name:"백발백중 등총",icon:"🔙",desc:"뒤로도 한 발 발사, 공격력 +10%.",cls:"boon",apply:p=>{p.backShot=true;p.dmgAdd+=0.10;}},
-  {id:"homing_eye",name:"유도의 눈",icon:"👁️",desc:"투사체가 적을 따라간다. (호밍 8)",cls:"boon",apply:p=>{p.homing=8;}},
+  {id:"homing_eye",name:"유도의 눈",icon:"👁️",desc:"투사체가 적을 따라간다. (호밍 3)",cls:"boon",apply:p=>{p.homing=Math.max(Number(p.homing)||0,3);}},
   {id:"super_bouncy",name:"슈퍼 탱탱볼",icon:"🟣",desc:"투사체 벽 튕김 +2.",cls:"boon",apply:p=>{p.bounce+=2;}},
   {id:"skewer",name:"꼬치 막대기",icon:"🍢",desc:"투사체가 적 1명을 관통.",cls:"boon",apply:p=>{p.pierce+=1;}},
   {id:"long_skewer",name:"긴 꼬치",icon:"🍡",desc:"관통 +3, 공격력 +10%.",cls:"boon",apply:p=>{p.pierce+=3;p.dmgAdd+=0.10;}},
@@ -1029,6 +1063,7 @@ function isTypingInputActive(){
   return isTypingTarget(document.activeElement);
 }
 window.addEventListener('keydown',e=>{
+  if(act3FinalClearActive&&act3FinalClearActive() && (e.key==='Escape'||e.key===' '||e.key==='Enter')){ e.preventDefault(); skipAct3FinalClear(); return; }
   const k=e.key.toLowerCase();
   if(isTypingTarget(e.target)||isTypingInputActive()){
     return;
@@ -1672,9 +1707,11 @@ function recordShopPurchaseStats(it){
 function monsterKillBaseGold(enemy){
   const actNum=Math.max(1,Number(act)||1);
   const type=enemy&&enemy.type;
-  const hardEnemy=(actNum===1&&ACT1_LATE_ENEMY_IDS.indexOf(type)>=0)||(actNum===2&&ACT2_LATE_ENEMY_IDS.indexOf(type)>=0);
-  if(actNum>=2) return hardEnemy?irand(9,13):irand(7,11);
-  return hardEnemy?irand(5,9):irand(3,7);
+  const hardEnemy=(actNum===1&&ACT1_LATE_ENEMY_IDS.indexOf(type)>=0)||
+    (actNum===2&&ACT2_LATE_ENEMY_IDS.indexOf(type)>=0)||
+    (actNum>=3&&typeof ACT3_LATE_ENEMY_IDS!=="undefined"&&ACT3_LATE_ENEMY_IDS.indexOf(type)>=0);
+  const base=actNum>=2?(hardEnemy?irand(9,13):irand(7,11)):(hardEnemy?irand(5,9):irand(3,7));
+  return Math.max(1,Math.round(base*(actTuning(actNum).killGoldMul||1)));
 }
 const TRAINING_MAX_PURCHASES=5;
 const TRAINING_DEFAULTS={hp:0,atk:0,speed:0,focus:0,defense:0};
@@ -2695,6 +2732,116 @@ function spawnSlimeSplit(e){
     s.splitChild=true; s.summoned=true; s.noKillScore=true; s.r=Math.max(9,e.r*0.62); s.hp=Math.max(6,e.maxhp*0.35); s.maxhp=s.hp; s.xp=1;
   }
 }
+function act3SummonsOf(owner,type){ return enemies.filter(o=>o&&o._summonOwner===owner&&(!type||o.type===type)); }
+function spawnAct3SandSoldier(owner){
+  if(!owner||act3SummonsOf(owner,'act3_sand_soldier').length>=5) return null;
+  const ang=rand(0,TAU), rr=(owner.r||20)+rand(28,64);
+  spawnEnemy('act3_sand_soldier',clamp(owner.x+Math.cos(ang)*rr,28,W-28),clamp(owner.y+Math.sin(ang)*rr,70,H-42),1);
+  const s=enemies[enemies.length-1];
+  s._summonOwner=owner; s.summoned=true; s.noReward=true; s.noKillScore=true; s.xp=0; s.label='모래병사';
+  s.hp=Math.max(18,(owner.maxhp||120)*0.18); s.maxhp=s.hp; s.dmg=Math.max(7,(owner.dmg||8)*1.15); s.touchDmg=s.dmg;
+  burst(s.x,s.y,'#e0b85a',10,140);
+  return s;
+}
+function spawnAct3GlitchClone(owner){
+  if(!owner) return null;
+  spawnEnemy('act3_clone',clamp(owner.x+rand(-74,74),38,W-38),clamp(owner.y+rand(-48,88),82,H-54),0.55);
+  const c=enemies[enemies.length-1];
+  c._summonOwner=owner; c.clone=true; c.summoned=true; c.noReward=true; c.noKillScore=true; c.splitChild=true; c.ai='shooter'; c.label='글리치 분신'; c.xp=0;
+  c.hp=Math.max(30,(owner.maxhp||160)*0.3); c.maxhp=c.hp; c.dmg=Math.max(5,(owner.dmg||12)*0.5); c.touchDmg=Math.max(4,(owner.touchDmg||10)*0.5);
+  c.cool=Math.max(1.2,(owner.cool||1.4)*1.25); c.range=280; c._glitchClone=true;
+  burst(c.x,c.y,'#b86bff',12,160);
+  return c;
+}
+function spawnAct3BeamSweep(e){
+  const dir=Math.atan2(player.y-e.y,player.x-e.x), spin=(Math.random()<0.5?-1:1)*0.72;
+  hazards.push({kind:'beamSweep',x:e.x,y:e.y,ang:dir-spin*0.9,rot:spin,range:e.range||620,width:18,warnT:0.72,liveT:2.25,t:0,dmg:Math.max(8,Math.round((e.dmg||16)*0.72)),srcName:e.name||e.label||'중계차',seed:rand(0,TAU)});
+  burst(e.x,e.y,'#58d8ff',12,150);
+}
+function onsterAwaken(e){
+  e.awakened=true; e.phase=2; e.sprite='onster_p2'; e.color='#ff4dd2'; e.intentInvuln=1.5; e.stunT=1.5; e.spd*=1.28; e.cool=Math.max(0.75,(e.cool||1.35)*0.72);
+  eBullets.length=0; hazards=[]; screenShake=Math.max(screenShake||0,22); hitFlash=Math.max(hitFlash||0,0.55);
+  banner('온스터 각성','사슬이 끊어졌다',1600);
+  for(let i=0;i<24;i++){ const a=i/24*TAU; eBullets.push({x:e.x,y:e.y,vx:Math.cos(a)*230,vy:Math.sin(a)*230,r:8,dmg:10,life:3.2,srcName:'온스터 사슬 파편'}); }
+  if(typeof beep==='function'){ beep(90,0.45,'sawtooth',0.07); beep(240,0.36,'triangle',0.05); }
+}
+function onsterSummons(e){ return enemies.filter(o=>o&&o._summonOwner===e); }
+function spawnOnsterMinion(e){
+  if(onsterSummons(e).length>=6) return;
+  spawnAct3SandSoldier(e);
+  const s=enemies[enemies.length-1];
+  if(s){ s.label='사슬 잔재'; s.color='#8d72ff'; s._summonOwner=e; s.noReward=true; s.noKillScore=true; s.summoned=true; s.xp=0; }
+}
+function onsterChainBeam(e){
+  const ang=Math.atan2(player.y-e.y,player.x-e.x);
+  kijoLaserWarns.push({x:e.x,y:e.y,ang,width:e.awakened?23:17,range:720,t:0,warn:e.awakened?0.55:0.75,color:e.awakened?'#ff4dd2':'#8d72ff',fired:false,sniper:true,dmg:e.awakened?22:16,srcName:'온스터 사슬빔'});
+}
+function set3PhaseName(b){ return (b.setPhase||1)===1?'현진':((b.setPhase||1)===2?'번검':'케케로로'); }
+function set3NextPhase(b){
+  const ph=(b.setPhase||1)+1;
+  b.setPhase=ph; b.maxhp=(b.phaseHp&&b.phaseHp[ph-1])||b.maxhp; b.hp=b.maxhp;
+  b.hitT=0.2; b.stunT=1.0; b.burnT=0; b.psT=0; b.psStacks=0; b.enraged=false; b.patI=0; b.attackT=1.8; b.intent=null;
+  b.sprite='set3'; b.color=ph===2?'#38e8ff':'#ff4dd2'; b.spd=(b.baseSpd||62)*(ph===2?1.06:1.14); b.r=ph===2?68:72; b.x=W/2; b.y=135;
+  eBullets.length=0; hazards=[]; screenShake=Math.max(screenShake||0,24); hitFlash=Math.max(hitFlash||0,0.55);
+  const name=set3PhaseName(b);
+  banner('세트3형제 · '+name, ph===2?'거리는 충분히 좁혀졌다':'이제부터가 진짜 방송이다',1700);
+  bossEvolve={phase:ph,t:0,line:ph===2?'번검이 화면을 가른다':'케케로로가 신호를 장악한다',name,col:b.color,e:b};
+  cutsceneT=1.6;
+  if(typeof beep==='function'){ beep(ph===2?180:90,0.45,'sawtooth',0.07); beep(ph===2?520:760,0.25,'triangle',0.04); }
+}
+function set3SlashBeam(b,fan){
+  const base=Math.atan2(player.y-b.y,player.x-b.x);
+  const n=fan||1;
+  for(let i=0;i<n;i++){
+    const ang=base+(i-(n-1)/2)*0.34;
+    kijoLaserWarns.push({x:b.x,y:b.y,ang,width:18,range:820,t:0,warn:0.58,color:b.color||'#38e8ff',fired:false,sniper:true,dmg:18,srcName:'세트3 검기'});
+  }
+}
+function set3SafeZoneUltimate(b){
+  const w=190,h=150,x=clamp(player.x+rand(-130,130),24,W-w-24),y=clamp(player.y+rand(-100,80),90,H-h-24);
+  gZones=[{x,y,w,h,real:true,t:0,warn:2.4,kill:2.2,black:true}];
+  GL.blackout=Math.max(GL.blackout||0,0.55);
+  banner('케케로로 전체기','SAFE 안으로!',1200);
+}
+function updateSet3(b,dt){
+  if(b.setPhase==null){ b.setPhase=1; b.patI=0; b.attackT=1.4; b.tx=b.x; b.ty=b.y; b.safeUlt=false; clearSeungwooFx(); }
+  b.phaseT+=dt; b.angle+=dt*(1.2+0.16*(b.setPhase||1)); if(b.hitT>0)b.hitT-=dt;
+  for(const k of ['mirror','keyRev','frameDrop','rotActive','shield']) if(GL[k]>0)GL[k]-=dt;
+  if(GL.blackout>0) GL.blackout-=dt;
+  if(GL.rotActive<=0){gView.rotT=0;gView.fxT=1;gView.fyT=1;}
+  gView.rot+=(gView.rotT-gView.rot)*Math.min(1,dt*6); gView.fx+=(gView.fxT-gView.fx)*Math.min(1,dt*6); gView.fy+=(gView.fyT-gView.fy)*Math.min(1,dt*6);
+  if(gZones.length){ let allKill=true,real=null; for(const z of gZones){ z.t+=dt; if(z.real)real=z; if(z.t<z.warn)allKill=false; } if(allKill&&real){ const inR=player.x>real.x&&player.x<real.x+real.w&&player.y>real.y&&player.y<real.h+real.y; if(!inR) glDamage(44*dt); } if(gZones[0].t>gZones[0].warn+gZones[0].kill) gZones=[]; }
+  const a=Math.atan2(player.y-b.y,player.x-b.x), d=Math.hypot(player.x-b.x,player.y-b.y), ph=b.setPhase||1;
+  const want=ph===1?165:ph===2?250:300;
+  if(d>want+35){ b.x+=Math.cos(a)*b.spd*dt; b.y+=Math.sin(a)*b.spd*0.55*dt; }
+  else if(d<want-35){ b.x-=Math.cos(a)*b.spd*0.7*dt; b.y-=Math.sin(a)*b.spd*0.4*dt; }
+  b.x+=Math.cos(a+Math.PI/2)*b.spd*(ph===1?0.25:ph===2?0.38:0.46)*dt;
+  b.y+=Math.sin(a+Math.PI/2)*b.spd*(ph===1?0.18:ph===2?0.28:0.34)*dt;
+  b.x=clamp(b.x,b.r,W-b.r); b.y=clamp(b.y,b.r,H*0.58);
+  if(dist2(b.x,b.y,player.x,player.y)<(b.r+player.r)**2) hurtPlayer(ph===3?34:28,set3PhaseName(b));
+  if(ph===3&&!b.safeUlt&&b.hp<=b.maxhp*0.2){ b.safeUlt=true; set3SafeZoneUltimate(b); b.attackT=2.5; }
+  b.attackT-=dt;
+  if(b.attackT<=0){
+    b.patI=(b.patI||0)+1;
+    if(ph===1){
+      if(b.patI%3===0){ intentShockwave(player.x,player.y,105,20,'현진 충격파'); }
+      else { const pa=Math.atan2(player.y-b.y,player.x-b.x); b.x=clamp(b.x+Math.cos(pa)*120,b.r,W-b.r); b.y=clamp(b.y+Math.sin(pa)*80,b.r,H*0.58); if(dist2(b.x,b.y,player.x,player.y)<120*120) hurtPlayer(22,'현진 대시'); }
+      b.attackT=1.25;
+    }else if(ph===2){
+      if(b.patI%4===0){ b.x=clamp(player.x+rand(-150,150),b.r,W-b.r); b.y=clamp(player.y+rand(-90,90),90,H*0.45); burst(b.x,b.y,'#38e8ff',16,220); set3SlashBeam(b,1); }
+      else set3SlashBeam(b,b.patI%2?3:2);
+      b.attackT=1.45;
+    }else{
+      if(b.patI%5===0){ b.x=rand(110,W-110); b.y=rand(90,230); burst(b.x,b.y,'#ff4dd2',20,260); }
+      else if(b.patI%3===0){ const k=18; for(let i=0;i<k;i++){ const aa=b.angle+i/k*TAU; eBullets.push({x:b.x,y:b.y,vx:Math.cos(aa)*205,vy:Math.sin(aa)*205,r:8,dmg:11,life:3.6,srcName:'케케로로 에너지구'}); } }
+      else { const pa=Math.atan2(player.y-b.y,player.x-b.x); for(let i=-2;i<=2;i++) eBullets.push({x:b.x,y:b.y,vx:Math.cos(pa+i*0.22)*255,vy:Math.sin(pa+i*0.22)*255,r:8,dmg:12,life:3.4,srcName:'케케로로'}); }
+      b.attackT=1.05;
+    }
+    sfx.shoot();
+  }
+  if(b.hp<=0) handleBossDefeat(b);
+}
+
 function updateIntentPatterns(e,dt){
   if(!e||e.dummy) return;
   if(e.atkBuffT>0) e.atkBuffT-=dt;
@@ -3005,7 +3152,8 @@ function calcScoreBreakdown(data){
   const progressScore=globalFloor*1200;
   const killScore=scoreKills*120;
   const levelScore=(scoreLevel-1)*1500;
-  const clearBonus=cleared?30000:0;
+  const actClearBonus=(cleared&&scoreAct>=3)?12000:0;
+  const clearBonus=cleared?30000+actClearBonus:0;
   const timeBonus=cleared?Math.max(0,Math.round((2000-elapsedSec)*10)):0;
   const hitPenalty=hits*HIT_SCORE_PENALTY;
   const retryPenalty=scoreRetries*RETRY_SCORE_PENALTY;
@@ -3083,7 +3231,7 @@ function getRankSummaryText(run){
   const elapsed=run.clearTime!=null?run.clearTime:run.elapsedSec;
   const timeText=fmtTime(elapsed);
   const cleared=!!(run.cleared||run.win);
-  if(cleared) return '클리어 · Lv.'+level+' · '+timeText;
+  if(cleared) return (runAct>=3?'3막 클리어':'클리어')+' · Lv.'+level+' · '+timeText;
   return '진행 '+runAct+'막 '+floor+'층 · Lv.'+level+' · '+timeText;
 }
 function rankDetailButtonText(run){
@@ -3138,6 +3286,7 @@ function createRunBuildSnapshot(scoreData){
     goldStats:getRunGoldStatsSnapshot(),
     act:Math.max(1,Number(act)||1),
     stage:scoreData&&scoreData.reachedFloor?Number(scoreData.reachedFloor):Math.max(1,currentRow+1),
+    clearedAct:(scoreData&&scoreData.cleared)?Math.max(1,Number(act)||1):0,
     version:RUN_BUILD_VERSION
   };
 }
@@ -3529,6 +3678,8 @@ async function saveRunScore(win,killer,scoreData,name){
       clearTime,
       elapsedSec:clearTime,
       win:!!win,
+      cleared:!!win,
+      clearedAct:win?Math.max(1,Number(act)||1):0,
       killer:killer||lastKiller||'',
       title:getSelectedTitleName(),
       difficultyKey,
@@ -3617,8 +3768,16 @@ let combatTookHit=false;      // 이번 전투 피격 여부
 let combatTempAlly=false;     // 이번 전투 한정 아군 여부
 let nextGoldPenalty=0;        // 다음 전투 보상 골드 감소(0~1)
 let act=1, mapData=null, currentRow=0;
-const MAX_ACT=2;
-const ACT_BOSS=[0,3,2]; // 1막 키죠 / 2막 승우(글리치) / 3막 거대 곰
+const MAX_ACT=3;
+const ACT_BOSS=[0,3,4]; // 1막 키죠 / 2막 승우(글리치) / 3막 세트3형제
+const ACT_TUNING=[
+  null,
+  {enemyHpMul:1,eliteHpMul:1,bossHpMul:1,bossXp:200,bossGold:[105,170],killGoldMul:1,shopPriceMul:1,name:"1막"},
+  {enemyHpMul:1,eliteHpMul:1,bossHpMul:1,bossXp:3100,bossGold:[105,170],killGoldMul:1,shopPriceMul:1,name:"2막"},
+  // TODO(act3-content): 3막 전용 몬스터/보스가 완성되면 임시 배율을 실제 밸런스로 교체한다.
+  {enemyHpMul:1.18,eliteHpMul:1.18,bossHpMul:1.8,bossXp:4400,bossGold:[150,230],killGoldMul:1.25,shopPriceMul:1.06,name:"3막 · 심연 속"}
+];
+function actTuning(a){ return ACT_TUNING[Math.max(1,Math.min(MAX_ACT,Number(a)||1))]||ACT_TUNING[1]; }
 let timeScale=1;
 function queueNextCombatMod(mod){
   if(!mod) return nextCombatMods;
@@ -3748,6 +3907,8 @@ const BOSS_INTRO_LINES={
   kijo:{name:'키죠',line:'보지 마.',sub:'키죠의 마안이 열렸다.',tone:'purple',glitch:true,ms:2100},
   rhino_beetle:{name:'자잘자',line:'oof.',sub:'자잘자가 돌진 준비를 합니다.',ms:1800},
   kkotchung:{name:'양갱',line:'@#$#@@...',tone:'dark',glitch:true,ms:1900},
+  onster:{name:'온스터',line:'아직 깨우지 마라.',sub:'사슬이 바닥을 긁는다.',tone:'dark',ms:2100},
+  set3:{name:'세트3형제',line:'형이 나오기 전에 끝내자.',sub:'방송 신호가 세 갈래로 찢어진다.',tone:'dark',ms:2300},
   seungwoo:{name:'승우',line:'(하아...)',sub:'승우가 천천히 눈을 뜹니다.',tone:'dark',ms:2200}
 };
 let bossIntroSeen={};
@@ -3938,7 +4099,7 @@ function loadRunCheckpoint(){
   }
   try{
     diffSet=DIFFS[data.diffKey]||DIFFS.easy;
-    act=data.act||1; currentRow=data.currentRow||0; kills=0; totalKills=data.totalKills||0;
+    act=clamp(Math.round(Number(data.act)||1),1,MAX_ACT); currentRow=data.currentRow||0; kills=0; totalKills=data.totalKills||0;
     gold=data.gold||0; level=data.level||1; xp=data.xp||0; xpNext=data.xpNext||20; pendingLevels=data.pendingLevels||0;
     retries=data.retries||0; runHits=data.runHits||0; runShopPurchases=data.runShopPurchases||0; runShopSpent=data.runShopSpent||0; runStats=normalizeRunStats(data.runStats); runStartedAt=performance.now()-(data.elapsed||0);
     runPotionUsed=!!data.runPotionUsed; eliteViewerSpawns=data.eliteViewerSpawns||0;
@@ -4005,10 +4166,19 @@ function startCombat(kind, fresh){
     if(act===1) base*=1.15;               // 1막 일반방 밀도 소폭 상향
     if(row<MIDBOSS_ROW) base*=0.6;        // 중보 전: 약한 몹 중심, 낮은 밀도
     else if(row>MIDBOSS_ROW) base*=(act===1||act===2)?0.7:1.5; // 1·2막 후반은 강한 일반몹 비중으로 압박, 물량은 완화
-    const countMax=((act===1||act===2)&&row>MIDBOSS_ROW)?11:16;
+    const countMax=act>=3?9:(((act===1||act===2)&&row>MIDBOSS_ROW)?11:16);
     let count=clamp(Math.round(base*diffSet.cnt), row<MIDBOSS_ROW?2:4, countMax);
     if(kind==='midboss'){
-      if(act>=2){
+      if(act>=3){
+        spawnEnemy('onster', W/2, 145, diff);
+        showBossIntroLine('onster',520);
+        const eb=enemies[enemies.length-1];
+        eb.elite=true; eb.midboss=true; eb.label='온스터'; eb.phase=1; eb.atkT=1.4; eb.atkN=0; eb.summonT=4.2; eb.awakened=false;
+        eb.x=W/2; eb.y=170; eb.intro=true; eb.introScale=0; eb.stunT=4; eb.tauntedHalf=false;
+        banner("중간보스 · 온스터","사슬이 바닥을 긁는다",1800);
+        if(typeof sfx!=='undefined') sfx.boss();
+        showEntrance("⚠️ 3막 중간보스 등장","온스터","아직 깨우지 마라.");
+      } else if(act>=2){
         spawnEnemy('yanggaeng', W/2, 150, diff);
         showBossIntroLine('yanggaeng',520);
         const eb=enemies[enemies.length-1];
@@ -4030,7 +4200,18 @@ function startCombat(kind, fresh){
       // 자잘자 정예전 — 전용 엘리트 노드에서만 등장 (잡몹 소수 + 자잘자)
       const minions=clamp(Math.round(count*0.6),1,6);
       for(let i=0;i<minions;i++) spawnRandomEnemy(pickNormalEnemyForRoom(act,row,roomSpawnCounts), diff, 60, H-180);
-      if(act===2){
+      if(act>=3){
+        // TODO(act3-content): 3막 전용 정예 연출/패턴을 추가하면 이 placeholder 분기를 교체한다.
+        const eliteId=pick((ACT_POOLS[2]&&ACT_POOLS[2].elite)||["giant_golem"]);
+        spawnEnemy(eliteId, W/2, 160, diff);
+        showBossIntroLine(eliteId,680);
+        const ze=enemies[enemies.length-1]; roomHadElite=true; roomEliteKind=eliteId;
+        ze.elite=true; ze.eliteViewer=true; ze.eliteKind=eliteId; ze.label=ze.name||"3막 정예";
+        ze.hp*=1.75; ze.maxhp*=1.75; ze.dmg=Math.round((ze.dmg||10)*1.35); if(ze.touchDmg!=null) ze.touchDmg=Math.round(ze.touchDmg*1.25); ze.r+=5; ze.xp=Math.max(900,ze.xp||0); ze.coolT=1.0;
+        ze.x=W/2; ze.y=190; ze.intro=true; ze.introScale=0; ze.stunT=4; ze.tauntedHalf=false;
+        eliteIntro={t:0, ze:ze, warn:null, landed:false, banner:0, tensionDone:false};
+        beep(420,0.3,"sine",0.05); beep(280,0.5,"sine",0.035);
+      } else if(act===2){
         // 2막 엘리트: 양갱
         spawnEnemy('kkotchung', W/2, 140, diff);
         showBossIntroLine('kkotchung',680);
@@ -4057,6 +4238,14 @@ function startCombat(kind, fresh){
     }
   }
   // ── 이벤트 모디파이어 소비/적용 ──
+  const actTune=actTuning(act);
+  if(actTune && enemies.length){
+    const hpMul=Number(actTune.enemyHpMul)||1, eliteHpMul=Number(actTune.eliteHpMul)||1;
+    enemies.forEach(o=>{
+      const mul=(o.elite||o.eliteViewer||o.midboss)?eliteHpMul:hpMul;
+      if(mul!==1){ o.hp*=mul; o.maxhp*=mul; }
+    });
+  }
   combatRewardMul=1; combatXpMul=1; combatChallenge=null; combatSpecialReward=null; combatTookHit=false; player._fireHandicap=1; combatTempAlly=false;
   if(nextCombatMods){
     const M=nextCombatMods; nextCombatMods=null;
@@ -4111,7 +4300,7 @@ function spawnEnemy(type,x,y,diff){
 }
 function spawnBoss(b){
   markDiscovered('bosses', b&&b.key);
-  const scale=(1+(act-1)*0.35)*diffSet.hp;
+  const scale=(1+(act-1)*0.35)*diffSet.hp*(actTuning(act).bossHpMul||1);
   const phaseHp=b.phaseHp?b.phaseHp.map(v=>v*scale):null;
   const hp=phaseHp?phaseHp[0]:b.hp*scale;
   return {
@@ -4290,6 +4479,7 @@ function failGladiatorCombat(src){
   setTimeout(()=>{ hideAll(); finishNode(); syncChrome(); },650);
 }
 function hurtPlayer(dmg, src){
+  if(act3FinalClearActive&&act3FinalClearActive()) return;
   if(player.iframes>0||player.dodging>0||player.buffs.shield>0) return;
   if(player.hitShield>0){ player.hitShield--; player.iframes=0.6; burst(player.x,player.y,'#8be8ff',16,200); return; }
   if(player.perfectDodgeArmed){ player.perfectDodgeArmed=false; player.perfectDodgeCheckT=0; }
@@ -4400,8 +4590,17 @@ function updateBossStatuses(b,dt){
   return false;
 }
 function handleBossDefeat(b){
+  if(b&&b.key==='set3'&&((b.setPhase||1)<3)){
+    set3NextPhase(b);
+    return true;
+  }
   if(b&&b.key==='seungwoo'&&((b.gphase||1)<3)){
     seungwooNextPhase(b);
+    return true;
+  }
+  if(b&&b.key==='set3'&&act>=MAX_ACT){
+    killBoss();
+    startAct3FinalClear(b);
     return true;
   }
   killBoss();
@@ -4448,6 +4647,7 @@ function rollPlayerBulletDamage(target,bullet){
   return {dmg,crit};
 }
 function damageBoss(b,dmg,crit,fromBullet,bullet){
+  if(act3FinalClearActive()) return;
   if(fromBullet) dmg*=projectileHitScale(b,bullet);
   if(fromBullet) dmg*=projectileCloseMul(b,bullet,true);
   if(player.statusDmgMul>0 && targetHasStatus(b)) dmg*=(1+player.statusDmgMul);
@@ -4460,6 +4660,8 @@ function damageBoss(b,dmg,crit,fromBullet,bullet){
 }
 function damageEnemy(e,dmg,crit,fromBullet,bullet){
   if(e.intentInvuln>0){ burst(e.x,e.y,'#bff8ff',3,90); return; }
+  if(e.ai==='submerge_charge'&&e.submerged) dmg*=0.25;
+  if(e.ai==='stealth_assassin'&&(e.stealthT||0)>0) dmg*=0.5;
   if(fromBullet) dmg*=projectileHitScale(e,bullet);
   if(fromBullet) dmg*=projectileCloseMul(e,bullet,false);
   if(e.defenseT>0) dmg*=0.2;
@@ -4528,7 +4730,7 @@ function kkotNextPhase(e){
   e.spd*=1.12;
 }
 // 보스가 소환하는 적 — 무한 소환되므로 경험치를 주지 않음(무한 레벨업 방지)
-const SUMMON_TYPES=new Set(['earthworm','zergling','mutalisk','ultra','zerg_egg']);
+const SUMMON_TYPES=new Set(['earthworm','zergling','mutalisk','ultra','zerg_egg','act3_sand_soldier']);
 function resetStallWatch(){
   stallTimer=0; stallWarned=false; stallRegenWarned=false; stallRaged=false; stallReinforced=false;
 }
@@ -4610,8 +4812,8 @@ function eliteDefeatBubble(kind){
 }
 function killEnemy(e){
   const idx=enemies.indexOf(e); if(idx<0) return;
-  const isSummon=SUMMON_TYPES.has(e.type)||e._stallReinforcement;
-  const countsForKillScore=!isSummon&&!e.noKillScore&&!e.summoned&&!e.clone&&!e.splitChild;
+  const isSummon=SUMMON_TYPES.has(e.type)||e._stallReinforcement||e.noReward||e.noKillScore||e.summoned||e.clone||e.splitChild;
+  const countsForKillScore=!isSummon;
   enemies.splice(idx,1);
   if(e.type==='hyechul'){ enemies=enemies.filter(o=>!SUMMON_TYPES.has(o.type)); }
   if(e.dummy){ burst(e.x,e.y,e.color,10,180); return; }
@@ -4889,6 +5091,10 @@ function updateBoss(dt){
     if(stunned){ b.phaseT+=dt; if(b.hitT>0)b.hitT-=dt; return; }
     updateSeungwoo(b,dt); return;
   }
+  if(b.pattern==='set3'){
+    if(stunned){ b.phaseT+=dt; if(b.hitT>0)b.hitT-=dt; return; }
+    updateSet3(b,dt); return;
+  }
   b.phaseT+=dt; b.attackT-=dt; b.angle+=dt*1.2; if(b.hitT>0)b.hitT-=dt;
   if(b.reflectT>0) b.reflectT-=dt;
   if(!b.enraged && b.hp<b.maxhp*0.4){ b.enraged=true; b.spd*=1.4; banner("격노!","보스가 분노한다",1300); chatSys("🔥 보스 격노 — 채팅 카오스 monkaS"); }
@@ -4964,14 +5170,16 @@ function killBoss(){
   const deadBoss=boss;
   burst(boss.x,boss.y,boss.color,40,320); screenShake=18;
   banner("보스 처치!","승리!",2000); sfx.coin();
-  addGold(irand(105,170),'roomReward'); sfx.coin(); burst(boss.x,boss.y,'#ffd34d',20,260);
-  const bossXp=[0,200,3100,440][act]||440;
+  const bossGold=actTuning(act).bossGold||[105,170];
+  addGold(irand(bossGold[0],bossGold[1]),'roomReward'); sfx.coin(); burst(boss.x,boss.y,'#ffd34d',20,260);
+  const bossXp=actTuning(act).bossXp||440;
   gainXP(bossXp);
   if(deadBoss&&deadBoss.key) markDiscovered('bosses', deadBoss.key);
   userProgress.stats=normalizeProgressStats(userProgress&&userProgress.stats);
   userProgress.stats.totalBosses+=1;
   if(deadBoss&&deadBoss.key==='kijo') unlockAchievement('defeat_kijo');
   if(deadBoss&&deadBoss.key==='seungwoo') unlockAchievement('defeat_seungwoo');
+  if(deadBoss&&deadBoss.key==='set3') banner('재밌었다','다음 시즌에 보자',1600);
   saveUserProgress();
   if(act>=MAX_ACT){ enemies.length=0; eBullets.length=0; }   // 최종보스 처치 시 남은 잡몹·탄막 정리
   updateHUD();
@@ -4980,6 +5188,69 @@ function killBoss(){
   // 이후 흐름은 onCombatCleared() → finishNode() 에서 처리
 }
 
+
+let act3FinalClear=null;
+function act3FinalClearActive(){ return !!(act3FinalClear&&act3FinalClear.active); }
+function startAct3FinalClear(deadBoss){
+  if(act3FinalClearActive()) return true;
+  const bx=deadBoss&&Number.isFinite(deadBoss.x)?deadBoss.x:W/2;
+  const by=deadBoss&&Number.isFinite(deadBoss.y)?deadBoss.y:H*0.32;
+  act3FinalClear={active:true,t:0,x:bx,y:by,skipped:false,done:false};
+  roomCleared=true; roomIsBoss=false; boss=null; enemies.length=0; pBullets.length=0; eBullets.length=0; hazards=[];
+  if(typeof clearSeungwooFx==='function') clearSeungwooFx();
+  screenShake=Math.max(screenShake||0,28); hitFlash=Math.max(hitFlash||0,0.8);
+  for(let i=0;i<52;i++) burst(bx+rand(-70,70),by+rand(-50,50),pick(['#38e8ff','#ff4dd2','#ffd34d','#ffffff']),8,260);
+  banner('세트3형제 격파','재밌었다. 다음 시즌에 보자.',2200);
+  return true;
+}
+function skipAct3FinalClear(){
+  if(!act3FinalClearActive()) return false;
+  act3FinalClear.t=5.2; act3FinalClear.skipped=true;
+  return true;
+}
+function updateAct3FinalClear(dt){
+  if(!act3FinalClearActive()) return false;
+  const c=act3FinalClear; c.t+=dt;
+  if(c.t<3.8&&Math.random()<0.55){
+    particles.push({x:c.x+rand(-180,180),y:c.y+rand(-110,130),vx:rand(-40,40),vy:rand(-160,40),life:rand(.35,.9),max:.9,color:pick(['#38e8ff','#ff4dd2','#ffd34d']),r:rand(2,5)});
+  }
+  if(c.t>1.15&&!c.after1){ c.after1=true; banner('현진 · 번검 · 케케로로','세 화면이 동시에 꺼진다',1700); screenShake=Math.max(screenShake||0,18); }
+  if(c.t>2.75&&!c.after2){ c.after2=true; banner('화이트아웃','방송 신호가 사라진다',1500); hitFlash=Math.max(hitFlash||0,0.7); }
+  if(c.t>=5.0&&!c.done){
+    c.done=true; act3FinalClear=null; victory();
+  }
+  return true;
+}
+function drawAct3FinalClear(){
+  if(!act3FinalClearActive()) return;
+  const c=act3FinalClear, t=c.t;
+  ctx.save();
+  const fade=clamp(t/4.2,0,1);
+  ctx.fillStyle='rgba(5,3,10,'+(0.22+fade*0.58)+')'; ctx.fillRect(0,0,W,H);
+  ctx.translate(rand(-screenShake*0.1,screenShake*0.1),rand(-screenShake*0.1,screenShake*0.1));
+  const shards=18;
+  for(let i=0;i<shards;i++){
+    const a=i/shards*TAU+t*0.65, rr=38+t*70+i*2;
+    const x=c.x+Math.cos(a)*rr, y=c.y+Math.sin(a)*rr*0.58;
+    ctx.globalAlpha=clamp(1-t/4.6,0,0.88);
+    ctx.fillStyle=i%3===0?'#38e8ff':(i%3===1?'#ff4dd2':'#ffd34d');
+    ctx.fillRect(x,y,18+Math.sin(t+i)*8,4+((i+t*10)|0)%8);
+  }
+  ctx.globalAlpha=1;
+  if(t>2.0){
+    ctx.fillStyle='rgba(255,255,255,'+clamp((t-2)/2.2,0,0.94)+')'; ctx.fillRect(0,0,W,H);
+  }
+  ctx.textAlign='center';
+  ctx.font='bold 30px Courier New';
+  ctx.fillStyle=t>2.7?'#0a0814':'#ffffff';
+  ctx.strokeStyle=t>2.7?'#ffffff':'#08040f'; ctx.lineWidth=5;
+  const msg=t>2.7?'재밌었다. 다음 시즌에 보자.':'세트3형제 송출 종료';
+  ctx.strokeText(msg,W/2,H*0.43); ctx.fillText(msg,W/2,H*0.43);
+  ctx.font='14px Courier New';
+  ctx.fillStyle=t>2.7?'#24142e':'#b9f8ff';
+  ctx.fillText('SPACE / ESC: skip',W/2,H*0.43+34);
+  ctx.restore();
+}
 // ===================== 승우 (글리치 최종보스) =====================
 const GL={mirror:0,keyRev:0,frameDrop:0,rotActive:0,shield:0,blackout:0};
 const gView={rot:0,rotT:0,fx:1,fy:1,fxT:1,fyT:1};
@@ -5196,6 +5467,7 @@ function drawSeungwooOverlay(){
 // ---------- 업데이트 ----------
 function update(dt){
   if(state!=='play') return;
+  if(updateAct3FinalClear(dt)) return;
   if(cutsceneT>0){ cutsceneT-=dt; if(bossEvolve){ bossEvolve.t+=dt; if(cutsceneT<=0) bossEvolve=null; } return; }
   if(eliteIntro){ updateEliteIntro(dt); return; }
   if(slowmoT>0){ slowmoT-=dt; if(slowmoT<=0){ slowmoT=0; timeScale=1; } }
@@ -5331,6 +5603,14 @@ function update(dt){
       for(const e of enemies){
         if(b.hitSet.has(e)) continue;
         if(dist2(b.x,b.y,e.x,e.y)<(b.r+e.r)**2){
+          if(b.playerShot&&e.ai==='reflector'&&(e.reflectT||0)>0){
+            const ra=Math.atan2(player.y-e.y,player.x-e.x)+rand(-0.16,0.16);
+            const rd=Math.max(4,Math.round((b.dmg||10)*0.34));
+            eBullets.push({x:e.x,y:e.y,vx:Math.cos(ra)*300,vy:Math.sin(ra)*300,r:Math.max(5,Math.min(8,b.r||6)),dmg:rd,life:2.4,srcName:e.name||e.label||'거울러',reflected:true});
+            burst(e.x,e.y,'#8be8ff',8,170);
+            dead=true;
+            break;
+          }
           const hit=b.playerShot?rollPlayerBulletDamage(e,b):{dmg:b.dmg,crit:!!b.crit};
           damageEnemy(e,hit.dmg,hit.crit,true,b);
           if(b.pierce>0){ b.pierce--; b.hitSet.add(e); }
@@ -5525,7 +5805,101 @@ function update(dt){
       else if(d<target*0.35){ e.x-=Math.cos(a)*e.spd*dt; e.y-=Math.sin(a)*e.spd*dt; }
       else { e.x+=Math.cos(a+Math.PI/2)*e.spd*0.28*dt; e.y+=Math.sin(a+Math.PI/2)*e.spd*0.28*dt; }
       if(e.coolT<=0){ spawnMoveLockField(player.x,player.y,e.name||e.label); e.coolT=e.cool||4.0; if(typeof beep==='function')beep(180,0.07,'sawtooth',0.035); }
+    }else if(e.ai==='summoner'){
+      const target=e.range||340;
+      if(d<target*0.72){ e.x-=Math.cos(a)*e.spd*dt; e.y-=Math.sin(a)*e.spd*dt; }
+      else if(d>target*1.08){ e.x+=Math.cos(a)*e.spd*0.55*dt; e.y+=Math.sin(a)*e.spd*0.55*dt; }
+      e.x+=Math.cos(a+Math.PI/2)*e.spd*0.22*dt; e.y+=Math.sin(a+Math.PI/2)*e.spd*0.22*dt;
+      const live=act3SummonsOf(e,'act3_sand_soldier').length;
+      if(e.coolT<=0&&live<5){ const n=Math.min(5-live,2+(Math.random()<0.35?1:0)); for(let j=0;j<n;j++) spawnAct3SandSoldier(e); e.coolT=e.cool||5.6; if(typeof beep==='function')beep(180,0.12,'triangle',0.04); }
+      if(e.coolT<=0&&live>=5) e.coolT=1.2;
+    }else if(e.ai==='stealth_assassin'){
+      if((e.stealthT||0)>0){ e.stealthT-=dt; e.wob+=dt*8; if(e.stealthT<=0){ const side=(Math.random()<0.5?-1:1), back=(player.facing||a)+Math.PI; e.x=clamp(player.x+Math.cos(back)*rand(90,145)+Math.cos(back+Math.PI/2)*side*rand(30,70),e.r,W-e.r); e.y=clamp(player.y+Math.sin(back)*rand(90,145)+Math.sin(back+Math.PI/2)*side*rand(30,70),e.r,H-e.r); const da=Math.atan2(player.y-e.y,player.x-e.x); e.aimX=Math.cos(da); e.aimY=Math.sin(da); e.teleWarnT=0.48; burst(e.x,e.y,'#ff4dd2',10,160); } }
+      else if((e.teleWarnT||0)>0){ e.teleWarnT-=dt; e.wob+=dt*12; if(e.teleWarnT<=0){ e.assDashT=0.34; e._dashHit=false; if(typeof beep==='function')beep(520,0.08,'square',0.04); } }
+      else if((e.assDashT||0)>0){ e.assDashT-=dt; e.x+=e.aimX*e.spd*6.0*dt; e.y+=e.aimY*e.spd*6.0*dt; if(!e._dashHit&&dist2(e.x,e.y,player.x,player.y)<(e.r+player.r+12)**2){ e._dashHit=true; hurtPlayer(Math.max(10,e.dmg||20),e.name||e.label); burst(player.x,player.y,'#ff4dd2',12,190); } if(e.assDashT<=0){ e.coolT=e.cool||6.2; } }
+      else { if(d>95){ e.x+=Math.cos(a)*e.spd*0.82*dt; e.y+=Math.sin(a)*e.spd*0.82*dt; } else { e.x-=Math.cos(a)*e.spd*0.5*dt; e.y-=Math.sin(a)*e.spd*0.5*dt; } if(e.coolT<=0&&d<520){ e.stealthT=0.62; e.coolT=999; burst(e.x,e.y,'#4b1b66',10,130); } }
+    }else if(e.ai==='submerge_charge'){
+      if(e.submerged==null){ e.submerged=true; e.coolT=rand(0.8,1.8); }
+      if((e.emergeWarnT||0)>0){ e.emergeWarnT-=dt; if(e.emergeWarnT<=0){ e.submerged=false; e.chargeT=0.46; if(typeof beep==='function')beep(220,0.1,'sawtooth',0.05); } }
+      else if((e.chargeT||0)>0){ e.chargeT-=dt; e.x+=e.aimX*e.spd*5.8*dt; e.y+=e.aimY*e.spd*5.8*dt; if(!e._biteHit&&dist2(e.x,e.y,player.x,player.y)<(e.r+player.r+8)**2){ e._biteHit=true; hurtPlayer(Math.max(9,e.dmg||16),e.name||e.label); } if(e.chargeT<=0||e.x<=e.r||e.x>=W-e.r||e.y<=e.r||e.y>=H-e.r){ e.submerged=true; e._biteHit=false; e.coolT=e.cool||3.8; } }
+      else if(e.submerged){ e.x+=Math.cos(a+Math.sin(e.wob)*0.7)*e.spd*0.32*dt; e.y+=Math.sin(a+Math.sin(e.wob)*0.7)*e.spd*0.32*dt; if(e.coolT<=0&&d<460){ e.aimX=Math.cos(a); e.aimY=Math.sin(a); e.emergeWarnT=0.48; e.coolT=999; } }
+      else { e.submerged=true; }
+    }else if(e.ai==='reflector'){
+      if((e.reflectT||0)>0) e.reflectT=Math.max(0,e.reflectT-dt);
+      const target=e.range||360;
+      if(d<target*0.58){ e.x-=Math.cos(a)*e.spd*dt; e.y-=Math.sin(a)*e.spd*dt; }
+      else if(d>target){ e.x+=Math.cos(a)*e.spd*dt; e.y+=Math.sin(a)*e.spd*dt; }
+      else { e.x+=Math.cos(a+Math.PI/2)*e.spd*0.24*dt; e.y+=Math.sin(a+Math.PI/2)*e.spd*0.24*dt; }
+      if(e.coolT<=0){ e.reflectT=1.45; e.coolT=e.cool||5.8; burst(e.x,e.y,'#8be8ff',14,130); if(typeof beep==='function')beep(740,0.08,'sine',0.035); }
+    }else if(e.ai==='splitter'){
+      const target=e.range||320;
+      if(d<target*0.62){ e.x-=Math.cos(a)*e.spd*dt; e.y-=Math.sin(a)*e.spd*dt; }
+      else if(d>target){ e.x+=Math.cos(a)*e.spd*dt; e.y+=Math.sin(a)*e.spd*dt; }
+      else { e.x+=Math.cos(a-Math.PI/2)*e.spd*0.35*dt; e.y+=Math.sin(a-Math.PI/2)*e.spd*0.35*dt; }
+      if(!e.clone&&!e.splitChild&&e.hp<=e.maxhp*0.5&&!e._splitMade){ e._splitMade=true; setIntent(e,'◆','분열',0.75,()=>{ for(let j=0;j<2;j++) spawnAct3GlitchClone(e); }); }
+      if(e.coolT<=0){ const pa=Math.atan2(player.y-e.y,player.x-e.x); for(let j=-1;j<=1;j++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa+j*0.16)*235,vy:Math.sin(pa+j*0.16)*235,r:7,dmg:Math.max(6,Math.round((e.dmg||12)*0.72)),life:3,srcName:e.name||e.label}); e.coolT=e.cool||1.25; }
+    }else if(e.ai==='magnet'){
+      const target=e.range||230;
+      if(d>target*0.95){ e.x+=Math.cos(a)*e.spd*dt; e.y+=Math.sin(a)*e.spd*dt; }
+      else if(d<target*0.55){ e.x-=Math.cos(a)*e.spd*0.55*dt; e.y-=Math.sin(a)*e.spd*0.55*dt; }
+      else { e.x+=Math.cos(a+Math.PI/2)*e.spd*0.3*dt; e.y+=Math.sin(a+Math.PI/2)*e.spd*0.3*dt; }
+      if(d<target&&player.dodging<=0){ const pull=52*(1-d/target); player.x=clamp(player.x-Math.cos(a)*pull*dt,player.r,W-player.r); player.y=clamp(player.y-Math.sin(a)*pull*dt,player.r,H-player.r); }
+      if(e.coolT<=0){ enemyShootAt(e,player.x,player.y,185,7,Math.max(5,Math.round((e.dmg||8)*0.75))); e.coolT=e.cool||2.4; }
+      // TODO(act3-content): 탄환 휨 효과는 안정화 후 별도 projectile modifier로 추가한다.
+    }else if(e.ai==='beam_sweep'){
+      const target=e.range||620;
+      if(d>target*0.72){ e.x+=Math.cos(a)*e.spd*0.65*dt; e.y+=Math.sin(a)*e.spd*0.65*dt; }
+      else if(d<target*0.34){ e.x-=Math.cos(a)*e.spd*0.55*dt; e.y-=Math.sin(a)*e.spd*0.55*dt; }
+      if(e.coolT<=0){ spawnAct3BeamSweep(e); e.coolT=e.cool||6.5; if(typeof beep==='function')beep(300,0.16,'triangle',0.05); }
+    }else if(e.ai==='blink_lagfield'){
+      e.x+=Math.cos(a+Math.sin(e.wob*2)*0.9)*e.spd*dt; e.y+=Math.sin(a+Math.cos(e.wob*1.7)*0.9)*e.spd*dt;
+      if(e.coolT<=0){ const ox=e.x, oy=e.y; e.x=clamp(e.x+rand(-120,120),e.r,W-e.r); e.y=clamp(e.y+rand(-95,95),80,H-55); burst(ox,oy,'#38e8ff',8,120); burst(e.x,e.y,'#ff4dd2',8,120); spawnSlowField(player.x,player.y,74,3.6); e.coolT=e.cool||3.4; }
+    }else if(e.ai==='onster'){
+
+      if(!e.awakened && e.hp<=e.maxhp*0.6) onsterAwaken(e);
+
+      const ph=e.awakened?2:1, target=ph===2?280:340;
+
+      if(d<target*0.7){ e.x-=Math.cos(a)*e.spd*dt; e.y-=Math.sin(a)*e.spd*0.55*dt; }
+
+      else if(d>target){ e.x+=Math.cos(a)*e.spd*0.55*dt; e.y+=Math.sin(a)*e.spd*0.35*dt; }
+
+      else { e.x+=Math.cos(a+Math.PI/2)*e.spd*(ph===2?0.38:0.2)*dt; e.y+=Math.sin(a+Math.PI/2)*e.spd*(ph===2?0.26:0.14)*dt; }
+
+      e.summonT=(e.summonT==null?4.2:e.summonT)-dt;
+
+      if(e.summonT<=0){ for(let i=0;i<(ph===2?2:1);i++) spawnOnsterMinion(e); e.summonT=ph===2?5.0:6.5; }
+
+      e.atkT=(e.atkT==null?1.3:e.atkT)-dt;
+
+      if(e.atkT<=0){
+
+        e.atkN=(e.atkN||0)+1;
+
+        if(ph===1){
+
+          if(e.atkN%3===0) intentShockwave(clamp(player.x+rand(-50,50),80,W-80),clamp(player.y+rand(-40,40),100,H-80),95,18,'\uC628\uC2A4\uD130 \uC9C0\uBA74\uAC15\uD0C0');
+
+          else onsterChainBeam(e);
+
+          e.atkT=1.65;
+
+        }else{
+
+          if(e.atkN%4===0){ const pa=Math.atan2(player.y-e.y,player.x-e.x); for(let i=-2;i<=2;i++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa+i*0.22)*255,vy:Math.sin(pa+i*0.22)*255,r:8,dmg:11,life:3.5,home:0.55,srcName:'\uC628\uC2A4\uD130 \uC720\uB3C4 \uD30C\uD3B8'}); }
+
+          else if(e.atkN%3===0){ const pa=Math.atan2(player.y-e.y,player.x-e.x); e.x=clamp(e.x+Math.cos(pa)*160,e.r,W-e.r); e.y=clamp(e.y+Math.sin(pa)*95,e.r,H*0.58); intentShockwave(e.x,e.y,120,21,'\uC628\uC2A4\uD130 \uB3CC\uC9C4 \uAC15\uD0C0'); }
+
+          else onsterChainBeam(e);
+
+          e.atkT=1.15;
+
+        }
+
+      }
+
     }
+
     else if(e.ai==='egg'){
       e.hatchT-=dt;
       if(e.hatchT<0.55) e.wob+=dt*20;
@@ -6108,7 +6482,7 @@ function update(dt){
     }
     e.x=clamp(e.x,e.r,W-e.r); e.y=clamp(e.y,e.r,H-e.r);
     // 접촉 데미지
-    if(enemyTouchBaseDamage(e)>0 && dist2(e.x,e.y,player.x,player.y)<(e.r+player.r)**2){
+    if(!(e.ai==='submerge_charge'&&e.submerged) && enemyTouchBaseDamage(e)>0 && dist2(e.x,e.y,player.x,player.y)<(e.r+player.r)**2){
       const canContactHit=player.iframes<=0&&player.dodging<=0&&player.buffs.shield<=0;
       hurtPlayer(enemyTouchDamage(e), e.name||e.label||'시청자');
       if(e.type==='goblin_bomber'&&canContactHit){ const ka=Math.atan2(e.y-player.y,e.x-player.x); e.x=clamp(e.x+Math.cos(ka)*86,e.r,W-e.r); e.y=clamp(e.y+Math.sin(ka)*86,e.r,H-e.r); e.stunT=Math.max(e.stunT||0,0.28); e._fuse=false; e._fuseT=0; }
@@ -6605,7 +6979,8 @@ function onCombatCleared(){
       reward();
       return;
     }
-    if(t==='midboss'){ const bonus=irand(70,105); addGold(bonus,'roomReward'); updateHUD(); offerRelics(3,'중간보스 보상',(act>=2?'박제인간을 쓰러뜨린 보상이다':'혜철이를 쓰러뜨린 보상이다')+' · 골드 +'+bonus, finishNode); }
+    if(t==='midboss'){ const bonus=irand(70,105); addGold(bonus,'roomReward'); let potTxt=''; if(act>=3){ const pot=rollPotion(); if(addPotion(pot)) potTxt=' · '+pot.name; } updateHUD(); offerRelics(3,'중간보스 보상',(act>=3?'온스터를 쓰러뜨린 보상이다':(act>=2?'박제인간을 쓰러뜨린 보상이다':'혜철이를 쓰러뜨린 보상이다'))+' · 골드 +'+bonus+potTxt, finishNode); }
+    else if(t==='boss'&&act>=MAX_ACT){ finishNode(); }
     else if(t==='boss') offerRelics(3,'👑 보스 보상','막 보스를 쓰러뜨린 보상이다 · 좋은 유물 확률 증가', finishNode, {weights:BOSS_RELIC_WEIGHTS});
     else if(combatRewardMul>=2){ const bonus=Math.round(irand(36,65)*combatRewardMul); addGold(bonus,'roomReward'); combatRewardMul=1; offerRelics(3,'🎁 합방 보상','보상이 2배로! 골드 +'+bonus, finishNode); }
     else if(roomHadElite){ const bonus=irand(80,125); addGold(bonus,'roomReward'); updateHUD(); banner('⚔️ 자잘자 보상','골드 +'+bonus,1400); finishNode(); }
@@ -6623,7 +6998,7 @@ function finishNode(){
     if(act>=MAX_ACT){ victory(); return; }
     act++; currentRow=0; genMap();
     showMap();
-    banner(act+'막 진입','새 지도가 펼쳐진다',1600);
+    banner((actTuning(act).name||act+'막')+' 진입','새 지도가 열렸다',1600);
   }else{
     showMap();
   }
@@ -7061,6 +7436,17 @@ const EVENT_THEMES = {
   '🗿 잊힌 조각상':   {scene:'statue',      accent:'#c8a860', bg:'radial-gradient(ellipse at 50% 78%,#18140c 0%,#0a0814 60%)', tags:[{t:'저주',c:'#aa55ff',bg:'rgba(40,0,80,.55)'},{t:'제물',c:'#ffcc30',bg:'rgba(60,45,0,.55)'}]},
   '📚 침묵의 도서관': {scene:'library',     accent:'#d7b657', bg:'radial-gradient(ellipse at 50% 45%,#081020 0%,#0a0814 60%)', tags:[{t:'특성',c:'#aadd40',bg:'rgba(30,50,0,.55)'},{t:'경험치',c:'#6688ff',bg:'rgba(0,15,60,.55)'}]},
   '🕶 검은 시장':     {scene:'black_market',accent:'#d7b657', bg:'radial-gradient(ellipse at 50% 55%,#16081e 0%,#0a0814 60%)', tags:[{t:'상점',c:'#ffcc30',bg:'rgba(60,45,0,.55)'},{t:'도박',c:'#ffaa00',bg:'rgba(55,35,0,.55)'}]},
+  // Act 3 mystery events. Event art currently uses canvas fallback scenes;
+  // future PNGs can live under assets/events/act3/evt_act3_*.png.
+  '3막 · 깨진 채팅창':{scene:'act3_broken_chat',accent:'#38e8ff',bg:'radial-gradient(ellipse at 50% 50%,#081226 0%,#0a0814 62%)',tags:[{t:'채팅',c:'#38e8ff',bg:'rgba(0,55,85,.55)'},{t:'글리치',c:'#ff4dd2',bg:'rgba(70,0,55,.55)'}],asset:'evt_act3_broken_chat'},
+  '3막 · 검은 후원 알림':{scene:'act3_black_donation',accent:'#ffd34d',bg:'radial-gradient(ellipse at 50% 55%,#161000 0%,#05040a 64%)',tags:[{t:'골드',c:'#ffd34d',bg:'rgba(70,50,0,.55)'},{t:'리스크',c:'#ff4d6d',bg:'rgba(80,0,20,.55)'}],asset:'evt_act3_black_donation'},
+  '3막 · 관리자 권한 요청':{scene:'act3_admin_auth',accent:'#5dff9b',bg:'radial-gradient(ellipse at 50% 45%,#061a18 0%,#050812 64%)',tags:[{t:'권한',c:'#5dff9b',bg:'rgba(0,70,35,.55)'},{t:'저주',c:'#aa55ff',bg:'rgba(40,0,80,.55)'}],asset:'evt_act3_admin_auth'},
+  '3막 · 버퍼링된 휴식처':{scene:'act3_buffer_rest',accent:'#38e8ff',bg:'radial-gradient(ellipse at 50% 60%,#081428 0%,#070812 64%)',tags:[{t:'회복',c:'#40ee80',bg:'rgba(0,50,20,.55)'},{t:'지연',c:'#38e8ff',bg:'rgba(0,50,80,.55)'}],asset:'evt_act3_buffer_rest'},
+  '3막 · 금지된 필터':{scene:'act3_forbidden_filter',accent:'#ff4d6d',bg:'radial-gradient(ellipse at 50% 50%,#1c0610 0%,#07050b 64%)',tags:[{t:'정화',c:'#5dff9b',bg:'rgba(0,60,30,.55)'},{t:'대가',c:'#ff4d6d',bg:'rgba(80,0,20,.55)'}],asset:'evt_act3_forbidden_filter'},
+  '3막 · 깨진 다시보기':{scene:'act3_replay_error',accent:'#9146ff',bg:'radial-gradient(ellipse at 50% 50%,#120820 0%,#050712 64%)',tags:[{t:'랜덤',c:'#ffaa00',bg:'rgba(55,35,0,.55)'},{t:'글리치',c:'#ff4dd2',bg:'rgba(70,0,55,.55)'}],asset:'evt_act3_replay_error'},
+  '3막 · 심연의 구독자':{scene:'act3_abyss_subscriber',accent:'#38e8ff',bg:'radial-gradient(ellipse at 50% 55%,#020818 0%,#020208 66%)',tags:[{t:'고급 보상',c:'#cc88cc',bg:'rgba(60,0,70,.55)'},{t:'위험',c:'#ff5050',bg:'rgba(80,0,0,.55)'}],asset:'evt_act3_abyss_subscriber'},
+  '3막 · 방송 종료 버튼':{scene:'act3_end_stream',accent:'#ff4d6d',bg:'radial-gradient(ellipse at 50% 52%,#1a0408 0%,#050208 66%)',tags:[{t:'후반',c:'#ff4d6d',bg:'rgba(80,0,20,.55)'},{t:'전투',c:'#ff8840',bg:'rgba(60,20,0,.55)'}],asset:'evt_act3_end_stream'},
+
 };
 
 // ── 씬 씬 씬: 픽셀아트 캔버스 렌더러 ──────────────────────────
@@ -7078,6 +7464,78 @@ function evDrawScene(sceneId, canvas){
 
   // 씬별 픽셀 드로어 맵
   const scenes = {
+
+    // TODO(act3-event-art): replace these canvas fallback scenes with
+    // assets/events/act3/evt_act3_*.png when final pixel event art is ready.
+    act3_broken_chat:(t)=>{
+      ctx.clearRect(0,0,W,H); ctx.fillStyle='#050712'; ctx.fillRect(0,0,W,H);
+      ctx.fillStyle='#0b1220'; ctx.fillRect(W*.10,H*.12,W*.80,H*.72);
+      ctx.fillStyle='#16213a'; ctx.fillRect(W*.14,H*.17,W*.72,H*.62);
+      ctx.fillStyle='#38e8ff'; ctx.fillRect(W*.14,H*.17,W*.72,4);
+      for(let i=0;i<7;i++){ const y=H*.25+i*H*.065; ctx.fillStyle=i%2?'#19112a':'#0f2740'; ctx.fillRect(W*.19,y,W*.54+Math.sin(t+i)*8,8); }
+      ctx.fillStyle='#ff4dd2'; ctx.fillRect(W*.64,H*.23,22,4); ctx.fillRect(W*.62,H*.25,4,22); ctx.fillRect(W*.68,H*.31,26,4);
+      ctx.strokeStyle='rgba(255,255,255,.75)'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(W*.22,H*.18); ctx.lineTo(W*.72,H*.66); ctx.moveTo(W*.78,H*.24); ctx.lineTo(W*.30,H*.72); ctx.stroke();
+      if(Math.sin(t*10)>0){ ctx.fillStyle='rgba(255,77,210,.22)'; ctx.fillRect(0,0,W,H); }
+    },
+    act3_black_donation:(t)=>{
+      ctx.clearRect(0,0,W,H); ctx.fillStyle='#020204'; ctx.fillRect(0,0,W,H);
+      ctx.fillStyle='#06060c'; ctx.fillRect(W*.12,H*.18,W*.76,H*.56);
+      ctx.fillStyle='rgba(255,211,77,.12)'; ctx.fillRect(W*.18,H*.26,W*.64,H*.36);
+      ctx.fillStyle='#ffd34d'; ctx.fillRect(W*.24,H*.32,W*.52,8); ctx.fillRect(W*.24,H*.46,W*.34,7);
+      ctx.fillStyle='#ff4d6d'; ctx.fillRect(W*.64,H*.45,14,14);
+      for(let i=0;i<10;i++){ const x=W*.16+((i*23+t*16)%Math.floor(W*.68)); ctx.fillStyle=i%2?'#38e8ff':'#9146ff'; ctx.fillRect(x,H*.70-(i%4)*7,3,9); }
+      ctx.fillStyle='rgba(255,255,255,.08)'; ctx.fillRect(0,Math.floor((t*38)%H),W,2);
+    },
+    act3_admin_auth:(t)=>{
+      ctx.clearRect(0,0,W,H); ctx.fillStyle='#03090b'; ctx.fillRect(0,0,W,H);
+      ctx.fillStyle='#071b1e'; ctx.fillRect(W*.08,H*.12,W*.84,H*.72);
+      ctx.fillStyle='#38e8ff'; ctx.fillRect(W*.14,H*.20,W*.72,3);
+      ctx.fillStyle='#5dff9b'; for(let i=0;i<8;i++) ctx.fillRect(W*.18,H*.29+i*10,W*.36+((i*17)%38),3);
+      const pulse=.55+Math.sin(t*4)*.25; ctx.fillStyle=`rgba(255,77,109,${pulse})`;
+      ctx.fillRect(W*.44,H*.42,W*.12,H*.18); ctx.fillRect(W*.40,H*.39,W*.20,H*.08);
+      ctx.fillStyle='#050712'; ctx.fillRect(W*.47,H*.49,W*.06,H*.06);
+      ctx.fillStyle='rgba(145,70,255,.18)'; ctx.fillRect(W*.08,H*.12,W*.84,H*.72);
+    },
+    act3_buffer_rest:(t)=>{
+      ctx.clearRect(0,0,W,H); ctx.fillStyle='#050815'; ctx.fillRect(0,0,W,H);
+      ctx.fillStyle='#0e1826'; ctx.fillRect(W*.16,H*.54,W*.68,H*.22);
+      ctx.fillStyle='#1b2940'; ctx.fillRect(W*.22,H*.46,W*.46,H*.13);
+      ctx.fillStyle='#38e8ff'; ctx.fillRect(W*.21,H*.42,W*.16,H*.08);
+      const cx=W*.62,cy=H*.32,r=20; for(let i=0;i<10;i++){ const a=t*2+i*Math.PI*2/10; ctx.fillStyle=i%2?'#38e8ff':'#ff4dd2'; ctx.fillRect(cx+Math.cos(a)*r,cy+Math.sin(a)*r,4,4); }
+      ctx.fillStyle='rgba(255,255,255,.08)'; for(let i=0;i<4;i++) ctx.fillRect(W*.12+i*W*.20,H*.18+Math.sin(t+i)*3,24,3);
+    },
+    act3_forbidden_filter:(t)=>{
+      ctx.clearRect(0,0,W,H); ctx.fillStyle='#09040a'; ctx.fillRect(0,0,W,H);
+      ctx.fillStyle='#1c0710'; ctx.fillRect(W*.16,H*.16,W*.68,H*.64);
+      ctx.fillStyle='#ff4d6d'; ctx.fillRect(W*.22,H*.23,W*.56,6); ctx.fillRect(W*.22,H*.64,W*.56,6);
+      ctx.fillStyle='#ffd34d'; ctx.fillRect(W*.45,H*.34,W*.10,H*.22); ctx.fillRect(W*.47,H*.60,W*.06,H*.06);
+      ctx.strokeStyle='rgba(255,77,109,.75)'; ctx.lineWidth=4; ctx.beginPath(); ctx.arc(W*.50,H*.48,42+Math.sin(t*3)*2,0,Math.PI*2); ctx.stroke();
+      ctx.fillStyle='rgba(255,77,109,.12)'; ctx.fillRect(0,0,W,H);
+    },
+    act3_replay_error:(t)=>{
+      ctx.clearRect(0,0,W,H); ctx.fillStyle='#040610'; ctx.fillRect(0,0,W,H);
+      for(let i=0;i<4;i++){ const x=W*(.10+i*.21); ctx.fillStyle=i%2?'#101a30':'#1a1030'; ctx.fillRect(x,H*.20,W*.17,H*.46); ctx.fillStyle=i%2?'#38e8ff':'#ff4dd2'; ctx.fillRect(x+5,H*.25+Math.sin(t+i)*6,W*.11,5); ctx.fillRect(x+10,H*.42,W*.08,4); }
+      ctx.fillStyle='#ffd34d'; ctx.beginPath(); ctx.moveTo(W*.45,H*.74); ctx.lineTo(W*.45,H*.60); ctx.lineTo(W*.59,H*.67); ctx.closePath(); ctx.fill();
+      if(Math.sin(t*8)>0){ ctx.fillStyle='rgba(255,255,255,.10)'; ctx.fillRect(0,H*.34,W,5); ctx.fillRect(0,H*.52,W,3); }
+    },
+    act3_abyss_subscriber:(t)=>{
+      ctx.clearRect(0,0,W,H); ctx.fillStyle='#02040a'; ctx.fillRect(0,0,W,H);
+      const glow=.22+Math.sin(t*2)*.08; ctx.fillStyle=`rgba(56,232,255,${glow})`; ctx.fillRect(W*.18,H*.16,W*.64,H*.58);
+      ctx.fillStyle='#081020'; ctx.fillRect(W*.28,H*.20,W*.44,H*.46);
+      ctx.fillStyle='#05050b'; ctx.fillRect(W*.39,H*.28,W*.22,H*.30);
+      ctx.fillStyle='#ff4dd2'; ctx.fillRect(W*.42,H*.36,7,5); ctx.fillRect(W*.53,H*.36,7,5);
+      ctx.fillStyle='#9146ff'; ctx.fillRect(W*.26,H*.72,W*.48,12);
+      ctx.fillStyle='#38e8ff'; for(let i=0;i<7;i++) ctx.fillRect(W*.20+i*W*.10,H*.12+Math.sin(t+i)*4,4,4);
+    },
+    act3_end_stream:(t)=>{
+      ctx.clearRect(0,0,W,H); ctx.fillStyle='#070208'; ctx.fillRect(0,0,W,H);
+      ctx.fillStyle='#170610'; ctx.fillRect(W*.10,H*.12,W*.80,H*.66);
+      const p=.78+Math.sin(t*4)*.12; ctx.fillStyle=`rgba(255,77,109,${p})`; ctx.fillRect(W*.28,H*.36,W*.44,H*.20);
+      ctx.fillStyle='#060208'; ctx.fillRect(W*.33,H*.41,W*.34,H*.10);
+      ctx.fillStyle='rgba(255,255,255,.75)'; ctx.fillRect(W*.40,H*.44,W*.20,H*.03);
+      ctx.fillStyle='rgba(255,77,109,.18)'; ctx.fillRect(W*.18,H*.22,W*.64,H*.44);
+      for(let i=0;i<5;i++){ ctx.fillStyle=i%2?'#ffd34d':'#38e8ff'; ctx.fillRect(W*.18+i*W*.14,H*.70+Math.sin(t*2+i)*3,18,3); }
+    },
     altar: (t)=>{
       ctx.clearRect(0,0,W,H);
       // 어두운 바닥
@@ -7921,9 +8379,106 @@ const EVENTS=[
      {t:'아무것도 사지 않는다',f:()=>finishNode()},
    ]},
 ];
+
+function act3EventBand(band){
+  const row=Number(currentRow)||0;
+  const mid=(typeof MIDBOSS_ROW!=='undefined'?MIDBOSS_ROW:7);
+  const camp2=(typeof CAMP2_ROW!=='undefined'?CAMP2_ROW:13);
+  if(band==='early') return row<=mid+1;
+  if(band==='mid') return row>=Math.max(1,mid-1)&&row<=camp2+1;
+  if(band==='late') return row>=Math.max(1,camp2-2);
+  return true;
+}
+function act3RemoveRandomCurse(){
+  const idxs=[];
+  for(let i=0;i<player.relics.length;i++) if(player.relics[i]&&player.relics[i].cls==='curse') idxs.push(i);
+  if(!idxs.length) return null;
+  const i=pick(idxs), r=player.relics.splice(i,1)[0];
+  updateHUD();
+  return r;
+}
+function act3AddPotionReward(rarity,goldFallback){
+  const pot=rarity?eventRollPotionByRarity(rarity):rollPotion();
+  eventAddPotionOrGold(pot,goldFallback||45);
+  return pot;
+}
+function act3BeginEventCombat(mod,kind){
+  queueNextCombatMod(mod||{});
+  hideAll();
+  startCombat(kind||'fight');
+  state='play';
+  syncChrome();
+}
+
+const ACT3_EVENTS=[
+  {id:'act3_broken_chat',tag:'3막 · 깨진 채팅창',title:'깨진 채팅창',body:'화면 한쪽에 깨진 채팅창이 떠 있다. 문장은 알아볼 수 없지만, 누군가 계속 말을 걸고 있다.',
+   filter:()=>act===3&&act3EventBand('early'),
+   choices:[
+     {t:'채팅창을 복구한다 — 유물 선택, 다음 전투 적 체력 +12%',desc:'읽을수록 더 많은 것이 드러난다.',f:()=>{queueNextCombatMod({hpMul:1.12,banner:{big:'복구된 채팅창',small:'다음 전투의 적이 조금 단단해진다'}});eventOfferRelics(3,{noCurse:true},'채팅창 복구','깨진 로그 속에서 유물을 하나 고른다.',finishNode);}},
+     {t:'조용히 닫는다 — 체력 22% 회복',desc:'아무것도 읽지 않는 선택.',f:()=>{healPlayer(Math.max(24,Math.round(player.maxhp*0.22)),player.x,player.y);banner('채팅창 닫힘','체력 회복',1200);finishNode();}},
+     {t:'로그를 뒤진다 — 골드 +140, 최대 체력 -8',desc:'삭제된 기록에는 가격이 붙어 있다.',f:()=>{addGold(140,'event');eventMaxHpDelta(-8);try{sfx.coin&&sfx.coin();}catch(e){}banner('로그 추출','골드 +140 / 최대 체력 -8',1500);finishNode();}},
+   ]},
+  {id:'act3_black_donation',tag:'3막 · 검은 후원 알림',title:'검은 후원 알림',body:'갑자기 화면에 검은 후원 알림이 뜬다. 금액은 크지만 송출 상태가 이상하다.',
+   filter:()=>act===3&&act3EventBand('mid'),
+   choices:[
+     {t:'후원을 받는다 — 골드 +230, 다음 전투 적 공격 +18%',desc:'돈은 들어온다. 대신 화면이 흔들린다.',f:()=>{addGold(230,'event');updateHUD();queueNextCombatMod({atkMul:1.18,banner:{big:'검은 후원',small:'다음 전투 적 공격력 +18%'}});banner('후원 수락','골드 +230',1400);finishNode();}},
+     {t:'익명 처리 후 받는다 — 골드 +120, 포션 1개, 발사속도 -10%',desc:'덜 위험하지만 흔적은 남는다.',f:()=>{addGold(120,'event');act3AddPotionReward(null,45);queueNextCombatMod({fireHandicap:1.10,banner:{big:'익명 후원',small:'다음 전투 발사속도 -10%'}});banner('익명 처리','골드 +120 / 포션 지급',1500);finishNode();}},
+     {t:'거절한다 — 효과 없음',f:()=>finishNode()},
+   ]},
+  {id:'act3_admin_auth',tag:'3막 · 관리자 권한 요청',title:'관리자 권한 요청',body:'시스템이 관리자 권한을 부여하겠냐고 묻는다. 승인하면 강한 힘을 얻지만, 규칙이 뒤틀릴 수 있다.',
+   filter:()=>act===3&&act3EventBand('mid'),
+   choices:[
+     {t:'권한을 승인한다 — 고급 유물, 45% 확률 저주',desc:'관리자 권한은 공짜가 아니다.',f:()=>{if(Math.random()<0.45){eventGiveRelic({curseOnly:true},()=>eventOfferRelics(3,{tiers:['epic','legend']},'관리자 권한','권한 상승 보상이다.',finishNode));}else eventOfferRelics(3,{tiers:['epic','legend']},'관리자 권한','권한 상승 보상이다.',finishNode);}},
+     {t:'제한 승인한다 — 골드 +90, 포션 1개',desc:'힘은 적지만 손실도 적다.',f:()=>{addGold(90,'event');act3AddPotionReward(null,40);updateHUD();banner('제한 승인','골드 +90 / 포션 지급',1400);finishNode();}},
+     {t:'거부한다 — 효과 없음',f:()=>finishNode()},
+   ]},
+  {id:'act3_buffer_rest',tag:'3막 · 버퍼링된 휴식처',title:'버퍼링된 휴식처',body:'안전해 보이는 휴식처지만 화면이 끊기고 시간이 느리게 흐른다.',
+   filter:()=>act===3&&act3EventBand('early'),
+   choices:[
+     {t:'잠시 눕는다 — 체력 45% 회복, 다음 전투 적 속도 +10%',f:()=>{healPlayer(Math.max(45,Math.round(player.maxhp*0.45)),player.x,player.y);queueNextCombatMod({spdMul:1.10,banner:{big:'버퍼링 후유증',small:'다음 전투 적 속도 +10%'}});banner('짧은 휴식','체력 회복',1400);finishNode();}},
+     {t:'깊게 동기화한다 — 풀회복 + 포션, 다음 전투 발사속도 -18%',f:()=>{player.hp=player.maxhp;act3AddPotionReward('rare',45);queueNextCombatMod({fireHandicap:1.18,banner:{big:'깊은 버퍼링',small:'다음 전투 발사속도 -18%'}});updateHUD();banner('동기화 완료','체력 완전 회복 / 포션 지급',1500);finishNode();}},
+     {t:'그냥 떠난다 — 효과 없음',f:()=>finishNode()},
+   ]},
+  {id:'act3_forbidden_filter',tag:'3막 · 금지된 필터',title:'금지된 필터',body:'금지된 필터가 작동 중이다. 무언가를 치르면 부정적인 흔적을 지울 수 있을 것 같다.',
+   filter:()=>act===3&&act3EventBand('early'),
+   choices:[
+     {t:'필터를 강화한다 — 골드 80 지불, 저주 1개 제거',disabled:()=>gold<80,f:()=>{spendGold(80,'event');const r=act3RemoveRandomCurse();if(r) banner('필터 강화',r.name+' 제거',1500);else{player.buffs.shield=Math.max(player.buffs.shield||0,3);banner('필터 강화','저주가 없어 3초 보호막 획득',1400);}updateHUD();finishNode();}},
+     {t:'시스템을 강제 초기화한다 — 저주 제거 또는 버프, 최대 체력 -10',f:()=>{const r=act3RemoveRandomCurse();eventMaxHpDelta(-10);if(r) banner('강제 초기화',r.name+' 제거 / 최대 체력 -10',1600);else{player.dmgAdd+=0.06;banner('강제 초기화','공격력 +6% / 최대 체력 -10',1600);}finishNode();}},
+     {t:'무시한다 — 효과 없음',f:()=>finishNode()},
+   ]},
+  {id:'act3_replay_error',tag:'3막 · 깨진 다시보기',title:'깨진 다시보기',body:'이전 장면들이 깨진 화면으로 재생된다. 놓친 보상, 버린 선택, 지나친 흔적이 아직 남아 있다.',
+   filter:()=>act===3&&act3EventBand('mid'),
+   choices:[
+     {t:'재생한다 — 랜덤 보상, 30% 확률 체력 손실',f:()=>{const r=pick(['gold','potion','relic']);if(r==='gold'){addGold(160,'event');updateHUD();banner('다시보기 보상','골드 +160',1400);finishNode();}else if(r==='potion'){act3AddPotionReward(null,45);if(Math.random()<0.30)eventHpCostPct(0.10);finishNode();}else{if(Math.random()<0.30)eventHpCostPct(0.10);eventGiveRelic({noCurse:true},finishNode);}}},
+     {t:'깊게 탐색한다 — 고급 유물 선택, 다음 전투 강화',f:()=>{queueNextCombatMod({hpMul:1.18,atkMul:1.12,banner:{big:'리플레이 잔상',small:'다음 전투 적 체력/공격 강화'}});eventOfferRelics(3,{tiers:['epic','legend']},'깨진 다시보기','남은 프레임에서 하나를 고른다.',finishNode);}},
+     {t:'재생을 중지한다 — 효과 없음',f:()=>finishNode()},
+   ]},
+  {id:'act3_abyss_subscriber',tag:'3막 · 심연의 구독자',title:'심연의 구독자',body:'보이지 않는 시청자가 구독 버튼을 누른다. 이름은 보이지 않지만, 강한 힘을 줄 수 있다.',
+   filter:()=>act===3&&act3EventBand('late'),
+   choices:[
+     {t:'구독을 받는다 — 전설/신화 유물, 다음 전투 크게 강화',f:()=>{queueNextCombatMod({hpMul:1.28,spdMul:1.12,atkMul:1.12,banner:{big:'심연의 구독자',small:'다음 전투가 거칠어진다'}});eventGiveRelic({tiers:['legend','mythic']},finishNode);}},
+     {t:'안전하게 받는다 — 골드 +120, 희귀 이상 유물, 체력 -10%',f:()=>{addGold(120,'event');eventHpCostPct(0.10);eventGiveRelic({tiers:['rare','epic']},finishNode);}},
+     {t:'차단한다 — 효과 없음',f:()=>finishNode()},
+   ]},
+  {id:'act3_end_stream',tag:'3막 · 방송 종료 버튼',title:'방송 종료 버튼',body:'눈앞에 방송 종료 버튼이 떠 있다. 누르면 많은 것을 얻지만, 직후 무언가가 바로 시작된다.',
+   filter:()=>act===3&&act3EventBand('late'),
+   choices:[
+     {t:'버튼을 누른다 — 보상 후 즉시 강한 전투',f:()=>{addGold(120,'event');act3AddPotionReward('rare',45);queueNextCombatMod({hpMul:1.55,spdMul:1.15,atkMul:1.12,rewardMul:1.6,banner:{big:'방송은 끝나지 않았다',small:'강한 전투가 시작된다'}});act3BeginEventCombat({},'fight');}},
+     {t:'반만 누른다 — 골드 +90, 다음 전투 강화',f:()=>{addGold(90,'event');updateHUD();queueNextCombatMod({hpMul:1.20,atkMul:1.10,banner:{big:'종료 버튼 잔상',small:'다음 전투 적 체력/공격 강화'}});banner('반쯤 눌림','골드 +90',1300);finishNode();}},
+     {t:'건드리지 않는다 — 효과 없음',f:()=>finishNode()},
+   ]},
+];
+
 function startEvent(){
-  const pool=EVENTS.filter(ev=>!ev.filter||ev.filter());
-  const ev=pick(pool);
+  const basePool=EVENTS.filter(ev=>!ev.filter||ev.filter());
+  const act3Pool=(act===3&&typeof ACT3_EVENTS!=='undefined')?ACT3_EVENTS.filter(ev=>!ev.filter||ev.filter()):[];
+  let pool=basePool;
+  if(act3Pool.length){
+    // Act 3 gets its own mystery flavor most of the time, while legacy events
+    // still appear often enough to keep the run varied.
+    pool=Math.random()<0.72?act3Pool:basePool.concat(act3Pool);
+  }
+  const ev=pick(pool.length?pool:basePool);
   showEventPanel(ev.tag,ev.title,ev.body,ev.choices);
 }
 
@@ -8151,7 +8706,6 @@ const LEVEL_PERKS=[
   {g:'legend',icon:'☠',name:'처형 본능',desc:'체력 25% 이하 적 피해 +25% (보스 절반)',apply:p=>{p.executeInstinctDmgMul+=0.25;}},
   // ===== 신화 Myth =====
   {g:'legend',icon:'🔱',name:'다중 사격',desc:'투사체 +1발',apply:p=>{p.shots+=1;}},
-  {g:'mythic',icon:'👁️',name:'유도의 눈',desc:'투사체가 적을 강하게 추적',skip:p=>p.homing>0,apply:p=>{p.homing=12;}},
   {g:'mythic',icon:'🍷',name:'얇은 유리 대포',desc:'공격력 +10, 최대 체력 -30%',skip:p=>p.glassCannon,apply:p=>{p.glassCannon=true;p.dmg+=10;p.maxhp=Math.max(1,Math.round(p.maxhp*0.7));p.hp=Math.min(p.hp,p.maxhp);}},
   {g:'mythic',icon:'📡',name:'방송 폭주',desc:'공격력 +8 / 발사 속도 +20% / 받는 피해 +15%',apply:p=>{p.dmg+=8;p.fireAdd+=0.20;p.damageTakenMul+=0.15;}},
   {g:'mythic',icon:'🤝',name:'구독자 소환',desc:'따라다니며 자동 공격하는 구독자',skip:p=>!!p.minion,apply:p=>{p.minion={ang:0,fireT:0,x:p.x,y:p.y};}},
@@ -8228,7 +8782,6 @@ const PERK_META_BY_NAME={
   '확산':{minLevel:16,maxLevel:25,tags:['combat','status','keystone'],build:'status',isKeystone:true},
   '처형 본능':{minLevel:16,maxLevel:25,tags:['combat','execute','keystone'],build:'execute',isKeystone:true},
   '다중 사격':{minLevel:16,maxLevel:25,tags:['combat','projectile','keystone'],build:'projectile',isKeystone:true},
-  '유도의 눈':{minLevel:16,maxLevel:25,tags:['combat','projectile','keystone'],build:'projectile',isKeystone:true},
   '유리 대포':{minLevel:16,maxLevel:25,tags:['combat','damage','keystone'],build:'damage',isKeystone:true},
   '방송 폭주':{minLevel:16,maxLevel:25,tags:['combat','damage','rate','risk','keystone'],build:'damage',isKeystone:true},
   '구독자 소환':{minLevel:16,maxLevel:25,tags:['combat','summon','keystone'],build:'summon',isKeystone:true},
@@ -8529,7 +9082,7 @@ const SHOP_STOCK_COST_MUL=[1,1.3,1.6];
 function shopPrice(base){
   const disc=nextShopDiscount>0?Math.max(0,1-nextShopDiscount):1;
   const costMul=player?statMulFromBonus(statBonusFromMul(player.shopCostMul),0.1):1;
-  const actMul=act>=2?ACT2_SHOP_PRICE_MUL:1;
+  const actMul=(act>=2?ACT2_SHOP_PRICE_MUL:1)*(actTuning(act).shopPriceMul||1);
   const safeBase=Number.isFinite(Number(base))?Number(base):1;
   return Math.max(1,Math.round(safeBase*costMul*disc*SHOP_PRICE_MUL*actMul));
 }
@@ -8940,7 +9493,7 @@ let bgPattern=null;
 const ACT_THEME=[
   {floor:'#17120c', grid:'rgba(150,120,70,0.07)', edge:'rgba(0,0,0,0.55)',  bossTint:'rgba(120,200,90,0.05)', name:'고블린 소굴'},
   {floor:'#241c0d', grid:'rgba(220,180,90,0.06)', edge:'rgba(30,15,0,0.5)',  bossTint:'rgba(255,200,100,0.06)', name:'사막'},
-  {floor:'#0f1a12', grid:'rgba(90,200,120,0.07)', edge:'rgba(0,10,0,0.55)',  bossTint:'rgba(120,255,150,0.05)', name:'숲'},
+  {floor:'#070912', grid:'rgba(120,90,220,0.08)', edge:'rgba(0,0,15,0.72)',  bossTint:'rgba(155,80,255,0.10)', name:'심연'},
 ];
 let bgDecor=[];
 function buildBackdrop(a){
@@ -8955,9 +9508,9 @@ function buildBackdrop(a){
     for(let i=0;i<3;i++) bgDecor.push({kind:'cactus', x:rand(60,W-60), y:rand(190,H-50), s:rand(20,34)});
     for(let i=0;i<14;i++) bgDecor.push({kind:'pebble', x:rand(20,W-20), y:rand(90,H-20), s:rand(2,5)});
   } else {
-    for(let i=0;i<5;i++) bgDecor.push({kind:'tree', x:(i<3?rand(20,140):rand(W-140,W-20)), y:rand(70,H-130), s:rand(40,70)});
-    for(let i=0;i<7;i++) bgDecor.push({kind:'bush', x:rand(40,W-40), y:rand(130,H-30), s:rand(18,34)});
-    for(let i=0;i<22;i++) bgDecor.push({kind:'leaf', x:rand(10,W-10), y:rand(50,H-10), s:rand(3,6), c:pick(['#3a6b3f','#4f8a4a','#2f5a34'])});
+    for(let i=0;i<7;i++) bgDecor.push({kind:'stalag', x:rand(20,W-20), s:rand(36,84), up:i%2===0});
+    for(let i=0;i<5;i++) bgDecor.push({kind:'torch', x:rand(80,W-80), y:rand(50,H-120)});
+    for(let i=0;i<28;i++) bgDecor.push({kind:'pebble', x:rand(20,W-20), y:rand(70,H-20), s:rand(2,6)});
   }
 }
 function drawDecor(d){
@@ -9142,7 +9695,7 @@ function roomTheme(){
 
 function drawBackground(){
   if(act===1){ drawRoomBg(roomTheme()); return; }   // 1막: 방 종류별 픽셀 배경
-  const th=ACT_THEME[Math.min(act-1,2)];
+  const th=ACT_THEME[Math.min(act-1,ACT_THEME.length-1)];
   ctx.fillStyle=th.floor; ctx.fillRect(0,0,W,H);
   ctx.strokeStyle=th.grid; ctx.lineWidth=1;
   for(let x=0;x<=W;x+=45){ ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke(); }
@@ -9279,6 +9832,10 @@ const SW2_SPRITE=new Image();let sw2Ready=false;SW2_SPRITE.onload=()=>sw2Ready=t
 const SW3_SPRITE=new Image();let sw3Ready=false;SW3_SPRITE.onload=()=>sw3Ready=true;SW3_SPRITE.src="btv/assets/seungwoo-phase3.png";
 const SPRITES={
   _default:(r)=>{ _so(r); _fc(0,0,r*0.9,'#9b8fc4',true); _eyes(r,0.3,0,r*0.16); },
+  onster_p1:(r,e)=>{ const img=(e&&e.phase>=2)?ONSTER_P2_SPRITE:ONSTER_P1_SPRITE, ready=(e&&e.phase>=2)?onsterP2Ready:onsterP1Ready; if(ready){ const S=r*2.45; ctx.drawImage(img,-S/2,-S/2,S,S); return; } circle(0,0,r*0.85,'#3b2d72','#8d72ff'); },
+  onster_p2:(r,e)=>{ if(onsterP2Ready){ const S=r*2.45; ctx.drawImage(ONSTER_P2_SPRITE,-S/2,-S/2,S,S); return; } circle(0,0,r*0.9,'#35164d','#ff4dd2'); },
+  onster:(r,e)=>{ const img=(e&&e.phase>=2)?ONSTER_P2_SPRITE:ONSTER_P1_SPRITE, ready=(e&&e.phase>=2)?onsterP2Ready:onsterP1Ready; if(ready){ const S=r*2.45; ctx.drawImage(img,-S/2,-S/2,S,S); return; } circle(0,0,r*0.85,(e&&e.phase>=2)?'#35164d':'#3b2d72',(e&&e.phase>=2)?'#ff4dd2':'#8d72ff'); },
+  set3:(r,b)=>{ const ph=(b&&b.setPhase)||1; const img=ph===1?SET_HYEONJIN_SPRITE:(ph===2?SET_BEONGEOM_SPRITE:SET_KEKERORO_SPRITE); const ready=ph===1?setHyeonjinReady:(ph===2?setBeongeomReady:setKekeroroReady); if(ready){ const S=r*2.45; ctx.drawImage(img,-S/2,-S/2,S,S); return; } circle(0,0,r*0.9,ph===1?'#cc3040':ph===2?'#38e8ff':'#b84dff',ph===1?'#ff9b9b':ph===2?'#eafaff':'#ff4dd2'); },
   seungwoo:(r,b)=>{
     const ph=(b&&b.gphase)||1;
     const img=ph>=3?SW3_SPRITE:(ph===2?SW2_SPRITE:SW_SPRITE);
@@ -9305,8 +9862,8 @@ const SPRITES={
   goblin_shaman:(r)=>{ if(magpieReady){ const S=r*2.7; ctx.drawImage(MAGPIE_SPRITE,-S/2,-S/2,S,S); } else { _humanoid(r,{skin:'#7bbf5a',ears:1,hood:'#8a6fb0',weapon:'staff',weaponCol:'#c98bff'}); } },
   hoonsangtae:(r)=>{ if(hoonsangtaeReady){ ctx.save(); ctx.beginPath(); ctx.arc(0,-r*0.03,r*1.05,0,TAU); ctx.clip(); const ih=HOONSANGTAE_SPRITE.naturalHeight||1, sh=r*2.55, sw=sh*(HOONSANGTAE_SPRITE.naturalWidth/ih); ctx.drawImage(HOONSANGTAE_SPRITE,-sw/2,-sh*0.53,sw,sh); ctx.restore(); ctx.lineWidth=2; ctx.strokeStyle='#ff6f8f'; ctx.beginPath(); ctx.arc(0,-r*0.03,r*1.05,0,TAU); ctx.stroke(); return; } _humanoid(r,{skin:'#4f70bf',hood:'#e25572',weapon:'dagger',weaponCol:'#dfe6ef'}); },
   jaemin:(r)=>{ if(jaeminReady){ ctx.save(); ctx.beginPath(); ctx.arc(0,-r*0.04,r*1.05,0,TAU); ctx.clip(); const ih=JAEMIN_SPRITE.naturalHeight||1, sh=r*2.65, sw=sh*(JAEMIN_SPRITE.naturalWidth/ih); ctx.drawImage(JAEMIN_SPRITE,-sw/2,-sh*0.54,sw,sh); ctx.restore(); ctx.lineWidth=2; ctx.strokeStyle='#f0a84a'; ctx.beginPath(); ctx.arc(0,-r*0.04,r*1.05,0,TAU); ctx.stroke(); return; } _humanoid(r,{skin:'#f0a84a',ears:1,hood:'#2a8b72',weapon:'dagger',weaponCol:'#c57a20'}); },
-  sniper_viewer:(r)=>{ _so(r); ctx.fillStyle='#2b2f38'; ctx.fillRect(-r*0.46,-r*0.58,r*0.92,r*1.22); ctx.strokeRect(-r*0.46,-r*0.58,r*0.92,r*1.22); ctx.fillStyle='#151820'; ctx.fillRect(-r*0.7,-r*0.9,r*1.4,r*0.42); ctx.strokeRect(-r*0.7,-r*0.9,r*1.4,r*0.42); ctx.fillStyle='#ff2638'; ctx.fillRect(-r*0.18,-r*0.77,r*0.36,r*0.12); ctx.fillStyle='#101014'; ctx.fillRect(-r*0.34,-r*0.36,r*0.68,r*0.34); ctx.fillStyle='#ff2638'; ctx.fillRect(-r*0.07,-r*0.31,r*0.14,r*0.24); ctx.strokeStyle='#dfe6ef'; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(r*0.12,r*0.02); ctx.lineTo(r*1.15,-r*0.22); ctx.stroke(); ctx.strokeStyle='#ff2638'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(r*0.82,-r*0.14,r*0.18,0,TAU); ctx.stroke(); },
-  stream_watcher:(r)=>{ _so(r); ctx.fillStyle='#102632'; ctx.fillRect(-r*0.82,-r*0.52,r*1.64,r*1.08); ctx.strokeRect(-r*0.82,-r*0.52,r*1.64,r*1.08); ctx.fillStyle='#58d8ff'; ctx.fillRect(-r*0.62,-r*0.35,r*1.24,r*0.58); ctx.fillStyle='#061118'; ctx.fillRect(-r*0.44,-r*0.22,r*0.88,r*0.28); ctx.fillStyle='#eafcff'; ctx.fillRect(-r*0.29,-r*0.11,r*0.2,r*0.1); ctx.fillRect(r*0.09,-r*0.11,r*0.2,r*0.1); ctx.fillStyle='#ff6a9a'; ctx.fillRect(r*0.45,-r*0.47,r*0.18,r*0.18); ctx.strokeStyle='#58d8ff'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(0,0,r*0.98,0,TAU); ctx.stroke(); ctx.strokeStyle='rgba(255,255,255,0.75)'; ctx.lineWidth=1.5; ctx.beginPath(); ctx.moveTo(-r*1.05,-r*0.7); ctx.lineTo(-r*0.78,-r*0.52); ctx.moveTo(r*1.05,-r*0.7); ctx.lineTo(r*0.78,-r*0.52); ctx.stroke(); },  goblin_assassin:(r)=>_humanoid(r,{skin:'#4f6b46',ears:1,hood:'#2f3b2c',weapon:'dagger'}),
+  sniper_viewer:(r)=>{ if(sniperViewerReady){ ctx.drawImage(SNIPER_VIEWER_SPRITE,-r,-r,r*2,r*2); return; } _so(r); ctx.fillStyle='#2b2f38'; ctx.fillRect(-r*0.46,-r*0.58,r*0.92,r*1.22); ctx.strokeRect(-r*0.46,-r*0.58,r*0.92,r*1.22); ctx.fillStyle='#151820'; ctx.fillRect(-r*0.7,-r*0.9,r*1.4,r*0.42); ctx.strokeRect(-r*0.7,-r*0.9,r*1.4,r*0.42); ctx.fillStyle='#ff2638'; ctx.fillRect(-r*0.18,-r*0.77,r*0.36,r*0.12); ctx.fillStyle='#101014'; ctx.fillRect(-r*0.34,-r*0.36,r*0.68,r*0.34); ctx.fillStyle='#ff2638'; ctx.fillRect(-r*0.07,-r*0.31,r*0.14,r*0.24); ctx.strokeStyle='#dfe6ef'; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(r*0.12,r*0.02); ctx.lineTo(r*1.15,-r*0.22); ctx.stroke(); ctx.strokeStyle='#ff2638'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(r*0.82,-r*0.14,r*0.18,0,TAU); ctx.stroke(); },
+  stream_watcher:(r)=>{ if(streamWatcherReady){ ctx.drawImage(STREAM_WATCHER_SPRITE,-r,-r,r*2,r*2); return; } _so(r); ctx.fillStyle='#102632'; ctx.fillRect(-r*0.82,-r*0.52,r*1.64,r*1.08); ctx.strokeRect(-r*0.82,-r*0.52,r*1.64,r*1.08); ctx.fillStyle='#58d8ff'; ctx.fillRect(-r*0.62,-r*0.35,r*1.24,r*0.58); ctx.fillStyle='#061118'; ctx.fillRect(-r*0.44,-r*0.22,r*0.88,r*0.28); ctx.fillStyle='#eafcff'; ctx.fillRect(-r*0.29,-r*0.11,r*0.2,r*0.1); ctx.fillRect(r*0.09,-r*0.11,r*0.2,r*0.1); ctx.fillStyle='#ff6a9a'; ctx.fillRect(r*0.45,-r*0.47,r*0.18,r*0.18); ctx.strokeStyle='#58d8ff'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(0,0,r*0.98,0,TAU); ctx.stroke(); ctx.strokeStyle='rgba(255,255,255,0.75)'; ctx.lineWidth=1.5; ctx.beginPath(); ctx.moveTo(-r*1.05,-r*0.7); ctx.lineTo(-r*0.78,-r*0.52); ctx.moveTo(r*1.05,-r*0.7); ctx.lineTo(r*0.78,-r*0.52); ctx.stroke(); },  goblin_assassin:(r)=>_humanoid(r,{skin:'#4f6b46',ears:1,hood:'#2f3b2c',weapon:'dagger'}),
   goblin_king:(r)=>_humanoid(r,{skin:'#5a9e3f',ears:1,crown:1,weapon:'sword'}),
   kijo:(r,b)=>{
     if(kijoReady){ const S=r*2.95; ctx.drawImage(KIJO_SPRITE,-S/2,-S/2,S,S); return; }
@@ -9393,43 +9950,56 @@ const SPRITES={
     circle(-r*0.62,-r*0.05,r*0.24,'#e8c79a',false);            // 주둥이
     ctx.fillStyle='#2a1a10'; circle(-r*0.74,-r*0.08,r*0.07,'#2a1a10',false); circle(-r*0.5,-r*0.34,r*0.06,'#2a1a10',false); circle(-r*0.26,-r*0.32,r*0.06,'#2a1a10',false); // 코·눈
   },
-  ketter:(r)=>{ // 케터 — 초록 애벌레(나비 전 단계), 둥근 마디 3~4개
+  ketter:(r)=>{ // 케터
+    if(ketterReady){ ctx.drawImage(KETTER_SPRITE,-r,-r,r*2,r*2); return; }
     const seg=[{x:-r*0.62,rr:0.42},{x:-r*0.18,rr:0.5},{x:r*0.26,rr:0.46},{x:r*0.66,rr:0.4}];
     seg.forEach(s=>circle(s.x,r*0.1,r*s.rr,'#7ed957','#3f7a34'));
-    circle(r*0.66,r*0.04,r*0.4,'#9be86a','#3f7a34');                 // 머리 마디
-    ctx.fillStyle='#143d12'; circle(r*0.78,-r*0.06,r*0.08,'#143d12',false); circle(r*0.56,-r*0.06,r*0.08,'#143d12',false); // 눈
-    ctx.strokeStyle='#3f7a34'; ctx.lineWidth=Math.max(1.5,r*0.07);   // 더듬이
+    circle(r*0.66,r*0.04,r*0.4,'#9be86a','#3f7a34');
+    ctx.fillStyle='#143d12'; circle(r*0.78,-r*0.06,r*0.08,'#143d12',false); circle(r*0.56,-r*0.06,r*0.08,'#143d12',false);
+    ctx.strokeStyle='#3f7a34'; ctx.lineWidth=Math.max(1.5,r*0.07);
     ctx.beginPath(); ctx.moveTo(r*0.78,-r*0.3); ctx.lineTo(r*0.92,-r*0.62); ctx.moveTo(r*0.56,-r*0.3); ctx.lineTo(r*0.42,-r*0.62); ctx.stroke();
     circle(r*0.92,-r*0.66,r*0.06,'#cfff9b','#3f7a34'); circle(r*0.42,-r*0.66,r*0.06,'#cfff9b','#3f7a34');
   },
-  blackstar:(r)=>{ // 흑별 — 검은 별 + 검보라 오라
+  act3_domin:(r,e)=>{ if(act3DominReady){ const S=r*2.5; ctx.drawImage(ACT3_DOMIN_SPRITE,-S/2,-S/2,S,S); return; } ctx.save(); ctx.scale(1.25,0.72); circle(0,0,r*0.86,'#7ad7ff','#2a7aa0'); ctx.restore(); ctx.fillStyle='#dff8ff'; ctx.beginPath(); ctx.moveTo(r*0.9,0); ctx.lineTo(r*1.28,-r*0.34); ctx.lineTo(r*1.18,r*0.32); ctx.closePath(); ctx.fill(); },
+  act3_kullje:(r,e)=>{ if(act3KulljeReady){ const S=r*2.45; ctx.drawImage(ACT3_KULLJE_SPRITE,-S/2,-S/2,S,S); return; } ctx.fillStyle='#171021'; ctx.fillRect(-r*0.62,-r*0.62,r*1.24,r*1.24); ctx.strokeStyle='#ff4dd2'; ctx.strokeRect(-r*0.62,-r*0.62,r*1.24,r*1.24); },
+  act3_magnet:(r,e)=>{ if(act3MagnetReady){ const S=r*2.35; ctx.drawImage(ACT3_MAGNET_SPRITE,-S/2,-S/2,S,S); return; } ctx.strokeStyle='#ff4d5a'; ctx.lineWidth=5; ctx.beginPath(); ctx.arc(0,0,r*0.7,Math.PI*0.2,Math.PI*0.8); ctx.stroke(); ctx.fillStyle='#d8e8ff'; ctx.fillRect(-r*0.55,r*0.1,r*0.28,r*0.48); ctx.fillRect(r*0.27,r*0.1,r*0.28,r*0.48); },
+  act3_mirror:(r,e)=>{ if(act3MirrorReady){ const S=r*2.35; ctx.drawImage(ACT3_MIRROR_SPRITE,-S/2,-S/2,S,S); return; } ctx.fillStyle='#bff8ff'; ctx.fillRect(-r*0.52,-r*0.72,r*1.04,r*1.24); ctx.strokeStyle='#58d8ff'; ctx.strokeRect(-r*0.52,-r*0.72,r*1.04,r*1.24); ctx.fillStyle='#33304a'; ctx.fillRect(-r*0.2,r*0.58,r*0.4,r*0.28); },
+  act3_truck:(r,e)=>{ if(act3TruckReady){ const S=r*2.55; ctx.drawImage(ACT3_TRUCK_SPRITE,-S/2,-S/2,S,S); return; } ctx.fillStyle='#1a1730'; ctx.fillRect(-r*0.9,-r*0.18,r*1.8,r*0.68); ctx.fillStyle='#58d8ff'; ctx.beginPath(); ctx.arc(0,-r*0.58,r*0.34,Math.PI,TAU); ctx.fill(); ctx.fillStyle='#ff4d5a'; circle(r*0.62,-r*0.7,r*0.12,'#ff4d5a',false); },
+  act3_alppano:(r,e)=>{ if(act3AlppanoReady){ const S=r*2.45; ctx.drawImage(ACT3_ALPPANO_SPRITE,-S/2,-S/2,S,S); return; } ctx.fillStyle='#d6a02a'; ctx.fillRect(-r*0.32,-r*0.8,r*0.64,r*1.5); ctx.strokeStyle='#ffd34d'; ctx.strokeRect(-r*0.32,-r*0.8,r*0.64,r*1.5); ctx.strokeStyle='#5aa7ff'; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(r*0.52,-r*0.9); ctx.lineTo(r*0.52,r*0.7); ctx.stroke(); },
+  act3_buffering:(r,e)=>{ if(act3BufferingReady){ const S=r*2.35; ctx.drawImage(ACT3_BUFFERING_SPRITE,-S/2,-S/2,S,S); return; } ctx.strokeStyle='#38e8ff'; ctx.lineWidth=3; for(let i=0;i<8;i++){ const a=i/8*TAU; ctx.beginPath(); ctx.arc(Math.cos(a)*r*0.68,Math.sin(a)*r*0.68,r*0.08,0,TAU); ctx.stroke(); } circle(0,0,r*0.42,'#171021','#ff4dd2'); },
+  act3_clone:(r,e)=>{ if(act3CloneReady){ const S=r*2.45; ctx.drawImage(ACT3_CLONE_SPRITE,-S/2,-S/2,S,S); return; } ctx.fillStyle='#b86bff'; ctx.fillRect(-r*0.48,-r*0.8,r*0.96,r*1.5); ctx.fillStyle='#38e8ff'; ctx.fillRect(-r*0.22,-r*0.35,r*0.12,r*0.12); ctx.fillRect(r*0.1,-r*0.35,r*0.12,r*0.12); },
+  act3_sand_soldier:(r,e)=>{ ctx.fillStyle='#e0b85a'; ctx.beginPath(); ctx.moveTo(0,-r); ctx.lineTo(r*0.7,r*0.8); ctx.lineTo(-r*0.7,r*0.8); ctx.closePath(); ctx.fill(); ctx.strokeStyle='#8a642a'; ctx.stroke(); },
+  blackstar:(r)=>{ // 흑별
+    if(blackstarReady){ ctx.drawImage(BLACKSTAR_SPRITE,-r,-r,r*2,r*2); return; }
     ctx.save();
     const glow=ctx.createRadialGradient(0,0,r*0.2,0,0,r*1.4);
     glow.addColorStop(0,'rgba(123,44,255,0.55)'); glow.addColorStop(1,'rgba(123,44,255,0)');
     ctx.fillStyle=glow; circle(0,0,r*1.35,glow,false);
     ctx.restore();
-    ctx.beginPath();                                                 // 5각 별
+    ctx.beginPath();
     for(let i=0;i<10;i++){ const a=-Math.PI/2+i*Math.PI/5; const rad=(i%2===0)?r*1.0:r*0.42; const px=Math.cos(a)*rad, py=Math.sin(a)*rad; i?ctx.lineTo(px,py):ctx.moveTo(px,py); }
     ctx.closePath();
     ctx.fillStyle='#17111f'; ctx.fill(); ctx.lineWidth=Math.max(2,r*0.1); ctx.strokeStyle='#7b2cff'; ctx.stroke();
-    ctx.fillStyle='#b98bff'; circle(-r*0.16,-r*0.06,r*0.09,'#b98bff',false); circle(r*0.16,-r*0.06,r*0.09,'#b98bff',false); // 눈
+    ctx.fillStyle='#b98bff'; circle(-r*0.16,-r*0.06,r*0.09,'#b98bff',false); circle(r*0.16,-r*0.06,r*0.09,'#b98bff',false);
   },
-  killjoy:(r)=>{ // 킬조이 — 전기색 작은 캐릭터 + 번개 마크
-    circle(0,0,r*0.85,'#0e2b33','#38e8ff');                          // 몸
-    ctx.fillStyle='#061318'; _rr?_rr(-r*0.5,-r*0.34,r*1.0,r*0.5,r*0.12,'#061318'):ctx.fillRect(-r*0.5,-r*0.34,r*1.0,r*0.5); // 바이저
+  killjoy:(r)=>{ // 킬조이
+    if(killjoyReady){ ctx.drawImage(KILLJOY_SPRITE,-r,-r,r*2,r*2); return; }
+    circle(0,0,r*0.85,'#0e2b33','#38e8ff');
+    ctx.fillStyle='#061318'; _rr?_rr(-r*0.5,-r*0.34,r*1.0,r*0.5,r*0.12,'#061318'):ctx.fillRect(-r*0.5,-r*0.34,r*1.0,r*0.5);
     ctx.fillStyle='#38e8ff'; ctx.fillRect(-r*0.4,-r*0.2,r*0.8,r*0.16);
-    ctx.fillStyle='#9af6ff'; ctx.beginPath();                        // 번개
+    ctx.fillStyle='#9af6ff'; ctx.beginPath();
     ctx.moveTo(r*0.04,-r*0.62); ctx.lineTo(-r*0.22,r*0.02); ctx.lineTo(-r*0.02,r*0.02); ctx.lineTo(-r*0.16,r*0.6); ctx.lineTo(r*0.26,-r*0.12); ctx.lineTo(r*0.04,-r*0.12); ctx.closePath();
     ctx.fill(); ctx.lineWidth=1.5; ctx.strokeStyle='#eafdff'; ctx.stroke();
   },
-  apple:(r)=>{ // 사과 — 빨간 사과 + 잎사귀
-    circle(-r*0.28,r*0.08,r*0.6,'#ff4d6d','#a01230');               // 왼쪽 덩이
-    circle(r*0.28,r*0.08,r*0.6,'#ff4d6d','#a01230');                // 오른쪽 덩이
-    circle(0,r*0.12,r*0.66,'#ff5d7a','#a01230');                    // 중앙 본체
-    ctx.fillStyle='#5a3a26'; ctx.fillRect(-r*0.06,-r*0.78,r*0.12,r*0.4); // 꼭지
-    ctx.fillStyle='#4caf50'; ctx.save(); ctx.translate(r*0.22,-r*0.6); ctx.rotate(0.5); // 잎
+  apple:(r)=>{ // 사과
+    if(appleReady){ ctx.drawImage(APPLE_SPRITE,-r,-r,r*2,r*2); return; }
+    circle(-r*0.28,r*0.08,r*0.6,'#ff4d6d','#a01230');
+    circle(r*0.28,r*0.08,r*0.6,'#ff4d6d','#a01230');
+    circle(0,r*0.12,r*0.66,'#ff5d7a','#a01230');
+    ctx.fillStyle='#5a3a26'; ctx.fillRect(-r*0.06,-r*0.78,r*0.12,r*0.4);
+    ctx.fillStyle='#4caf50'; ctx.save(); ctx.translate(r*0.22,-r*0.6); ctx.rotate(0.5);
     ctx.beginPath(); ctx.ellipse(0,0,r*0.34,r*0.16,0,0,TAU); ctx.fill(); ctx.lineWidth=1.5; ctx.strokeStyle='#2f7d33'; ctx.stroke(); ctx.restore();
-    ctx.fillStyle='rgba(255,255,255,0.5)'; circle(-r*0.3,-r*0.18,r*0.14,'rgba(255,255,255,0.5)',false); // 하이라이트
+    ctx.fillStyle='rgba(255,255,255,0.5)'; circle(-r*0.3,-r*0.18,r*0.14,'rgba(255,255,255,0.5)',false);
   },
   yanggaeng:(r,e)=>{
     // 박제인간 — 레코드판 (회전 애니)
@@ -9758,6 +10328,8 @@ function drawEnemy(e){
   const _isc=(e.introScale==null?1:e.introScale);
   if(_isc<=0.01){ ctx.restore(); return; }
   if(_isc!==1) ctx.scale(_isc,_isc);
+  const act3Alpha=(e.ai==='stealth_assassin'&&(e.stealthT||0)>0)?0.38:((e.ai==='submerge_charge'&&e.submerged)?0.32:(e._glitchClone?0.58:1));
+  if(act3Alpha<1) ctx.globalAlpha*=act3Alpha;
   // ── 가시성 보정: 적 실루엣을 따라 외곽 글로우 (배경 대비 강화) ──
   ctx.save();
   ctx.shadowColor = e.eliteViewer ? 'rgba(255,80,80,0.95)' : 'rgba(120,205,255,0.85)';
@@ -9766,6 +10338,9 @@ function drawEnemy(e){
   ctx.restore();
   if(e.type==='hoonsangtae'&&e.hp<=e.maxhp*0.5){ ctx.save(); ctx.strokeStyle='rgba(255,77,109,'+(0.45+0.35*Math.abs(Math.sin(e.wob*4)))+')'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(0,0,e.r+5,0,TAU); ctx.stroke(); ctx.restore(); }
   if(e.type==='sniper_viewer'&&e.aimBeam&&!e.aimBeam.fired){ ctx.save(); ctx.strokeStyle='rgba(255,38,56,0.82)'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(0,0,e.r+4+2*Math.sin(e.wob*4),0,TAU); ctx.stroke(); ctx.restore(); }
+  if(e.ai==='reflector'&&(e.reflectT||0)>0){ ctx.save(); ctx.strokeStyle='rgba(139,232,255,0.9)'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(0,0,e.r+9+3*Math.sin(e.wob*5),0,TAU); ctx.stroke(); ctx.restore(); }
+  if(e.ai==='magnet'){ ctx.save(); ctx.globalAlpha=0.22+0.08*Math.sin(e.wob*3); ctx.strokeStyle='#ff4d5a'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(0,0,e.range||230,0,TAU); ctx.stroke(); ctx.restore(); }
+  if((e.emergeWarnT||0)>0||(e.teleWarnT||0)>0){ ctx.save(); ctx.strokeStyle=e.ai==='submerge_charge'?'#7ad7ff':'#ff4dd2'; ctx.lineWidth=3; ctx.setLineDash([9,6]); ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo((e.aimX||0)*210,(e.aimY||0)*210); ctx.stroke(); ctx.restore(); }
   if(e.eliteViewer){ ctx.save(); ctx.strokeStyle='rgba(255,60,60,'+(0.45+0.4*Math.abs(Math.sin(e.wob*2.5)))+')'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(0,0,e.r+8,0,TAU); ctx.stroke(); ctx.restore(); }
   if(e.ai==='charge' && (e.cs==='wind'||e.cs==='spit')){
     const len=e.cs==='wind'?135:78;
@@ -9842,7 +10417,7 @@ function drawBoss(b){
   ctx.fillStyle='#2a1530'; ctx.fillRect(bx,16,bw,12);
   ctx.fillStyle=b.color; ctx.fillRect(bx,16,bw*clamp(b.hp/b.maxhp,0,1),12);
   ctx.fillStyle='#fff'; ctx.font='bold 13px Courier New'; ctx.textAlign='center';
-  ctx.fillText(b.name+(b.enraged?' 〔격노〕':''), W/2, 27);
+  ctx.fillText(b.name+(b.key==='set3'?' · '+set3PhaseName(b):(b.enraged?' 〔격노〕':'')), W/2, 27);
   ctx.textAlign='left';
 }
 function drawPlayer(){
@@ -10020,6 +10595,17 @@ function hyechulEggBomb(e){
 function updateHazards(dt){
   player._creepSlow=false; player._slowField=false;
   for(let i=hazards.length-1;i>=0;i--){ const h=hazards[i]; h.t+=dt;
+    if(h.kind==='beamSweep'){
+      if(h.hitCd>0) h.hitCd-=dt;
+      const active=h.t>=h.warnT, done=h.t>=h.warnT+h.liveT;
+      if(active&&!done){
+        const ang=h.ang+(h.t-h.warnT)*(h.rot||0), px=player.x-h.x, py=player.y-h.y;
+        const along=px*Math.cos(ang)+py*Math.sin(ang), side=Math.abs(-px*Math.sin(ang)+py*Math.cos(ang));
+        if(along>0&&along<(h.range||620)&&side<(h.width||18)&&!(h.hitCd>0)){ hurtPlayer(h.dmg||10,h.srcName||'중계차'); h.hitCd=0.35; }
+      }
+      if(done) hazards.splice(i,1);
+      continue;
+    }
     if(h.kind==='slowfield'){
       if(h.t>=h.warnT && dist2(player.x,player.y,h.x,h.y)<h.r*h.r) player._slowField=true;
       if(h.t>=h.life) hazards.splice(i,1);
@@ -10066,6 +10652,21 @@ function drawFloatBubbles(){
 }
 function drawHazards(){
   for(const h of hazards){
+    if(h.kind==='beamSweep'){
+      const warn=h.t<h.warnT, k=warn?clamp(h.t/h.warnT,0,1):1;
+      const activeT=Math.max(0,h.t-h.warnT), ang=h.ang+activeT*(h.rot||0), range=h.range||620, width=h.width||18;
+      const nx=-Math.sin(ang), ny=Math.cos(ang), ex=h.x+Math.cos(ang)*range, ey=h.y+Math.sin(ang)*range;
+      const fade=warn?1:clamp(1-activeT/(h.liveT||2.2),0,1);
+      ctx.save();
+      ctx.globalAlpha=(warn?0.35+0.35*Math.sin(h.t*18)**2:0.62)*fade;
+      ctx.fillStyle=warn?'rgba(88,216,255,0.13)':'rgba(88,216,255,0.24)';
+      ctx.beginPath(); ctx.moveTo(h.x+nx*width,h.y+ny*width); ctx.lineTo(ex+nx*width,ey+ny*width); ctx.lineTo(ex-nx*width,ey-ny*width); ctx.lineTo(h.x-nx*width,h.y-ny*width); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle=warn?'#58d8ff':'#eafaff'; ctx.lineWidth=warn?2+3*k:7; ctx.setLineDash(warn?[10,7]:[]);
+      ctx.beginPath(); ctx.moveTo(h.x,h.y); ctx.lineTo(ex,ey); ctx.stroke(); ctx.setLineDash([]);
+      ctx.globalAlpha=0.5*fade; ctx.strokeStyle='#38e8ff'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(h.x,h.y,24+8*Math.sin((h.seed||0)+h.t*4),0,TAU); ctx.stroke();
+      ctx.restore();
+      continue;
+    }
     if(h.kind==='slowfield'){
       if(h.t<h.warnT){
         const k=h.t/h.warnT; ctx.save(); ctx.globalAlpha=0.4+0.3*Math.abs(Math.sin(h.t*16));
@@ -10197,7 +10798,7 @@ function drawMidbossBar(e){
   ctx.fillStyle=grad; ctx.fillRect(bx,by,bw*f,bh);
   ctx.strokeStyle='#ffae42'; ctx.lineWidth=2; ctx.strokeRect(bx,by,bw,bh);
   ctx.fillStyle='#fff'; ctx.font='bold 13px sans-serif'; ctx.textAlign='center';
-  ctx.fillText('\u26A0\uFE0F \uC911\uAC04\uBCF4\uC2A4 \u00B7 '+(e.label||''), W/2, by-8);
+  ctx.fillText('\u26A0\uFE0F \uC911\uAC04\uBCF4\uC2A4 \u00B7 '+(e.label||'')+(e.type==='onster'&&e.phase>=2?' [각성]':''), W/2, by-8);
   ctx.textAlign='left'; ctx.restore();
 }
 
@@ -10297,7 +10898,7 @@ function drawKijoFx(){
 function draw(){
   ctx.save();
   { const _sk=screenShake*(typeof GS!=='undefined'?GS.shake:1); if(_sk>0.5){ ctx.translate(rand(-_sk,_sk),rand(-_sk,_sk)); } }
-  if(boss&&boss.pattern==='glitch'&&state==='play'){ const cx=W/2,cy=H/2; ctx.translate(cx,cy); ctx.scale(gView.fx,gView.fy); ctx.rotate(gView.rot); ctx.translate(-cx,-cy); }
+  if(boss&&(boss.pattern==='glitch'||boss.pattern==='set3')&&state==='play'){ const cx=W/2,cy=H/2; ctx.translate(cx,cy); ctx.scale(gView.fx,gView.fy); ctx.rotate(gView.rot); ctx.translate(-cx,-cy); }
   drawBackground();
 
   // 픽업
@@ -10311,7 +10912,7 @@ function draw(){
   // 적
   for(const e of enemies) drawEnemy(e);
   drawFloatBubbles();
-  if(boss&&boss.pattern==='glitch') drawSeungwooWorld();
+  if(boss&&(boss.pattern==='glitch'||boss.pattern==='set3')) drawSeungwooWorld();
   if(boss) drawBoss(boss);
   const _mb=enemies.find(e=>e.midboss); if(_mb) drawMidbossBar(_mb);
   const _el=enemies.find(e=>e.eliteViewer); if(_el && !eliteIntro) drawEliteBar(_el);
@@ -10367,7 +10968,7 @@ function draw(){
 
   // 피격 플래시
   if(hitFlash>0){ ctx.fillStyle='rgba(255,77,109,'+(hitFlash*0.6*(typeof GS!=='undefined'?GS.flashScale:1))+')'; ctx.fillRect(0,0,W,H); }
-  if(boss&&boss.pattern==='glitch'&&state==='play') drawSeungwooOverlay();
+  if(boss&&(boss.pattern==='glitch'||boss.pattern==='set3')&&state==='play') drawSeungwooOverlay();
   if(eliteIntro) drawEliteIntro();
   if(bossEvolve) drawBossEvolve();
   // 베인Q 쿨다운 인디케이터 (아이콘 + 방사형 쿨)
@@ -10456,6 +11057,7 @@ function draw(){
     ctx.fillText('베인Q  SPACE', ix, iy-8);
   }
   drawTutorial();
+  drawAct3FinalClear();
   if(typeof drawFpsOverlay==='function') drawFpsOverlay();
 }
 
@@ -11602,7 +12204,7 @@ function gameOver(win, killer){
   $('endTag').textContent=win?'🏆 클리어':'📺 방송 사고';
   let title, quip;
   const k = killer || lastKiller || '시청자';
-  if(win){ title='CLEAR!'; quip=pick(["채팅 단체기립 POGGERS","갓겜 인정 GIGACHAD","클립 박제각 Clap","이게 되네?! KEKW"]); }
+  if(win){ title=act>=3?'3막 클리어!':'CLEAR!'; quip=pick(["재밌었다. 다음 시즌에 보자.","채팅 단체기립 POGGERS","갓겜 인정 GIGACHAD","클립 박제각 Clap","이게 되네?! KEKW"]); }
   else {
     const entry = DEATH_LINES[k];
     if(entry){ title=entry.title; quip=pick(entry.q); }
@@ -11919,7 +12521,7 @@ function dbSpriteSrc(id){
     goblin_warrior:OWL_SPRITE,goblin_archer:LEEK_SPRITE,goblin_shaman:MAGPIE_SPRITE,goblin_bomber:TRASH_SPRITE,goblin_shield:SHIELD_SPRITE,
     rhino_beetle:BEETLE_SPRITE,earthworm:WORM_SPRITE,hyechul:SHIELD_SPRITE,zergling:ZERGLING_SPRITE,mutalisk:MUTALISK_SPRITE,ultra:ULTRA_SPRITE,zerg_egg:ZERG_EGG_SPRITE,hoonsangtae:HOONSANGTAE_SPRITE,jaemin:JAEMIN_SPRITE,
     gwangcheon_gim:GIM_SPRITE,reura:REURA_SPRITE,namu:NAMU_SPRITE,pobear:POBEAR_SPRITE,yanggaeng:YANG_SPRITE,
-    kijo:KIJO_SPRITE,seungwoo:SW_SPRITE
+    kijo:KIJO_SPRITE,seungwoo:SW_SPRITE,set3:SET_HYEONJIN_SPRITE,onster:ONSTER_P1_SPRITE,onster_p1:ONSTER_P1_SPRITE,onster_p2:ONSTER_P2_SPRITE,set_hyeonjin:SET_HYEONJIN_SPRITE,set_beongeom:SET_BEONGEOM_SPRITE,set_kekeroro:SET_KEKERORO_SPRITE,killjoy:KILLJOY_SPRITE,apple:APPLE_SPRITE,blackstar:BLACKSTAR_SPRITE,stream_watcher:STREAM_WATCHER_SPRITE,sniper_viewer:SNIPER_VIEWER_SPRITE,ketter:KETTER_SPRITE
   };
   return dbImageSrc(map[id]);
 }
@@ -11942,11 +12544,11 @@ function dbEnemyDesc(d,id){
     pobear:'점프 강타와 반동 재돌진을 사용하는 2막 브루저.'
   };
   if(special[id]) return special[id];
-  const ai={chase:'추적',shooter:'원거리',orbit:'궤도 사격',charge:'돌진',erratic:'변칙 이동',cleaver_thrower:'식칼 투척',boomerang_thrower:'부메랑',sniper_laser:'저격',movement_lock:'이동 봉쇄',egg:'부화체',hyechul:'중간보스',bagjein:'중간보스',kkotchung:'정예 패턴'}[d.ai]||d.ai||'일반';
+  const ai={chase:'추적',shooter:'원거리',orbit:'궤도 사격',charge:'돌진',erratic:'변칙 이동',cleaver_thrower:'식칼 투척',boomerang_thrower:'부메랑',sniper_laser:'저격',movement_lock:'이동 봉쇄',egg:'부화체',hyechul:'중간보스',bagjein:'중간보스',kkotchung:'정예 패턴',summoner:'소환술사',stealth_assassin:'은신 암살',submerge_charge:'잠수 돌진',reflector:'반사막',splitter:'분열',magnet:'자기장',beam_sweep:'회전 빔',blink_lagfield:'블링크 장판'}[d.ai]||d.ai||'일반';
   return '체력 '+d.hp+' · 공격 '+d.dmg+' · 이동 '+d.spd+' · '+ai;
 }
 function dbEnemyGrade(id){
-  if(id==='hyechul'||id==='yanggaeng') return '중간보스';
+  if(id==='hyechul'||id==='yanggaeng'||id==='onster') return '중간보스';
   if(DB_EXTRA_ENEMY_IDS.indexOf(id)>=0) return id==='zerg_egg'?'소환체':'소환 적';
   if(ACT_POOLS.some(pool=>(pool.elite||[]).indexOf(id)>=0)) return '정예';
   if(ACT2_LATE_ENEMY_IDS.indexOf(id)>=0) return '어려운 적';
@@ -12207,6 +12809,60 @@ window.debugGoldStats=function(){
   return {stats,lastGoldDrop:debugLastGoldDrop};
 };
 window.debugLastGoldDrop=debugLastGoldDrop;
+window.debugSpawnBoss=function(id){
+  if(!runActive){ newGameSkip(); }
+  hideAll(); act=3; pendingNode={type:id==='onster'?'midboss':'boss',row:currentRow||0,id:'debug-'+id}; roomCleared=false; roomIsBoss=id!=='onster'; roomIsMidboss=id==='onster'; state='play'; syncChrome();
+  if(id==='onster'){ enemies=[]; boss=null; spawnEnemy('onster',W/2,145,1+(act-1)*0.6+MIDBOSS_ROW*0.08); const e=enemies[enemies.length-1]; e.elite=true; e.midboss=true; e.label='온스터'; e.phase=1; }
+  else { enemies=[]; boss=spawnBoss(BOSSES.find(b=>b.key==='set3')||BOSSES[ACT_BOSS[2]]); bossBanner=1.2; }
+  return id==='onster'?enemies[enemies.length-1]:boss;
+};
+window.debugStartMidBoss=function(id){ return window.debugSpawnBoss(id||'onster'); };
+window.debugStartFinalBoss=function(id){ return window.debugSpawnBoss(id||'set3'); };
+window.debugGoAct3Boss=function(){ return window.debugSpawnBoss('set3'); };
+
+window.debugStartAct3Normal=function(){
+  hideAll(); act=3; currentRow=Math.max(currentRow||1,2); pendingNode={type:'fight',row:currentRow,id:'debug-act3-normal'}; resetCombatModState(); startCombat('fight'); state='play'; syncChrome(); return enemies;
+};
+window.debugStartAct3Elite=function(){
+  hideAll(); act=3; currentRow=Math.max(currentRow||9,9); pendingNode={type:'elite',row:currentRow,id:'debug-act3-elite'}; resetCombatModState(); startCombat('elite'); state='play'; syncChrome(); return enemies;
+};
+window.debugStartOnster=function(){ return window.debugSpawnBoss('onster'); };
+window.debugStartSet3=function(){ return window.debugSpawnBoss('set3'); };
+window.debugGiveAct3Build=function(){
+  act=3; gold+=650; level=Math.max(level,8); xp=0; xpNext=Math.max(xpNext,120);
+  const addIds=['redbull','sniper','crit_glasses','vampire_fang'].map(id=>relicById(id)).filter(Boolean);
+  for(const r of addIds){ if(!player.relics.some(o=>o&&o.id===r.id)){ player.relics.push(r); applyRelicToPlayer(r,player); markDiscovered('relics',r.id); } }
+  for(let i=0;i<2;i++) addPotion(rollPotion());
+  updateHUD(); banner('3막 테스트 빌드','골드/유물/포션 지급',1400); return {act,gold,level,relics:player.relics.map(r=>r.name)};
+};
+window.debugKillBoss=function(){
+  if(boss){ boss.hp=0; handleBossDefeat(boss); return true; }
+  const mb=enemies.find(e=>e&&e.midboss); if(mb){ mb.hp=0; killEnemy(mb); return true; }
+  return false;
+};
+window.debugStartAct3Event=function(id){
+  hideAll(); act=3; currentRow=currentRow||8; pendingNode={type:'event',row:currentRow,id:'debug-act3-event'}; roomCleared=false; roomIsBoss=false; roomIsMidboss=false;
+  const pool=(typeof ACT3_EVENTS!=='undefined'?ACT3_EVENTS:[]);
+  const ev=pool.find(e=>e.id===id||e.tag===id)||pick(pool);
+  if(!ev){ banner('ACT3 EVENT','no event pool',1200); return null; }
+  showEventPanel(ev.tag,ev.title,ev.body,ev.choices);
+  return ev.id;
+};
+window.debugSpawnEnemy=function(id){
+  if(!runActive){ newGameSkip(); }
+  if(state!=='play'){ hideAll(); state='play'; roomCleared=false; syncChrome(); }
+  const type=String(id||'act3_domin');
+  spawnEnemy(type,clamp(player.x+120,40,W-40),clamp(player.y,90,H-60),1);
+  return enemies[enemies.length-1];
+};
+window.debugGoAct3=function(){
+  if(!runActive){ newGameSkip(); }
+  hideAll(); act=3; currentRow=0; pendingNode=null; roomCleared=true; roomIsBoss=false; roomIsMidboss=false; boss=null;
+  enemies=[]; pBullets=[]; eBullets=[]; pickups=[]; particles=[]; hazards=[]; floatBubbles=[];
+  resetCombatModState(); genMap(); state="map"; syncChrome(); showMap(); updateHUD(); saveRunCheckpoint();
+  banner("3막 · 심연 속","디버그 진입",1400);
+  return {act,currentRow,mapNodes:mapData&&mapData.nodes&&mapData.nodes.length};
+};
 window.debugEventFixQA=function(){
   return {
     queuedNextCombat:nextCombatMods?clonePlain(nextCombatMods):null,
