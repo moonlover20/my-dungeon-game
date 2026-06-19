@@ -12848,6 +12848,11 @@ window.debugStartAct3Event=function(id){
   showEventPanel(ev.tag,ev.title,ev.body,ev.choices);
   return ev.id;
 };
+
+window.debugact3=function(){ return window.debugGoAct3(); };
+window.debugAct3=function(){ return window.debugGoAct3(); };
+window.debugAct3Build=function(){ window.debugGoAct3(); player.maxhp=1000; player.hp=1000; player.dmg=1000; updateHUD(); return {act, hp:player.hp, maxhp:player.maxhp, dmg:player.dmg}; };
+window.debugact3build=function(){ return window.debugAct3Build(); };
 window.debugSpawnEnemy=function(id){
   if(!runActive){ newGameSkip(); }
   if(state!=='play'){ hideAll(); state='play'; roomCleared=false; syncChrome(); }
