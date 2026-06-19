@@ -127,8 +127,8 @@ const ACT3_ALPPANO_SPRITE=new Image();let act3AlppanoReady=false;ACT3_ALPPANO_SP
 const ACT3_CLONE_SPRITE=new Image();let act3CloneReady=false;ACT3_CLONE_SPRITE.onload=()=>{act3CloneReady=true;};ACT3_CLONE_SPRITE.src="btv/assets/act3_clone.png?v=1";
 const ACT3_DOMIN_SPRITE=new Image();let act3DominReady=false;ACT3_DOMIN_SPRITE.onload=()=>{act3DominReady=true;};ACT3_DOMIN_SPRITE.src="btv/assets/act3_domin.png?v=1";
 const ACT3_KULLJE_SPRITE=new Image();let act3KulljeReady=false;ACT3_KULLJE_SPRITE.onload=()=>{act3KulljeReady=true;};ACT3_KULLJE_SPRITE.src="btv/assets/act3_kullje.png?v=1";
-const ONSTER_P1_SPRITE=new Image();let onsterP1Ready=false;ONSTER_P1_SPRITE.onload=()=>{onsterP1Ready=true;};ONSTER_P1_SPRITE.src="btv/assets/onster_p1.png?v=1";
-const ONSTER_P2_SPRITE=new Image();let onsterP2Ready=false;ONSTER_P2_SPRITE.onload=()=>{onsterP2Ready=true;};ONSTER_P2_SPRITE.src="btv/assets/onster_p2.png?v=1";
+const ONSTER_P1_SPRITE=new Image();let onsterP1Ready=false;ONSTER_P1_SPRITE.onload=()=>{onsterP1Ready=true;};ONSTER_P1_SPRITE.src="btv/assets/onster_p1.png?v=2";
+const ONSTER_P2_SPRITE=new Image();let onsterP2Ready=false;ONSTER_P2_SPRITE.onload=()=>{onsterP2Ready=true;};ONSTER_P2_SPRITE.src="btv/assets/onster_p2.png?v=2";
 const SET_HYEONJIN_SPRITE=new Image();let setHyeonjinReady=false;SET_HYEONJIN_SPRITE.onload=()=>{setHyeonjinReady=true;};SET_HYEONJIN_SPRITE.src="btv/assets/set_hyeonjin.png?v=1";
 const SET_BEONGEOM_SPRITE=new Image();let setBeongeomReady=false;SET_BEONGEOM_SPRITE.onload=()=>{setBeongeomReady=true;};SET_BEONGEOM_SPRITE.src="btv/assets/set_beongeom.png?v=1";
 const SET_KEKERORO_SPRITE=new Image();let setKekeroroReady=false;SET_KEKERORO_SPRITE.onload=()=>{setKekeroroReady=true;};SET_KEKERORO_SPRITE.src="btv/assets/set_kekeroro.png?v=1";
@@ -5195,12 +5195,13 @@ function startAct3FinalClear(deadBoss){
   if(act3FinalClearActive()) return true;
   const bx=deadBoss&&Number.isFinite(deadBoss.x)?deadBoss.x:W/2;
   const by=deadBoss&&Number.isFinite(deadBoss.y)?deadBoss.y:H*0.32;
-  act3FinalClear={active:true,t:0,x:bx,y:by,skipped:false,done:false};
+  act3FinalClear={active:true,t:0,x:bx,y:by,skipped:false,done:false,timer:null};
   roomCleared=true; roomIsBoss=false; boss=null; enemies.length=0; pBullets.length=0; eBullets.length=0; hazards=[];
   if(typeof clearSeungwooFx==='function') clearSeungwooFx();
   screenShake=Math.max(screenShake||0,28); hitFlash=Math.max(hitFlash||0,0.8);
   for(let i=0;i<52;i++) burst(bx+rand(-70,70),by+rand(-50,50),pick(['#38e8ff','#ff4dd2','#ffd34d','#ffffff']),8,260);
   banner('세트3형제 격파','재밌었다. 다음 시즌에 보자.',2200);
+  act3FinalClear.timer=setTimeout(()=>{ if(act3FinalClearActive()){ const c=act3FinalClear; act3FinalClear=null; try{ victory(); }catch(e){ console.warn('act3 final clear fallback failed',e); } } },6200);
   return true;
 }
 function skipAct3FinalClear(){
@@ -5217,7 +5218,7 @@ function updateAct3FinalClear(dt){
   if(c.t>1.15&&!c.after1){ c.after1=true; banner('현진 · 번검 · 케케로로','세 화면이 동시에 꺼진다',1700); screenShake=Math.max(screenShake||0,18); }
   if(c.t>2.75&&!c.after2){ c.after2=true; banner('화이트아웃','방송 신호가 사라진다',1500); hitFlash=Math.max(hitFlash||0,0.7); }
   if(c.t>=5.0&&!c.done){
-    c.done=true; act3FinalClear=null; victory();
+    c.done=true; if(c.timer) clearTimeout(c.timer); act3FinalClear=null; victory();
   }
   return true;
 }
@@ -5585,6 +5586,11 @@ function update(dt){
   // 플레이어 탄
   for(let i=pBullets.length-1;i>=0;i--){
     const b=pBullets[i];
+    if(!b||!Number.isFinite(b.x)||!Number.isFinite(b.y)){ pBullets.splice(i,1); continue; }
+    if(!b.hitSet) b.hitSet=new Set();
+    if(!Number.isFinite(b.vx)) b.vx=0; if(!Number.isFinite(b.vy)) b.vy=0;
+    if(!Number.isFinite(b.life)) b.life=0;
+    if(!Number.isFinite(b.r)) b.r=4;
     if(b.homing){
       let tx=null,ty=null,bd=1e9;
       for(const e of enemies){ const d=dist2(b.x,b.y,e.x,e.y); if(d<bd){bd=d;tx=e.x;ty=e.y;} }
@@ -9830,11 +9836,40 @@ const YANG_SPRITE=new Image();let yangReady=false;YANG_SPRITE.onload=()=>yangRea
 const SW_SPRITE=new Image();let swReady=false;SW_SPRITE.onload=()=>swReady=true;SW_SPRITE.src="btv/assets/asset-083-30a6f3480f.png";
 const SW2_SPRITE=new Image();let sw2Ready=false;SW2_SPRITE.onload=()=>sw2Ready=true;SW2_SPRITE.src="btv/assets/seungwoo-phase2.png";
 const SW3_SPRITE=new Image();let sw3Ready=false;SW3_SPRITE.onload=()=>sw3Ready=true;SW3_SPRITE.src="btv/assets/seungwoo-phase3.png";
+function drawOnsterSprite(r,e,forcePhase){
+  const phase=forcePhase||(e&&e.phase>=2?2:1);
+  const ready=phase>=2?onsterP2Ready:onsterP1Ready;
+  const img=phase>=2?ONSTER_P2_SPRITE:ONSTER_P1_SPRITE;
+  const aura=phase>=2?'#ff4dd2':'#8d72ff';
+  const body=phase>=2?'#35164d':'#221a46';
+  ctx.save();
+  ctx.globalAlpha=0.72;
+  ctx.shadowColor=aura;ctx.shadowBlur=18;
+  circle(0,0,r*1.08,'rgba(20,10,42,0.78)',aura);
+  ctx.globalAlpha=0.34;
+  circle(0,0,r*1.32,'rgba(141,114,255,0.22)',aura);
+  ctx.globalAlpha=1;
+  if(ready){
+    const S=r*(phase>=2?2.65:2.85);
+    ctx.imageSmoothingEnabled=false;
+    ctx.drawImage(img,-S/2,-S/2,S,S);
+    ctx.globalAlpha=0.95;
+    ctx.lineWidth=2.5;
+    ctx.strokeStyle=phase>=2?'#ffd34d':'#cfc3ff';
+    ctx.beginPath();ctx.ellipse(0,r*0.42,r*0.56,r*0.16,0,0,TAU);ctx.stroke();
+    ctx.restore();
+    return;
+  }
+  circle(0,0,r*0.78,body,aura);
+  ctx.fillStyle=aura;ctx.fillRect(-r*0.24,-r*0.42,r*0.48,r*0.16);
+  ctx.fillStyle='#ffffff';ctx.fillRect(-r*0.18,-r*0.04,r*0.10,r*0.10);ctx.fillRect(r*0.08,-r*0.04,r*0.10,r*0.10);
+  ctx.restore();
+}
 const SPRITES={
   _default:(r)=>{ _so(r); _fc(0,0,r*0.9,'#9b8fc4',true); _eyes(r,0.3,0,r*0.16); },
-  onster_p1:(r,e)=>{ const img=(e&&e.phase>=2)?ONSTER_P2_SPRITE:ONSTER_P1_SPRITE, ready=(e&&e.phase>=2)?onsterP2Ready:onsterP1Ready; if(ready){ const S=r*2.45; ctx.drawImage(img,-S/2,-S/2,S,S); return; } circle(0,0,r*0.85,'#3b2d72','#8d72ff'); },
-  onster_p2:(r,e)=>{ if(onsterP2Ready){ const S=r*2.45; ctx.drawImage(ONSTER_P2_SPRITE,-S/2,-S/2,S,S); return; } circle(0,0,r*0.9,'#35164d','#ff4dd2'); },
-  onster:(r,e)=>{ const img=(e&&e.phase>=2)?ONSTER_P2_SPRITE:ONSTER_P1_SPRITE, ready=(e&&e.phase>=2)?onsterP2Ready:onsterP1Ready; if(ready){ const S=r*2.45; ctx.drawImage(img,-S/2,-S/2,S,S); return; } circle(0,0,r*0.85,(e&&e.phase>=2)?'#35164d':'#3b2d72',(e&&e.phase>=2)?'#ff4dd2':'#8d72ff'); },
+  onster_p1:(r,e)=>drawOnsterSprite(r,e,1),
+  onster_p2:(r,e)=>drawOnsterSprite(r,e,2),
+  onster:(r,e)=>drawOnsterSprite(r,e),
   set3:(r,b)=>{ const ph=(b&&b.setPhase)||1; const img=ph===1?SET_HYEONJIN_SPRITE:(ph===2?SET_BEONGEOM_SPRITE:SET_KEKERORO_SPRITE); const ready=ph===1?setHyeonjinReady:(ph===2?setBeongeomReady:setKekeroroReady); if(ready){ const S=r*2.45; ctx.drawImage(img,-S/2,-S/2,S,S); return; } circle(0,0,r*0.9,ph===1?'#cc3040':ph===2?'#38e8ff':'#b84dff',ph===1?'#ff9b9b':ph===2?'#eafaff':'#ff4dd2'); },
   seungwoo:(r,b)=>{
     const ph=(b&&b.gphase)||1;
@@ -10952,8 +10987,9 @@ function draw(){
     else circle(b.x,b.y,b.r,b.spore?'#ff7a8a':'#ff4d6d','#5a0010');
   }
   for(const b of pBullets){
+    if(!b||!Number.isFinite(b.x)||!Number.isFinite(b.y)) continue;
     ctx.save();ctx.shadowColor=b.crit?'#ffd34d':'#38e8ff';ctx.shadowBlur=8;
-    circle(b.x,b.y,b.r,b.crit?'#ffe28a':'#bff8ff',b.crit?'#a8740a':'#1d8fa0'); ctx.restore();
+    circle(b.x,b.y,b.r||4,b.crit?'#ffe28a':'#bff8ff',b.crit?'#a8740a':'#1d8fa0'); ctx.restore();
   }
   drawDashFx();
   // 플레이어
@@ -11057,7 +11093,7 @@ function draw(){
     ctx.fillText('베인Q  SPACE', ix, iy-8);
   }
   drawTutorial();
-  drawAct3FinalClear();
+  try{ drawAct3FinalClear(); }catch(e){ console.warn('act3 final clear draw failed',e); if(act3FinalClearActive()){ const c=act3FinalClear; if(c.timer) clearTimeout(c.timer); act3FinalClear=null; victory(); } }
   if(typeof drawFpsOverlay==='function') drawFpsOverlay();
 }
 
