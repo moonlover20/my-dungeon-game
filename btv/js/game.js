@@ -3613,8 +3613,9 @@ async function saveLegacyRunScore(){
   const api=await ensureLeaderboardApi();
   const runId=summary.runId||createRunId(api);
   const createdAt=api.fs.serverTimestamp();
-  const summaryData=Object.assign({},summary,{runId,createdAt});
   const buildData=build?Object.assign({runId,createdAt},build):null;
+  const embeddedTitle=titleWithEmbeddedBuild(summary.title||'',build);
+  const summaryData=Object.assign({},summary,{runId,createdAt,title:embeddedTitle});
   const legacyData={
     act:Math.max(1,Math.round(Number(summary.act)||1)),
     createdAt,
@@ -3629,7 +3630,7 @@ async function saveLegacyRunScore(){
     name:cleanLeaderboardName(summary.name||summary.nickname),
     retries:Math.max(0,Math.round(Number(summary.retries)||0)),
     score:clamp(Math.round(Number(summary.score)||0),0,SCORE_MAX),
-    title:String(summaryData.title||''),
+    title:embeddedTitle,
     seasonId:Math.max(1,Math.floor(Number(summary.seasonId)||getCurrentSeason())),
     win:!!summary.win
   };
