@@ -1668,7 +1668,13 @@ function recordShopPurchaseStats(it){
   }else if(source==='mysteryBox') gs.shopPurchases.mysteryBoxes++;
   else if(source==='special') gs.shopPurchases.special++;
 }
-function monsterKillBaseGold(){ return Math.max(1,Number(act)||1)>=2?irand(5,9):irand(3,7); }
+function monsterKillBaseGold(enemy){
+  const actNum=Math.max(1,Number(act)||1);
+  const type=enemy&&enemy.type;
+  const hardEnemy=(actNum===1&&ACT1_LATE_ENEMY_IDS.indexOf(type)>=0)||(actNum===2&&ACT2_LATE_ENEMY_IDS.indexOf(type)>=0);
+  if(actNum>=2) return hardEnemy?irand(9,13):irand(7,11);
+  return hardEnemy?irand(5,9):irand(3,7);
+}
 const TRAINING_MAX_PURCHASES=5;
 const TRAINING_DEFAULTS={hp:0,atk:0,speed:0,focus:0,defense:0};
 const TRAINING_DEFS=[
@@ -4635,7 +4641,7 @@ function killEnemy(e){
   }
   // 골드: 처치 즉시 획득 (소환몹은 무한 스폰이라 미지급)
   if(countsForKillScore){
-    const baseGold=monsterKillBaseGold();
+    const baseGold=monsterKillBaseGold(e);
     const eliteBonus=e.elite?irand(10,18):0;
     const goldMul=statMulFromBonus(statBonusFromMul(player.goldMul),0);
     const coin=Math.round((baseGold+eliteBonus)*goldMul);
@@ -8364,20 +8370,34 @@ function grantShopRelic(r){
 }
 function addStockedShopSpecial(items,spec){
   const stock=act>=2?3:1;
-  for(let i=0;i<stock;i++){
-    const stepMul=SHOP_STOCK_COST_MUL[i]||SHOP_STOCK_COST_MUL[SHOP_STOCK_COST_MUL.length-1]||1;
-    items.push({
-      kind:'special',
-      baseName:spec.name,
-      name:stock>1?spec.name+' '+(i+1):spec.name,
-      icon:spec.icon,
-      desc:spec.desc,
-      cost:shopPrice(spec.baseCost*stepMul),
-      grade:spec.grade,
-      skipBuyBanner:spec.skipBuyBanner,
-      buy:spec.buy
-    });
-  }
+  const stepMul=SHOP_STOCK_COST_MUL[0]||1;
+  items.push({
+    kind:'special',
+    baseName:spec.name,
+    name:spec.name,
+    icon:spec.icon,
+    desc:stock>1?spec.desc+' ('+stock+'회 구매 가능)':spec.desc,
+    baseDesc:spec.desc,
+    baseCost:spec.baseCost,
+    cost:shopPrice(spec.baseCost*stepMul),
+    grade:spec.grade,
+    skipBuyBanner:spec.skipBuyBanner,
+    buy:spec.buy,
+    stock,
+    boughtCount:0
+  });
+}
+function refreshStockedShopSpecial(it){
+  if(!it || it.kind!=='special' || !it.stock) return it;
+  const left=Math.max(0,(Number(it.stock)||0)-(Number(it.boughtCount)||0));
+  const stepMul=SHOP_STOCK_COST_MUL[it.boughtCount]||SHOP_STOCK_COST_MUL[SHOP_STOCK_COST_MUL.length-1]||1;
+  const stock=Number(it.stock)||0;
+  it.name=it.baseName||it.name;
+  it.desc=(it.baseDesc||it.desc||'')+(stock>1?(left>1?' ('+left+'회 구매 가능)':(left===1?' (마지막 구매)':'')):'');
+  it.cost=left>0?shopPrice((Number(it.baseCost)||1)*stepMul):0;
+  it.bought=left<=0;
+  it.soldLabel='재고 없음';
+  return it;
 }
 function shuffledTrainingDefs(defs){
   const pool=defs.slice(), out=[];
@@ -8515,6 +8535,7 @@ function shopSpecialIconHTML(it){
 }
 function shopCard(it,items,idx){
   if(it&&it.kind==='training') refreshTrainingShopItem(it);
+  if(it&&it.kind==='special') refreshStockedShopSpecial(it);
   const el=document.createElement('button');
   const rt=it.relic?relicTier(it.relic):null;
   const potionGrade=it.potion?getPotionGrade(it.potion):null;
@@ -8577,7 +8598,10 @@ function shopCard(it,items,idx){
     recordShopPurchaseStats(it);
     recordShopSpend(purchaseCost);
     if(it.kind==='training') items.trainingBought=true;
-    else it.bought=true;
+    else if(it.kind==='special'&&it.stock){
+      it.boughtCount=(Number(it.boughtCount)||0)+1;
+      refreshStockedShopSpecial(it);
+    }else it.bought=true;
     sfx.coin();
     if(!it.skipBuyBanner) banner((it.potion||it.kind==='special'||it.kind==='training'?it.name:it.icon)+' 구매!','',1000);
     shopPurchaseLock=false;
@@ -12856,45 +12880,5 @@ function initTreeEvents(){
     if(old!==treeAtlasZoom) renderTree();
   },{passive:false});
 }
-
-// ===== [DEV] 어려움 난이도 기준 보스/중간보스 체력 검증 =====
-// 사용: 콘솔에서 bossHpReport() 호출 → 표로 출력
-function bossHpReport(diffKey){
-  const D=(typeof DIFFS!=='undefined'&&DIFFS[diffKey||'hard'])||{hp:2.9};
-  const hardHp=D.hp;                                  // 난이도 체력 배율 (어려움=2.9)
-  const midRow=(typeof MIDBOSS_ROW!=='undefined')?MIDBOSS_ROW:7;
-  // spawnEnemy: hp = base * diff * diffSet.hp,  diff = 1+(act-1)*0.6+row*0.08
-  const enemyDiff=act=>1+(act-1)*0.6+midRow*0.08;
-  // spawnBoss: scale = (1+(act-1)*0.35) * diffSet.hp
-  const bossScale=act=>(1+(act-1)*0.35)*hardHp;
-  const findBoss=key=>(typeof BOSSES!=='undefined')&&BOSSES.find(b=>b.key===key);
-
-  // 혜철이(1막 중간보스, enemy, 3페이즈 동일 HP)
-  const hyBase=ENEMY_TYPES.hyechul.hp;
-  const hyPhase=hyBase*enemyDiff(1)*hardHp;
-  const hyTotal=hyPhase*3;
-  // 키죠(1막 보스)
-  const kijo=findBoss('kijo');
-  const kijoHp=kijo?kijo.hp*bossScale(1):0;
-  // 박제인간(2막 중간보스, enemy=yanggaeng)
-  const bjBase=ENEMY_TYPES.yanggaeng.hp;
-  const bjHp=bjBase*enemyDiff(2)*hardHp;
-  // 승우(2막 보스, phaseHp)
-  const sw=findBoss('seungwoo');
-  const swScale=bossScale(2);
-  const swPhases=sw&&sw.phaseHp?sw.phaseHp.map(v=>Math.round(v*swScale)):[];
-  const swTotal=swPhases.reduce((a,b)=>a+b,0);
-
-  const rows=[
-    {대상:'혜철이(1막 중보)', 기본:hyBase, '페이즈별':Math.round(hyPhase)+' ×3', '어려움 합산':Math.round(hyTotal)},
-    {대상:'키죠(1막 보스)',   기본:kijo&&kijo.hp, '페이즈별':'-', '어려움 합산':Math.round(kijoHp)},
-    {대상:'박제인간(2막 중보)',기본:bjBase, '페이즈별':'-', '어려움 합산':Math.round(bjHp)},
-    {대상:'승우(2막 보스)',   기본:sw&&sw.phaseHp&&sw.phaseHp.join('/'), '페이즈별':swPhases.join(' / '), '어려움 합산':Math.round(swTotal)},
-  ];
-  console.log('%c[보스 체력 검증 · '+(diffKey||'hard')+' / 체력배율 x'+hardHp+' / MIDBOSS_ROW='+midRow+']','color:#38e8ff;font-weight:bold');
-  if(console.table) console.table(rows); else console.log(rows);
-  return {hyechul:Math.round(hyTotal),kijo:Math.round(kijoHp),bagjein:Math.round(bjHp),seungwoo:{phases:swPhases,total:Math.round(swTotal)}};
-}
-if(typeof window!=='undefined') window.bossHpReport=bossHpReport;
 
 bootGame();
