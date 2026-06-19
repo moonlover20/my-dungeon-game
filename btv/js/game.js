@@ -850,6 +850,7 @@ function getRelicTooltipData(relicOrId,opts){
   return {
     title:r.name||'이름 없는 유물',
     rarity:isCurse?'curse':relicRarityKey(r),
+    tierRarity:relicRarityKey(r),
     rarityName:isCurse?(tier.name||'등급')+' 저주 유물':(tier.name||'유물')+' 유물',
     icon:relicIconHTML(r,'relic-pix-lg'),
     shortLine:relicShortLine(r),
@@ -904,7 +905,8 @@ function showRelicTooltip(targetEl,tooltipData,evt){
   const tip=ensureRelicTooltip();
   const r=getRelicById(targetEl&&targetEl.dataset&&targetEl.dataset.relicId);
   const cls='rarity-'+(RELIC_RARITY_CLASS[(tooltipData&&tooltipData.rarity)||relicRarityKey(r)]||'rare');
-  tip.className='relic-tooltip '+cls;
+  const curseTierCls=tooltipData&&tooltipData.rarity==='curse'?' curse-tier-'+(RELIC_RARITY_CLASS[tooltipData.tierRarity]||'rare'):'';
+  tip.className='relic-tooltip '+cls+curseTierCls;
   tip.innerHTML=renderRelicTooltip(tooltipData);
   tip.classList.remove('hidden','show');
   positionRelicTooltip(evt);
