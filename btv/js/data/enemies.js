@@ -40,6 +40,17 @@ const ENEMY_TYPES={
   blackstar     :{name:"흑별",   r:21, hp:110, spd:42, dmg:13, touchDmg:10, color:"#17111f", xp:315, ai:"orbit", range:270, cool:1.25, label:"흑별"},
   killjoy       :{name:"킬조이", r:17, hp:100, spd:104,dmg:14, touchDmg:10, color:"#38e8ff", xp:320, ai:"shooter", range:380, cool:0.95, label:"킬조이"},
   apple         :{name:"사과",   r:20, hp:112, spd:64, dmg:15, color:"#ff4d6d", xp:310, ai:"erratic", range:300, cool:1.4, label:"사과"},
+  // === 3막 전용 몬스터 ===
+  act3_domin     :{name:"\uB3C4\uBBFC", r:18, hp:82,  spd:88, dmg:16, touchDmg:18, color:"#7ad7ff", xp:118, ai:"submerge_charge", range:420, cool:3.8, label:"\uB3C4\uBBFC"},
+  act3_mirror    :{name:"\uAC70\uC6B8\uB7EC", r:18, hp:96,  spd:46, dmg:9,  touchDmg:8,  color:"#8be8ff", xp:128, ai:"reflector", range:360, cool:5.8, label:"\uAC70\uC6B8\uB7EC"},
+  act3_magnet    :{name:"\uC790\uC11D\uB7EC", r:18, hp:105, spd:42, dmg:8,  touchDmg:7,  color:"#ff4d5a", xp:122, ai:"magnet", range:230, cool:2.4, label:"\uC790\uC11D\uB7EC"},
+  act3_buffering :{name:"\uBC84\uD37C\uB9C1", r:17, hp:78,  spd:72, dmg:10, touchDmg:8,  color:"#38e8ff", xp:116, ai:"blink_lagfield", range:330, cool:3.4, label:"\uBC84\uD37C\uB9C1"},
+  act3_alppano   :{name:"\uC54C\uBE60\uB178", r:22, hp:170, spd:24, dmg:8,  touchDmg:6,  color:"#ffd34d", xp:455, ai:"summoner", range:340, cool:5.6, label:"\uC54C\uBE60\uB178"},
+  act3_kullje    :{name:"\uCFFC\uC81C", r:19, hp:148, spd:92, dmg:22, touchDmg:18, color:"#ff4dd2", xp:500, ai:"stealth_assassin", range:360, cool:6.2, label:"\uCFFC\uC81C"},
+  act3_clone     :{name:"\uBD84\uC2E0\uB7EC", r:20, hp:180, spd:62, dmg:13, touchDmg:10, color:"#b86bff", xp:480, ai:"splitter", range:320, cool:1.25, label:"\uBD84\uC2E0\uB7EC"},
+  act3_truck     :{name:"\uC911\uACC4\uCC28", r:24, hp:330, spd:24, dmg:16, touchDmg:13, color:"#58d8ff", xp:850, ai:"beam_sweep", range:620, cool:6.5, armor:0.18, label:"\uC911\uACC4\uCC28"},
+  act3_sand_soldier:{name:"\uBAA8\uB798\uBCD1\uC0AC", r:13, hp:34, spd:112, dmg:10, touchDmg:10, color:"#e0b85a", xp:0, ai:"chase", summoned:true, noReward:true, noKillScore:true, label:"\uBAA8\uB798\uBCD1\uC0AC"},
+  onster      :{name:"\uC628\uC2A4\uD130", r:38, hp:6150, spd:34, dmg:18, touchDmg:18, color:"#8d72ff", xp:1800, ai:"onster", range:360, cool:1.35, label:"\uC628\uC2A4\uD130"},
   yanggaeng     :{name:"박제인간", r:58, hp:3200, spd:48, dmg:17, touchDmg:17, color:"#111111", xp:2200, ai:"bagjein", cool:1.7, label:"박제인간"},
   // === 2막 엘리트: 양갱 (3페이즈) ===
   kkotchung     :{name:"양갱", r:32, hp:240, spd:50, dmg:11, touchDmg:11, color:"#f7a8d0", xp:900,  ai:"kkotchung", cool:1.4, label:"미주"},
@@ -47,7 +58,7 @@ const ENEMY_TYPES={
 const ACT_POOLS=[
   { normal:["goblin_warrior","goblin_archer","goblin_shaman","goblin_bomber"], elite:["rhino_beetle"] },
   { normal:["gwangcheon_gim","reura","namu","ketter"], elite:["kkotchung"] },
-  { normal:["slime_green","slime_red","slime_yellow","elf_melee","elf_ranged"], elite:["giant_golem","eldritch"] },
+  { normal:["act3_domin","act3_buffering","act3_magnet","act3_mirror"], elite:["act3_truck"] },
 ];
 const ACT1_WEAK_ENEMY_IDS=["goblin_warrior","goblin_archer","goblin_shaman","goblin_bomber"];
 const ACT1_LATE_ENEMY_IDS=["hoonsangtae","jaemin","sniper_viewer","stream_watcher"];
@@ -56,15 +67,25 @@ const ACT1_PRIORITY_CAPS={sniper_viewer:1,stream_watcher:1};
 const ACT2_BASIC_ENEMY_IDS=["gwangcheon_gim","reura","namu","ketter"];      // 일반몹: 광천김/러라/나무/케터
 const ACT2_LATE_ENEMY_IDS=["pobear","blackstar","killjoy","apple"];          // 어려운 적: 포베어/흑별/킬조이/사과
 const ACT2_PRIORITY_CAPS={blackstar:1,killjoy:1,apple:1};                    // 방당 1마리 우선 제한 (포베어는 브루저라 미제한)
+// 3막 전용 풀: 초반/중반/후반을 나눠 강한 조합이 너무 일찍 겹치지 않게 한다.
+const ACT3_BASIC_ENEMY_IDS=["act3_domin","act3_buffering","act3_magnet"];
+const ACT3_MID_ENEMY_IDS=["act3_mirror","act3_alppano","act3_clone"];
+const ACT3_LATE_ENEMY_IDS=["act3_kullje"];
+const ACT3_ELITE_ENEMY_IDS=["act3_truck"];
+const ACT3_PRIORITY_CAPS={act3_mirror:1,act3_alppano:1,act3_clone:1,act3_kullje:1,act3_truck:1,act3_magnet:1,act3_domin:2};
 function normalEnemyPoolFor(a,row){
   const pool=ACT_POOLS[Math.min(a-1,ACT_POOLS.length-1)];
   const base=(pool&&pool.normal?pool.normal:[]).slice();
   if(a===1) return base.concat(ACT1_LATE_ENEMY_IDS);
   if(a===2){
-    // 2막 일반방에 등장 가능한 잡몹 전체 (기본 4종 + 어려운 적 4종)
     const seen=new Set(), out=[];
     ACT2_BASIC_ENEMY_IDS.concat(ACT2_LATE_ENEMY_IDS).forEach(id=>{ if(ENEMY_TYPES[id]&&!seen.has(id)){ seen.add(id); out.push(id); } });
     return out;
+  }
+  if(a>=3){
+    const seen=new Set(), out=[];
+    ACT3_BASIC_ENEMY_IDS.concat(ACT3_MID_ENEMY_IDS,ACT3_LATE_ENEMY_IDS,ACT3_ELITE_ENEMY_IDS).forEach(id=>{ if(ENEMY_TYPES[id]&&!seen.has(id)){ seen.add(id); out.push(id); } });
+    return out.length?out:base;
   }
   return base;
 }
@@ -89,22 +110,40 @@ function pickNormalEnemyForRoom(a,row,counts){
   }
   if(a===2){
     counts=counts||{};
-    // 중보 전엔 가끔(10%), 중보 후엔 자주(70%) 어려운 적 등장
     const hardRate=row>MIDBOSS_ROW?0.70:0.10;
     const basic=ACT2_BASIC_ENEMY_IDS;
     let hard=ACT2_LATE_ENEMY_IDS.filter(id=>!ACT2_PRIORITY_CAPS[id]||(counts[id]||0)<ACT2_PRIORITY_CAPS[id]);
     const wantHard=Math.random()<hardRate;
     let choices=wantHard?hard:basic;
-    if(!choices.length) choices=wantHard?basic:hard;          // 제한으로 후보 소진 시 반대 풀에서
+    if(!choices.length) choices=wantHard?basic:hard;
+    const id=pick(choices.length?choices:basic);
+    counts[id]=(counts[id]||0)+1;
+    return id;
+  }
+  if(a>=3){
+    counts=counts||{};
+    const early=row<=MIDBOSS_ROW-2;
+    const late=row>=MIDBOSS_ROW+3;
+    const basic=ACT3_BASIC_ENEMY_IDS.filter(id=>ENEMY_TYPES[id]&&(!ACT3_PRIORITY_CAPS[id]||(counts[id]||0)<ACT3_PRIORITY_CAPS[id]));
+    const mid=ACT3_MID_ENEMY_IDS.filter(id=>ENEMY_TYPES[id]&&(!ACT3_PRIORITY_CAPS[id]||(counts[id]||0)<ACT3_PRIORITY_CAPS[id]));
+    const latePool=ACT3_LATE_ENEMY_IDS.filter(id=>ENEMY_TYPES[id]&&(!ACT3_PRIORITY_CAPS[id]||(counts[id]||0)<ACT3_PRIORITY_CAPS[id]));
+    const hardRate=early?0.06:(row>MIDBOSS_ROW?0.44:0.22);
+    const lateRate=late?0.18:0.04;
+    let choices;
+    if(Math.random()<lateRate && latePool.length) choices=latePool;
+    else if(Math.random()<hardRate && mid.length) choices=mid;
+    else choices=basic.length?basic:mid.concat(latePool);
+    if((counts.act3_magnet||0)>0 && (counts.act3_domin||0)>0) choices=choices.filter(id=>id!=="act3_domin"&&id!=="act3_magnet");
+    if(!choices.length) choices=ACT3_BASIC_ENEMY_IDS.concat(ACT3_MID_ENEMY_IDS,ACT3_LATE_ENEMY_IDS).filter(id=>ENEMY_TYPES[id]);
     const id=pick(choices.length?choices:basic);
     counts[id]=(counts[id]||0)+1;
     return id;
   }
   return pick((pool&&pool.normal)||[]);
 }
-const DB_HIDDEN_ENEMY_IDS=new Set(['slime_green','slime_red','slime_yellow','elf_melee','elf_ranged','giant_golem','eldritch']);
+const DB_HIDDEN_ENEMY_IDS=new Set(['slime_green','slime_red','slime_yellow','elf_melee','elf_ranged','giant_golem','eldritch','act3_sand_soldier']);
 const DB_HIDDEN_BOSS_KEYS=new Set(['steel_lord','bear']);
-const DB_EXTRA_ENEMY_IDS=['hyechul','yanggaeng','earthworm','zergling','mutalisk','ultra','zerg_egg'];
+const DB_EXTRA_ENEMY_IDS=['hyechul','yanggaeng','onster','earthworm','zergling','mutalisk','ultra','zerg_egg'];
 const DB_ENEMY_IDS=(function(){
   const ids=[], seen=new Set();
   const add=id=>{ if(id && ENEMY_TYPES[id] && !DB_HIDDEN_ENEMY_IDS.has(id) && !seen.has(id)){ seen.add(id); ids.push(id); } };
@@ -114,6 +153,8 @@ const DB_ENEMY_IDS=(function(){
   });
   ACT1_LATE_ENEMY_IDS.forEach(add);
   ACT2_LATE_ENEMY_IDS.forEach(add);
+  ACT3_MID_ENEMY_IDS.forEach(add);
+  ACT3_LATE_ENEMY_IDS.forEach(add);
   DB_EXTRA_ENEMY_IDS.forEach(add);
   return ids;
 })();
