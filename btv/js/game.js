@@ -4115,7 +4115,7 @@ function playerShoot(){
   const speed=playerBulletSpeed(player);
   let baseShot=base;
   if(player.dodgeReloadT>0){ baseShot*=1.4; player.dodgeReloadT=0; }
-  const n=player.shots+(player.shadowBarrageT>0?(player.shadowBarrageExtraShots||1):0), spread=n>1?0.16:0;
+  const n=player.shots+(player.shadowBarrageT>0?(player.shadowBarrageExtraShots||1):0), spread=n>1?0.16*(player._spreadMul||1):0;
   const primaryDirIndex=Math.floor((n-1)/2);
   const dirs=[];
   for(let i=0;i<n;i++) dirs.push(ang+(i-(n-1)/2)*spread);
