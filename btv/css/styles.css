@@ -1323,6 +1323,12 @@
   .relic-tooltip.rarity-epic{--relic-tip:#c98bff;}
   .relic-tooltip.rarity-legendary{--relic-tip:#ffd34d;}
   .relic-tooltip.rarity-mythic{--relic-tip:#ff6d86;box-shadow:0 5px 0 #06040d,0 0 22px rgba(255,95,126,.32),0 0 10px rgba(255,211,77,.18),inset 0 0 0 1px rgba(255,255,255,.07);}
+  .relic-tooltip.rarity-curse{--relic-tip:#ff5f87;background:linear-gradient(180deg,rgba(34,12,34,.98),rgba(10,5,16,.98)),repeating-linear-gradient(0deg,rgba(255,95,135,.06) 0 1px,transparent 1px 3px);box-shadow:0 5px 0 #06040d,0 0 22px color-mix(in srgb,var(--relic-tip) 34%,transparent),0 0 12px rgba(150,72,255,.16),inset 0 0 0 1px rgba(255,255,255,.07);}
+  .relic-tooltip.rarity-curse.curse-tier-common{--relic-tip:#d7e0ea;}
+  .relic-tooltip.rarity-curse.curse-tier-rare{--relic-tip:#8be8ff;}
+  .relic-tooltip.rarity-curse.curse-tier-epic{--relic-tip:#c98bff;}
+  .relic-tooltip.rarity-curse.curse-tier-legendary{--relic-tip:#ffd34d;}
+  .relic-tooltip.rarity-curse.curse-tier-mythic{--relic-tip:#ff6d86;}
   .relic-tooltip-head{display:grid;grid-template-columns:38px minmax(0,1fr);gap:10px;align-items:center;}
   .relic-tooltip-icon{display:grid;place-items:center;width:38px;height:38px;background:#090816;border:1px solid color-mix(in srgb,var(--relic-tip) 54%,#261b4d);box-shadow:2px 2px 0 rgba(0,0,0,.52),inset 0 0 0 1px rgba(255,255,255,.05);}
   .relic-tooltip-icon .relic-pix-lg{width:30px;height:30px;}
