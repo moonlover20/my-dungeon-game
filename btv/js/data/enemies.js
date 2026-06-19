@@ -40,7 +40,7 @@ const ENEMY_TYPES={
   blackstar     :{name:"흑별",   r:21, hp:110, spd:42, dmg:13, touchDmg:10, color:"#17111f", xp:315, ai:"orbit", range:270, cool:1.25, label:"흑별"},
   killjoy       :{name:"킬조이", r:17, hp:100, spd:104,dmg:14, touchDmg:10, color:"#38e8ff", xp:320, ai:"shooter", range:380, cool:0.95, label:"킬조이"},
   apple         :{name:"사과",   r:20, hp:112, spd:64, dmg:15, color:"#ff4d6d", xp:310, ai:"erratic", range:300, cool:1.4, label:"사과"},
-  yanggaeng     :{name:"박제인간", r:58, hp:2400, spd:48, dmg:17, touchDmg:17, color:"#111111", xp:2200, ai:"bagjein", cool:1.7, label:"박제인간"},
+  yanggaeng     :{name:"박제인간", r:58, hp:3200, spd:48, dmg:17, touchDmg:17, color:"#111111", xp:2200, ai:"bagjein", cool:1.7, label:"박제인간"},
   // === 2막 엘리트: 양갱 (3페이즈) ===
   kkotchung     :{name:"양갱", r:32, hp:240, spd:50, dmg:11, touchDmg:11, color:"#f7a8d0", xp:900,  ai:"kkotchung", cool:1.4, label:"미주"},
 };
