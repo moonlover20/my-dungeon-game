@@ -2768,8 +2768,8 @@
 
 @media (hover: hover) and (pointer: fine) {
   :root {
-    --pixel-cursor: url("../assets/cursor.png") 4 4, auto;
-    --pixel-cursor-click: url("../assets/cursor.png") 4 4, pointer;
+    --pixel-cursor: url("../assets/crosshair.png?v=1") 16 16, crosshair;
+    --pixel-cursor-click: url("../assets/crosshair.png?v=1") 16 16, pointer;
   }
 
   html,
