@@ -10,7 +10,7 @@ const ENEMY_TYPES={
   stream_watcher:{name:"\uBC29\uD50C\uB7EC", r:19.5, hp:40, spd:44, dmg:6, color:"#4fc0d8", xp:34, ai:"movement_lock", range:360, cool:4.0, label:"\uBC29\uD50C\uB7EC"},
   rhino_beetle   :{name:"자잘자",   r:27, hp:140, spd:68, dmg:16, touchDmg:16, color:"#3a2418", xp:24, ai:"charge", armor:0.15, label:"자잘자"},
   earthworm      :{name:"지렁이", r:12, hp:10, spd:74, dmg:6, color:"#e87a8a", xp:0, ai:"erratic", label:"지렁이"},
-  hyechul        :{name:"혜철이", r:52, hp:300, spd:42, dmg:15, color:"#c0392b", xp:150, ai:"hyechul", label:"혜철이"},
+  hyechul        :{name:"혜철이", r:52, hp:370, spd:42, dmg:15, color:"#c0392b", xp:150, ai:"hyechul", label:"혜철이"},
   zergling       :{name:"저글링", r:14, hp:12, spd:120, dmg:7, color:"#c98bff", xp:0, ai:"charge", label:"저글링"},
   mutalisk       :{name:"뮤탈", r:16, hp:16, spd:130, dmg:8, color:"#b97a4a", xp:0, ai:"chase", label:"뮤탈"},
   ultra          :{name:"울트라", r:26, hp:95, spd:52, dmg:20, touchDmg:20, color:"#8a6f4a", xp:0, ai:"chase", armor:0.25, label:"울트라"},
@@ -40,7 +40,7 @@ const ENEMY_TYPES={
   blackstar     :{name:"흑별",   r:21, hp:110, spd:42, dmg:13, touchDmg:10, color:"#17111f", xp:315, ai:"orbit", range:270, cool:1.25, label:"흑별"},
   killjoy       :{name:"킬조이", r:17, hp:100, spd:104,dmg:14, touchDmg:10, color:"#38e8ff", xp:320, ai:"shooter", range:380, cool:0.95, label:"킬조이"},
   apple         :{name:"사과",   r:20, hp:112, spd:64, dmg:15, color:"#ff4d6d", xp:310, ai:"erratic", range:300, cool:1.4, label:"사과"},
-  yanggaeng     :{name:"박제인간", r:58, hp:1450, spd:48, dmg:17, touchDmg:17, color:"#111111", xp:2200, ai:"bagjein", cool:1.7, label:"박제인간"},
+  yanggaeng     :{name:"박제인간", r:58, hp:2400, spd:48, dmg:17, touchDmg:17, color:"#111111", xp:2200, ai:"bagjein", cool:1.7, label:"박제인간"},
   // === 2막 엘리트: 양갱 (3페이즈) ===
   kkotchung     :{name:"양갱", r:32, hp:240, spd:50, dmg:11, touchDmg:11, color:"#f7a8d0", xp:900,  ai:"kkotchung", cool:1.4, label:"미주"},
 };
