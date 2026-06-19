@@ -745,7 +745,7 @@ function relicCardHTML(r){
     '<div class="desc">'+r.desc+'</div>';
 }
 
-const RELIC_RARITY_CLASS={common:'common',rare:'rare',epic:'epic',legend:'legendary',mythic:'mythic'};
+const RELIC_RARITY_CLASS={common:'common',rare:'rare',epic:'epic',legend:'legendary',mythic:'mythic',curse:'curse'};
 let relicTooltipEl=null;
 let relicTooltipTarget=null;
 let relicTooltipTimer=0;
@@ -775,7 +775,7 @@ const TooltipManager={
 };
 
 function getRelicById(relicId){
-  return (RELICS||[]).find(r=>r&&r.id===relicId)||null;
+  return relicById(relicId);
 }
 function relicRarityKey(r){
   return TIER_OF[r&&r.id]||'rare';
@@ -790,8 +790,7 @@ function fmtRelicPct(n){
 function relicShortLine(r){
   const desc=String(r&&r.desc||'').trim();
   if(!desc) return '유물 효과 적용';
-  const m=desc.match(/^(.+?[.!?。]|.+?%)(\s|$)/);
-  return (m?m[1]:desc).replace(/\s+/g,' ').trim();
+  return desc.replace(/\s+/g,' ').trim();
 }
 function relicDetailText(r){
   const hay=((r&&r.name)||'')+' '+((r&&r.desc)||'');
@@ -845,14 +844,13 @@ function relicDynamicInfo(r){
 }
 function getRelicTooltipData(relicOrId,opts){
   const r=typeof relicOrId==='string'?getRelicById(relicOrId):relicOrId;
-  if(!r){
-    return {title:'알 수 없는 유물',rarity:'common',rarityName:'유물',icon:'?',shortLine:'유물 정보를 찾을 수 없습니다.',description:'데이터가 없는 유물에도 툴팁 오류가 나지 않도록 기본 정보를 표시합니다.',dynamicInfo:[]};
-  }
+  if(!r||(r.id&&REMOVED_RELIC_IDS.has(r.id))) return null;
   const tier=relicTier(r)||TIERS.rare;
+  const isCurse=r.cls==='curse';
   return {
     title:r.name||'이름 없는 유물',
-    rarity:relicRarityKey(r),
-    rarityName:(tier.name||'유물')+' 유물',
+    rarity:isCurse?'curse':relicRarityKey(r),
+    rarityName:isCurse?(tier.name||'등급')+' 저주 유물':(tier.name||'유물')+' 유물',
     icon:relicIconHTML(r,'relic-pix-lg'),
     shortLine:relicShortLine(r),
     description:relicDetailText(r),
@@ -900,6 +898,7 @@ function positionRelicTooltip(evt){
 }
 function showRelicTooltip(targetEl,tooltipData,evt){
   clearTimeout(relicTooltipHideTimer);
+  if(!tooltipData){ hideRelicTooltip(true); return; }
   TooltipManager.setActive('relic');
   relicTooltipTarget=targetEl;
   const tip=ensureRelicTooltip();
