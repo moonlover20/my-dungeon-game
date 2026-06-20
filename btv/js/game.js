@@ -9606,6 +9606,17 @@ function renderShopMysteryLog(items){
     logs.map((log,idx)=>'<div class="shop-log-row"><span class="shop-log-no">'+(idx+1)+'.</span> <b style="color:'+shopText(log.col)+'">['+shopText(log.tier)+']</b> <span>'+shopText(log.name)+'</span></div>').join('')+
   '</div>';
 }
+function shopPurchaseBannerSmall(it){
+  if(!it) return '';
+  if(it.kind==='training'){
+    const def=trainingDefById(it.trainingId);
+    if(!def) return '훈련 효과가 즉시 적용되었습니다';
+    return '누적 '+def.bonusText(trainingCount(def.id,player))+' · '+def.desc;
+  }
+  if(it.kind==='potion'&&it.potion) return it.potion.desc||'포션 슬롯에 추가되었습니다';
+  if(it.kind==='relic'&&it.relic) return it.relic.desc||'유물이 적용되었습니다';
+  return it.desc||'';
+}
 function openShop(after){
   shopAfter=after||null;
   // 1회성 상점 할인 소비 (shopPrice가 이미 적용하고 있으므로, 진입 시 알림 후 초기화)
@@ -9746,7 +9757,7 @@ function shopCard(it,items,idx){
       refreshStockedShopSpecial(it);
     }else it.bought=true;
     sfx.coin();
-    if(!it.skipBuyBanner) banner((it.potion||it.kind==='special'||it.kind==='training'?it.name:it.icon)+' 구매!','',1000);
+    if(!it.skipBuyBanner) banner((it.potion||it.kind==='special'||it.kind==='training'?it.name:it.icon)+' 구매!',shopPurchaseBannerSmall(it),it.kind==='training'?2200:1400);
     shopPurchaseLock=false;
     updateHUD();
     renderShop(items);
@@ -10623,6 +10634,37 @@ function drawStatusBadges(e){
   }
   ctx.restore();
 }
+function drawStatusGroundAuraLocal(e,r,t){
+  const active=[];
+  if((e.burnT||0)>0) active.push({col:'#ff7a2a',dur:e.burnT,max:3,spin:0});
+  if((e.chillT||0)>0) active.push({col:'#5af0ff',dur:e.chillT,max:2.5,spin:1.8});
+  if((e.psT||0)>0) active.push({col:'#3dff8a',dur:e.psT,max:4,spin:3.3});
+  if((e.stunT||0)>0) active.push({col:'#ffe060',dur:e.stunT,max:0.6,spin:4.7});
+  if(!active.length) return;
+  const wob=Number(t)||0;
+  ctx.save();
+  ctx.lineCap='round';
+  active.forEach((fx,i)=>{
+    const life=clamp(fx.dur/(fx.max||1),0,1);
+    const yy=r*0.62+i*2.1;
+    const rx=r*(0.78+i*0.10);
+    const ry=Math.max(4,r*(0.20+i*0.03));
+    const pulse=0.5+0.5*Math.sin(wob*3.5+fx.spin);
+    ctx.globalAlpha=0.30+0.26*life;
+    ctx.strokeStyle=fx.col;
+    ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.ellipse(0,yy,rx,ry,0,0,TAU);
+    ctx.stroke();
+    ctx.globalAlpha=0.55+0.25*pulse;
+    for(let k=0;k<3;k++){
+      const a=wob*1.6+fx.spin+k*TAU/3;
+      ctx.fillStyle=fx.col;
+      ctx.fillRect(Math.cos(a)*rx-1,yy+Math.sin(a)*ry-1,2,2);
+    }
+  });
+  ctx.restore();
+}
 // ─────────────────────────────────────────────────────────────
 function drawEnemy(e){
   ctx.save();
@@ -10633,6 +10675,7 @@ function drawEnemy(e){
   if(_isc!==1) ctx.scale(_isc,_isc);
   const act3Alpha=(e.ai==='stealth_assassin'&&(e.stealthT||0)>0)?0.38:((e.ai==='submerge_charge'&&e.submerged)?0.32:(e._glitchClone?0.58:1));
   if(act3Alpha<1) ctx.globalAlpha*=act3Alpha;
+  drawStatusGroundAuraLocal(e,e.r,e.wob);
   // ── 가시성 보정: 적 실루엣을 따라 외곽 글로우 (배경 대비 강화) ──
   ctx.save();
   ctx.shadowColor = e.eliteViewer ? 'rgba(255,80,80,0.95)' : 'rgba(120,205,255,0.85)';
@@ -10665,11 +10708,6 @@ function drawEnemy(e){
     ctx.restore();
   }
   if(e.hitT>0){ ctx.globalAlpha=0.6; circle(0,0,e.r+1,'#fff'); ctx.globalAlpha=1; }
-  // ── 상태이상 몸통 오버레이 ──
-  if((e.burnT||0)>0){  ctx.save(); ctx.globalAlpha=0.28+0.08*Math.abs(Math.sin(e.wob*3)); ctx.fillStyle='#ff6a20'; ctx.beginPath(); ctx.arc(0,0,e.r,0,TAU); ctx.fill(); ctx.restore(); }
-  if((e.chillT||0)>0){ ctx.save(); ctx.globalAlpha=0.30+0.07*Math.abs(Math.sin(e.wob*2)); ctx.fillStyle='#5af0ff'; ctx.beginPath(); ctx.arc(0,0,e.r,0,TAU); ctx.fill(); ctx.restore(); }
-  if((e.psT||0)>0){    ctx.save(); ctx.globalAlpha=0.26+0.07*Math.abs(Math.sin(e.wob*2.5)); ctx.fillStyle='#3dff8a'; ctx.beginPath(); ctx.arc(0,0,e.r,0,TAU); ctx.fill(); ctx.restore(); }
-  if((e.stunT||0)>0){  ctx.save(); ctx.globalAlpha=0.32+0.10*Math.abs(Math.sin(e.wob*4)); ctx.fillStyle='#ffe060'; ctx.beginPath(); ctx.arc(0,0,e.r,0,TAU); ctx.fill(); ctx.restore(); }
   if(e.elite){ ctx.lineWidth=2.5; ctx.strokeStyle='#ffd34d'; circle(0,0,e.r+6,null,'#ffd34d'); }
   ctx.restore();
   drawIntentBubble(e.x,e.y,e.r,e);
@@ -10700,15 +10738,12 @@ function drawBoss(b){
   const pulse=1+Math.sin(b.phaseT*4)*0.03;
   ctx.scale(pulse,pulse);
   // 오라
+  const sw=b.phaseT||0;
   const g=ctx.createRadialGradient(0,0,b.r*0.5,0,0,b.r*1.8);
   g.addColorStop(0,b.color+'55'); g.addColorStop(1,'transparent');
   ctx.fillStyle=g; circle(0,0,b.r*1.8,g);
+  drawStatusGroundAuraLocal(b,b.r,sw);
   (SPRITES[b.sprite]||SPRITES._default)(b.r,b);
-  const sw=b.phaseT||0;
-  if((b.burnT||0)>0){ ctx.save(); ctx.globalAlpha=0.28+0.08*Math.abs(Math.sin(sw*3)); ctx.fillStyle='#ff6a20'; ctx.beginPath(); ctx.arc(0,0,b.r,0,TAU); ctx.fill(); ctx.restore(); }
-  if((b.chillT||0)>0){ ctx.save(); ctx.globalAlpha=0.30+0.07*Math.abs(Math.sin(sw*2)); ctx.fillStyle='#5af0ff'; ctx.beginPath(); ctx.arc(0,0,b.r,0,TAU); ctx.fill(); ctx.restore(); }
-  if((b.psT||0)>0){ ctx.save(); ctx.globalAlpha=0.26+0.07*Math.abs(Math.sin(sw*2.5)); ctx.fillStyle='#3dff8a'; ctx.beginPath(); ctx.arc(0,0,b.r,0,TAU); ctx.fill(); ctx.restore(); }
-  if((b.stunT||0)>0){ ctx.save(); ctx.globalAlpha=0.32+0.10*Math.abs(Math.sin(sw*4)); ctx.fillStyle='#ffe060'; ctx.beginPath(); ctx.arc(0,0,b.r,0,TAU); ctx.fill(); ctx.restore(); }
   if(b.hitT>0){ ctx.globalAlpha=0.55; circle(0,0,b.r+2,'#fff'); ctx.globalAlpha=1; }
   if(b.enraged){ ctx.lineWidth=3; ctx.strokeStyle='#ff4d6d'; circle(0,0,b.r+7,null,'#ff4d6d'); }
   ctx.restore();
