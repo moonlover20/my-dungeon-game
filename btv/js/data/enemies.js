@@ -50,7 +50,7 @@ const ENEMY_TYPES={
   act3_clone     :{name:"\uBD84\uC2E0\uB7EC", r:20, hp:180, spd:62, dmg:13, touchDmg:10, color:"#b86bff", xp:480, ai:"splitter", range:320, cool:1.25, label:"\uBD84\uC2E0\uB7EC"},
   act3_truck     :{name:"\uC911\uACC4\uCC28", r:24, hp:330, spd:24, dmg:16, touchDmg:13, color:"#58d8ff", xp:850, ai:"beam_sweep", range:620, cool:6.5, armor:0.18, label:"\uC911\uACC4\uCC28"},
   act3_sand_soldier:{name:"\uBAA8\uB798\uBCD1\uC0AC", r:13, hp:34, spd:112, dmg:10, touchDmg:10, color:"#e0b85a", xp:0, ai:"chase", summoned:true, noReward:true, noKillScore:true, label:"\uBAA8\uB798\uBCD1\uC0AC"},
-  onster      :{name:"\uC628\uC2A4\uD130", r:38, hp:6150, spd:34, dmg:18, touchDmg:18, color:"#8d72ff", xp:1800, ai:"onster", range:360, cool:1.35, label:"\uC628\uC2A4\uD130"},
+  onster      :{name:"\uC628\uC2A4\uD130", r:38, hp:5400, spd:34, dmg:18, touchDmg:18, color:"#8d72ff", xp:1800, ai:"onster", range:360, cool:1.35, label:"\uC628\uC2A4\uD130"},
   yanggaeng     :{name:"박제인간", r:58, hp:3200, spd:48, dmg:17, touchDmg:17, color:"#111111", xp:2200, ai:"bagjein", cool:1.7, label:"박제인간"},
   // === 2막 엘리트: 양갱 (3페이즈) ===
   kkotchung     :{name:"양갱", r:32, hp:240, spd:50, dmg:11, touchDmg:11, color:"#f7a8d0", xp:900,  ai:"kkotchung", cool:1.4, label:"미주"},
