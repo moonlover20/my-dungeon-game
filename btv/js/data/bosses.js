@@ -5,8 +5,8 @@ const BOSSES=[
    quip:"무릎 꿇어라, 필멸자여.",pattern:"spiral"},
   {key:"bear",sprite:"bear",name:"거대 곰",title:"3막 보스 · 숲의 지배자",r:64,hp:1250,color:"#9c6b43",spd:58,
    quip:"크아아아앙!!",pattern:"split"},
-  {key:"seungwoo",sprite:"seungwoo",name:"승우",title:"2막 보스 · 시스템 침식",r:64,hp:3360,phaseHp:[3360,3788,4350],color:"#9146ff",spd:56,
+  {key:"seungwoo",sprite:"seungwoo",name:"승우",title:"2막 보스 · 시스템 침식",r:72,hp:3360,phaseHp:[3360,3788,4350],color:"#9146ff",spd:56,
    quip:"…봉식님. 이 게임, 제가 좀 만져도 되겠습니까.",pattern:"glitch"},
-  {key:"set3",sprite:"set3",name:"\uC138\uD2B83\uD615\uC81C",title:"3\uB9C9 \uCD5C\uC885\uBCF4\uC2A4 \u00B7 \uD604\uC9C4 \u00B7 \uBC88\uAC80 \u00B7 \uCF00\uCF00\uB85C\uB85C",r:68,hp:4412,phaseHp:[4412,4739,5556],color:"#38e8ff",spd:62,
+  {key:"set3",sprite:"set3",name:"\uC138\uD2B83\uD615\uC81C",title:"3\uB9C9 \uCD5C\uC885\uBCF4\uC2A4 \u00B7 \uD604\uC9C4 \u00B7 \uBC88\uAC80 \u00B7 \uCF00\uCF00\uB85C\uB85C",r:74,hp:4412,phaseHp:[4412,4739,5556],color:"#38e8ff",spd:62,
    quip:"\uD615\uC774 \uB098\uC624\uAE30 \uC804\uC5D0 \uB05D\uB0B4\uC790.",pattern:"set3"},
 ];
