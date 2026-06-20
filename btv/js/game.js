@@ -2236,6 +2236,7 @@ function getSpecialEffectTooltipData(effectKey){
   const key=String(effectKey||'');
   let b=null, title='특수 효과', totalText='', description='현재 적용 중인 특수 효과입니다.', formulaText='적용 방식: 현재 값 기준', kind='special';
   const pct=specialPctText;
+  const flat=v=>String(Math.round((Number(v)||0)*10)/10).replace(/\.0$/,'');
   const perSec=v=>specialSignedText(v,'/초');
   const onText=v=>v||'적용 중';
   const simpleSpecial=(cfg)=>{
