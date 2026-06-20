@@ -11924,6 +11924,7 @@ function spEffects(p){
     E.push({ic,t:lb,pn,d:dd,k:key});
   };
   const pc=v=>Math.round(v*100)+'%';
+  const flat=v=>String(Math.round((Number(v)||0)*10)/10).replace(/\.0$/,'');
   const timeLabel=t=>' ('+Math.max(0,Math.ceil(t||0))+'초)';
   const hasRelic=id=>(p.relics||[]).some(r=>r&&r.id===id);
   const buffs=p.buffs||{};
@@ -12117,6 +12118,7 @@ function renderInventory(){
   const p=player;
   const fr=playerFireRate(p).toFixed(1);
   const pc=v=>Math.round(v*100)+'%';
+  const flat=v=>String(Math.round((Number(v)||0)*10)/10).replace(/\.0$/,'');
   const armor=effectiveArmor(p);
   const stats=[
     ['공격력', totalAttackPower(p).toFixed(1)],
