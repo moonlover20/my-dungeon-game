@@ -2839,3 +2839,126 @@
     cursor: auto !important;
   }
 }
+
+/* ===== 김봉식 실종안심센터 — 엔딩 크레딧 (아날로그 호러) v1.4.15 ===== */
+  #ovEnding{padding:0;background:#000;z-index:75;overflow:hidden;}
+  #ecTV{position:relative;width:100%;height:100%;background:#070510;overflow:hidden;
+    filter:contrast(1.2) brightness(1.02) saturate(1.05);
+    font-family:'Galmuri11','Apple SD Gothic Neo','Malgun Gothic',sans-serif;}
+  #ecContent{position:absolute;inset:0;will-change:filter,transform;}
+  #ecBg{position:absolute;inset:-8%;background:
+    radial-gradient(120% 80% at 30% 10%,rgba(146,70,255,.28),transparent 60%),
+    radial-gradient(120% 90% at 80% 90%,rgba(255,77,210,.18),transparent 55%),
+    linear-gradient(160deg,#160f28,#251a36 40%,#321f3a 70%,#0d0916);
+    filter:blur(2px) saturate(.8);animation:ecDrift 26s ease-in-out infinite;}
+  @keyframes ecDrift{0%,100%{transform:scale(1.06)}50%{transform:scale(1.13) translate(-2%,1.5%)}}
+  #ecPalms{position:absolute;inset:0;opacity:.5;mix-blend-mode:multiply;
+    background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='300'><g fill='%23000'><path d='M60 300 q-4 -120 2 -150 q-30 18 -52 6 q26 4 50 -14 q-30 -2 -44 -22 q24 12 46 0 q-18 -22 -10 -44 q12 26 18 40 q8 -22 30 -30 q-16 18 -22 36 q22 -8 44 4 q-26 0 -42 18 q26 6 40 26 q-30 -16 -50 -6 q6 36 4 156 z'/></g></svg>") repeat-x bottom/300px;}
+
+  #ovEnding .ec-scene{position:absolute;inset:0;display:none;}
+  #ovEnding #ecIntro.on{display:flex;}
+  #ovEnding #ecCard.on{display:grid;}
+  #ovEnding #ecFinale.on{display:flex;}
+  #ovEnding #ecCredits.on{display:block;}
+  #ovEnding #ecBars.on{display:block;}
+
+  #ecLogo{position:absolute;left:3%;top:3.5%;font-weight:bold;font-size:clamp(13px,2.5vmin,24px);
+    letter-spacing:1px;color:#fff;text-shadow:1px 1px 0 #000,0 0 8px var(--neon);z-index:30;display:flex;align-items:center;gap:.4em;}
+  #ecLogo .ec-dot{width:.8em;height:.8em;border-radius:50%;background:conic-gradient(from 0deg,var(--magenta),var(--twitch),var(--neon),var(--magenta));}
+  #ecTs{position:absolute;right:3%;top:3%;text-align:right;z-index:30;font-size:clamp(14px,2.7vmin,28px);
+    font-weight:bold;color:#fff;text-shadow:2px 2px 0 #000;line-height:1.15;letter-spacing:1px;}
+  #ecRec{position:absolute;left:3%;bottom:13%;z-index:30;color:#ff4d6d;font-weight:bold;font-size:clamp(12px,2.4vmin,22px);
+    text-shadow:1px 1px 0 #000;display:flex;align-items:center;gap:.4em;}
+  #ecRec .ec-b{width:.7em;height:.7em;border-radius:50%;background:#ff2d4d;animation:ecBlink 1s steps(2) infinite;}
+  @keyframes ecBlink{50%{opacity:0}}
+
+  #ecIntro{flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;}
+  #ecIntro .ec-mascot{width:clamp(70px,15vmin,140px);height:clamp(70px,15vmin,140px);animation:ecBob 1.2s ease-in-out infinite;}
+  @keyframes ecBob{0%,100%{transform:translateY(0) rotate(-6deg)}50%{transform:translateY(-10px) rotate(6deg)}}
+  #ecIntro .ec-title{font-weight:bold;color:#fff;line-height:1.15;margin-top:2vmin;font-size:clamp(26px,7vmin,68px);
+    text-shadow:3px 3px 0 #000,-1px -1px 0 #000,0 0 18px var(--twitch);}
+  #ecIntro .ec-sub{margin-top:2.5vmin;color:#eee;font-size:clamp(13px,2.6vmin,24px);line-height:1.6;text-shadow:2px 2px 0 #000;max-width:82%;}
+
+  #ecCard{height:100%;padding:4.5% 5% 9vmin;grid-template-columns:40% 60%;grid-template-rows:auto 1fr auto;gap:2vmin 4%;align-content:start;}
+  #ovEnding .ec-banner{grid-column:1/3;justify-self:start;background:linear-gradient(180deg,#3458d8,#1d3aa8);color:#fff;font-weight:bold;
+    padding:.5em 1.1em;font-size:clamp(20px,4.4vmin,44px);text-shadow:2px 2px 0 rgba(0,0,0,.6);border:2px solid rgba(255,255,255,.25);box-shadow:0 4px 0 rgba(0,0,0,.4);}
+  #ovEnding .ec-pwrap{position:relative;align-self:start;}
+  #ovEnding .ec-portrait{width:100%;max-width:36vmin;aspect-ratio:1;border:5px solid #c0392b;background:#dcd7ca;image-rendering:auto;display:block;
+    filter:grayscale(1) contrast(1.12) brightness(1.03);box-shadow:0 0 0 2px #000,6px 6px 0 rgba(0,0,0,.45);}
+  #ovEnding .ec-pname{position:absolute;left:0;bottom:-3.2vmin;background:linear-gradient(180deg,#3458d8,#1d3aa8);color:#fff;font-weight:bold;
+    padding:.25em .8em;font-size:clamp(15px,3.1vmin,28px);text-shadow:2px 2px 0 rgba(0,0,0,.5);white-space:nowrap;border:2px solid rgba(255,255,255,.2);}
+  #ovEnding .ec-row{margin-bottom:1.4vmin;}
+  #ovEnding .ec-lbl{color:#ffd34d;font-weight:bold;font-size:clamp(15px,3.1vmin,30px);text-shadow:2px 2px 0 #000;}
+  #ovEnding .ec-val{color:#fff;font-size:clamp(16px,3.3vmin,32px);text-shadow:2px 2px 0 #000;line-height:1.25;}
+  #ovEnding .ec-val.redact{color:#ff4d6d;letter-spacing:2px;}
+  #ovEnding .ec-tip{grid-column:1/3;align-self:end;color:#fff;font-weight:bold;font-size:clamp(13px,2.9vmin,28px);text-shadow:2px 2px 0 #000;margin-top:1vmin;}
+
+  #ecFinale{height:100%;flex-direction:column;align-items:center;justify-content:center;
+    background:linear-gradient(180deg,rgba(40,70,200,0) 40%,rgba(34,60,170,.78) 40%);}
+  #ovEnding .ec-wall{display:grid;grid-template-columns:repeat(8,1fr);gap:1.1%;width:90%;margin-bottom:2.2vmin;}
+  #ovEnding .ec-wall .ec-cell{position:relative;overflow:hidden;border:2px solid #1a1a1a;line-height:0;background:linear-gradient(180deg,#5e0a10,#7a0c14);}
+  #ovEnding .ec-wall .ec-cell canvas{width:100%;aspect-ratio:1;image-rendering:auto;display:block;filter:grayscale(1) contrast(1.1) brightness(1.02);background:#dcd7ca;}
+  #ovEnding .ec-cell-blood{position:absolute;left:0;right:0;top:0;height:0;z-index:2;pointer-events:none;
+    background:linear-gradient(180deg,#3a050a,#6e0b13 55%,#8f0f18);mix-blend-mode:multiply;}
+  #ovEnding .ec-cell-blood::after{content:"";position:absolute;left:0;right:0;top:100%;height:18%;
+    background:radial-gradient(6px 9px at 50% 0,#8f0f18 58%,transparent 60%);background-size:18% 100%;}
+  #ovEnding #ecFinale.bleed .ec-cell-blood{animation:ecCellSoak var(--dur,3s) ease-in var(--dl,0s) forwards;}
+  @keyframes ecCellSoak{0%{height:0}100%{height:118%}}
+  #ovEnding #ecFinale.bleed .ec-cell canvas{animation:ecFaceErase 1.7s ease-in var(--era,4s) forwards;}
+  @keyframes ecFaceErase{to{opacity:0;}}
+  #ovEnding .ec-finq{color:#ffd34d;font-weight:bold;text-align:center;line-height:1.4;font-size:clamp(19px,4.2vmin,40px);text-shadow:2px 2px 0 #000;padding:0 5%;}
+  #ovEnding .ec-finsub{color:#fff;font-weight:bold;text-align:center;margin-top:1.4vmin;font-size:clamp(13px,2.9vmin,28px);text-shadow:2px 2px 0 #000;}
+  #ovEnding .ec-fintel{color:#ffd34d;font-weight:bold;margin-top:1.8vmin;text-align:center;font-size:clamp(14px,3.1vmin,30px);text-shadow:2px 2px 0 #000;}
+
+  #ecCredits{height:100%;overflow:hidden;}
+  #ovEnding .ec-roll{position:absolute;left:0;right:0;text-align:center;color:#fff;text-shadow:2px 2px 0 #000,0 0 14px var(--neon);}
+  #ovEnding .ec-roll h2{font-size:clamp(22px,5vmin,50px);margin:8vmin 0 1vmin;color:var(--neon);}
+  #ovEnding .ec-roll .ec-cr{font-size:clamp(15px,3.1vmin,30px);line-height:2.1;}
+  #ovEnding .ec-roll .ec-cr b{color:var(--magenta);}
+  #ovEnding .ec-roll .ec-lab{color:#ffd34d;font-size:clamp(13px,2.5vmin,24px);}
+
+  #ecBars .ec-smpte{position:absolute;inset:0;display:flex;}
+  #ecBars .ec-smpte span{flex:1;}
+
+  #ecScan{position:absolute;inset:0;z-index:40;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.2) 0,rgba(0,0,0,.2) 1px,transparent 2px,transparent 3px);mix-blend-mode:multiply;}
+  #ecBand{position:absolute;left:0;right:0;height:22%;z-index:41;pointer-events:none;background:linear-gradient(180deg,transparent,rgba(255,255,255,.07) 45%,rgba(255,255,255,.12) 50%,rgba(255,255,255,.07) 55%,transparent);animation:ecBandMove 6.5s linear infinite;}
+  @keyframes ecBandMove{0%{top:-25%}100%{top:105%}}
+  #ecGrain{position:absolute;inset:-50%;z-index:42;pointer-events:none;opacity:.14;background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");animation:ecGrainMove .5s steps(3) infinite;mix-blend-mode:overlay;}
+  @keyframes ecGrainMove{0%{transform:translate(0,0)}33%{transform:translate(-4%,3%)}66%{transform:translate(3%,-2%)}100%{transform:translate(-2%,-3%)}}
+  #ecVig{position:absolute;inset:0;z-index:43;pointer-events:none;background:radial-gradient(120% 120% at 50% 50%,transparent 52%,rgba(0,0,0,.62) 100%);}
+  #ecTrack{position:absolute;inset:0;z-index:44;pointer-events:none;opacity:0;mix-blend-mode:screen;background:repeating-linear-gradient(0deg,transparent 0,transparent 6px,rgba(255,255,255,.4) 7px,transparent 9px,rgba(56,232,255,.25) 11px,transparent 14px);}
+  #ecStatic{position:absolute;inset:-30%;z-index:45;pointer-events:none;opacity:0;background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><filter id='s'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/></filter><rect width='100%' height='100%' filter='url(%23s)'/></svg>");}
+  #ecInvert{position:absolute;inset:0;z-index:46;pointer-events:none;opacity:0;background:#fff;mix-blend-mode:difference;}
+
+  #ecCtl{position:absolute;left:50%;bottom:6.5%;transform:translateX(-50%);z-index:60;display:flex;gap:10px;}
+  #ecCtl button{font-family:inherit;font-weight:bold;cursor:pointer;background:rgba(15,11,25,.85);color:#fff;border:1px solid var(--neon);border-radius:6px;padding:.5em 1em;font-size:14px;text-shadow:0 0 6px var(--neon);}
+  #ecCtl button:hover{background:var(--twitch);}
+
+/* ===== 엔딩 — 혈흔(피로 물듦) v1.4.16 ===== */
+  #ecBlood{position:absolute;left:0;right:0;top:0;height:0;z-index:6;pointer-events:none;overflow:visible;
+    background:linear-gradient(180deg,#3a050a,#6e0b13 60%,#8f0f18);mix-blend-mode:multiply;opacity:0;}
+  #ecBlood::after{content:"";position:absolute;left:0;right:0;top:100%;height:3.5vmin;
+    background:radial-gradient(8px 12px at 50% 0,#8f0f18 60%,transparent 62%);background-size:4.5% 100%;}
+  /* (구) 전체 시트 혈흔은 액자별 혈흔(ec-cell-blood)으로 대체됨 */
+  @keyframes ecSoak{0%{height:0;opacity:0}7%{opacity:.95}100%{height:138%;opacity:.95}}
+  #ovEnding .ec-drip{position:absolute;top:100%;height:0;background:linear-gradient(180deg,#6e0b13,#8f0f18);mix-blend-mode:multiply;border-radius:0 0 55% 55%;}
+  #ovEnding #ecFinale.bleed .ec-drip{animation:ecDrip var(--dur,2.6s) ease-in var(--dl,0s) forwards;}
+  @keyframes ecDrip{to{height:var(--len,12vmin)}}
+
+/* ===== 엔딩 — 뉴스 티커 / 채널 범퍼 / CRT 전원꺼짐 v1.4.21 ===== */
+  #ecTicker{position:absolute;left:0;right:0;bottom:0;height:4.6vmin;z-index:35;overflow:hidden;pointer-events:none;
+    background:linear-gradient(180deg,rgba(22,12,32,.88),rgba(10,6,16,.96));border-top:2px solid var(--magenta);display:flex;align-items:center;}
+  #ecTickerText{white-space:nowrap;color:#eee;font-weight:bold;font-size:clamp(12px,2.6vmin,24px);text-shadow:1px 1px 0 #000;animation:ecTickerScroll 32s linear infinite;will-change:transform;}
+  @keyframes ecTickerScroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+  #ecBumper{display:none;position:absolute;inset:0;z-index:5;flex-direction:column;align-items:center;justify-content:center;
+    color:#fff;font-weight:bold;text-align:center;font-size:clamp(30px,9vmin,86px);letter-spacing:2px;text-shadow:3px 3px 0 #000,0 0 18px var(--neon);}
+  #ecBumper span{display:block;font-size:clamp(14px,3vmin,30px);color:#ffd34d;margin-top:1.5vmin;letter-spacing:1px;}
+  #ovEnding #ecTV.crtoff{animation:ecCrtOff .8s cubic-bezier(.6,0,.85,1) forwards;}
+  @keyframes ecCrtOff{0%{transform:scale(1,1)}46%{transform:scale(1.08,0.008)}58%{transform:scale(1.08,0.008)}100%{transform:scale(0.001,0.008)}}
+
+/* ===== 엔딩 호러 — 암전 / 서브리미널 / 건너뛰기 제거 v1.4.25 ===== */
+  #ovEnding #ecCtl{display:none!important;}
+  #ecBlack{position:absolute;inset:0;background:#000;opacity:0;z-index:48;pointer-events:none;}
+  #ecBlack.on{opacity:1;}
+  #ecSub{display:none;position:absolute;inset:0;z-index:49;align-items:center;justify-content:center;pointer-events:none;text-align:center;
+    color:#ff2222;font-weight:bold;font-size:clamp(40px,11vmin,150px);letter-spacing:3px;text-shadow:0 0 26px #ff0000,3px 3px 0 #000;background:rgba(0,0,0,.45);}
