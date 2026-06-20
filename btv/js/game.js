@@ -2751,7 +2751,7 @@ function handleEnemyDefeat(e){
 }
 function applyEnemyDirectDamage(o,dmg,color,opts){
   if(!o) return;
-  o.hp-=dmg*(1-(o.armor||0)); o.hitT=0.1; burst(o.x,o.y,color||'#7ad7ff',7,170);
+  o.hp-=dmg*(1-(o.armor||0)); o.hitT=0.1; if(!(opts&&opts.silent)) burst(o.x,o.y,color||'#7ad7ff',7,170);
   if(opts&&opts.chainKill) o._chainKillSource=true;
   if(o.hp<=0) handleEnemyDefeat(o);
 }
@@ -2853,9 +2853,10 @@ function onsterAwaken(e){
 function onsterSummons(e){ return enemies.filter(o=>o&&o._summonOwner===e); }
 function spawnOnsterMinion(e){
   if(onsterSummons(e).length>=6) return;
-  spawnAct3SandSoldier(e);
-  const s=enemies[enemies.length-1];
-  if(s){ s.label='사슬 잔재'; s.color='#8d72ff'; s._summonOwner=e; s.noReward=true; s.noKillScore=true; s.summoned=true; s.xp=0; }
+  const s=spawnAct3SandSoldier(e);
+  if(!s) return;
+  const _hp=clamp(Math.round((e.maxhp||600)*0.045),70,240); s.hp=_hp; s.maxhp=_hp;
+  s.label='사슬 잔재'; s.color='#8d72ff'; s._summonOwner=e; s.noReward=true; s.noKillScore=true; s.summoned=true; s.xp=0;
 }
 function onsterChainBeam(e){
   const ang=Math.atan2(player.y-e.y,player.x-e.x);
@@ -3844,6 +3845,7 @@ function trimArrayHead(arr,max){
 }
 function cleanupCombatArrays(){
   trimArrayHead(particles,PERF_LIMITS.particles);
+  if(typeof dmgNums!=='undefined') trimArrayHead(dmgNums,PERF_LIMITS.damageTexts);
   trimArrayHead(pickups,PERF_LIMITS.pickups);
   trimArrayHead(floatBubbles,PERF_LIMITS.floatBubbles);
   trimArrayHead(hazards,PERF_LIMITS.hazards);
@@ -4361,7 +4363,7 @@ function startCombat(kind, fresh){
         const eb=enemies[enemies.length-1];
         eb.elite=true; eb.midboss=true; eb.label='온스터'; eb.phase=1; eb.atkT=1.4; eb.atkN=0; eb.summonT=4.2; eb.awakened=false;
         eb.title='3막 중간보스 · 온스터'; eb.quip='아직 깨우지 마라.';
-        eb.x=W/2; eb.y=170; eb.intro=true; eb.introScale=0; eb.stunT=4; eb.tauntedHalf=false;
+        eb.x=W/2; eb.y=170; eb.intro=true; eb.introScale=1; eb.stunT=4; eb.tauntedHalf=false;
         showBossIntroLine('onster',520,eb);
         banner("중간보스 · 온스터","사슬이 바닥을 긁는다",1800);
         if(typeof sfx!=='undefined') sfx.boss();
@@ -4585,8 +4587,7 @@ function burst(x,y,color,n,spd){
     const a=rand(0,TAU), s=rand(40,(spd||180));
     particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:rand(.25,.6),max:.6,color,r:rand(2,4)});
   }
-  // 파티클 상한선: 폭발이 겹칠 때 프레임 드롭 방지
-  trimArrayHead(particles,PERF_LIMITS.particles);
+  // 상한 트림은 프레임당 1회(cleanupCombatArrays)에서 처리 — 타격당 splice 비용 제거
 }
 const dashFx=[];
 function spawnDashFx(kind,x,y,dx,dy){
@@ -4897,9 +4898,9 @@ function damageEnemy(e,dmg,crit,fromBullet,bullet){
   }
   if(fromBullet){
     applyBulletStatuses(e);
-    if(player.bulletExplode>0){ enemies.slice().forEach(o=>{ if(o!==e && dist2(o.x,o.y,e.x,e.y)<8100){ applyEnemyDirectDamage(o,player.bulletExplode,'#ff9b4d'); } }); burst(e.x,e.y,'#ff9b4d',8,150); }
-    if(player.chainLightning>0){ let cnt=0; enemies.slice().forEach(o=>{ if(o!==e && cnt<player.chainLightning && dist2(o.x,o.y,e.x,e.y)<14400){ applyEnemyDirectDamage(o,dmg*0.5,'#7ad7ff'); cnt++; } }); }
-    if(crit && player.critExplodeMul>0){ const boom=relicAttackPower(player.critExplodeMul); enemies.slice().forEach(o=>{ if(o!==e && dist2(o.x,o.y,e.x,e.y)<6400) applyEnemyDirectDamage(o,boom,'#ffb347'); }); burst(e.x,e.y,'#ffb347',12,210); }
+    if(player.bulletExplode>0){ for(let k=enemies.length-1;k>=0;k--){ const o=enemies[k]; if(!o||o===e) continue; if(dist2(o.x,o.y,e.x,e.y)<8100) applyEnemyDirectDamage(o,player.bulletExplode,'#ff9b4d',{silent:true}); } burst(e.x,e.y,'#ff9b4d',8,150); }
+    if(player.chainLightning>0){ let cnt=0; for(let k=enemies.length-1;k>=0&&cnt<player.chainLightning;k--){ const o=enemies[k]; if(!o||o===e) continue; if(dist2(o.x,o.y,e.x,e.y)<14400){ applyEnemyDirectDamage(o,dmg*0.5,'#7ad7ff',{silent:true}); cnt++; } } if(cnt>0) burst(e.x,e.y,'#7ad7ff',6,160); }
+    if(crit && player.critExplodeMul>0){ const boom=relicAttackPower(player.critExplodeMul); for(let k=enemies.length-1;k>=0;k--){ const o=enemies[k]; if(!o||o===e) continue; if(dist2(o.x,o.y,e.x,e.y)<6400) applyEnemyDirectDamage(o,boom,'#ffb347',{silent:true}); } burst(e.x,e.y,'#ffb347',12,210); }
   }
   // 처형: 남은 체력이 임계값 이하면 즉사 (보스류 제외). 이미 hp<=0이면 아래서 처리
   if(e.hp>0 && player.execThreshold>0 && !isBossLike(e) && e.hp<=e.maxhp*player.execThreshold){
@@ -5081,7 +5082,7 @@ function killEnemy(e){
     window.debugLastGoldDrop=debugLastGoldDrop;
     addGold(coin,'kill'); sfx.coin(); burst(e.x,e.y,'#ffd34d',5,120);
   }
-  if(!isSummon && player.explodeKill>0){ burst(e.x,e.y,'#ff9b4d',12,200); enemies.slice().forEach(o=>{ if(o!==e && dist2(o.x,o.y,e.x,e.y)<4900){ applyEnemyDirectDamage(o,player.explodeKill,'#ff9b4d'); } }); }
+  if(!isSummon && player.explodeKill>0){ burst(e.x,e.y,'#ff9b4d',12,200); enemies.slice().forEach(o=>{ if(o!==e && dist2(o.x,o.y,e.x,e.y)<4900){ applyEnemyDirectDamage(o,player.explodeKill,'#ff9b4d',{silent:true}); } }); }
   if(!isSummon && player.chainKillLightning>0 && enemies.length && !e._chainKillSource){
     let near=null, best=Infinity;
     enemies.forEach(o=>{ const d=dist2(e.x,e.y,o.x,o.y); if(d<best){ best=d; near=o; } });
@@ -9962,7 +9963,7 @@ function drawRoomBg(theme){
     ctx.fillStyle=rbRad(ctx,gl.x,gl.y,gl.r,gl.col,a); ctx.fillRect(gl.x-gl.r,gl.y-gl.r,gl.r*2,gl.r*2); }
   if(theme==='food') rbDrawFood(st,t);
   if(Math.sin(t*0.0009)>0.985 && t-roomBgGlitchLast>180){ roomBgGlitchLast=t; const y=((Math.abs(Math.sin(t*0.05))*H)|0); const h=P*2+((Math.abs(Math.cos(t*0.07))*10)|0)*P; const sh=(Math.sin(t*0.2)*14|0)*P;
-    try{ const cut=ctx.getImageData(0,y,W,h); ctx.putImageData(cut,sh,y); }catch(e){}
+    try{ ctx.drawImage(cvs, 0,y,W,h, sh,y,W,h); }catch(e){}
     ctx.fillStyle=theme==='food'?'rgba(255,46,140,0.18)':theme==='server'?'rgba(52,247,255,0.16)':theme==='hatch'?'rgba(57,255,154,0.16)':'rgba(70,224,255,0.14)'; ctx.fillRect(0,y,W,P); }
 }
 
@@ -12654,7 +12655,7 @@ const EndingCredits=(function(){
     for(let i=0;i<sd.length;i++){h^=sd.charCodeAt(i);h=Math.imul(h,16777619);}
     let rs=h>>>0;const R=()=>{rs=(rs+0x6D2B79F5)|0;let t=Math.imul(rs^(rs>>>15),1|rs);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296;};
     const rr=(a,b)=>a+(b-a)*R();
-    const x=cv.getContext('2d'),W=cv.width;
+    const x=cv.getContext('2d',{willReadFrequently:true}),W=cv.width;
     const E=(a,b,rx,ry,rot,col)=>{x.fillStyle=col;x.beginPath();x.ellipse(a,b,rx,ry,rot||0,0,Math.PI*2);x.fill();};
     x.save();x.imageSmoothingEnabled=true;
     x.fillStyle='#dcd7ca';x.fillRect(0,0,W,W);
@@ -13846,21 +13847,21 @@ function dmgComboColor(tier){
 function spawnDmgNum(x,y,amt,crit,kind){
   if(amt<=0) return;
   const k=kind||'normal';
-  if(k==='poison'||k==='burn'||k==='heal'){
-    for(let i=dmgNums.length-1;i>=0;i--){
-      const d=dmgNums[i];
-      if(!d||d.kind!==k||d.t>0.12) continue;
-      if(Math.abs(d.x-x)<22&&Math.abs(d.y-y)<22){
-        d.amt+=amt;
-        d.t=0;
-        d.max=Math.max(d.max,crit?0.8:0.62);
-        return;
-      }
+  const direct=(k==='normal'||k==='crit'||crit);   // 직접 타격(콤보 집계 대상)
+  if(direct){ dmgCombo++; dmgComboT=DMG_COMBO_WINDOW; }
+  // 근처 최근 같은 그룹 숫자에 병합 — 연타 시 개수 폭발 방지(렌더 부하 핵심)
+  for(let i=dmgNums.length-1;i>=0;i--){
+    const d=dmgNums[i];
+    if(!d||d.t>0.14) continue;
+    const sameGroup = direct ? (d.kind==='normal'||d.kind==='crit') : (d.kind===k);
+    if(!sameGroup) continue;
+    if(Math.abs(d.x-x)<26 && Math.abs(d.y-y)<26){
+      d.amt+=amt; d.t=0; d.max=Math.max(d.max,crit?0.8:0.62);
+      if(direct){ d.crit=d.crit||crit; d.combo=dmgCombo; d.tier=clamp((dmgCombo-1)/DMG_COMBO_MAX,0,1); }
+      return;
     }
   }
-  trimArrayHead(dmgNums,PERF_LIMITS.damageTexts-1);
-  const direct=(k==='normal'||k==='crit'||crit);   // 직접 타격만 콤보 집계
-  if(direct){ dmgCombo++; dmgComboT=DMG_COMBO_WINDOW; }
+  // 새 숫자 (상한 트림은 프레임당 cleanupCombatArrays에서 처리)
   const combo=dmgCombo;
   const tier=clamp((combo-1)/DMG_COMBO_MAX,0,1);
   dmgNums.push({
@@ -13876,6 +13877,7 @@ function updateDmgNums(dt){
 function drawDmgNums(){
   if(!dmgNums.length) return;
   ctx.save(); ctx.textAlign='center'; ctx.textBaseline='middle';
+  const _heavyDN=dmgNums.length>16;   // 연타 폭주 시 글로우 생략으로 렌더 비용 절감
   for(const d of dmgNums){
     const life=d.t/d.max;
     const a=clamp(1-Math.pow(life,2.4),0,1);                 // 끝에 빠르게 사라짐
@@ -13902,7 +13904,7 @@ function drawDmgNums(){
     ctx.strokeText(txt,d.x,d.y);
     // 채움(글로우 적용)
     ctx.shadowColor=glow;
-    ctx.shadowBlur=6+tier*10+(d.crit?4:0);
+    ctx.shadowBlur=_heavyDN?0:(6+tier*10+(d.crit?4:0));
     ctx.fillStyle=col;
     ctx.fillText(txt,d.x,d.y);
     ctx.shadowBlur=0;
