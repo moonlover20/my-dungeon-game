@@ -332,7 +332,7 @@ const MUSIC = {
     bgm_set_hyeonjin:    'btv/assets/music/act2-final-boss.mp3',
     bgm_set_beongeom:    'btv/assets/music/boss.mp3',
     bgm_set_kekeroro:    'btv/assets/music/act2-final-boss.mp3',
-    bgm_final_clear:     'btv/assets/music/main.mp3'
+    bgm_final_clear:     'btv/assets/music/ending.mp3'
   },
   tightLoops:{
     midboss:{start:0.02,endPad:0.28},
@@ -11147,7 +11147,7 @@ function skipCutscene(){
 
 // ===== JS: Overlay state machine and UI wiring =====
 const overlays={title:'ovTitle',start:'ovStart',map:'ovMap',relic:'ovRelic',shop:'ovShop',event:'ovEvent',inv:'ovInv',level:'ovLevel',reward:'ovReward',end:'ovEnd',ranking:'ovRanking',achievements:'ovAchievements',database:'ovDatabase',help:'ovHelp',story:'ovStory',entrance:'ovEntrance',tierIntro:'ovTierIntro',treeIntro:'ovTreeIntro',taunt:'ovTaunt',campfire:'ovCampfire'};
-function hideAll(){ if(typeof TooltipManager!=='undefined') TooltipManager.hideAll(); Object.values(overlays).forEach(id=>{ const el=$(id); if(el) el.classList.add('hidden'); }); if(typeof evStopScene==='function') evStopScene(); }
+function hideAll(){ if(typeof TooltipManager!=='undefined') TooltipManager.hideAll(); Object.values(overlays).forEach(id=>{ const el=$(id); if(el) el.classList.add('hidden'); }); if(typeof evStopScene==='function') evStopScene(); const _ec=$('ovEnding'); if(_ec) _ec.classList.add('hidden'); if(typeof EndingCredits!=='undefined' && EndingCredits.stop) EndingCredits.stop(); }
 function syncChrome(){ document.body.classList.toggle('title-mode', state==='title'||state==='start'); }
 function show(st){
   hideAll();
@@ -12214,6 +12214,339 @@ async function submitEndRankScore(){
     }
   }
 }
+/* ===== 김봉식 실종안심센터 — 엔딩 크레딧 컨트롤러 (아날로그 호러) ===== */
+/* 진짜 클리어(gameOver(true)) 시에만 재생. 도달한 막(1~현재 act)의 전체 몹을 실종자 카드로 표시. */
+const EndingCredits=(function(){
+  const D=id=>document.getElementById(id);
+
+  // 막별 실종자(처치 몹) 로스터. ENEMY_TYPES 이름 기준, 몽타주는 절차적 생성.
+  const ACTS=[
+    [ // 1막 · 봉식월드 1구역 고블린 소굴
+      {n:'러부엉 (남 · 27세)',d:'2019년 4월 3일',p:'1구역 고블린 소굴',r:'봉식 방송에 과몰입하던 중 실종',t:'mob',f:{hair:'mop',brow:1,eye:'wide',mouth:'flat',skin:0}},
+      {n:'대파 (여 · 24세)',d:'2020년 7월 11일',p:'1구역 고블린 소굴',r:'채팅창에 파를 던지다 행방불명',t:'mob',f:{hair:'long',brow:0,eye:'dot',mouth:'thin',skin:1}},
+      {n:'까치 (불명)',d:'2018년 3월 30일',p:'1구역 고블린 소굴',r:'반짝이는 도네를 쫓다 사라짐',t:'mob',f:{hair:'spike',brow:1,eye:'glare',mouth:'thin',skin:2}},
+      {n:'블페러 (남 · 26세)',d:'2019년 8월 8일',p:'1구역 고블린 소굴',r:'밴딩 직전 스스로 터짐',t:'mob',f:{hair:'buzz',brow:2,eye:'wide',mouth:'open',skin:1}},
+      {n:'훈상태 (남 · 33세)',d:'2017년 5월 19일',p:'1구역 외곽',r:'식칼을 던진 뒤 본인도 사라짐',t:'mob',tint:'#e25572',f:{hair:'side',brow:2,eye:'slit',mouth:'frown',skin:2}},
+      {n:'재민 (남 · 28세)',d:'2020년 1월 7일',p:'1구역 외곽',r:'부메랑이 돌아오지 않은 채 실종',t:'mob',f:{hair:'mop',brow:0,eye:'dot',mouth:'flat',skin:0}},
+      {n:'저격러 (불명)',d:'2021년 2월 14일',p:'1구역 망루',r:'도네 저격 직후 연결이 끊김',t:'mob',f:{hair:'cap',brow:2,eye:'slit',mouth:'flat',skin:0}},
+      {n:'방플러 (남 · 29세)',d:'2018년 9월 22일',p:'1구역 시청실',r:'방송 시청 중 움직임이 영구히 멈춤',t:'mob',f:{hair:'side',brow:0,eye:'hollow',mouth:'open',skin:1}},
+      {n:'자잘자 (남 · 31세)',d:'2017년 11월 9일',p:'1구역 정거장',r:'로블록스 서버에서 마지막으로 목격됨',t:'elite',tint:'#7a5a3a',f:{hair:'buzz',brow:2,eye:'glare',mouth:'frown',skin:2}},
+      {n:'혜철이 (불명)',d:'2016년 6월 6일',p:'1구역 경계 — 둥지',r:'알을 품은 채 둥지에서 사라짐',t:'boss',tint:'#c0392b',f:{hair:'none',brow:2,eye:'many',mouth:'fang',skin:3}},
+      {n:'키죠 (불명)',d:'████년 ██월',p:'1구역 정상',r:'가면을 쓴 뒤로 본모습 목격자 없음',t:'boss',tint:'#ff4dd2',redact:1,f:{hair:'spike',brow:2,eye:'void',mouth:'thin',skin:4}},
+    ],
+    [ // 2막 · 봉식월드 2구역 광천김 소굴
+      {n:'광천김 (불명)',d:'2021년 6월 2일',p:'2구역 광천김 소굴',r:'김에 말려 펴지지 않음',t:'mob',tint:'#3f7a34',f:{hair:'none',brow:1,eye:'slit',mouth:'thin',skin:2}},
+      {n:'러라 (여 · 25세)',d:'2022년 4월 17일',p:'2구역 광천김 소굴',r:'달려나간 뒤 돌아오지 않음',t:'mob',tint:'#ffd166',f:{hair:'bob',brow:0,eye:'wide',mouth:'smile',skin:0}},
+      {n:'나무 (불명)',d:'2019년 10월 1일',p:'2구역 광천김 소굴',r:'뿌리를 내린 자리에서 사라짐',t:'mob',tint:'#5fa84a',f:{hair:'curl',brow:1,eye:'dot',mouth:'flat',skin:3}},
+      {n:'케터 (불명)',d:'2021년 12월 9일',p:'2구역 광천김 소굴',r:'음악만 남기고 사라짐',t:'mob',tint:'#7ed957',f:{hair:'side',brow:0,eye:'wide',mouth:'thin',skin:1}},
+      {n:'포베어 (불명)',d:'2020년 2월 22일',p:'2구역 광천김 소굴',r:'돌진한 끝을 본 사람이 없음',t:'mob',tint:'#c8884a',f:{hair:'mop',brow:2,eye:'glare',mouth:'open',skin:2}},
+      {n:'흑별 (불명)',d:'2020년 12월 24일',p:'2구역 광천김 소굴',r:'별이 검게 물든 뒤 실종',t:'mob',tint:'#9146ff',f:{hair:'spike',brow:1,eye:'void',mouth:'thin',skin:2}},
+      {n:'킬조이 (여 · 26세)',d:'2022년 5월 1일',p:'2구역 광천김 소굴',r:'흥을 깬 뒤로 소식이 끊김',t:'mob',tint:'#38e8ff',f:{hair:'bob',brow:0,eye:'wide',mouth:'smile',skin:0}},
+      {n:'사과 (불명)',d:'2021년 10월 31일',p:'2구역 광천김 소굴',r:'한 입 베어 문 채 발견 안 됨',t:'mob',tint:'#ff4d6d',f:{hair:'curl',brow:1,eye:'dot',mouth:'open',skin:1}},
+      {n:'양갱 / 미주 (불명)',d:'2015년 9월 13일',p:'2구역 — 화원',r:'말랑해지다 형체가 사라짐',t:'elite',tint:'#f7a8d0',f:{hair:'long',brow:0,eye:'void',mouth:'fang',skin:4}},
+      {n:'박제인간 (불명)',d:'████년 ██월',p:'2구역 — 전시실',r:'박제된 채 전시되어 있었다는 제보',t:'boss',tint:'#9146ff',redact:1,f:{hair:'none',brow:2,eye:'glitch',mouth:'glitch',skin:4}},
+      {n:'승우 (???)',d:'████년 ██월 ██일',p:'화면 너머',r:'게임을 닫은 뒤 화면 밖으로 사라짐',t:'boss',tint:'#9146ff',redact:1,f:{hair:'glitch',brow:2,eye:'glitch',mouth:'glitch',skin:4}},
+    ],
+    // 3막(마경)은 더미 데이터라 엔딩에서 제외 — 콘텐츠 확정 후 재추가
+    ];
+
+  // 절차적 몽타주(픽셀 얼굴). 스프라이트 의존 없이 전 몹 대응 + 호러 톤("사람이었다").
+  function drawFace(cv,ent,creep){
+    const f=(ent&&ent.f)||{},tint=(ent&&ent.tint)||'#ff4dd2';
+    let h=2166136261;const sd=((ent&&ent.n)||'')+(f.hair||'')+(f.eye||'')+(f.mouth||'')+(f.skin||0);
+    for(let i=0;i<sd.length;i++){h^=sd.charCodeAt(i);h=Math.imul(h,16777619);}
+    let rs=h>>>0;const R=()=>{rs=(rs+0x6D2B79F5)|0;let t=Math.imul(rs^(rs>>>15),1|rs);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296;};
+    const rr=(a,b)=>a+(b-a)*R();
+    const x=cv.getContext('2d'),W=cv.width;
+    const E=(a,b,rx,ry,rot,col)=>{x.fillStyle=col;x.beginPath();x.ellipse(a,b,rx,ry,rot||0,0,Math.PI*2);x.fill();};
+    x.save();x.imageSmoothingEnabled=true;
+    x.fillStyle='#dcd7ca';x.fillRect(0,0,W,W);
+    const cx=W*(0.5+rr(-0.015,0.015)),fy=W*(0.53+rr(-0.02,0.03));
+    const fw=W*(0.255+rr(0,0.07)),fh=W*(0.32+rr(0,0.1)),dark='#0c0a08';
+    const asym=rr(-1,1),tilt=rr(-0.05,0.05),hair=f.hair;
+    x.save();x.translate(cx,fy);x.rotate(tilt);x.translate(-cx,-fy);
+    // 뒤 머리
+    if(hair==='long'||hair==='bob'||hair==='curl'){
+      E(cx,fy-W*0.02,fw*(1.26+rr(0,0.14)),fh*1.18,0,dark);
+      if(hair!=='bob'){const ll=rr(0.6,1.05);E(cx-fw*0.95,fy+fh*0.5,fw*0.52,fh*ll,0,dark);E(cx+fw*0.95,fy+fh*0.5,fw*0.52,fh*ll,0,dark);}
+    } else if(hair==='none'){ E(cx,fy-fh*0.5,fw*1.0,fh*0.42,0,'#2a2622'); }
+    else { E(cx,fy-fh*(0.28+rr(0,0.14)),fw*(1.12+rr(0,0.14)),fh*0.78,0,dark); }
+    // 얼굴
+    E(cx,fy,fw,fh,0,'#ece7dc');
+    // 음영(측면+볼)
+    x.save();x.beginPath();x.ellipse(cx,fy,fw,fh,0,0,7);x.clip();
+    const dir=asym>0?1:-1,g=x.createLinearGradient(cx-dir*fw,0,cx+dir*fw,0);
+    g.addColorStop(0,'rgba(16,12,10,0)');g.addColorStop(1,'rgba(16,12,10,'+rr(0.2,0.4)+')');
+    x.fillStyle=g;x.fillRect(cx-fw,0,fw*2,W);
+    x.fillStyle='rgba(20,15,12,0.16)';
+    x.beginPath();x.ellipse(cx-fw*0.55,fy+fh*0.22,fw*0.3,fh*0.32,0,0,7);x.fill();
+    x.beginPath();x.ellipse(cx+fw*0.55,fy+fh*0.22,fw*0.3,fh*0.32,0,0,7);x.fill();
+    x.restore();
+    // 앞머리
+    if(hair!=='none'&&hair!=='buzz'){
+      const part=rr(-0.45,0.45);x.fillStyle=dark;x.beginPath();
+      x.moveTo(cx-fw*0.99,fy-fh*0.46);
+      x.quadraticCurveTo(cx+part*fw,fy-fh*(0.88+rr(0,0.14)),cx+fw*0.99,fy-fh*0.46);
+      x.quadraticCurveTo(cx+fw*0.4,fy-fh*0.15,cx+part*fw+fw*0.12,fy-fh*0.4);
+      x.quadraticCurveTo(cx+part*fw,fy-fh*0.08,cx+part*fw-fw*0.12,fy-fh*0.4);
+      x.quadraticCurveTo(cx-fw*0.4,fy-fh*0.15,cx-fw*0.99,fy-fh*0.46);x.fill();
+    }
+    // 눈썹(불균형)
+    const ey=fy-fh*(0.02+rr(-0.02,0.03)),eo=fw*(0.4+rr(0,0.1)),ew=fw*(0.3+rr(0,0.1)),eh=fh*(0.1+rr(0,0.05));
+    const eyL=ey+asym*eh*0.5,eyR=ey-asym*eh*0.5;
+    x.strokeStyle='#15110d';x.lineCap='round';
+    x.lineWidth=W*(0.015+rr(0,0.012));x.beginPath();x.moveTo(cx-eo-ew*0.6,eyL-eh*1.5);x.quadraticCurveTo(cx-eo,eyL-eh*(1.9+rr(0,0.6)),cx-eo+ew*0.6,eyL-eh*1.4);x.stroke();
+    x.lineWidth=W*(0.015+rr(0,0.012));x.beginPath();x.moveTo(cx+eo-ew*0.6,eyR-eh*1.4);x.quadraticCurveTo(cx+eo,eyR-eh*(1.9+rr(0,0.6)),cx+eo+ew*0.6,eyR-eh*1.5);x.stroke();
+    // 눈
+    const drawEye=(ox,eyy,scl)=>{
+      const big=(creep?1.45:1.0)*scl;
+      E(cx+ox,eyy,ew*0.5*big,eh*1.05*big,0,'#f5f2ea');
+      x.fillStyle='rgba(0,0,0,0.3)';x.beginPath();x.ellipse(cx+ox,eyy-eh*0.45,ew*0.5*big,eh*0.6*big,0,Math.PI,0);x.fill();
+      E(cx+ox,eyy+eh*0.06,ew*0.3*big,eh*0.72*big,0,creep?'#000':'#14100d');
+      if(!creep&&R()<0.65)E(cx+ox-ew*0.07,eyy-eh*0.1,ew*0.08,eh*0.18,0,'#fff');
+      x.fillStyle='rgba(40,12,10,'+(creep?0.45:0.2)+')';x.beginPath();x.ellipse(cx+ox,eyy+eh*1.0,ew*0.5,eh*0.5,0,0,7);x.fill();
+    };
+    drawEye(-eo,eyL,1+rr(-0.1,0.1));drawEye(eo,eyR,1+rr(-0.1,0.1));
+    // 코
+    const ny=fy+fh*(0.3+rr(0,0.08));
+    x.strokeStyle='rgba(18,14,12,0.5)';x.lineWidth=W*0.012;x.lineCap='round';
+    x.beginPath();x.moveTo(cx-W*0.006,ey+eh*1.2);x.lineTo(cx-W*0.025*(1+asym*0.4),ny);x.quadraticCurveTo(cx,ny+fh*0.06,cx+W*0.03,ny);x.stroke();
+    x.fillStyle='rgba(0,0,0,0.4)';E(cx-W*0.038,ny+fh*0.01,W*0.014,W*0.01,0);E(cx+W*0.034,ny+fh*0.01,W*0.014,W*0.01,0);
+    // 입
+    const my=fy+fh*(0.6+rr(0,0.06)),mw=fw*(0.52+rr(0,0.16)),mouth=f.mouth;x.lineCap='round';
+    if(creep){
+      x.fillStyle='#160f0d';x.beginPath();x.moveTo(cx-mw,my);x.quadraticCurveTo(cx,my+fh*0.5,cx+mw,my);x.quadraticCurveTo(cx,my+fh*0.14,cx-mw,my);x.fill();
+      x.fillStyle='#efe9dd';x.fillRect(cx-mw*0.7,my+fh*0.04,mw*1.4,fh*0.05);
+    } else if(mouth==='frown'){
+      x.strokeStyle='#1a1411';x.lineWidth=W*0.02;x.beginPath();x.moveTo(cx-mw,my+fh*0.12);x.quadraticCurveTo(cx,my-fh*0.06,cx+mw,my+fh*0.12);x.stroke();
+    } else if(mouth==='open'||mouth==='fang'){
+      x.fillStyle='#160f0d';x.beginPath();x.ellipse(cx,my+fh*0.04,mw*0.64,fh*0.16,0,0,7);x.fill();
+      if(mouth==='fang'){x.fillStyle='#efe9dd';x.fillRect(cx-mw*0.5,my-fh*0.04,W*0.02,fh*0.11);x.fillRect(cx+mw*0.42,my-fh*0.04,W*0.02,fh*0.11);}
+    } else if(mouth==='glitch'){
+      for(let i=0;i<5;i++){x.fillStyle=i%2?'#1a1411':'#7a0c14';x.fillRect(cx-mw+i*(mw*0.42),my+((i*7)%10)-5,mw*0.38,fh*0.1);}
+    } else {
+      x.fillStyle='rgba(60,25,25,0.5)';x.beginPath();x.ellipse(cx,my+fh*0.04,mw*0.7,fh*0.1,0,0,7);x.fill();
+      x.strokeStyle='#1a1411';x.lineWidth=W*0.018;x.beginPath();x.moveTo(cx-mw,my);x.quadraticCurveTo(cx,my+(mouth==='smile'?fh*0.2:(mouth==='thin'?fh*0.05:fh*0.12)),cx+mw,my);x.stroke();
+    }
+    // 수염/스터블
+    if(hair!=='long'&&hair!=='bob'&&hair!=='glitch'&&mouth!=='smile'&&R()<0.5){
+      x.save();x.beginPath();x.ellipse(cx,fy,fw,fh,0,0,7);x.clip();x.fillStyle='rgba(14,11,9,0.5)';
+      const sn=70+((R()*70)|0);
+      for(let i=0;i<sn;i++){const ang=R()*Math.PI*2,rad=R(),pxx=cx+Math.cos(ang)*fw*0.72*rad,pyy=my+fh*0.16+Math.abs(Math.sin(ang))*fh*0.5*rad;if(pyy>my-fh*0.04)x.fillRect(pxx,pyy,W*0.012,W*0.012);}
+      if(R()<0.6){x.fillStyle='rgba(12,10,8,0.65)';x.beginPath();x.ellipse(cx,my-fh*0.12,mw*0.7,fh*0.07,0,0,7);x.fill();}
+      x.restore();
+    }
+    x.restore();
+    if(hair==='glitch'){for(let i=0;i<12;i++){x.fillStyle=i%2?tint:dark;x.fillRect((R()*W)|0,(R()*W*0.5)|0,W*0.12,W*0.045);}}
+    // 하프톤 디더 + 잡티 (복사기 질감)
+    const bayer=[0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5];
+    const img=x.getImageData(0,0,W,W),d=img.data;
+    for(let yy=0;yy<W;yy++){for(let xx=0;xx<W;xx++){
+      const i=(yy*W+xx)*4;let l=d[i]*0.299+d[i+1]*0.587+d[i+2]*0.114;
+      l=(l-128)*1.55+130;l+=(R()-0.5)*24;
+      let v;if(l<56)v=0;else if(l>200)v=255;else{const t=(bayer[(yy&3)*4+(xx&3)]+0.5)/16*255;v=l>t?255:0;}
+      d[i]=d[i+1]=d[i+2]=v;
+    }}
+    const spk=(W*0.5)|0;for(let k=0;k<spk;k++){const i=(((R()*W)|0)+((R()*W)|0)*W)*4;const c=R()<0.5?0:255;d[i]=d[i+1]=d[i+2]=c;}
+    x.putImageData(img,0,0);
+    x.restore();
+  }
+
+  let timers=[],intervals=[],running=false,onDoneCb=null,idx=0,SEQ=[];
+  let playerEnt=null,act1Len=0;
+  function pushT(fn,ms){const id=setTimeout(fn,ms);timers.push(id);return id;}
+  function clearTimers(){timers.forEach(clearTimeout);timers=[];}
+  function resetFx(){
+    const c=D('ecContent');if(c){c.style.filter='none';c.style.transform='';}
+    const dz=D('ecDisp');if(dz)dz.setAttribute('scale',0);
+    const oR=D('ecOffR');if(oR)oR.setAttribute('dx',0);
+    const oB=D('ecOffB');if(oB)oB.setAttribute('dx',0);
+    ['ecTrack','ecStatic','ecInvert'].forEach(id=>{const e=D(id);if(e)e.style.opacity=0;});
+  }
+  function flash(el,op,ms){if(!el)return;el.style.opacity=op;setTimeout(()=>{if(el)el.style.opacity=0;},ms);}
+  function glitch(power){
+    power=power||1;const dur=120+power*80;
+    const c=D('ecContent'),dz=D('ecDisp'),oR=D('ecOffR'),oB=D('ecOffB');
+    if(!c)return;
+    c.style.filter='url(#ecVhs)';const tr=D('ecTrack');if(tr)tr.style.opacity=.5;
+    const t0=performance.now();
+    (function anim(){
+      if(!running){resetFx();return;}
+      const k=(performance.now()-t0)/dur;
+      if(k>=1){c.style.filter='none';c.style.transform='';if(tr)tr.style.opacity=0;if(dz)dz.setAttribute('scale',0);if(oR)oR.setAttribute('dx',0);if(oB)oB.setAttribute('dx',0);return;}
+      const wob=Math.sin(k*Math.PI);
+      if(dz)dz.setAttribute('scale',((6+power*16)*wob).toFixed(1));
+      if(oR)oR.setAttribute('dx',((Math.random()*2-1)*(2+power*5)).toFixed(1));
+      if(oB)oB.setAttribute('dx',((Math.random()*2-1)*(2+power*5)).toFixed(1));
+      c.style.transform='translateY('+((Math.random()*2-1)*power*3).toFixed(1)+'px)';
+      requestAnimationFrame(anim);
+    })();
+    if(Math.random()<.22*power)flash(D('ecStatic'),.7,60);
+    if(Math.random()<.16*power)flash(D('ecInvert'),.85,50);
+    pushT(()=>{if(c)c.style.transform='';},dur);
+  }
+  const SCR='█▓▒░#@%&*?█밤암검흑실종';
+  function scramble(el,text,ms){
+    if(!el)return;const start=performance.now();
+    (function tick(){
+      if(!running){el.textContent=text;return;}
+      const k=(performance.now()-start)/ms;
+      if(k>=1){el.textContent=text;return;}
+      let out='';for(const ch of text)out+=(ch===' '||Math.random()<k)?ch:SCR[(Math.random()*SCR.length)|0];
+      el.textContent=out;requestAnimationFrame(tick);
+    })();
+  }
+  function ecShow(id){['ecIntro','ecCard','ecFinale','ecCredits','ecBars'].forEach(s=>{const e=D(s);if(e)e.classList.toggle('on',s===id);});}
+  function interstitial(cb){
+    ecShow('ecBars');
+    const sm=D('ecSmpte');
+    if(sm)sm.innerHTML=['#c0c0c0','#c0c000','#00c0c0','#00c000','#c000c0','#c00000','#0000c0','#101010'].map(c=>'<span style="background:'+c+'"></span>').join('');
+    glitch(2);flash(D('ecStatic'),.85,200);
+    pushT(cb,260);
+  }
+  function renderCard(e,creep){
+    const nm=D('ecName'),dt=D('ecDate'),pl=D('ecPlace'),rs=D('ecReason'),pt=D('ecPort');
+    if(pl)pl.textContent=e.p;
+    if(dt)dt.className='ec-val'+(e.redact?' redact':'');
+    if(rs)rs.className='ec-val'+(e.redact?' redact':'');
+    scramble(nm,e.n,180);scramble(dt,e.d,200);scramble(rs,e.r,260);
+    if(pt){drawFace(pt,e,creep);pt.style.borderColor=e.t==='mob'?'#c0392b':(e.tint||'#c0392b');}
+  }
+  function stinger(){ if(typeof beep!=='function')return; try{ beep(90,0.05,'square',0.05); setTimeout(()=>{try{beep(48,0.09,'sawtooth',0.04);}catch(_){}},40); }catch(_){} }
+  const SUBWORDS=['보고 있다','뒤를 봐','너도 명단에 있어','도망칠 수 없어','채널을 끄지 마','거기 누구야','이미 늦었어','너야'];
+  function blackout(ms){ const b=D('ecBlack'); if(!b)return; b.classList.add('on'); pushT(()=>{ const b2=D('ecBlack'); if(b2)b2.classList.remove('on'); }, ms||80); }
+  function heartbeat(){ if(typeof beep!=='function')return; try{ beep(58,0.10,'sine',0.10); setTimeout(()=>{try{beep(42,0.14,'sine',0.075);}catch(_){}},155); }catch(_){} }
+  function subliminal(){ const sb=D('ecSub'); if(!sb)return; sb.textContent=SUBWORDS[(Math.random()*SUBWORDS.length)|0]; sb.style.display='flex'; if(typeof beep==='function'){try{beep(1600,0.025,'square',0.035);}catch(_){}} pushT(()=>{ const s2=D('ecSub'); if(s2)s2.style.display='none'; }, 58); }
+  function musicWarp(){
+    const tr=(typeof MUSIC==='object'&&MUSIC&&MUSIC.tracks)?MUSIC.tracks.bgm_final_clear:null;
+    if(tr){ let r=1; const iv=setInterval(()=>{ if(!running){clearInterval(iv);return;} r-=0.012; if(r<=0.72){r=0.72;clearInterval(iv);} try{tr.playbackRate=r;}catch(_){} },90); intervals.push(iv); }
+    if(typeof beep==='function'){try{beep(42,1.4,'sawtooth',0.05);}catch(_){}}
+  }
+  function buildTicker(){
+    const t=D('ecTickerText'); if(!t)return;
+    let kills='?',hits='?',tm='';
+    try{ if(typeof totalKills==='number')kills=totalKills; }catch(_){}
+    try{ if(typeof runHits==='number')hits=runHits; }catch(_){}
+    try{ if(typeof runStartedAt==='number'&&typeof fmtTime==='function')tm=fmtTime((performance.now()-runStartedAt)/1000); }catch(_){}
+    const parts=['📡 김봉식 실종안심센터 긴급 자막','집계된 실종 시청자 '+SEQ.length+'명','제보 0건','처치 기록 '+kills,'피격 '+hits+'회',(tm?'방송 경과 '+tm:''),'목격하신 분은 가까운 방송국으로','■ 화면을 끄지 마십시오 ■','…당신도 보고 있습니까?'].filter(Boolean);
+    const line=parts.join('   \u25C6   ')+'   \u25C6   ';
+    t.textContent=line+line;
+  }
+  function channelBumper(cb){
+    ecShow('ecBars');
+    const sm=D('ecSmpte'); if(sm)sm.innerHTML=['#0a0a0a','#202020','#0a0a0a','#303030','#0a0a0a','#202020','#0a0a0a','#303030'].map(c=>'<span style="background:'+c+'"></span>').join('');
+    const bp=D('ecBumper'); if(bp){bp.style.display='flex';bp.innerHTML='CH 02<br><span>다음 실종자 명단 — 2구역</span>';}
+    glitch(2.6); flash(D('ecStatic'),.9,260); stinger();
+    pushT(()=>{ const bp2=D('ecBumper'); if(bp2)bp2.style.display='none'; if(running)cb(); },900);
+  }
+  function creditsHtml(){
+    let extra='';
+    try{
+      const ls=[];
+      if(typeof diffSet==='object'&&diffSet&&diffSet.key==='hard')ls.push('HARD 클리어');
+      if(typeof runHits==='number'&&runHits===0)ls.push('피격 0회 — 완벽한 방송');
+      if(typeof runPotionUsed!=='undefined'&&!runPotionUsed)ls.push('포션 0개 — 맨몸 방송');
+      if(typeof retries==='number'&&retries===0)ls.push('재도전 0회');
+      if(ls.length)extra='<div class="ec-cr" style="margin-top:5vmin;color:#38e8ff"><b>'+ls.join(' · ')+'</b></div>';
+    }catch(_){}
+    return '<h2>STAFF</h2>'+
+      '<div class="ec-cr"><span class="ec-lab">기획 · 개발</span><br><b>달좋아해요</b></div>'+
+      '<div class="ec-cr"><span class="ec-lab">음악</span><br><b>케터</b></div>'+
+      '<div class="ec-cr"><span class="ec-lab">베타 테스터</span><br><b>키죠 · 킬조이 · 러라 · 타포</b></div>'+
+      '<div class="ec-cr" style="margin-top:6vmin"><span class="ec-lab">집계된 실종 시청자</span><br><b>'+SEQ.length+'명</b></div>'+
+      extra+
+      '<div class="ec-cr" style="margin-top:8vmin;color:#ff4d6d"><b>화면을 끄지 마십시오.</b></div>'+
+      '<div class="ec-cr" style="margin-top:10vmin">시청해 주셔서 감사합니다.</div>';
+  }
+  function crtOff(cb){
+    const tv=D('ecTV'); flash(D('ecInvert'),1,60);
+    if(typeof beep==='function'){try{beep(1200,0.05,'square',0.05);}catch(_){}}
+    if(tv)tv.classList.add('crtoff');
+    pushT(()=>{ if(cb)cb(); },820);
+  }
+  function step(){
+    clearTimers();
+    if(idx===0){ecShow('ecIntro');glitch(1.4);pushT(()=>{idx++;step();},4300);return;}
+    const ci=idx-1;
+    if(ci<SEQ.length){
+      const e=SEQ[ci],boss=e.t!=='mob';
+      const dur=e.t==='boss'?3300:(e.t==='elite'?2500:2000);
+      const lead=Math.min(620,dur*0.42);
+      const go=()=>{ecShow('ecCard');renderCard(e,false);glitch(boss?2:1);
+        pushT(()=>{ if(!running)return; const pt=D('ecPort'); if(pt)drawFace(pt,e,true); glitch(1.7); flash(D('ecInvert'),.6,45); stinger(); if(Math.random()<.45)blackout(60+Math.random()*70); if(Math.random()<.18)pushT(subliminal,90); },dur-lead);
+        pushT(()=>{idx++;step();},dur);};
+      const launch=()=> (boss?interstitial(go):go());
+      if(ci===act1Len && act1Len>0 && ci<SEQ.length) channelBumper(launch); else launch();
+      return;
+    }
+    if(ci===SEQ.length){ // 플레이어 = 마지막 실종자
+      const e=playerEnt;
+      // 정적 암전 + 심장박동으로 긴 긴장 빌드업 -> 카드 강타
+      blackout(1900); heartbeat();
+      pushT(()=>{ if(running)heartbeat(); },720);
+      pushT(()=>{ if(running)heartbeat(); },1380);
+      pushT(()=>{ if(running&&Math.random()<.6)subliminal(); },1150);
+      pushT(()=>{ if(!running)return; ecShow('ecCard'); renderCard(e,false); glitch(2.9); flash(D('ecInvert'),.95,120); stinger(); subliminal(); },1900);
+      pushT(()=>{ if(!running)return; const pt=D('ecPort'); if(pt)drawFace(pt,e,true); glitch(2.9); flash(D('ecInvert'),.95,120); stinger(); stinger(); if(running)blackout(90); },4200);
+      pushT(()=>{idx++;step();},5400);
+      return;
+    }
+    if(ci===SEQ.length+1){ // 피날레 벽 + 액자별 혈흔 + 비워짐
+      ecShow('ecFinale');
+      {const fin=D('ecFinale');if(fin)fin.classList.remove('bleed');}
+      const w=D('ecWall');if(w){w.innerHTML='';
+        SEQ.forEach(e=>{const cell=document.createElement('div');cell.className='ec-cell';
+          const c=document.createElement('canvas');c.width=c.height=128;cell.appendChild(c);
+          const bd=document.createElement('div');bd.className='ec-cell-blood';
+          const dl=Math.random()*2.2, du=2.4+Math.random()*1.6;
+          bd.style.setProperty('--dl',dl.toFixed(2)+'s');
+          bd.style.setProperty('--dur',du.toFixed(2)+'s');
+          c.style.setProperty('--era',(dl+du*0.72).toFixed(2)+'s');
+          cell.appendChild(bd);w.appendChild(cell);drawFace(c,e,false);});
+        glitch(2);
+        pushT(()=>{[...w.querySelectorAll('.ec-cell canvas')].forEach((c,i)=>pushT(()=>{if(running)drawFace(c,SEQ[i],true);},i*30));glitch(2.5);},2400);
+      }
+      pushT(()=>{ if(!running)return; const fin=D('ecFinale'); if(fin)fin.classList.add('bleed'); glitch(2.2); musicWarp(); heartbeat(); },2900);
+      [3700,4900,6100,7400].forEach(t=>pushT(()=>{ if(running)heartbeat(); },t));
+      pushT(()=>{ if(running){ blackout(120); subliminal(); } },4500);
+      pushT(()=>{idx++;step();},9400);return;
+    }
+    // 크레딧 -> CRT 전원 꺼짐 -> finish
+    ecShow('ecCredits');
+    const inner=D('ecRollInner');
+    if(inner){ inner.innerHTML=creditsHtml(); inner.style.transition='none';inner.style.top='100%';void inner.offsetWidth; inner.style.transition='top 13s linear';inner.style.top='-120%'; }
+    pushT(()=>{ if(!running)return; glitch(1.5); crtOff(()=>finish()); },13500);
+  }
+  function startTickers(){
+    const wk=['일','월','화','수','목','금','토'];
+    intervals.push(setInterval(()=>{if(!running)return;const dd=new Date();let h=String(dd.getHours()).padStart(2,'0'),m=String(dd.getSeconds()).padStart(2,'0');if(Math.random()<.15){h='4'+((Math.random()*10)|0);m='4'+((Math.random()*10)|0);}const ts=D('ecTs');if(ts)ts.innerHTML='29 ('+wk[dd.getDay()]+')<br>'+h+':'+m;},1000));
+    intervals.push(setInterval(()=>{if(running&&Math.random()<.22)glitch(Math.random()<.3?2:1);},1300));
+    intervals.push(setInterval(()=>{if(!running)return;const m=D('ecMth');if(m){m.setAttribute('d','M40 60 q10 -8 20 0');setTimeout(()=>{if(m)m.setAttribute('d','M40 56 q10 10 20 0');},220);}},2600));
+    intervals.push(setInterval(()=>{ if(!running)return; const r=Math.random(); if(r<.16)blackout(50+Math.random()*90); else if(r<.23)subliminal(); },1500));
+  }
+  function stop(){clearTimers();intervals.forEach(clearInterval);intervals=[];running=false;resetFx();const _hud=D('hud');if(_hud)_hud.style.display='';const _bk=D('ecBlack');if(_bk)_bk.classList.remove('on');const _su=D('ecSub');if(_su)_su.style.display='none';const fin=D('ecFinale');if(fin)fin.classList.remove('bleed');const bl=D('ecBlood');if(bl)bl.innerHTML='';const tv=D('ecTV');if(tv)tv.classList.remove('crtoff');const bp=D('ecBumper');if(bp)bp.style.display='none';try{ if(typeof MUSIC==='object'&&MUSIC&&MUSIC.tracks&&MUSIC.tracks.bgm_final_clear)MUSIC.tracks.bgm_final_clear.playbackRate=1; }catch(_){}}
+  function finish(){const cb=onDoneCb;onDoneCb=null;stop();const ov=D('ovEnding');if(ov)ov.classList.add('hidden');if(typeof cb==='function')cb();}
+  function play(onDone){
+    if(!D('ovEnding'))return; // 마크업 없으면 무시
+    stop();onDoneCb=onDone||null;
+    const reach=Math.max(1,Math.min(ACTS.length,(typeof act==='number'?act:ACTS.length)));
+    SEQ=[];for(let a=0;a<reach;a++)for(const e of ACTS[a])SEQ.push(e);
+    act1Len=(reach>=1&&ACTS[0])?ACTS[0].length:0;
+    let _nm=''; try{ if(typeof getLeaderboardName==='function')_nm=getLeaderboardName(); }catch(_){}
+    _nm=String(_nm||'').trim();
+    const pn=(_nm && _nm!=='PLAYER') ? (_nm+' (시청자)') : '이름 모를 시청자';
+    playerEnt={n:pn,d:'오늘',p:'이 방송 앞',r:'화면을 끝까지 지켜보다 실종',t:'boss',tint:'#ff2d4d',redact:1,player:1,f:{hair:'glitch',brow:2,eye:'glitch',mouth:'glitch',skin:4}};
+    buildTicker();
+    try{ if(typeof MUSIC==='object'&&MUSIC&&MUSIC.tracks&&MUSIC.tracks.bgm_final_clear)MUSIC.tracks.bgm_final_clear.playbackRate=1; }catch(_){}
+    idx=0;running=true;
+    D('ovEnding').classList.remove('hidden');
+    const _hud=D('hud'); if(_hud)_hud.style.display='none';
+    const sk=D('ecSkip');if(sk)sk.onclick=finish;
+    startTickers();step();
+  }
+  return {play:play,stop:stop,finish:finish};
+})();
+
 function gameOver(win, killer){
   state='end'; syncChrome();
   // 승리 시에만 인트로로 전환 — 사망 시엔 죽은 막의 음악을 그대로 유지
@@ -12265,6 +12598,7 @@ function gameOver(win, killer){
   resetEndRankForm();
   $('endQuip').textContent='채팅: "'+quip+'"';
   chatSys(win?"🎉🎉 클리어!! 채팅 축제":"☠ 사망 ("+k+") — 채팅: "+pick(["GG","한판더","아깝다 Sadge","리트 ㄱㄱ"]));
+  if(win && typeof EndingCredits!=='undefined' && EndingCredits.play){ try{ EndingCredits.play(); }catch(e){ console.warn('ending credits failed',e); } }
 }
 function victory(){ gameOver(true); }
 
@@ -12341,7 +12675,7 @@ function buildDiffButtons(){
     const b=document.createElement('button');
     b.className='diffbtn'; b.style.borderColor=d.col;
     b.innerHTML='<div class="diff-name" style="color:'+d.col+'">'+d.label+'</div><div class="diff-desc">'+d.desc+'</div>';
-    b.onclick=()=>{ try{if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)(); if(audioCtx.state==='suspended')audioCtx.resume();}catch(e){} diffSet=d; introFxReset(); stopIntroDrone(); newGameSkip(); };
+    b.onclick=()=>{ try{if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)(); if(audioCtx.state==='suspended')audioCtx.resume();}catch(e){} diffSet=d; introFxReset(); stopIntroDrone(); newGame(); };
     cont.appendChild(b);
   });
 }
