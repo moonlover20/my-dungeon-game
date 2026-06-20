@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>시청자를 막아라</title>
-<link rel="stylesheet" href="btv/css/styles.css?v=1.4.1">
+<link rel="stylesheet" href="btv/css/styles.css?v=1.4.25">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%2315101f'/%3E%3Crect x='5' y='1' width='6' height='1' fill='%239b8fc4'/%3E%3Crect x='3' y='2' width='10' height='1' fill='%239b8fc4'/%3E%3Crect x='2' y='3' width='12' height='1' fill='%239b8fc4'/%3E%3Crect x='2' y='4' width='12' height='1' fill='%239b8fc4'/%3E%3Crect x='2' y='5' width='12' height='1' fill='%239b8fc4'/%3E%3Crect x='3' y='4' width='3' height='3' fill='%2315101f'/%3E%3Crect x='10' y='4' width='3' height='3' fill='%2315101f'/%3E%3Crect x='3' y='4' width='3' height='3' fill='%23a02080'/%3E%3Crect x='10' y='4' width='3' height='3' fill='%23a02080'/%3E%3Crect x='2' y='6' width='12' height='1' fill='%239b8fc4'/%3E%3Crect x='2' y='7' width='12' height='1' fill='%239b8fc4'/%3E%3Crect x='3' y='8' width='10' height='1' fill='%239b8fc4'/%3E%3Crect x='4' y='9' width='8' height='1' fill='%239b8fc4'/%3E%3Crect x='4' y='10' width='3' height='1' fill='%239b8fc4'/%3E%3Crect x='9' y='10' width='3' height='1' fill='%239b8fc4'/%3E%3Crect x='4' y='11' width='3' height='3' fill='%239b8fc4'/%3E%3Crect x='9' y='11' width='3' height='3' fill='%239b8fc4'/%3E%3C/svg%3E">
 </head>
 <body>
@@ -158,7 +158,7 @@
             <div class="sub">Block the Viewers</div>
           </div>
           <div class="title-live title-info-card" aria-label="게임 소개">
-            <div class="title-live-head"><span><span class="ld"></span>LIVE</span><span class="title-version">v1.4.0</span></div>
+            <div class="title-live-head"><span><span class="ld"></span>LIVE</span><span class="title-version">v1.4.26</span></div>
             <div class="title-card-name">시청자를 막아라</div>
             <p class="title-card-desc">스트리머가 되어 끝없이 몰려오는 시청자를 막아내는 픽셀 로그라이크 액션 게임</p>
             <div class="title-info-grid">
@@ -193,7 +193,7 @@
             <button class="title-item" id="tmExit" style="font-size:clamp(15px,2.5vw,21px);color:#9b8fc4">EXIT</button>
           </div>
         </div>
-        <div style="position:fixed;bottom:12px;right:16px;font-family:'Courier New',monospace;font-size:11px;color:#3a2f50;letter-spacing:2px;pointer-events:none;z-index:1;" id="verTag">v1.4.0</div>
+        <div style="position:fixed;bottom:12px;right:16px;font-family:'Courier New',monospace;font-size:11px;color:#3a2f50;letter-spacing:2px;pointer-events:none;z-index:1;" id="verTag">v1.4.26</div>
       </div>
 
       <!-- START (난이도 선택) -->
@@ -434,6 +434,66 @@
         </div>
       </div>
 
+      <!-- 김봉식 실종안심센터 엔딩 크레딧 (아날로그 호러) -->
+      <div class="overlay hidden" id="ovEnding">
+        <svg width="0" height="0" style="position:absolute"><defs>
+          <filter id="ecVhs" x="-15%" y="-15%" width="130%" height="130%" color-interpolation-filters="sRGB">
+            <feTurbulence type="fractalNoise" baseFrequency="0.00012 0.0016" numOctaves="1" seed="4" result="t"/>
+            <feDisplacementMap id="ecDisp" in="SourceGraphic" in2="t" scale="0" xChannelSelector="R" yChannelSelector="G" result="d"/>
+            <feColorMatrix in="d" type="matrix" values="1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0" result="rc"/>
+            <feOffset id="ecOffR" in="rc" dx="0" result="ro"/>
+            <feColorMatrix in="d" type="matrix" values="0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 1 0" result="gc"/>
+            <feColorMatrix in="d" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 1 0" result="bc"/>
+            <feOffset id="ecOffB" in="bc" dx="0" result="bo"/>
+            <feBlend in="ro" in2="gc" mode="screen" result="rg"/>
+            <feBlend in="rg" in2="bo" mode="screen"/>
+          </filter>
+        </defs></svg>
+        <div id="ecTV">
+          <div id="ecContent">
+            <div id="ecBg"></div><div id="ecPalms"></div>
+            <div id="ecIntro" class="ec-scene">
+              <svg class="ec-mascot" viewBox="0 0 100 100">
+                <polygon points="50,6 61,38 95,38 67,58 78,92 50,72 22,92 33,58 5,38 39,38" fill="#ffe14d" stroke="#caa400" stroke-width="2"/>
+                <circle cx="42" cy="46" r="4" fill="#1a1a1a"/><circle cx="58" cy="46" r="4" fill="#1a1a1a"/>
+                <path id="ecMth" d="M40 56 q10 10 20 0" stroke="#1a1a1a" stroke-width="3" fill="none" stroke-linecap="round"/>
+                <rect x="30" y="70" width="12" height="22" rx="5" fill="#3a6fd8"/><rect x="58" y="70" width="12" height="22" rx="5" fill="#3a6fd8"/>
+              </svg>
+              <div class="ec-title">김봉식<br>실종안심센터</div>
+              <div class="ec-sub">오랜 시간 행방이 확인되지 않은 시청자를 위해<br>당시 모습을 바탕으로 추정한 몽타주를 공개합니다.</div>
+            </div>
+            <div id="ecCard" class="ec-scene">
+              <div class="ec-banner">실종자를 찾습니다.</div>
+              <div class="ec-pwrap"><canvas class="ec-portrait" id="ecPort" width="128" height="128"></canvas><div class="ec-pname" id="ecName">—</div></div>
+              <div>
+                <div class="ec-row"><div class="ec-lbl">실종일</div><div class="ec-val" id="ecDate"></div></div>
+                <div class="ec-row"><div class="ec-lbl">실종 장소</div><div class="ec-val" id="ecPlace"></div></div>
+                <div class="ec-row"><div class="ec-lbl">실종 사유</div><div class="ec-val" id="ecReason"></div></div>
+              </div>
+              <div class="ec-tip">제보 : 9146-132 / 가까운 방송국으로 연락 바랍니다.</div>
+            </div>
+            <div id="ecFinale" class="ec-scene">
+              <div class="ec-wall" id="ecWall"></div>
+              <div class="ec-finq">혹시 화면 속 시청자를 보신 분이 계십니까?</div>
+              <div class="ec-finsub">여러분의 작은 제보가 봉식님의 큰 희망이 됩니다.</div>
+              <div class="ec-fintel">[제보전화] 9146-132 (김봉식 실종안심센터)</div>
+              <div id="ecBlood"></div>
+            </div>
+            <div id="ecCredits" class="ec-scene"><div class="ec-roll" id="ecRollInner"></div></div>
+            <div id="ecBars" class="ec-scene"><div class="ec-smpte" id="ecSmpte"></div><div id="ecBumper"></div></div>
+          </div>
+          <div id="ecLogo"><span class="ec-dot"></span>BONGSIK TV</div>
+          <div id="ecTs">29 (토)<br>07:39</div>
+          <div id="ecRec"><span class="ec-b"></span>REC</div>
+          <div id="ecScan"></div><div id="ecBand"></div><div id="ecGrain"></div><div id="ecVig"></div>
+          <div id="ecTrack"></div><div id="ecStatic"></div><div id="ecInvert"></div>
+          <div id="ecBlack"></div>
+          <div id="ecSub"></div>
+          <div id="ecTicker"><span id="ecTickerText"></span></div>
+          <div id="ecCtl"><button id="ecSkip">건너뛰기 ▶▶ (결과 보기)</button></div>
+        </div>
+      </div>
+
       <!-- RANKING -->
       <div class="overlay hidden" id="ovRanking">
         <div class="panel-box ranking-panel">
@@ -557,7 +617,7 @@
 <script defer src="btv/js/data/bosses.js?v=1.4.1"></script>
 <script defer src="btv/js/data/relicPixels.js?v=1.4.0"></script>
 <script defer src="btv/js/data/achievements.js?v=1.4.0"></script>
-<script defer src="btv/js/game.js?v=1.4.14"></script>
+<script defer src="btv/js/game.js?v=1.4.26"></script>
 
       <!-- PASSIVE TREE -->
       <div class="hidden" id="ovTree" style="position:fixed;inset:0;z-index:500;background:rgba(5,3,10,0.97);display:flex;flex-direction:column;align-items:stretch;">
