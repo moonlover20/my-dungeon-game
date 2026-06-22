@@ -5463,11 +5463,15 @@ function hyechulHomingSpore(e,ph){
   banner('🌀 유도 포자','쫓아온다!',700); if(typeof beep==='function')beep(200,0.1,'triangle',0.05);
 }
 function hyechulAcidStorm(e,ph){
-  // [3페] 산성 폭풍: 산성비 + 좌우 측면 탄막 동시
-  const rainN=ph>=3?20:16;
-  for(let i=0;i<rainN;i++){ const fx=rand(15,W-15); eBullets.push({x:fx,y:-12,vx:rand(-20,20),vy:rand(180,230),r:8,dmg:ph>=3?14:12,life:4.5,spore:true}); }
-  for(let i=0;i<5;i++){ eBullets.push({x:-10,y:rand(100,H-100),vx:rand(150,190),vy:rand(-16,16),r:7,dmg:ph>=3?13:12,life:4,spore:true}); eBullets.push({x:W+10,y:rand(100,H-100),vx:-rand(150,190),vy:rand(-16,16),r:7,dmg:ph>=3?13:12,life:4,spore:true}); }
-  banner('🌪 산성 폭풍','사방에서 쏟아진다!',850); if(typeof beep==='function')beep(110,0.2,'sawtooth',0.06); screenShake=Math.max(screenShake||0,5);
+  // [3페] 산성 폭풍: 안전 통로 1칸 남기고 산성비 일제 낙하 (느림 → 빈 틈으로 회피)
+  const cols=ph>=3?9:7, gap=irand(0,cols-1);
+  for(let c=0;c<cols;c++){
+    if(c===gap) continue;   // 빈 틈(안전 통로)
+    const cx=(c+0.5)/cols*W;
+    const per=ph>=3?3:2;
+    for(let j=0;j<per;j++) eBullets.push({x:cx+rand(-13,13),y:-12-j*48,vx:rand(-7,7),vy:rand(150,185),r:8,dmg:ph>=3?14:12,life:5,spore:true});
+  }
+  banner('🌪 산성 폭풍','빈 틈으로 피하라!',900); if(typeof beep==='function')beep(110,0.25,'sawtooth',0.06); screenShake=Math.max(screenShake||0,5);
 }
 function pickHyechulFocusPattern(e,ph){
   const pool=ph>=3?['fan','rain','ring','acidSwamp','acidSwamp','homingSpore','homingSpore','acidStorm','acidStorm']
@@ -6937,10 +6941,10 @@ function update(dt){
         if(e.slamState==='warn'){
           e.slamT-=dt; e.wob+=dt*16;
           if(Math.random()<0.55) burst(e.x+rand(-e.r,e.r),e.y+rand(-e.r,e.r),'#ff5a2a',2,210);
-          if(e.slamT<=0){ e.slamTx=clamp(player.x,60,W-60); e.slamTy=clamp(player.y,150,H-90); e.slamState='dive'; burst(e.slamTx,e.slamTy,'#ff5a2a',16,220); }
+          if(e.slamT<=0){ e.slamTx=clamp(player.x,60,W-60); e.slamTy=clamp(player.y,150,H-90); e.slamState='dive'; warnAoE(e.slamTx,e.slamTy,175,0.55,0.4,2,'혜철이 강림','#ff5a2a'); burst(e.slamTx,e.slamTy,'#ff5a2a',16,220); }
         } else if(e.slamState==='dive'){
           const dx=e.slamTx-e.x, dy=e.slamTy-e.y, dd=Math.hypot(dx,dy);
-          if(dd>6){ const step=Math.min(dd,e.spd*12*dt); e.x+=dx/dd*step; e.y+=dy/dd*step; e.faceAng=Math.atan2(dy,dx); }
+          if(dd>6){ const step=Math.min(dd,e.spd*9*dt); e.x+=dx/dd*step; e.y+=dy/dd*step; e.faceAng=Math.atan2(dy,dx); burst(e.x,e.y,'#ff5a2a',3,100); }
           if(dd<=10){ intentShockwave(e.x,e.y,170,ph>=3?20:16,'혜철이 강림'); screenShake=Math.max(screenShake||0,15); burst(e.x,e.y,'#ff5a2a',26,340); if(typeof beep==='function')beep(58,0.4,'sawtooth',0.09); e.slamState='recover'; e.slamT=0.7; }
         } else {
           e.slamT-=dt;
@@ -6985,7 +6989,7 @@ function update(dt){
             banner('🔥 과부하 충전','흩어져라!',1000); if(typeof beep==='function')beep(55,0.5,'sawtooth',0.08); screenShake=Math.max(screenShake||0,7);
             e.atkT=1.0;
           } else {
-            if((e.atkRep||0)<=0){ e._focusPat=pickHyechulFocusPattern(e,ph); e.atkRep=({rain:2,acidSwamp:2,homingSpore:2,acidStorm:1}[e._focusPat])||(3+(Math.random()<0.5?1:0)); }
+            if((e.atkRep||0)<=0){ e._focusPat=pickHyechulFocusPattern(e,ph); e.atkRep=({rain:4,acidSwamp:4,homingSpore:1,acidStorm:1}[e._focusPat])||(3+(Math.random()<0.5?1:0)); }
             runHyechulPatternFocus(e,ph,e._focusPat);
             e.atkRep--;
             if(e.atkRep>0) e.atkT=ph===1?0.80:(ph===2?0.68:0.58);   // 세트 내 반복 간격(짧음)
@@ -11822,6 +11826,20 @@ function drawEnemy(e){
     ctx.fillStyle='rgba(255,179,71,0.12)'; ctx.strokeStyle='rgba(255,179,71,0.85)';
     ctx.beginPath(); ctx.arc(tx,ty,120,0,TAU); ctx.fill(); ctx.stroke();
     ctx.restore();
+  }
+  if(e.type==='hyechul'&&e.slamState==='warn'){
+    // 강림 충전: 수축하는 경고 링으로 "곧 덮친다"를 알림
+    const pr=clamp(1-(e.slamT||0)/0.9,0,1);
+    ctx.save();
+    ctx.strokeStyle='rgba(255,90,42,'+(0.55+0.4*Math.abs(Math.sin(e.wob*6)))+')'; ctx.lineWidth=4;
+    ctx.beginPath(); ctx.arc(0,0,e.r+12+34*(1-pr),0,TAU); ctx.stroke();
+    ctx.shadowColor='#ff5a2a'; ctx.shadowBlur=18; ctx.strokeStyle='rgba(255,150,60,0.85)'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.arc(0,0,e.r+8,0,TAU); ctx.stroke();
+    ctx.restore();
+  } else if(e.type==='hyechul'&&e.slamState==='dive'){
+    // 강하 중: 강한 글로우로 내려오는 본체를 강조
+    ctx.save(); ctx.shadowColor='#ff5a2a'; ctx.shadowBlur=26; ctx.strokeStyle='rgba(255,90,42,0.95)'; ctx.lineWidth=5;
+    ctx.beginPath(); ctx.arc(0,0,e.r+9,0,TAU); ctx.stroke(); ctx.restore();
   }
   if(e.hitT>0){ ctx.globalAlpha=0.6; circle(0,0,e.r+1,'#fff'); ctx.globalAlpha=1; }
   if(e.elite){ ctx.lineWidth=2.5; ctx.strokeStyle='#ffd34d'; circle(0,0,e.r+6,null,'#ffd34d'); }
