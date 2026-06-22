@@ -3445,7 +3445,7 @@ function updateIntentPatterns(e,dt){
       const a=Math.atan2(player.y-e.y,player.x-e.x);
       for(let i=-1;i<=1;i++){
         const aa=a+i*0.18;
-        eBullets.push({x:e.x,y:e.y,vx:Math.cos(aa)*250,vy:Math.sin(aa)*250,r:7,dmg:intentDamage(e,14),life:3.6,srcName:'케터 실탄',stun:true,stunDur:0.85});
+        eBullets.push({x:e.x,y:e.y,vx:Math.cos(aa)*250,vy:Math.sin(aa)*250,r:7,dmg:intentDamage(e,14),life:3.6,srcName:'케터 실탄',style:'silk',col:e.color,stun:true,stunDur:0.85});
       }
       if(typeof beep==='function')beep(200,0.1,'triangle',0.04);
       e._silkCd=7.5;
@@ -5042,7 +5042,7 @@ function enemyBulletStyle(e){
   if(/sniper|저격/.test(s)) return 'bolt';
   if(/gwangcheon|광천|namu|나무/.test(s)) return 'spore';
   if(/kkot|양갱/.test(s)) return 'jelly';
-  if(/ketter|케터/.test(s)) return 'needle';
+  if(/ketter|케터/.test(s)) return 'silk';
   if(/killjoy|킬조이/.test(s)) return 'glitch';
   if(/goblin|고블|대파/.test(s)) return 'orb';
   return 'shard';
@@ -12587,16 +12587,21 @@ function drawHazards(){
       const g=Math.max(3,h.wid*0.5); for(let x=-h.len/2;x<=h.len/2;x+=g){ ctx.fillRect(Math.round(x-g/2),-2,Math.ceil(g),4); }
       ctx.restore(); continue;
     }
-    if(h.t<h.warnT){
-      const k=h.t/h.warnT; ctx.save(); ctx.globalAlpha=0.45+0.35*Math.abs(Math.sin(h.t*22));
-      ctx.strokeStyle='#ff7a2a'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(h.x,h.y,h.r,0,TAU); ctx.stroke();
-      ctx.fillStyle='rgba(255,90,20,'+(0.10+0.16*k)+')'; ctx.beginPath(); ctx.arc(h.x,h.y,h.r*k,0,TAU); ctx.fill(); ctx.restore();
+    const hx=Number.isFinite(h.x)?h.x:W/2, hy=Number.isFinite(h.y)?h.y:H/2;
+    const hr=Math.max(1,Number.isFinite(h.r)?h.r:80);
+    const hwarn=Math.max(0.01,Number.isFinite(h.warnT)?h.warnT:0.75);
+    const ht=Number.isFinite(h.t)?h.t:0;
+    if(ht<hwarn){
+      const k=clamp(ht/hwarn,0,1); ctx.save(); ctx.globalAlpha=0.45+0.35*Math.abs(Math.sin(ht*22));
+      ctx.strokeStyle='#ff7a2a'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(hx,hy,hr,0,TAU); ctx.stroke();
+      ctx.fillStyle='rgba(255,90,20,'+clamp(0.10+0.16*k,0,1)+')'; ctx.beginPath(); ctx.arc(hx,hy,hr*k,0,TAU); ctx.fill(); ctx.restore();
     } else {
-      const lk=clamp((h.t-h.warnT)/h.liveT,0,1), a=0.92*(1-lk*0.55); ctx.save();
-      const g=ctx.createLinearGradient(h.x,h.y-94,h.x,h.y+12);
+      const hlive=Math.max(0.01,Number.isFinite(h.liveT)?h.liveT:0.45);
+      const lk=clamp((ht-hwarn)/hlive,0,1), a=clamp(0.92*(1-lk*0.55),0,1); ctx.save();
+      const g=ctx.createLinearGradient(hx,hy-94,hx,hy+12);
       g.addColorStop(0,'rgba(255,230,120,0)'); g.addColorStop(0.55,'rgba(255,150,40,'+a+')'); g.addColorStop(1,'rgba(255,70,30,'+a+')');
-      ctx.fillStyle=g; ctx.fillRect(h.x-h.r*0.62,h.y-94,h.r*1.24,106);
-      ctx.fillStyle='rgba(255,120,40,'+(a*0.7)+')'; ctx.beginPath(); ctx.ellipse(h.x,h.y,h.r,h.r*0.42,0,0,TAU); ctx.fill(); ctx.restore();
+      ctx.fillStyle=g; ctx.fillRect(hx-hr*0.62,hy-94,hr*1.24,106);
+      ctx.fillStyle='rgba(255,120,40,'+clamp(a*0.7,0,1)+')'; ctx.beginPath(); ctx.ellipse(hx,hy,hr,hr*0.42,0,0,TAU); ctx.fill(); ctx.restore();
     }
   }
 }
@@ -12785,12 +12790,13 @@ const BULLET_PATTERNS={
   mask:   ["2.1.2","13331","11111","21112",".111."],
   energy: ["..3..",".131.","31213",".131.","..3.."],
   needle: ["....3","221111","....3"],                       // 가로 방향
+  silk:   ["...3..","221111","...3..","..2..."],             // 가로 방향
   glitch: ["2.22","2113","3112","22.2"],
   bolt:   ["...11","311111","...11"],                       // 가로 방향
   jelly:  [".111.","13331","11111",".111."],
 };
-const DIR_KINDS={chain:1,needle:1,bolt:1};
-const KIND_COL={ spore:'#7be04a', chain:'#8d72ff', mask:'#ff5a4a', energy:'#ff4dd2', needle:'#cfe0ff', glitch:'#38e8ff', bolt:'#ffd34d', jelly:'#ff7ad2', orb:'#9b6bff', shard:'#38e8ff' };
+const DIR_KINDS={chain:1,needle:1,silk:1,bolt:1};
+const KIND_COL={ spore:'#7be04a', chain:'#8d72ff', mask:'#ff5a4a', energy:'#ff4dd2', needle:'#cfe0ff', silk:'#7ed957', glitch:'#38e8ff', bolt:'#ffd34d', jelly:'#ff7ad2', orb:'#9b6bff', shard:'#38e8ff' };
 function pxDraw(rows,pu,pal){
   const h=rows.length; let w=0; for(const r of rows) if(r.length>w) w=r.length;
   const ox=-w*pu/2, oy=-h*pu/2, s=Math.ceil(pu);
@@ -12830,7 +12836,7 @@ function bulletKind(b){
 }
 function drawEBullet(b){
   const kind=bulletKind(b);
-  const base=(kind==='shard'&&b.col)?b.col:(KIND_COL[kind]||'#38e8ff');
+  const base=(b.col&&(kind==='shard'||kind==='silk'))?b.col:(KIND_COL[kind]||'#38e8ff');
   const pal={'1':base,'2':_shade(base,-0.5),'3':_shade(base,0.6)};
   if(kind==='glitch'){ pal['1']='#38e8ff'; pal['2']=_shade('#38e8ff',-0.5); pal['3']='#ff4dd2'; }
   const rows=BULLET_PATTERNS[kind]; const w=rows[0].length;
