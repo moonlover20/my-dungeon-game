@@ -53,7 +53,7 @@ const ENEMY_TYPES={
   onster      :{name:"\uC628\uC2A4\uD130", r:58, hp:5000, spd:34, dmg:18, touchDmg:18, color:"#8d72ff", xp:1800, ai:"onster", range:360, cool:1.35, label:"\uC628\uC2A4\uD130"},
   yanggaeng     :{name:"박제인간", r:58, hp:3400, spd:48, dmg:17, touchDmg:17, color:"#111111", xp:2200, ai:"bagjein", cool:1.7, label:"박제인간"},
   // === 2막 엘리트: 양갱 (3페이즈) ===
-  kkotchung     :{name:"양갱", r:37, hp:270, spd:50, dmg:11, touchDmg:11, color:"#f7a8d0", xp:900,  ai:"kkotchung", cool:1.32, label:"미주"},
+  kkotchung     :{name:"양갱", r:37, hp:270, spd:50, dmg:16, touchDmg:16, color:"#f7a8d0", xp:900,  ai:"kkotchung", cool:1.32, label:"미주"},
 };
 const ACT_POOLS=[
   { normal:["goblin_warrior","goblin_archer","goblin_shaman","goblin_bomber"], elite:["rhino_beetle"] },
@@ -66,7 +66,7 @@ const ACT1_PRIORITY_CAPS={sniper_viewer:3,stream_watcher:3,jaemin:3,hoonsangtae:
 // === 2막 잡몹 분리 ===
 const ACT2_BASIC_ENEMY_IDS=["gwangcheon_gim","reura","namu","ketter"];      // 일반몹: 광천김/러라/나무/케터
 const ACT2_LATE_ENEMY_IDS=["pobear","blackstar","killjoy","apple"];          // 어려운 적: 포베어/흑별/킬조이/사과
-const ACT2_PRIORITY_CAPS={blackstar:1,killjoy:1,apple:1,pobear:2};                    // 방당 1마리 우선 제한 (포베어는 브루저라 미제한)
+const ACT2_PRIORITY_CAPS={blackstar:3,killjoy:3,apple:3,pobear:3};                    // 방당 최대 3마리 허용
 // 3막 전용 풀: 초반/중반/후반을 나눠 강한 조합이 너무 일찍 겹치지 않게 한다.
 const ACT3_BASIC_ENEMY_IDS=["act3_domin","act3_buffering","act3_magnet"];
 const ACT3_MID_ENEMY_IDS=["act3_mirror","act3_alppano","act3_clone"];
@@ -122,7 +122,7 @@ function pickNormalEnemyForRoom(a,row,counts){
   if(a===2){
     counts=counts||{};
     const hardRate=row>MIDBOSS_ROW?0.70:0.16;
-    const cap=row>MIDBOSS_ROW?4:2;
+    const cap=row>MIDBOSS_ROW?6:3;
     const basic=ACT2_BASIC_ENEMY_IDS;
     let hard=ACT2_LATE_ENEMY_IDS.filter(id=>!ACT2_PRIORITY_CAPS[id]||(counts[id]||0)<ACT2_PRIORITY_CAPS[id]);
     hard=hard.filter(id=>countDangerScore(counts,act2DangerScore)+act2DangerScore(id)<=cap);
