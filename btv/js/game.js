@@ -4369,6 +4369,12 @@ let bossEvolve=null;
 let shopIntroShown=false;
 let hazards=[];
 let kijoMasks=[], kijoGazes=[], kijoParades=[], kijoLaserWarns=[];
+function clearCombatThreats(){
+  eBullets.length=0;
+  hazards=[];
+  kijoMasks=[]; kijoGazes=[]; kijoParades=[]; kijoLaserWarns=[];
+  if(typeof clearSeungwooFx==='function') clearSeungwooFx();
+}
 let stallTimer=0, stallWarned=false, stallRegenWarned=false, stallRaged=false, stallReinforced=false;
 let tierIntroShown=false;
 let treeIntroShown=false;
@@ -4381,6 +4387,7 @@ let nextShopDiscount=0;       // 다음 상점 1회성 할인 (0~1, 예: 0.1 = 1
 let combatChallenge=null;     // 'nohit' 등 도전 조건
 let combatSpecialReward=null; // 전투 승리 후 일반 보상 대신 실행할 콜백
 let combatTookHit=false;      // 이번 전투 피격 여부
+let combatClearGrace=false;   // 클리어 확정 후 잔여 패턴 피격 무시
 let combatTempAlly=false;     // 이번 전투 한정 아군 여부
 let nextGoldPenalty=0;        // 다음 전투 보상 골드 감소(0~1)
 let act=1, mapData=null, currentRow=0;
@@ -4800,7 +4807,7 @@ function startCombat(kind, fresh){
   if(fresh){ roomEntryHp=player.hp; snapshotProgress(); if(player.roomEntryHeal>0) healPlayer(player.roomEntryHeal,player.x,player.y); }
   enemies=[]; pBullets=[]; eBullets=[]; pickups=[]; particles=[]; hazards=[]; floatBubbles=[]; kijoMasks=[]; kijoGazes=[]; kijoParades=[]; kijoLaserWarns=[];
   player.x=W/2; player.y=H-90;
-  roomCleared=false; roomIsBoss=(kind==='boss'); roomIsMidboss=(kind==='midboss'); kills=0; boss=null; roomHadElite=false; roomEliteKind=null; eliteIntro=null; timeScale=1; slowmoT=0;
+  roomCleared=false; combatClearGrace=false; roomIsBoss=(kind==='boss'); roomIsMidboss=(kind==='midboss'); kills=0; boss=null; roomHadElite=false; roomEliteKind=null; eliteIntro=null; timeScale=1; slowmoT=0;
   bossIntroToken++;
   bossIntroSeen={};
   { const biq=$('bossIntroQuote'); if(biq){ biq.className=''; clearTimeout(biq._t); } }
@@ -5206,6 +5213,7 @@ function failGladiatorCombat(src){
   setTimeout(()=>{ hideAll(); finishNode(); syncChrome(); },650);
 }
 function hurtPlayer(dmg, src){
+  if(state!=='play'||roomCleared||combatClearGrace) return;
   if(act3FinalClearActive&&act3FinalClearActive()) return;
   if(player.iframes>0||player.dodging>0||player.buffs.shield>0) return;
   if(player.hitShield>0){ player.hitShield--; player.iframes=0.6; burst(player.x,player.y,'#8be8ff',16,200); return; }
@@ -6167,6 +6175,7 @@ function glAim(){ // 화면→월드 (회전/반전 역변환된 마우스 좌�
   return {x:x*c-y*s+cx, y:x*s+y*c+cy};
 }
 function glDamage(dmg){ // 장판/격벽 환경 피해 (회피·실드 시 무시)
+  if(state!=='play'||roomCleared||combatClearGrace) return;
   if(player.iframes>0||player.dodging>0||player.buffs.shield>0) return;
   if(player.hitShield>0){ player.hitShield--; player.iframes=0.6; burst(player.x,player.y,'#8be8ff',16,200); return; }
   const dmgCalc=calculatePlayerIncomingDamage(dmg,{source:'승우'});
@@ -8045,6 +8054,9 @@ function selectNode(node){
 // update()의 클리어 판정에서 호출
 function onCombatCleared(){
   const t=pendingNode?pendingNode.type:'fight';
+  combatClearGrace=true;
+  clearCombatThreats();
+  player.iframes=Math.max(player.iframes||0,1.2);
   // 임시 아군 제거
   if(combatTempAlly){ player.minion=null; combatTempAlly=false; }
   // 다음전투 골드 페널티(이벤트) 소비
