@@ -6969,11 +6969,8 @@ function update(dt){
           if(e.slamT<=0){ e.slamState=null; e.atkT=1.0; }
         }
       } else {
-      const tx=clamp(player.x,80,W-80), ty=clamp(player.y-210,110,260);
-      e.x+=Math.sign(tx-e.x)*Math.min(Math.abs(tx-e.x),e.spd*dt);
-      e.y+=Math.sign(ty-e.y)*Math.min(Math.abs(ty-e.y),e.spd*0.55*dt);
       e.faceAng=a;
-      // ── 하이브 과부하 충전 중: 소환·공격 정지, 충전 후 화면 링 버스트 ──
+      // ── 하이브 과부하 충전 중: 제자리 정지 후 화면 링 버스트 ──
       if(e.climaxT>0){
         e.climaxT-=dt; e.wob+=dt*18;
         if(Math.random()<0.6) burst(e.x+rand(-e.r,e.r),e.y+rand(-e.r,e.r),'#ff5a2a',2,220);
@@ -6984,6 +6981,16 @@ function update(dt){
           e.atkT=2.4;
         }
       } else {
+        // ── 이동: 변속 좌우 추적 + 세로 떠다님 + 주기적 하강 압박 ──
+        const tx=clamp(player.x,80,W-80), xgap=Math.abs(tx-e.x);
+        const xspd=e.spd*(0.8+Math.min(1.2,xgap/200));        // 멀수록 빠르게 (0.8~2.0배)로 추적 → 예측 깨기
+        e.x+=Math.sign(tx-e.x)*Math.min(xgap,xspd*dt);
+        e._hoverT=(e._hoverT==null?rand(5,8):e._hoverT)-dt;
+        let yBase=player.y-210;
+        if(e._hoverT<0 && e._hoverT>-1.4) yBase=player.y-120;  // 5~8초마다 1.4초간 더 내려와 압박
+        else if(e._hoverT<=-1.4) e._hoverT=rand(5,8);
+        const ty=clamp(yBase+Math.sin(e.wob*1.5)*26,110,300);  // 떠다님 + 약간 넓힌 범위
+        e.y+=Math.sign(ty-e.y)*Math.min(Math.abs(ty-e.y),e.spd*0.7*dt);
         // 소환은 비중을 낮춰 가끔만 — 발사 패턴에 집중
         e.summonT=(e.summonT==null?6.0:e.summonT)-dt;
         if(e.summonT<=0){
