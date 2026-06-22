@@ -1179,7 +1179,7 @@ const LEADERBOARD_MIN_SCORE=3000;
 const NAME_MAX_LEN=12;
 const FLOORS_PER_ACT=15;
 const RETRY_SCORE_PENALTY=1500;
-const HIT_SCORE_PENALTY=200;
+const HIT_SCORE_PENALTY=0;
 const LEADERBOARD_COLLECTIONS={easy:'scores_easy',normal:'scores_normal',hard:'scores_hard'};
 const LEADERBOARD_SUMMARY_COLLECTION='leaderboard';
 const RUN_BUILDS_COLLECTION='runBuilds';
@@ -4021,7 +4021,6 @@ function renderScoreBreakdownSection(summary){
     ['레벨 점수',b.levelScore],
     ['클리어 보너스',b.clearBonus],
     ['시간 보너스',b.timeBonus],
-    ['피격 패널티',-Math.abs(Number(b.hitPenalty)||0)],
     ['재도전 패널티',-Math.abs(Number(b.retryPenalty)||0)],
     ['총점',total]
   ].map(item=>{
@@ -4043,7 +4042,6 @@ function renderScoreBreakdownSectionV2(summary){
     ['레벨 점수',b.levelScore,'add'],
     ['클리어 보너스',b.clearBonus,'add'],
     ['시간 보너스',b.timeBonus,'add'],
-    ['피격 패널티',-Math.abs(Number(b.hitPenalty)||0),'penalty'],
     ['재도전 패널티',-Math.abs(Number(b.retryPenalty)||0),'penalty'],
     ['총점',total,'total']
   ].map(item=>{
@@ -6351,14 +6349,14 @@ function updateSeungwoo(b,dt){
 
   // --- 환경 효과 (플레이어 피해/끌림) ---
   if(gZones.length){ let allKill=true,real=null; for(const z of gZones){ z.t+=dt; if(z.real)real=z; if(z.t<z.warn)allKill=false; } if(allKill&&real){ const inR=player.x>real.x&&player.x<real.x+real.w&&player.y>real.y&&player.y<real.y+real.h; if(!inR) glDamage(52*dt); } if(gZones[0].t>gZones[0].warn+gZones[0].kill) gZones=[]; }
-  if(gTrack){ gTrack.t-=dt; const a=Math.atan2(player.y-gTrack.y,player.x-gTrack.x); const d=Math.hypot(player.x-gTrack.x,player.y-gTrack.y); if(d>4){gTrack.x+=Math.cos(a)*70*dt;gTrack.y+=Math.sin(a)*70*dt;} gTrack.r+=gTrack.grow*dt; if(dist2(gTrack.x,gTrack.y,player.x,player.y)<gTrack.r*gTrack.r) glDamage(34*dt); if(gTrack.t<=0)gTrack=null; }
+  if(gTrack){ gTrack.t-=dt; const a=Math.atan2(player.y-gTrack.y,player.x-gTrack.x); const d=Math.hypot(player.x-gTrack.x,player.y-gTrack.y); if(d>4){gTrack.x+=Math.cos(a)*70*dt;gTrack.y+=Math.sin(a)*70*dt;} gTrack.r+=gTrack.grow*dt; let _inSafe=false; for(const z of gZones){ if(z.real&&z.t>=z.warn&&player.x>z.x&&player.x<z.x+z.w&&player.y>z.y&&player.y<z.y+z.h){_inSafe=true;break;} } if(!_inSafe && dist2(gTrack.x,gTrack.y,player.x,player.y)<gTrack.r*gTrack.r) glDamage(34*dt); if(gTrack.t<=0)gTrack=null; }
   if(gWalls.length){ for(const w of gWalls)w.t-=dt; gWalls=gWalls.filter(w=>w.t>0); for(const w of gWalls){ if(player.x>w.x&&player.x<w.x+w.w&&player.y>w.y&&player.y<w.y+w.h) glDamage(64*dt); } }
   if(gGrav){ gGrav.t-=dt; const a=Math.atan2(gGrav.y-player.y,gGrav.x-player.x); const d=Math.hypot(gGrav.x-player.x,gGrav.y-player.y); if(d>4&&player.dodging<=0){ player.x+=Math.cos(a)*120*dt; player.y+=Math.sin(a)*120*dt; player.x=clamp(player.x,player.r,W-player.r); player.y=clamp(player.y,player.r,H-player.r); } if(gGrav.t<=0)gGrav=null; }
   if(gSlow.length){ for(const f of gSlow)f.t-=dt; gSlow=gSlow.filter(f=>f.t>0); }
 
   // 신규 다채 패턴 (글리치 시퀀스 / 송출 암전)
   b.a3T=(b.a3T==null?10:b.a3T)-dt;
-  if(b.a3T<=0){ if(a3seq||a3veil){ b.a3T=1.0; } else { b.a3N=(b.a3N||0)+1; if(b.a3N%2===0) a3Sequence(b,3); else a3Veil(4.5,'송출 암전'); b.a3T=b.enraged?10:13; } }
+  if(b.a3T<=0){ if(a3veil){ b.a3T=1.0; } else { a3Veil(4.5,'송출 암전'); b.a3T=b.enraged?10:13; } }
 
   if(b.hp<=0) handleBossDefeat(b);
 }
@@ -14058,7 +14056,6 @@ function renderEndScoreGuide(scoreData,expanded){
       '<div>시간 보너스 = 클리어 시 max(0, (2000초 - 플레이시간) × 10)</div>'+
       '<div class="score-guide-note">※ 2000초 초과 클리어 또는 미클리어 시 0점</div>'+
       '<br>'+
-      '<div>피격 패널티 = 피격 횟수 × -200</div>'+
       '<div>재도전 패널티 = 재도전 횟수 × -1500</div>'+
     '</div>'+
     '<div class="score-guide-section">'+
@@ -14068,7 +14065,6 @@ function renderEndScoreGuide(scoreData,expanded){
       scoreGuideLine('레벨 점수',signedScoreText(data.levelScore),false)+
       scoreGuideLine('클리어 보너스',signedScoreText(data.clearBonus),false)+
       scoreGuideLine('시간 보너스',signedScoreText(data.timeBonus),false)+
-      scoreGuideLine('피격 패널티',signedScoreText(-Math.abs(Number(data.hitPenalty)||0)),true)+
       scoreGuideLine('재도전 패널티',signedScoreText(-Math.abs(Number(data.retryPenalty)||0)),true)+
       '<div class="score-guide-line total"><span>총점</span><b>'+rankBuildText(fmtScore(total))+'</b></div>'+
     '</div>';
