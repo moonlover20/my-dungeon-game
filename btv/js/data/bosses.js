@@ -1,5 +1,5 @@
 const BOSSES=[
-  {key:"kijo",sprite:"kijo",name:"키죠",title:"1막 보스 · 가면의 마귀",r:70,hp:3450,color:"#c0392b",spd:46,
+  {key:"kijo",sprite:"kijo",name:"키죠",title:"1막 보스 · 가면의 마귀",r:70,hp:3450,color:"#c0392b",spd:52,
    quip:"이 가면 뒤가 보이느냐?",pattern:"summon"},
   {key:"steel_lord",sprite:"steel_lord",name:"강철 군주",title:"2막 보스 · 흑철의 망령",r:58,hp:900,color:"#5a5a6e",spd:52,
    quip:"무릎 꿇어라, 필멸자여.",pattern:"spiral"},
