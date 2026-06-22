@@ -31,10 +31,10 @@ const ENEMY_TYPES={
   elf_melee   :{name:"엘프 검사",  r:14,hp:26,spd:82,dmg:11,color:"#bfe3a0",xp:11,ai:"chase"},
   elf_ranged  :{name:"엘프 궁수",  r:14,hp:22,spd:54,dmg:0, color:"#a8d98a",xp:12,ai:"shooter",range:360,cool:1.3},
   // === 2막 (봉식 월드): 광천김 소굴 ===
-  gwangcheon_gim:{name:"광천김", r:23, hp:66,  spd:46, dmg:10,  touchDmg:10,  color:"#3f7a34", xp:88,  ai:"shooter", range:350, cool:1.45, label:"광천김"},
-  reura         :{name:"러라",   r:21, hp:64,  spd:98, dmg:14, touchDmg:14, color:"#ffd166", xp:84,  ai:"chase", lunge:true, label:"러라"},
-  namu          :{name:"나무",   r:25, hp:88,  spd:40, dmg:17, touchDmg:17, color:"#5fa84a", xp:96, ai:"chase",   label:"나무"},
-  ketter        :{name:"케터",   r:22, hp:66,  spd:58, dmg:11,  color:"#7ed957", xp:86,  ai:"orbit", range:285, cool:1.25, label:"케터"},
+  gwangcheon_gim:{name:"광천김", r:23, hp:73,  spd:46, dmg:10,  touchDmg:10,  color:"#3f7a34", xp:88,  ai:"shooter", range:350, cool:1.45, label:"광천김"},
+  reura         :{name:"러라",   r:21, hp:70,  spd:98, dmg:14, touchDmg:14, color:"#ffd166", xp:84,  ai:"chase", lunge:true, label:"러라"},
+  namu          :{name:"나무",   r:25, hp:97,  spd:40, dmg:17, touchDmg:17, color:"#5fa84a", xp:96, ai:"chase",   label:"나무"},
+  ketter        :{name:"케터",   r:22, hp:73,  spd:58, dmg:11,  color:"#7ed957", xp:86,  ai:"orbit", range:285, cool:1.25, label:"케터"},
   // --- 2막 어려운 적 ---
   pobear        :{name:"포베어", r:30, hp:148, spd:66, dmg:22, touchDmg:18, color:"#c8884a", xp:330, ai:"charge", armor:0.08, label:"포베어"},
   blackstar     :{name:"흑별",   r:27, hp:132, spd:42, dmg:17, touchDmg:14, color:"#17111f", xp:315, ai:"orbit", range:300, cool:1.15, label:"흑별"},
@@ -121,7 +121,7 @@ function pickNormalEnemyForRoom(a,row,counts){
   }
   if(a===2){
     counts=counts||{};
-    const hardRate=row>MIDBOSS_ROW?0.70:0.16;
+    const hardRate=row>MIDBOSS_ROW?0.70:0.22;
     const cap=row>MIDBOSS_ROW?6:3;
     const basic=ACT2_BASIC_ENEMY_IDS;
     let hard=ACT2_LATE_ENEMY_IDS.filter(id=>!ACT2_PRIORITY_CAPS[id]||(counts[id]||0)<ACT2_PRIORITY_CAPS[id]);
