@@ -343,20 +343,20 @@ const MUSIC = {
   files:{
     main:         'btv/assets/music/main.mp3',
     intro:        'btv/assets/music/intro.mp3',
-    act1:         'btv/assets/music/act1.mp3',
+    act1:         'btv/assets/music/act1_battle_normal.mp3',
     // ── Act1 전투 타입별 전용 BGM ──
     act1_battle_normal: 'btv/assets/music/act1_battle_normal.mp3',
     act1_battle_elite:  'btv/assets/music/act1_battle_elite.mp3',
     act1_midboss:       'btv/assets/music/act1_midboss.mp3',
-    act1_finalboss:     'btv/assets/music/act1_finalboss.mp3',
+    act1_finalboss:     'btv/assets/music/boss.mp3',
     act2:         'btv/assets/music/act2-maple-bg.mp3',
     bgm_act3:     'btv/assets/music/act2-maple-bg.mp3',
-    midboss:      'btv/assets/music/midboss.mp3',
+    midboss:      'btv/assets/music/act1_midboss.mp3',
     act2Midboss:  'btv/assets/music/act2-midboss-malkuth.mp3',
     boss:         'btv/assets/music/boss.mp3',
     finalBoss:    'btv/assets/music/act2-final-boss.mp3',
     bgm_onster_sealed:   'btv/assets/music/act2-midboss-malkuth.mp3',
-    bgm_onster_awakened: 'btv/assets/music/midboss.mp3',
+    bgm_onster_awakened: 'btv/assets/music/act1_midboss.mp3',
     bgm_set_hyeonjin:    'btv/assets/music/act2-final-boss.mp3',
     bgm_set_beongeom:    'btv/assets/music/boss.mp3',
     bgm_set_kekeroro:    'btv/assets/music/act2-final-boss.mp3',
@@ -1170,6 +1170,10 @@ function getLeaderboardFirebaseConfig(){
   const cfg=window.LEADERBOARD_FIREBASE_CONFIG||LEADERBOARD_FIREBASE_CONFIG;
   return cfg&&cfg.apiKey?cfg:null;
 }
+function isCloudProgressEnabled(){
+  const cfg=getLeaderboardFirebaseConfig();
+  return !!(cfg && (cfg.progressEnabled===true || window.CLOUD_PROGRESS_ENABLED===true));
+}
 const SCORE_MAX=9999999;
 const LEADERBOARD_MIN_SCORE=3000;
 const NAME_MAX_LEN=12;
@@ -1186,7 +1190,7 @@ let leaderboardApiPromise=null;
 let progressApiPromise=null;
 let progressLoadPromise=null;
 let progressSaveTimer=null;
-let progressRemoteDisabled=false;
+let progressRemoteDisabled=!isCloudProgressEnabled();
 let scoreSubmitSeq=0;
 let rankingDifficulty='easy';
 const FALLBACK_CURRENT_SEASON=3;
@@ -1361,6 +1365,7 @@ function storeLocalProgress(){
   }catch(e){}
 }
 function ensureProgressApi(){
+  if(!isCloudProgressEnabled()) progressRemoteDisabled=true;
   if(progressRemoteDisabled) return Promise.reject(new Error('Progress remote disabled'));
   if(!progressApiPromise){
     const firebaseConfig=getLeaderboardFirebaseConfig();
@@ -1387,6 +1392,10 @@ async function loadUserProgress(){
   userProgress=loadLocalProgress();
   userProgress.loaded=true;
   progressLoadPromise=(async()=>{
+    if(progressRemoteDisabled){
+      renderAchievements();
+      return userProgress;
+    }
     try{
       const api=await ensureProgressApi();
       const ref=api.fs.doc(api.db,USER_PROGRESS_COLLECTION,api.uid);
@@ -1399,7 +1408,7 @@ async function loadUserProgress(){
       return userProgress;
     }catch(e){
       progressRemoteDisabled=true;
-      console.warn('progress load failed once, using localStorage only',e);
+      console.warn('progress remote disabled; using localStorage only');
       userProgress.loaded=true;
       renderAchievements();
       return userProgress;
@@ -1436,7 +1445,7 @@ async function saveUserProgress(force){
     storeLocalProgress();
   }catch(e){
     progressRemoteDisabled=true;
-    console.warn('progress save failed once, localStorage only from now on',e);
+    console.warn('progress remote disabled; localStorage only from now on');
   }
 }
 function achievementById(id){ return ACHIEVEMENTS.find(a=>a.id===id); }
@@ -2910,6 +2919,32 @@ function spawnAct3BeamSweep(e){
   const dir=Math.atan2(player.y-e.y,player.x-e.x), spin=(Math.random()<0.5?-1:1)*0.72; e.hitT=Math.max(e.hitT||0,0.25);
   hazards.push({kind:'beamSweep',x:e.x,y:e.y,ang:dir-spin*0.9,rot:spin,range:e.range||620,width:20,warnT:0.90,liveT:2.05,t:0,dmg:Math.max(8,Math.round((e.dmg||16)*0.72)),srcName:e.name||e.label||'중계차',seed:rand(0,TAU)});
   burst(e.x,e.y,'#58d8ff',12,150);
+}
+// ── 3막 엘리트 중계차 패턴 풀 (셔플백 + 신호송출 3연속 집중) ──
+const ACT3_TRUCK_PATS=['beam','signal','adRain','cableX'];
+function act3TruckSignalRing(e){
+  // 신호 송출: 전방위 전파 링 (3연속 집중 시 회전 오프셋으로 빈틈 이동)
+  const k=18, sp=215, off=(e._truckRing=(e._truckRing||0)+1)*0.33;
+  for(let i=0;i<k;i++){ const a2=off+i/k*TAU; eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*sp,vy:Math.sin(a2)*sp,r:8,dmg:Math.max(8,Math.round((e.dmg||16)*0.5)),life:3.6,srcName:(e.name||e.label||'중계차'),col:e.color}); }
+  burst(e.x,e.y,'#58d8ff',12,150); banner('📡 신호 송출','전방위 전파',600); if(typeof beep==='function')beep(420,0.07,'square',0.04);
+}
+function act3TruckAdRain(e){
+  // 광고 폭격: 플레이어 + 무작위 3곳에 경고 후 폭발 (회피 가능, 강타)
+  warnAoE(player.x,player.y,90,0.75,0.5,Math.max(10,Math.round((e.dmg||16)*0.85)),e.name||e.label,'#ffd34d');
+  for(let i=0;i<3;i++) warnAoE(rand(80,W-80),rand(160,H-90),rand(72,92),0.85,0.5,Math.max(10,Math.round((e.dmg||16)*0.85)),e.name||e.label,'#ffd34d');
+  banner('📺 광고 폭격','광고를 피하라!',750); if(typeof beep==='function')beep(140,0.18,'sawtooth',0.05);
+}
+function act3TruckCableBeams(e){
+  // 송출 케이블: 플레이어 정조준 십자(직각 2줄) 빔 경고 후 발사
+  const base=Math.atan2(player.y-e.y,player.x-e.x);
+  for(let k=0;k<2;k++){ kijoLaserWarns.push({x:e.x,y:e.y,ang:base+k*Math.PI/2,width:18,range:780,t:0,warn:0.72,color:'#ff4dd2',fired:false,sniper:true,dmg:Math.max(8,Math.round((e.dmg||16)*0.68)),srcName:(e.name||e.label||'중계차')+' 케이블'}); }
+  burst(e.x,e.y,'#ff4dd2',12,150); banner('🔌 송출 케이블','십자 빔!',700); if(typeof beep==='function')beep(300,0.1,'triangle',0.05);
+}
+function runAct3TruckPattern(e,pat){
+  if(pat==='signal') act3TruckSignalRing(e);
+  else if(pat==='adRain') act3TruckAdRain(e);
+  else if(pat==='cableX') act3TruckCableBeams(e);
+  else spawnAct3BeamSweep(e);
 }
 function onsterAwaken(e){
   if(sfx.enemyChain) sfx.enemyChain(); setTimeout(()=>{ if(sfx.enemyGlitch) sfx.enemyGlitch(); },90);
@@ -6815,6 +6850,8 @@ function update(dt){
       if(d<target*0.72){ e.x-=Math.cos(a)*e.spd*dt; e.y-=Math.sin(a)*e.spd*dt; }
       else if(d>target*1.08){ e.x+=Math.cos(a)*e.spd*0.55*dt; e.y+=Math.sin(a)*e.spd*0.55*dt; }
       e.x+=Math.cos(a+Math.PI/2)*e.spd*0.22*dt; e.y+=Math.sin(a+Math.PI/2)*e.spd*0.22*dt;
+      e._sandT=(e._sandT==null?rand(2.0,3.0):e._sandT)-dt;
+      if(e._sandT<=0){ const pa=Math.atan2(player.y-e.y,player.x-e.x); for(let i=-1.5;i<=1.5;i++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa+i*0.2)*175,vy:Math.sin(pa+i*0.2)*175,r:8,dmg:Math.max(7,Math.round((e.dmg||13)*0.7)),life:4,srcName:e.name||e.label,col:'#e0b85a'}); burst(e.x,e.y,'#e0b85a',8,120); e._sandT=rand(2.6,3.6); if(typeof beep==='function')beep(200,0.08,'sawtooth',0.04); }
       const live=act3SummonsOf(e,'act3_sand_soldier').length;
       if(e.coolT<=0&&live<5){ const n=Math.min(5-live,2+(Math.random()<0.55?1:0)); for(let j=0;j<n;j++) spawnAct3SandSoldier(e); e.coolT=e.cool||5.6; if(typeof beep==='function')beep(180,0.12,'triangle',0.04); }
       if(e.coolT<=0&&live>=5) e.coolT=1.2;
@@ -6822,12 +6859,18 @@ function update(dt){
       if((e.stealthT||0)>0){ e.stealthT-=dt; e.wob+=dt*8; if(e.stealthT<=0){ const side=(Math.random()<0.5?-1:1), back=(player.facing||a)+Math.PI; e.x=clamp(player.x+Math.cos(back)*rand(115,155)+Math.cos(back+Math.PI/2)*side*rand(30,70),e.r,W-e.r); e.y=clamp(player.y+Math.sin(back)*rand(115,155)+Math.sin(back+Math.PI/2)*side*rand(30,70),e.r,H-e.r); const da=Math.atan2(player.y-e.y,player.x-e.x); e.aimX=Math.cos(da); e.aimY=Math.sin(da); e.teleWarnT=0.45; burst(e.x,e.y,'#ff4dd2',10,160); } }
       else if((e.teleWarnT||0)>0){ e.teleWarnT-=dt; e.wob+=dt*12; if(e.teleWarnT<=0){ e.assDashT=0.38; e._dashHit=false; if(typeof beep==='function')beep(520,0.08,'square',0.04); } }
       else if((e.assDashT||0)>0){ e.assDashT-=dt; e.x+=e.aimX*e.spd*7.2*dt; e.y+=e.aimY*e.spd*7.2*dt; if(!e._dashHit&&dist2(e.x,e.y,player.x,player.y)<(e.r+player.r+12)**2){ e._dashHit=true; hurtPlayer(Math.max(10,e.dmg||20),e.name||e.label); burst(player.x,player.y,'#ff4dd2',12,190); } if(e.assDashT<=0){ e.coolT=e.cool||6.2; } }
-      else { if(d>95){ e.x+=Math.cos(a)*e.spd*0.82*dt; e.y+=Math.sin(a)*e.spd*0.82*dt; } else { e.x-=Math.cos(a)*e.spd*0.5*dt; e.y-=Math.sin(a)*e.spd*0.5*dt; } if(e.coolT<=0&&d<520){ e.stealthT=0.62; e.coolT=999; burst(e.x,e.y,'#4b1b66',10,130); } }
+      else { if(d>95){ e.x+=Math.cos(a)*e.spd*0.82*dt; e.y+=Math.sin(a)*e.spd*0.82*dt; } else { e.x-=Math.cos(a)*e.spd*0.5*dt; e.y-=Math.sin(a)*e.spd*0.5*dt; }
+        e._shurT=(e._shurT==null?rand(1.4,2.4):e._shurT)-dt;
+        if(e._shurT<=0 && e.coolT>0.5){ const pa=Math.atan2(player.y-e.y,player.x-e.x); for(let i=-1;i<=1;i++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa+i*0.22)*255,vy:Math.sin(pa+i*0.22)*255,r:6,dmg:Math.max(8,Math.round((e.dmg||20)*0.35)),life:3,srcName:e.name||e.label,col:'#ff4dd2'}); burst(e.x,e.y,'#ff4dd2',8,140); e._shurT=rand(1.8,2.8); if(typeof beep==='function')beep(440,0.06,'square',0.04); }
+        if(e.coolT<=0&&d<520){ e.stealthT=0.62; e.coolT=999; burst(e.x,e.y,'#4b1b66',10,130); } }
     }else if(e.ai==='submerge_charge'){
       if(e.submerged==null){ e.submerged=true; e.coolT=rand(0.8,1.8); }
       if((e.emergeWarnT||0)>0){ e.emergeWarnT-=dt; if(e.emergeWarnT<=0){ e.submerged=false; e.chargeT=0.52; if(typeof beep==='function')beep(220,0.1,'sawtooth',0.05); } }
       else if((e.chargeT||0)>0){ e.chargeT-=dt; e.x+=e.aimX*e.spd*6.0*dt; e.y+=e.aimY*e.spd*6.0*dt; if(!e._biteHit&&dist2(e.x,e.y,player.x,player.y)<(e.r+player.r+8)**2){ e._biteHit=true; hurtPlayer(Math.max(9,e.dmg||16),e.name||e.label); } if(e.chargeT<=0||e.x<=e.r||e.x>=W-e.r||e.y<=e.r||e.y>=H-e.r){ e.submerged=true; e._biteHit=false; e.coolT=e.cool||3.8; } }
-      else if(e.submerged){ e.x+=Math.cos(a+Math.sin(e.wob)*0.7)*e.spd*0.32*dt; e.y+=Math.sin(a+Math.sin(e.wob)*0.7)*e.spd*0.32*dt; if(e.coolT<=0&&d<460){ e.aimX=Math.cos(a); e.aimY=Math.sin(a); e.emergeWarnT=0.47; e.coolT=999; } }
+      else if(e.submerged){ e.x+=Math.cos(a+Math.sin(e.wob)*0.7)*e.spd*0.32*dt; e.y+=Math.sin(a+Math.sin(e.wob)*0.7)*e.spd*0.32*dt;
+        e._sprayT=(e._sprayT==null?rand(1.6,2.6):e._sprayT)-dt;
+        if(e._sprayT<=0 && d<560 && e.coolT>0.6){ const pa=Math.atan2(player.y-e.y,player.x-e.x); for(let i=-1;i<=1;i++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa+i*0.26)*200,vy:Math.sin(pa+i*0.26)*200,r:7,dmg:Math.max(8,Math.round((e.dmg||16)*0.5)),life:3.4,home:1.1,srcName:e.name||e.label,col:'#7ad7ff'}); burst(e.x,e.y,'#7ad7ff',8,120); e._sprayT=rand(2.0,3.0); if(typeof beep==='function')beep(260,0.08,'sine',0.04); }
+        if(e.coolT<=0&&d<460){ e.aimX=Math.cos(a); e.aimY=Math.sin(a); e.emergeWarnT=0.47; e.coolT=999; } }
       else { e.submerged=true; }
     }else if(e.ai==='reflector'){
       if((e.reflectT||0)>0) e.reflectT=Math.max(0,e.reflectT-dt);
@@ -6835,30 +6878,44 @@ function update(dt){
       if(d<target*0.58){ e.x-=Math.cos(a)*e.spd*dt; e.y-=Math.sin(a)*e.spd*dt; }
       else if(d>target){ e.x+=Math.cos(a)*e.spd*dt; e.y+=Math.sin(a)*e.spd*dt; }
       else { e.x+=Math.cos(a+Math.PI/2)*e.spd*0.24*dt; e.y+=Math.sin(a+Math.PI/2)*e.spd*0.24*dt; }
-      if(e.coolT<=0){ e.reflectT=1.9; e.coolT=e.cool||4.2; const pa=Math.atan2(player.y-e.y,player.x-e.x); for(let j=-1;j<=1;j++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa+j*0.22)*215,vy:Math.sin(pa+j*0.22)*215,r:7,dmg:Math.max(6,Math.round((e.dmg||10)*0.8)),life:3.2,srcName:e.name||e.label}); burst(e.x,e.y,'#8be8ff',14,130); if(typeof beep==='function')beep(740,0.08,'sine',0.035); }
+      if(e.coolT<=0){ e.reflectT=1.9; e.coolT=e.cool||4.2; const pa=Math.atan2(player.y-e.y,player.x-e.x);
+        if((e._refN=(e._refN||0)+1)%2===0){ const k=12; for(let i=0;i<k;i++){ const a2=i/k*TAU+(e.wob||0); eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*195,vy:Math.sin(a2)*195,r:7,dmg:Math.max(7,Math.round((e.dmg||14)*0.9)),life:3.4,srcName:e.name||e.label,col:'#8be8ff'}); } banner('🪞 반사 파동','전방위 파동',600); }
+        else { for(let j=-1;j<=1;j++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa+j*0.22)*215,vy:Math.sin(pa+j*0.22)*215,r:7,dmg:Math.max(7,Math.round((e.dmg||14)*1.0)),life:3.2,srcName:e.name||e.label}); }
+        burst(e.x,e.y,'#8be8ff',14,130); if(typeof beep==='function')beep(740,0.08,'sine',0.035); }
     }else if(e.ai==='splitter'){
       const target=e.range||320;
       if(d<target*0.62){ e.x-=Math.cos(a)*e.spd*dt; e.y-=Math.sin(a)*e.spd*dt; }
       else if(d>target){ e.x+=Math.cos(a)*e.spd*dt; e.y+=Math.sin(a)*e.spd*dt; }
       else { e.x+=Math.cos(a-Math.PI/2)*e.spd*0.35*dt; e.y+=Math.sin(a-Math.PI/2)*e.spd*0.35*dt; }
       if(!e.clone&&!e.splitChild&&e.hp<=e.maxhp*0.5&&!e._splitMade){ e._splitMade=true; setIntent(e,'◆','분열',0.75,()=>{ for(let j=0;j<2;j++) spawnAct3GlitchClone(e); }); }
-      if(e.coolT<=0){ const pa=Math.atan2(player.y-e.y,player.x-e.x); for(let j=-2;j<=2;j++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa+j*0.14)*242,vy:Math.sin(pa+j*0.14)*242,r:7,dmg:Math.max(6,Math.round((e.dmg||12)*0.8)),life:3.2,srcName:e.name||e.label}); e.coolT=e.cool||1.25; }
+      if(e.coolT<=0){ if((e._cloneRep||0)<=0 && Math.random()<0.3) e._cloneRep=3; const tight=(e._cloneRep||0)>0; const pa=Math.atan2(player.y-e.y,player.x-e.x); const k=tight?3:5, spread=tight?0.10:0.14, sp=tight?262:242; for(let j=-(k-1)/2;j<=(k-1)/2;j++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa+j*spread)*sp,vy:Math.sin(pa+j*spread)*sp,r:7,dmg:Math.max(6,Math.round((e.dmg||18)*0.8)),life:3.2,srcName:e.name||e.label}); if(e._cloneRep>0){ e._cloneRep--; e.coolT=0.42; } else e.coolT=e.cool||1.25; }
     }else if(e.ai==='magnet'){
       const target=e.range||230;
       if(d>target*0.95){ e.x+=Math.cos(a)*e.spd*dt; e.y+=Math.sin(a)*e.spd*dt; }
       else if(d<target*0.55){ e.x-=Math.cos(a)*e.spd*0.55*dt; e.y-=Math.sin(a)*e.spd*0.55*dt; }
       else { e.x+=Math.cos(a+Math.PI/2)*e.spd*0.3*dt; e.y+=Math.sin(a+Math.PI/2)*e.spd*0.3*dt; }
       if(d<target&&player.dodging<=0){ const pull=70*(1-d/target); player.x=clamp(player.x-Math.cos(a)*pull*dt,player.r,W-player.r); player.y=clamp(player.y-Math.sin(a)*pull*dt,player.r,H-player.r); }
-      if(e.coolT<=0){ if((e.shotN=(e.shotN||0)+1)%3===0){ const k=5; for(let j=0;j<k;j++){ const aa=a+(j-(k-1)/2)*0.24; eBullets.push({x:e.x,y:e.y,vx:Math.cos(aa)*215,vy:Math.sin(aa)*215,r:7,dmg:Math.max(6,Math.round((e.dmg||8)*0.8)),life:3.2,srcName:e.name||e.label}); } } else { const pa=Math.atan2(player.y-e.y,player.x-e.x); for(let j=-1;j<=1;j++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa+j*0.2)*205,vy:Math.sin(pa+j*0.2)*205,r:7,dmg:Math.max(6,Math.round((e.dmg||8)*0.8)),life:3.2,srcName:e.name||e.label}); } e.coolT=e.cool||2.4; }
+      if(e.coolT<=0){ const sn=(e.shotN=(e.shotN||0)+1);
+        if(sn%4===0){ const k=14; for(let i=0;i<k;i++){ const a2=i/k*TAU; eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*200,vy:Math.sin(a2)*200,r:7,dmg:Math.max(7,Math.round((e.dmg||13)*0.85)),life:3.2,srcName:e.name||e.label,col:e.color}); } banner('🧲 자기장 방출','전방위 펄스',550); }
+        else if(sn%2===0){ const k=5; for(let j=0;j<k;j++){ const aa=a+(j-(k-1)/2)*0.24; eBullets.push({x:e.x,y:e.y,vx:Math.cos(aa)*215,vy:Math.sin(aa)*215,r:7,dmg:Math.max(7,Math.round((e.dmg||13)*1.0)),life:3.2,srcName:e.name||e.label}); } }
+        else { const pa=Math.atan2(player.y-e.y,player.x-e.x); for(let j=-1;j<=1;j++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa+j*0.2)*205,vy:Math.sin(pa+j*0.2)*205,r:7,dmg:Math.max(7,Math.round((e.dmg||13)*1.0)),life:3.2,srcName:e.name||e.label}); }
+        e.coolT=e.cool||2.4; }
       // TODO(act3-content): 탄환 휨 효과는 안정화 후 별도 projectile modifier로 추가한다.
     }else if(e.ai==='beam_sweep'){
       const target=e.range||620;
       if(d>target*0.72){ e.x+=Math.cos(a)*e.spd*0.65*dt; e.y+=Math.sin(a)*e.spd*0.65*dt; }
       else if(d<target*0.34){ e.x-=Math.cos(a)*e.spd*0.55*dt; e.y-=Math.sin(a)*e.spd*0.55*dt; }
-      if(e.coolT<=0){ spawnAct3BeamSweep(e); e.coolT=e.cool||6.5; if(typeof beep==='function')beep(300,0.16,'triangle',0.05); }
+      if(e.coolT<=0){
+        if((e._truckRep||0)<=0){ e._truckPat=ACT3_TRUCK_PATS[nextFromBag(e,'_truckBag',ACT3_TRUCK_PATS.length)]; e._truckRep=(e._truckPat==='signal')?3:1; }
+        runAct3TruckPattern(e,e._truckPat); e._truckRep--;
+        e.coolT=(e._truckRep>0)?0.85:(e.cool||5.8)*0.78;   // 집중 연사 중엔 짧게, 세트 종료 후 휴식
+      }
     }else if(e.ai==='blink_lagfield'){
       e.x+=Math.cos(a+Math.sin(e.wob*2)*0.9)*e.spd*dt; e.y+=Math.sin(a+Math.cos(e.wob*1.7)*0.9)*e.spd*dt;
-      if(e.coolT<=0){ const ox=e.x, oy=e.y; e.x=clamp(e.x+rand(-140,140),e.r,W-e.r); e.y=clamp(e.y+rand(-110,110),80,H-55); burst(ox,oy,'#38e8ff',8,120); burst(e.x,e.y,'#ff4dd2',8,120); spawnWarnedSlowField(player.x,player.y,86,4.2,0.75,e.name||e.label); { const pa=Math.atan2(player.y-e.y,player.x-e.x); for(let j=-1;j<=1;j++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa+j*0.2)*240,vy:Math.sin(pa+j*0.2)*240,r:7,dmg:Math.max(6,Math.round((e.dmg||10)*0.8)),life:3,srcName:e.name||e.label}); } e.coolT=e.cool||2.2; }
+      if(e.coolT<=0){ const ox=e.x, oy=e.y; e.x=clamp(e.x+rand(-140,140),e.r,W-e.r); e.y=clamp(e.y+rand(-110,110),80,H-55); burst(ox,oy,'#38e8ff',8,120); burst(e.x,e.y,'#ff4dd2',8,120); spawnWarnedSlowField(player.x,player.y,86,4.2,0.75,e.name||e.label); const pa=Math.atan2(player.y-e.y,player.x-e.x);
+        if((e._lagN=(e._lagN||0)+1)%2===0){ const k=10; for(let i=0;i<k;i++){ const a2=i/k*TAU; eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*215,vy:Math.sin(a2)*215,r:7,dmg:Math.max(7,Math.round((e.dmg||15)*0.85)),life:3,srcName:e.name||e.label,col:'#38e8ff'}); } spawnWarnedSlowField(clamp(player.x+rand(-90,90),40,W-40),clamp(player.y+rand(-70,70),110,H-60),74,3.6,0.7,e.name||e.label); banner('📶 패킷 손실','글리치 폭발',600); }
+        else { for(let j=-1;j<=1;j++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa+j*0.2)*240,vy:Math.sin(pa+j*0.2)*240,r:7,dmg:Math.max(7,Math.round((e.dmg||15)*1.0)),life:3,srcName:e.name||e.label}); }
+        e.coolT=e.cool||2.2; }
     }else if(e.ai==='onster'){
 
       if(!e.awakened && e.hp<=e.maxhp*0.5) onsterAwaken(e);
