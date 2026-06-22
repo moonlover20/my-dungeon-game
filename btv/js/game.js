@@ -3349,8 +3349,8 @@ function updateBonusPatterns(e,dt){
     setIntent(e,'🔮','저주',1.0,()=>{ if(typeof spawnFirePillar==='function') spawnFirePillar(tx,ty,'까치 저주'); else hazards.push({x:clamp(tx,34,W-34),y:clamp(ty,90,H-50),t:0,warnT:0.7,liveT:0.5,r:46,hit:false,dmg:intentDamage(e,11),srcName:'까치 저주'}); e._curseCd=8.4; });
   }
   // ── 2막 ──
-  else if(t==='gwangcheon_gim' && cd('_powderCd',8.5)){    // 광천김: 김 가루 살포
-    setIntent(e,'🌿','김 가루',0.8,()=>{ if(typeof spawnSlowField==='function') spawnSlowField(e.x,e.y,90,4); const k=6; for(let i=0;i<k;i++){ const a=i/k*TAU+(e.wob||0); eBullets.push({x:e.x,y:e.y,vx:Math.cos(a)*180,vy:Math.sin(a)*180,r:7,dmg:intentDamage(e,14),life:3.4,srcName:e.name,style:'spore',col:e.color}); } burst(e.x,e.y,'#3f7a34',12,150); e._powderCd=8.8; });
+  else if(t==='gwangcheon_gim' && cd('_powderCd',7.5)){    // 광천김: 김 가루 살포
+    setIntent(e,'🌿','김 가루',0.8,()=>{ if(typeof spawnSlowField==='function') spawnSlowField(e.x,e.y,90,4); const k=6; for(let i=0;i<k;i++){ const a=i/k*TAU+(e.wob||0); eBullets.push({x:e.x,y:e.y,vx:Math.cos(a)*180,vy:Math.sin(a)*180,r:7,dmg:intentDamage(e,14),life:3.4,srcName:e.name,style:'spore',col:e.color}); } burst(e.x,e.y,'#3f7a34',12,150); e._powderCd=7.5; });
   }
   else if(t==='reura' && cd('_spinCd',7)){                 // 러라: 회전 베기
     setIntent(e,'🌀','회전 베기',0.7,()=>{ const k=8; for(let i=0;i<k;i++){ const a=i/k*TAU; eBullets.push({x:e.x,y:e.y,vx:Math.cos(a)*235,vy:Math.sin(a)*235,r:7,dmg:intentDamage(e,16),life:3,srcName:e.name,style:'shard',col:e.color}); } burst(e.x,e.y,'#ffd166',12,170); if(typeof beep==='function')beep(180,0.1,'sawtooth',0.04); e._spinCd=7.3; });
@@ -3392,7 +3392,7 @@ function updateIntentPatterns(e,dt){
     if(e.clone) e._cloneMade=true;
     if(e.hp<=e.maxhp*0.5&&!e._cloneMade){ e._cloneMade=true; setIntent(e,'💀','분신',1.2,()=>{ for(let i=0;i<2;i++){ spawnEnemy('kkotchung',clamp(e.x+rand(-70,70),40,W-40),clamp(e.y+rand(-40,80),80,H-60),0.45); const c=enemies[enemies.length-1]; c.label='분신'; c.clone=true; c.summoned=true; c.noKillScore=true; c.hp=70; c.maxhp=70; c.xp=0; } }); }
     else if(cd('_kkBuffCd',8.5)) setIntent(e,'🔮','광역 버프',1.2,()=>{ enemies.forEach(o=>{ if(o!==e&&dist2(o.x,o.y,e.x,e.y)<210*210){ o.atkBuffT=5; o.coolT*=0.7; } }); e._kkBuffCd=9; });
-    else if(cd('_kkLockCd',6.5)) setIntent(e,'👁','고정',1,()=>{ for(let j=0;j<3;j++) setTimeout(()=>{ if(enemies.includes(e)) aimBulletFrom(e,310,16,8,'양갱 고정탄'); },j*120); e._kkLockCd=7; });
+    else if(cd('_kkLockCd',6.5)) setIntent(e,'👁','고정',1,()=>{ for(let j=0;j<3;j++) setTimeout(()=>{ if(enemies.includes(e)) aimBulletFrom(e,310,18,8,'양갱 고정탄'); },j*120); e._kkLockCd=7; });
   }else if(e.type==='gwangcheon_gim'&&cd('_pierceCd',6)){
     setIntent(e,'👁','조준',1,()=>{ aimBulletFrom(e,430,16,8,'광천김 관통탄'); e._pierceCd=6.5; });
   }else if(e.type==='reura'&&cd('_dashIntentCd',5.6)){
@@ -3401,7 +3401,7 @@ function updateIntentPatterns(e,dt){
     setIntent(e,'🛡','방어 태세',0.8,()=>{ e.defenseT=3; e._guardCd=7.5; burst(e.x,e.y,'#5fa84a',12,150); });
   }else if(e.type==='pobear'&&cd('_jumpCd',7)){
     setIntent(e,'⚔','점프 강타',1,()=>{ const tx=clamp(player.x+rand(-35,35),e.r,W-e.r), ty=clamp(player.y+rand(-35,35),e.r,H-e.r); e._jumpTx=tx; e._jumpTy=ty; e._jumpMax=Math.max(0.28,Math.min(0.72,Math.hypot(tx-e.x,ty-e.y)/520)); e.cs='jump'; e.csT=e._jumpMax; e._jumpCd=7.5; if(typeof beep==='function')beep(150,0.14,'sawtooth',0.06); });
-  }else if(e.type==='ketter' && cd('_silkCd',8.5)){
+  }else if(e.type==='ketter' && cd('_silkCd',7.5)){
     // 케터 — 실뿜기 / 둔화: 무빙을 살짝 꼬는 일반몹 패턴
     setIntent(e,'🕸','실뿜기',0.8,()=>{
       const tx=player.x, ty=player.y;
@@ -3412,7 +3412,7 @@ function updateIntentPatterns(e,dt){
         eBullets.push({x:e.x,y:e.y,vx:Math.cos(aa)*250,vy:Math.sin(aa)*250,r:7,dmg:intentDamage(e,14),life:3.6,srcName:'케터 실탄',stun:true,stunDur:0.85});
       }
       if(typeof beep==='function')beep(200,0.1,'triangle',0.04);
-      e._silkCd=8.5;
+      e._silkCd=7.5;
     });
   }else if(e.type==='blackstar' && cd('_gravityCd',7)){
     // 흑별 — 중력장 / 검은별 탄막: 공간 압박형 어려운 적
@@ -5943,7 +5943,11 @@ function updateBoss(dt){
     b.x+=(W/2-b.x)*Math.min(1,dt*2.4);
     b.y+=(H*0.13-b.y)*Math.min(1,dt*2.4);
   } else {
-    b.x+=Math.cos(a)*sp*dt; b.y+=Math.sin(a)*sp*dt*0.7;
+    const kgap=Math.hypot(player.x-b.x,player.y-b.y);
+    const kchase=sp*(kgap>300?1.5:1);              // 멀면 빠르게 추적 (예측 깨기)
+    const ksway=Math.cos(b.phaseT*1.4)*sp*0.45;    // 좌우 스웨이 → 곡선 추적
+    b.x+=Math.cos(a)*kchase*dt + Math.cos(a+Math.PI/2)*ksway*dt;
+    b.y+=Math.sin(a)*kchase*dt*0.7;
   }
   b.x=clamp(b.x,b.r,W-b.r); b.y=clamp(b.y,b.r,H*0.6);
   if(b.key==='kijo'){
@@ -6715,7 +6719,7 @@ function update(dt){
       const target=e.range||320;
       if(d<target*0.62){ e.x-=Math.cos(a)*e.spd*dt; e.y-=Math.sin(a)*e.spd*dt; }
       else if(d>target){ const ms=enr?1.18:1; e.x+=Math.cos(a)*e.spd*ms*dt; e.y+=Math.sin(a)*e.spd*ms*dt; }
-      else { e.x+=Math.cos(a+Math.PI/2)*e.spd*0.35*dt; e.y+=Math.sin(a+Math.PI/2)*e.spd*0.35*dt; }
+      else { e.x+=Math.cos(a+Math.PI/2)*e.spd*0.30*dt; e.y+=Math.sin(a+Math.PI/2)*e.spd*0.30*dt; e.x+=Math.cos(a)*e.spd*0.18*dt; e.y+=Math.sin(a)*e.spd*0.18*dt; }   // 횡이동 + 전진 압박
       if(e.coolT<=0){
         e.cleaveN=(e.cleaveN||0)+1;
         if(enr){
@@ -6735,12 +6739,14 @@ function update(dt){
       if(enr && !e._enraged){ e._enraged=true; banner('🪃 재민 격노!','부메랑 3연 투척!',800); burst(e.x,e.y,'#f0a84a',16,220); if(typeof beep==='function')beep(160,0.14,'sawtooth',0.06); }
       const target=e.range||300;
       const ms=enr?1.15:1;
-      if(d<target*0.56){ e.x-=Math.cos(a)*e.spd*ms*dt; e.y-=Math.sin(a)*e.spd*ms*dt; }
+      if((e._backT||0)>0){ e._backT-=dt; e.x-=Math.cos(a)*e.spd*1.15*dt; e.y-=Math.sin(a)*e.spd*1.15*dt; }   // 던지고 빠지기
+      else if(d<target*0.56){ e.x-=Math.cos(a)*e.spd*ms*dt; e.y-=Math.sin(a)*e.spd*ms*dt; }
       else if(d>target){ e.x+=Math.cos(a)*e.spd*ms*dt; e.y+=Math.sin(a)*e.spd*ms*dt; }
       else { e.x+=Math.cos(a-Math.PI/2)*e.spd*0.45*dt; e.y+=Math.sin(a-Math.PI/2)*e.spd*0.45*dt; }
       if(e.coolT<=0){
         if(enr){ for(let i=-1;i<=1;i++) fireBoomerang(e,a,{enraged:true,spread:i*0.26}); e.coolT=(e.cool||1.95)*0.62; }
         else { fireBoomerang(e,a); e.coolT=e.cool||1.95; }
+        e._backT=0.45;   // 던진 뒤 잠깐 후퇴
       }
     }else if(e.ai==='sniper_laser'){
       if((e.postShotT=e.postShotT||0)>0){ e.postShotT-=dt; }
@@ -6773,7 +6779,12 @@ function update(dt){
       const target=e.range||360;
       if(d>target*0.75){ e.x+=Math.cos(a)*e.spd*dt; e.y+=Math.sin(a)*e.spd*dt; }
       else if(d<target*0.35){ e.x-=Math.cos(a)*e.spd*dt; e.y-=Math.sin(a)*e.spd*dt; }
-      else { e.x+=Math.cos(a+Math.PI/2)*e.spd*0.28*dt; e.y+=Math.sin(a+Math.PI/2)*e.spd*0.28*dt; }
+      else {
+        e._stepT=(e._stepT==null?rand(1.3,2.2):e._stepT)-dt;
+        if(e._stepT<=0){ e._stepDir=(e._stepDir||1)*-1; e._stepT=rand(1.3,2.2); }
+        const sd=e._stepDir||1;
+        e.x+=Math.cos(a+Math.PI/2)*sd*e.spd*0.8*dt; e.y+=Math.sin(a+Math.PI/2)*sd*e.spd*0.8*dt;   // 좌우로 크게 스텝
+      }
       if(e.coolT<=0){ const nm=e.name||e.label; spawnMoveLockField(player.x,player.y,nm); spawnMoveLockField(clamp(player.x+rand(-95,95),44,W-44),clamp(player.y+rand(-80,80),95,H-55),nm); spawnMoveLockField(clamp(player.x+rand(-95,95),44,W-44),clamp(player.y+rand(-80,80),95,H-55),nm); e.coolT=e.cool||2.6; if(typeof beep==='function')beep(180,0.07,'sawtooth',0.035);
         // 봉쇄 직후 견제탄: 갇힌 동안 빠져나갈 압박을 준다
         for(let i=0;i<3;i++) setTimeout(()=>{ if(enemies.includes(e)){ const pa=Math.atan2(player.y-e.y,player.x-e.x); eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa)*205,vy:Math.sin(pa)*205,r:7,dmg:e.dmg,life:3.2,srcName:nm,style:enemyBulletStyle(e),col:e.color}); } }, 500+i*180);
@@ -7301,7 +7312,7 @@ function update(dt){
           // 탄 먼저 발사
           const k=32; for(let i=0;i<k;i++){
             const a2=i/k*TAU+e.spinAng;
-            eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*285,vy:Math.sin(a2)*285,r:7,dmg:11,life:4.8,srcName:'박제인간'});
+            eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*285,vy:Math.sin(a2)*285,r:7,dmg:14,life:4.8,srcName:'박제인간'});
           }
           banner('💿 레코드 긁힘!','…',700);
           if(sfx.enemyGlitch) sfx.enemyGlitch(); screenShake=Math.max(screenShake||0,10);
@@ -7325,7 +7336,7 @@ function update(dt){
           setTimeout(()=>{ timeScale=0.38; if(sfx.enemyWarn) sfx.enemyWarn(); banner('💿 …','',400); beep(100,0.06,'sine',0.04); }, 380);
           setTimeout(()=>{ timeScale=1; if(sfx.enemyCast) sfx.enemyCast(); }, 1350);
           const pa2=Math.atan2(player.y-e.y,player.x-e.x);
-          for(let i=-2;i<=2;i++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa2+i*0.2)*265,vy:Math.sin(pa2+i*0.2)*265,r:8,dmg:10,life:3.5,srcName:'박제인간'});
+          for(let i=-2;i<=2;i++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa2+i*0.2)*265,vy:Math.sin(pa2+i*0.2)*265,r:8,dmg:13,life:3.5,srcName:'박제인간'});
         }
       }
 
@@ -7342,7 +7353,7 @@ function update(dt){
           beep(80,0.15,'sawtooth',0.06);
           const k=14; for(let i=0;i<k;i++){
             const a2=i/k*TAU+e.spinAng;
-            eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*220,vy:Math.sin(a2)*220,r:8,dmg:9,life:3.8,srcName:'박제인간'});
+            eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*220,vy:Math.sin(a2)*220,r:8,dmg:12,life:3.8,srcName:'박제인간'});
           }
         }
       }
@@ -7359,7 +7370,7 @@ function update(dt){
           const k=en?16:10;
           for(let i=0;i<k;i++){
             const a2=i/k*TAU+e.spinAng+(e.atkN*0.42);
-            eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*240,vy:Math.sin(a2)*240,r:8,dmg:10,life:3.5,srcName:'박제인간'});
+            eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*240,vy:Math.sin(a2)*240,r:8,dmg:13,life:3.5,srcName:'박제인간'});
           }
           banner('💿 소용돌이','',500);
           beep(200,0.06,'sine',0.04);
@@ -7370,7 +7381,7 @@ function update(dt){
           const k=en?8:5;
           for(let i=0;i<k;i++){
             const a2=pa+(i-(k-1)/2)*0.17;
-            eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*260,vy:Math.sin(a2)*260,r:9,dmg:11,life:3.2,srcName:'박제인간'});
+            eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*260,vy:Math.sin(a2)*260,r:9,dmg:14,life:3.2,srcName:'박제인간'});
           }
           banner('🎵 바늘 쐐기탄','',550);
           e.atkT=en?1.0:1.7;
@@ -7384,7 +7395,7 @@ function update(dt){
               if(!enemies.includes(e)) return;
               for(let i=0;i<k;i++){
                 const a2=i/k*TAU+e.spinAng+ring*0.3;
-                eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*sp,vy:Math.sin(a2)*sp,r:8,dmg:9,life:3.8,srcName:'박제인간'});
+                eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*sp,vy:Math.sin(a2)*sp,r:8,dmg:12,life:3.8,srcName:'박제인간'});
               }
             }, ring*260);
           }
@@ -7397,12 +7408,12 @@ function update(dt){
           const cols=en?9:5;
           for(let i=0;i<cols;i++){
             const fx=W*(i+0.5)/cols+rand(-18,18);
-            eBullets.push({x:fx,y:-12,vx:rand(-12,12),vy:rand(205,250),r:8,dmg:10,life:4.2,srcName:'박제인간'});
+            eBullets.push({x:fx,y:-12,vx:rand(-12,12),vy:rand(205,250),r:8,dmg:13,life:4.2,srcName:'박제인간'});
           }
-          eBullets.push({x:player.x+rand(-25,25),y:-12,vx:rand(-8,8),vy:245,r:10,dmg:13,life:4,srcName:'박제인간'});
+          eBullets.push({x:player.x+rand(-25,25),y:-12,vx:rand(-8,8),vy:245,r:10,dmg:15,life:4,srcName:'박제인간'});
           if(en){
             // 격노 시 측면에서도
-            for(let i=0;i<3;i++){ eBullets.push({x:-10,y:rand(80,H-80),vx:rand(170,210),vy:rand(-15,15),r:7,dmg:9,life:4,srcName:'박제인간'}); eBullets.push({x:W+10,y:rand(80,H-80),vx:-rand(170,210),vy:rand(-15,15),r:7,dmg:9,life:4,srcName:'박제인간'}); }
+            for(let i=0;i<3;i++){ eBullets.push({x:-10,y:rand(80,H-80),vx:rand(170,210),vy:rand(-15,15),r:7,dmg:12,life:4,srcName:'박제인간'}); eBullets.push({x:W+10,y:rand(80,H-80),vx:-rand(170,210),vy:rand(-15,15),r:7,dmg:12,life:4,srcName:'박제인간'}); }
           }
           banner('🎵 바늘 낙하','위에서 쏟아진다!',700);
           e.atkT=en?1.1:1.8;
@@ -7415,7 +7426,7 @@ function update(dt){
               if(!enemies.includes(e)) return;
               const spd=155+i*30;
               const a2=e.spinAng+i*(TAU/steps)*0.7;
-              eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*spd,vy:Math.sin(a2)*spd,r:7+Math.floor(i/3),dmg:9,life:3.6,srcName:'박제인간'});
+              eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*spd,vy:Math.sin(a2)*spd,r:7+Math.floor(i/3),dmg:12,life:3.6,srcName:'박제인간'});
             }, i*100);
           }
           banner('💿 RPM 가속','점점 빨라진다!',750);
@@ -7428,7 +7439,7 @@ function update(dt){
           const k=en?6:3;
           for(let i=0;i<k;i++){
             const a2=pa+(i-(k-1)/2)*0.20;
-            eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*250,vy:Math.sin(a2)*250,r:8,dmg:10,life:3.4,srcName:'박제인간'});
+            eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*250,vy:Math.sin(a2)*250,r:8,dmg:13,life:3.4,srcName:'박제인간'});
           }
           banner('⮃ 방향키 반전!','조작이 뒤집혔다',950);
           beep(300,0.1,'square',0.05);
@@ -7437,13 +7448,13 @@ function update(dt){
         } else {
           // 고속 스파이럴 (격노 전 3발 / 격노 후 14발)
           if(!en){
-            for(let i=-1;i<=1;i++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa+i*0.30)*245,vy:Math.sin(pa+i*0.30)*245,r:8,dmg:10,life:3.4,srcName:'박제인간'});
+            for(let i=-1;i<=1;i++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa+i*0.30)*245,vy:Math.sin(pa+i*0.30)*245,r:8,dmg:13,life:3.4,srcName:'박제인간'});
           } else {
             for(let i=0;i<14;i++){
               setTimeout(()=>{
                 if(!enemies.includes(e)) return;
                 const a2=e.spinAng+i*(TAU/14);
-                eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*255,vy:Math.sin(a2)*255,r:7,dmg:9,life:3.6,srcName:'박제인간'});
+                eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*255,vy:Math.sin(a2)*255,r:7,dmg:12,life:3.6,srcName:'박제인간'});
               }, i*50);
             }
             banner('💿 고속 회전','','600');
