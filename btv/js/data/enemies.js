@@ -6,7 +6,7 @@ const ENEMY_TYPES={
   goblin_bomber  :{name:"블페러", r:23, hp:22, spd:108, dmg:6,  color:"#9aa83f", xp:11, ai:"chase", explode:true, label:"블페러"},
   hoonsangtae   :{name:"\uD6C8\uC0C1\uD0DC", r:30, hp:48, spd:55, dmg:10, color:"#e25572", xp:38, ai:"cleaver_thrower", range:320, cool:1.55, label:"\uD6C8\uC0C1\uD0DC"},
   jaemin        :{name:"\uC7AC\uBBFC", r:27, hp:42, spd:68, dmg:9, color:"#f0a84a", xp:36, ai:"boomerang_thrower", range:440, cool:1.95, label:"\uC7AC\uBBFC"},
-  sniper_viewer :{name:"\uC800\uACA9\uB7EC", r:26, hp:34, spd:28, dmg:13, touchDmg:10, color:"#d83a3a", xp:42, ai:"sniper_laser", range:520, cool:1.8, label:"\uC800\uACA9\uB7EC"},
+  sniper_viewer :{name:"\uC800\uACA9\uB7EC", r:26, hp:34, spd:28, dmg:13, touchDmg:10, color:"#d83a3a", xp:42, ai:"sniper_laser", range:1200, cool:1.8, label:"\uC800\uACA9\uB7EC"},
   stream_watcher:{name:"\uBC29\uD50C\uB7EC", r:26, hp:40, spd:44, dmg:6, color:"#4fc0d8", xp:34, ai:"movement_lock", range:360, cool:2.6, label:"\uBC29\uD50C\uB7EC"},
   rhino_beetle   :{name:"자잘자",   r:34, hp:170, spd:78, dmg:16, touchDmg:16, color:"#3a2418", xp:24, ai:"charge", armor:0.15, label:"자잘자"},
   earthworm      :{name:"지렁이", r:12, hp:10, spd:82, dmg:6, color:"#e87a8a", xp:0, ai:"erratic", label:"지렁이"},
