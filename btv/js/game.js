@@ -5071,7 +5071,7 @@ function fireSniperLaser(beam){
   if(sfx.enemyLaser) sfx.enemyLaser();
 }
 function spawnMoveLockField(x,y,srcName){
-  hazards.push({kind:'movelock',x:clamp(x,44,W-44),y:clamp(y,95,H-55),r:62,t:0,warnT:0.58,liveT:0.34,lockT:1.1,done:false,srcName:srcName||"\uBC29\uD50C\uB7EC",seed:rand(0,TAU)});
+  hazards.push({kind:'movelock',x:clamp(x,44,W-44),y:clamp(y,95,H-55),r:52,t:0,warnT:0.85,liveT:0.34,lockT:0.8,done:false,srcName:srcName||"\uBC29\uD50C\uB7EC",seed:rand(0,TAU)});
 }
 // ---------- 파티클 ----------
 function burst(x,y,color,n,spd){
