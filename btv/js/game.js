@@ -6806,7 +6806,7 @@ function update(dt){
         const sd=e._stepDir||1;
         e.x+=Math.cos(a+Math.PI/2)*sd*e.spd*0.8*dt; e.y+=Math.sin(a+Math.PI/2)*sd*e.spd*0.8*dt;   // 좌우로 크게 스텝
       }
-      if(e.coolT<=0){ const nm=e.name||e.label; spawnMoveLockField(player.x,player.y,nm); spawnMoveLockField(clamp(player.x+rand(-95,95),44,W-44),clamp(player.y+rand(-80,80),95,H-55),nm); spawnMoveLockField(clamp(player.x+rand(-95,95),44,W-44),clamp(player.y+rand(-80,80),95,H-55),nm); e.coolT=e.cool||2.6; if(typeof beep==='function')beep(180,0.07,'sawtooth',0.035);
+      if(e.coolT<=0){ const nm=e.name||e.label; spawnMoveLockField(player.x,player.y,nm); e.coolT=e.cool||2.6; if(typeof beep==='function')beep(180,0.07,'sawtooth',0.035);
         // 봉쇄 직후 견제탄: 갇힌 동안 빠져나갈 압박을 준다
         for(let i=0;i<3;i++) setTimeout(()=>{ if(enemies.includes(e)){ const pa=Math.atan2(player.y-e.y,player.x-e.x); eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa)*205,vy:Math.sin(pa)*205,r:7,dmg:e.dmg,life:3.2,srcName:nm,style:enemyBulletStyle(e),col:e.color}); } }, 500+i*180);
       }
