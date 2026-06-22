@@ -62,7 +62,7 @@ const ACT_POOLS=[
 ];
 const ACT1_WEAK_ENEMY_IDS=["goblin_warrior","goblin_archer","goblin_shaman","goblin_bomber"];
 const ACT1_LATE_ENEMY_IDS=["hoonsangtae","jaemin","sniper_viewer","stream_watcher"];
-const ACT1_PRIORITY_CAPS={sniper_viewer:1,stream_watcher:1};
+const ACT1_PRIORITY_CAPS={sniper_viewer:3,stream_watcher:3,jaemin:3,hoonsangtae:3};
 // === 2막 잡몹 분리 ===
 const ACT2_BASIC_ENEMY_IDS=["gwangcheon_gim","reura","namu","ketter"];      // 일반몹: 광천김/러라/나무/케터
 const ACT2_LATE_ENEMY_IDS=["pobear","blackstar","killjoy","apple"];          // 어려운 적: 포베어/흑별/킬조이/사과
