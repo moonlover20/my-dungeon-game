@@ -1,4 +1,4 @@
-const ENEMY_TYPES={
+﻿const ENEMY_TYPES={
   // === 1막: 고블린 소굴 ===
   goblin_warrior :{name:"러부엉",  r:24, hp:28, spd:86, dmg:11, color:"#6fae4e", xp:8,  ai:"chase", lunge:true, label:"러부엉"},
   goblin_archer  :{name:"대파",  r:22, hp:18, spd:50, dmg:8,  color:"#7bbf5a", xp:10, ai:"shooter", range:340, cool:1.25, label:"대파"},
@@ -42,13 +42,13 @@ const ENEMY_TYPES={
   apple         :{name:"사과",   r:27, hp:128, spd:64, dmg:20, color:"#ff4d6d", xp:310, ai:"erratic", range:300, cool:1.25, label:"사과"},
   // === 3막 전용 몬스터 ===
   act3_domin     :{name:"\uB3C4\uBBFC", r:23, hp:94,  spd:88, dmg:22, touchDmg:24, color:"#7ad7ff", xp:118, ai:"submerge_charge", range:420, cool:2.6, label:"\uB3C4\uBBFC"},
-  act3_mirror    :{name:"\uAC70\uC6B8\uB7EC", r:24, hp:112, spd:46, dmg:14,  touchDmg:14,  color:"#8be8ff", xp:128, ai:"reflector", range:360, cool:3.8, label:"\uAC70\uC6B8\uB7EC"},
-  act3_magnet    :{name:"\uC790\uC11D\uB7EC", r:23, hp:116, spd:42, dmg:13,  touchDmg:13,  color:"#ff4d5a", xp:122, ai:"magnet", range:250, cool:1.7, label:"\uC790\uC11D\uB7EC"},
-  act3_buffering :{name:"\uBC84\uD37C\uB9C1", r:22, hp:90,  spd:72, dmg:15, touchDmg:14,  color:"#38e8ff", xp:116, ai:"blink_lagfield", range:330, cool:2.0, label:"\uBC84\uD37C\uB9C1"},
+  act3_mirror    :{name:"오픈더", r:24, hp:112, spd:46, dmg:14,  touchDmg:14,  color:"#8be8ff", xp:128, ai:"reflector", range:360, cool:3.8, label:"오픈더"},
+  act3_magnet    :{name:"소실아", r:23, hp:116, spd:42, dmg:13,  touchDmg:13,  color:"#ff4d5a", xp:122, ai:"magnet", range:250, cool:1.7, label:"소실아"},
+  act3_buffering :{name:"바나나", r:22, hp:90,  spd:72, dmg:15, touchDmg:14,  color:"#38e8ff", xp:116, ai:"blink_lagfield", range:330, cool:2.0, label:"바나나"},
   act3_alppano   :{name:"\uC54C\uBE60\uB178", r:27, hp:190, spd:24, dmg:13,  touchDmg:12,  color:"#ffd34d", xp:455, ai:"summoner", range:340, cool:3.8, label:"\uC54C\uBE60\uB178"},
   act3_kullje    :{name:"\uCFFC\uC81C", r:26, hp:165, spd:92, dmg:28, touchDmg:24, color:"#ff4dd2", xp:500, ai:"stealth_assassin", range:360, cool:4.8, label:"\uCFFC\uC81C"},
-  act3_clone     :{name:"\uBD84\uC2E0\uB7EC", r:25, hp:165, spd:62, dmg:18, touchDmg:16, color:"#b86bff", xp:480, ai:"splitter", range:320, cool:1.05, label:"\uBD84\uC2E0\uB7EC"},
-  act3_truck     :{name:"\uC911\uACC4\uCC28", r:40, hp:360, spd:24, dmg:16, touchDmg:13, color:"#58d8ff", xp:850, ai:"beam_sweep", range:620, cool:5.8, armor:0.18, label:"\uC911\uACC4\uCC28"},
+  act3_clone     :{name:"타포", r:25, hp:165, spd:62, dmg:18, touchDmg:16, color:"#b86bff", xp:480, ai:"splitter", range:320, cool:1.05, label:"타포"},
+  act3_truck     :{name:"노잭", r:40, hp:360, spd:24, dmg:16, touchDmg:13, color:"#58d8ff", xp:850, ai:"beam_sweep", range:620, cool:5.8, armor:0.18, label:"노잭"},
   act3_sand_soldier:{name:"\uBAA8\uB798\uBCD1\uC0AC", r:13, hp:34, spd:112, dmg:10, touchDmg:10, color:"#e0b85a", xp:0, ai:"chase", summoned:true, noReward:true, noKillScore:true, label:"\uBAA8\uB798\uBCD1\uC0AC"},
   onster      :{name:"\uC628\uC2A4\uD130", r:58, hp:5000, spd:34, dmg:18, touchDmg:18, color:"#8d72ff", xp:1800, ai:"onster", range:360, cool:1.35, label:"\uC628\uC2A4\uD130"},
   yanggaeng     :{name:"박제인간", r:58, hp:3400, spd:48, dmg:17, touchDmg:17, color:"#111111", xp:2200, ai:"bagjein", cool:1.7, label:"박제인간"},
