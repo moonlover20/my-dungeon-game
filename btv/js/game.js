@@ -1141,7 +1141,7 @@ let progressSaveTimer=null;
 let progressRemoteDisabled=false;
 let scoreSubmitSeq=0;
 let rankingDifficulty='easy';
-const FALLBACK_CURRENT_SEASON=2;
+const FALLBACK_CURRENT_SEASON=3;
 function getCurrentSeason(){
   const s=Math.floor(Number(window.CURRENT_SEASON));
   return (s>=1)?s:FALLBACK_CURRENT_SEASON;
@@ -5682,17 +5682,22 @@ function updateBoss(dt){
   if(stunned) return;
   if(b.key==='kijo'){ b.restT=0; b.restWaitT=0; b.restWaitDur=0; }
   if(b.key==='kijo'&&b.intent&&b.intent.label==='마안') return;
-  // 플레이어 추적(느슨)
+  // 플레이어 추적(느슨) — 순서 기억 중엔 추적 정지, 타일 링 위로 물러나 그 자리에서 사격
   const a=Math.atan2(player.y-b.y,player.x-b.x);
   const sp=b.spd*(b.enraged?1.3:1)*statusMoveMul(b);
-  b.x+=Math.cos(a)*sp*dt; b.y+=Math.sin(a)*sp*dt*0.7;
+  if(b.key==='kijo'&&a3seq){
+    b.x+=(W/2-b.x)*Math.min(1,dt*2.4);
+    b.y+=(H*0.13-b.y)*Math.min(1,dt*2.4);
+  } else {
+    b.x+=Math.cos(a)*sp*dt; b.y+=Math.sin(a)*sp*dt*0.7;
+  }
   b.x=clamp(b.x,b.r,W-b.r); b.y=clamp(b.y,b.r,H*0.6);
   if(b.key==='kijo'){
     b.a3T=(b.a3T==null?9:b.a3T)-dt;
     if(b.a3T<=0){ if(a3seq||a3veil){ b.a3T=1.0; } else { b.a3N=(b.a3N||0)+1; if(b.a3N%2===0) a3Sequence(b,3); else a3Veil(4.5,'가면의 장막'); b.a3T=b.enraged?9:12; } }
   }
-  // 접촉
-  if(dist2(b.x,b.y,player.x,player.y)<(b.r+player.r)**2) hurtPlayer(intentDamage(b,b.enraged?38:28), boss?boss.name:'\uC2DC\uCCAD\uC790');
+  // 접촉 — 순서 기억 중엔 몸박 무효 (정지 사격만)
+  if(!(b.key==='kijo'&&a3seq) && dist2(b.x,b.y,player.x,player.y)<(b.r+player.r)**2) hurtPlayer(intentDamage(b,b.enraged?38:28), boss?boss.name:'\uC2DC\uCCAD\uC790');
   if(b.attackT<=0){
     const rate=(b.enraged?1.3:1.6)/(b.intentSpeedMul||1);
     b.attackT=rate;
@@ -15387,5 +15392,4 @@ function initTreeEvents(){
 }
 
 bootGame();
-
 

@@ -9,4 +9,4 @@ window.LEADERBOARD_FIREBASE_CONFIG = {
 
 // 현재 시즌 번호. 새 시즌을 시작하고 싶으면 이 숫자만 +1 올리고 배포하면 됩니다.
 // (기존 태그 없는 옛 기록은 자동으로 "시즌 1"로 분류됩니다.)
-window.CURRENT_SEASON = 2;
+window.CURRENT_SEASON = 3;
