@@ -5742,6 +5742,11 @@ function kijoFrenzy(b){
   for(let i=0;i<5;i++){ const fx=clamp(player.x+rand(-170,170),40,W-40); eBullets.push({x:fx,y:-12,vx:rand(-20,20),vy:rand(200,250),r:9,dmg:16,life:4.2,foodImg:(typeof pickFood==='function'?pickFood():null),spin:rand(0,TAU),spinV:rand(-7,7)}); }
   banner('👹 광란의 가면','사방이 가면이다!',900); screenShake=Math.max(screenShake||0,8); if(typeof beep==='function')beep(80,0.3,'sawtooth',0.07);
 }
+function kijoBarrage(b){
+  const pa=Math.atan2(player.y-b.y,player.x-b.x), k=b.enraged?9:7, spread=0.14;
+  for(let i=-(k-1)/2;i<=(k-1)/2;i++) eBullets.push({x:b.x,y:b.y,vx:Math.cos(pa+i*spread)*245,vy:Math.sin(pa+i*spread)*245,r:8,dmg:15,life:3.4,srcName:'키죠'});
+  banner('가면 난사','연사를 피하라',650); if(typeof beep==='function')beep(300,0.05,'square',0.04);
+}
 function kijoMaskBrand(b){
   const spots=[
     {x:player.x,y:player.y},
@@ -5943,7 +5948,7 @@ function updateBoss(dt){
   b.x=clamp(b.x,b.r,W-b.r); b.y=clamp(b.y,b.r,H*0.6);
   if(b.key==='kijo'){
     b.a3T=(b.a3T==null?9:b.a3T)-dt;
-    if(b.a3T<=0){ if(a3seq||a3veil){ b.a3T=1.0; } else { b.a3N=(b.a3N||0)+1; if(b.a3N%2===0) a3Sequence(b,3,{randomTiles:true,showGap:b.enraged?1.0:1.15,goGap:b.enraged?1.55:1.75,showEndDelay:0.9,dmg:24}); else a3Veil(4.5,'가면의 장막'); b.a3T=b.enraged?9:12; } }
+    if(b.a3T<=0){ if(a3seq||a3veil){ b.a3T=1.0; } else { a3Veil(4.5,'가면의 장막'); b.a3T=b.enraged?12:16; } }
   }
   // 접촉 — 순서 기억 중엔 몸박 무효 (정지 사격만)
   if(!(b.key==='kijo'&&a3seq) && dist2(b.x,b.y,player.x,player.y)<(b.r+player.r)**2) hurtPlayer(intentDamage(b,b.enraged?38:28), boss?boss.name:'\uC2DC\uCCAD\uC790');
@@ -5958,9 +5963,9 @@ function updateBoss(dt){
       if((b._kijoRep||0)>0){ b._kijoRep--; phase=b._kijoPhase; b.attackT=rate*0.55; }   // 단순 탄막 집중 반복 중
       else {
         b.atkN=(b.atkN||0)+1;
-        phase=nextFromBag(b,'_kijoBag',b.enraged?9:8);   // 셔플백 (격노 시 9번째=광란의 가면 포함)
+        phase=nextFromBag(b,'_kijoBag',b.enraged?10:9);   // 셔플백 (격노 시 10번째=광란의 가면)
         b._kijoPhase=phase;
-        if(phase===2||phase===7){ b._kijoRep=2+(Math.random()<0.5?1:0); b.attackT=rate*0.55; }   // 회전나선/음식폭격 → 3~4회 집중
+        if(phase===2||phase===7||phase===8){ b._kijoRep=2+(Math.random()<0.5?1:0); b.attackT=rate*0.55; }   // 회전나선/음식폭격/가면난사 → 3~4회 집중
       }
       if(phase===0){
         // ① 가면 뒤집기: 진짜/가짜 가면을 구분하는 속임수 탄막
@@ -5992,8 +5997,11 @@ function updateBoss(dt){
         for(let i=0;i<n;i++){ const fx=rand(50,W-50); eBullets.push({x:fx,y:-12,vx:rand(-25,25),vy:rand(165,205)*fall,r:13,dmg:15,life:4.2,foodImg:pickFood(),spin:rand(0,TAU),spinV:rand(-7,7)}); }
         banner("음식 폭격!","",600);
         if((b._kijoRep||0)<=0) kijoQueueDamageWindow(b,b.enraged?1.55:2.15,b.enraged?1.25:1.55);   // 반복 마지막에만 휴식
+      } else if(phase===8){
+        // ⑧ 가면 난사 (집중 연사)
+        kijoBarrage(b);
       } else {
-        // ⑧ [격노 전용] 광란의 가면
+        // ⑨ [격노 전용] 광란의 가면
         kijoFrenzy(b);
       }
       // 격노 보너스: 유도하는 음식탄 (피하기 까다로움)
@@ -6533,9 +6541,16 @@ function update(dt){
     }
     if(!dead && boss){
       if(!b.hitSet.has(boss) && dist2(b.x,b.y,boss.x,boss.y)<(b.r+boss.r)**2){
-        const hit=b.playerShot?rollPlayerBulletDamage(boss,b):{dmg:b.dmg,crit:!!b.crit};
-        damageBoss(boss,hit.dmg,hit.crit,true,b);
-        if(b.pierce>0){ b.pierce--; b.hitSet.add(boss); } else dead=true;
+        if(b.playerShot && boss.key==='kijo' && (boss.reflectT||0)>0){
+          const ra=Math.atan2(player.y-boss.y,player.x-boss.x)+rand(-0.18,0.18);
+          const rd=Math.max(5,Math.round((b.dmg||10)*0.4));
+          eBullets.push({x:boss.x,y:boss.y,vx:Math.cos(ra)*330,vy:Math.sin(ra)*330,r:Math.max(5,Math.min(8,b.r||6)),dmg:rd,life:2.6,srcName:'키죠 반사',reflected:true});
+          burst(boss.x,boss.y,'#ff6a9a',8,180); dead=true;
+        } else {
+          const hit=b.playerShot?rollPlayerBulletDamage(boss,b):{dmg:b.dmg,crit:!!b.crit};
+          damageBoss(boss,hit.dmg,hit.crit,true,b);
+          if(b.pierce>0){ b.pierce--; b.hitSet.add(boss); } else dead=true;
+        }
       }
     }
     if(dead) pBullets.splice(i,1);
