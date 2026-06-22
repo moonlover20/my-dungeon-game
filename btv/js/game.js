@@ -5470,8 +5470,8 @@ function hyechulAcidStorm(e,ph){
   banner('🌪 산성 폭풍','사방에서 쏟아진다!',850); if(typeof beep==='function')beep(110,0.2,'sawtooth',0.06); screenShake=Math.max(screenShake||0,5);
 }
 function pickHyechulFocusPattern(e,ph){
-  const pool=ph>=3?['fan','rain','ring','acidSwamp','homingSpore','acidStorm']
-            :ph>=2?['fan','rain','ring','acidSwamp','homingSpore']
+  const pool=ph>=3?['fan','rain','ring','acidSwamp','acidSwamp','homingSpore','homingSpore','acidStorm','acidStorm']
+            :ph>=2?['fan','rain','ring','acidSwamp','acidSwamp','homingSpore','homingSpore']
             :['fan','rain','ring'];
   let choices=pool.filter(x=>x!==e._lastFocus);
   if(!choices.length) choices=pool;
@@ -5723,6 +5723,21 @@ function throwFood(b,ang,speed,dmg,home){
   const sp=(b&&b.enraged)?speed*0.78:speed;   // 격노 시 음식탄 속도 완화
   eBullets.push({x:b.x,y:b.y,vx:Math.cos(ang)*sp,vy:Math.sin(ang)*sp,r:13,dmg,life:3.4,foodImg:pickFood(),spin:rand(0,TAU),spinV:rand(-7,7),home:home||0});
 }
+function nextFromBag(b,key,n){
+  let bag=b[key];
+  if(!bag||!bag.length){ bag=[]; for(let i=0;i<n;i++) bag.push(i); for(let i=bag.length-1;i>0;i--){ const j=irand(0,i), t=bag[i]; bag[i]=bag[j]; bag[j]=t; } b[key]=bag; }
+  return bag.pop();
+}
+function kijoFrenzy(b){
+  // [격노 전용] 광란의 가면: 3중 회전 링 + 머리 위 가면 낙하
+  const cx=b.x, cy=b.y;
+  for(let ring=0;ring<3;ring++){
+    const k=12+ring*3, sp=160+ring*42, off=(b.angle||0)*1.4+ring*0.5;
+    for(let i=0;i<k;i++){ const a=off+i/k*TAU; eBullets.push({x:cx,y:cy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,r:8,dmg:14,life:4,srcName:'키죠'}); }
+  }
+  for(let i=0;i<5;i++){ const fx=clamp(player.x+rand(-170,170),40,W-40); eBullets.push({x:fx,y:-12,vx:rand(-20,20),vy:rand(200,250),r:9,dmg:14,life:4.2,foodImg:(typeof pickFood==='function'?pickFood():null),spin:rand(0,TAU),spinV:rand(-7,7)}); }
+  banner('👹 광란의 가면','사방이 가면이다!',900); screenShake=Math.max(screenShake||0,8); if(typeof beep==='function')beep(80,0.3,'sawtooth',0.07);
+}
 function kijoMaskBrand(b){
   const spots=[
     {x:player.x,y:player.y},
@@ -5748,14 +5763,14 @@ function angleDiff(a,b){
 function kijoRing(x,y,k,spd,dmg,offset){
   for(let i=0;i<k;i++){
     const a=(offset||0)+i/k*TAU;
-    eBullets.push({x,y,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,r:8,dmg:dmg||9,life:3.7,srcName:'키죠'});
+    eBullets.push({x,y,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,r:8,dmg:dmg||13,life:3.7,srcName:'키죠'});
   }
 }
 function kijoFan(x,y,ang,k,spread,spd,dmg,food){
   for(let i=0;i<k;i++){
     const a=ang+(i-(k-1)/2)*spread;
-    if(food) throwFood({x,y,enraged:boss&&boss.enraged},a,spd,dmg||9);
-    else eBullets.push({x,y,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,r:8,dmg:dmg||9,life:3.6,srcName:'키죠'});
+    if(food) throwFood({x,y,enraged:boss&&boss.enraged},a,spd,dmg||13);
+    else eBullets.push({x,y,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,r:8,dmg:dmg||13,life:3.6,srcName:'키죠'});
   }
 }
 function kijoMaskFlip(b){
@@ -5807,8 +5822,8 @@ function kijoReflectStance(b){
   b.reflectAng=Math.atan2(player.y-b.y,player.x-b.x);
   banner('가면 난무','가면탄을 피하라',950);
   const side=b.reflectAng+Math.PI/2;
-  kijoFan(b.x,b.y,side,5,0.16,205,8,false);
-  kijoFan(b.x,b.y,side+Math.PI,5,0.16,205,8,false);
+  kijoFan(b.x,b.y,side,5,0.16,205,12,false);
+  kijoFan(b.x,b.y,side+Math.PI,5,0.16,205,12,false);
 }
 function kijoDamageWindow(b,t){
   b.restT=0;
@@ -5829,7 +5844,7 @@ function updateKijoFx(dt){
       g.done=true;
       const pa=Math.atan2(player.y-g.y,player.x-g.x), d=Math.hypot(player.x-g.x,player.y-g.y);
       if(d<g.r&&Math.abs(angleDiff(pa,g.ang))<g.w*0.5) hurtPlayer(boss&&boss.enraged?22:17,'키죠의 시선');
-      kijoFan(g.x,g.y,g.ang,boss&&boss.enraged?13:9,0.11,245,9,false);
+      kijoFan(g.x,g.y,g.ang,boss&&boss.enraged?13:9,0.11,245,13,false);
     }
   }
   kijoGazes=kijoGazes.filter(g=>g.t<g.warn+0.45);
@@ -5840,19 +5855,19 @@ function updateKijoFx(dt){
       m.done=true;
       if(m.type==='flip'){
         if(m.real){
-          kijoRing(m.x,m.y,boss&&boss.enraged?24:18,175,9,m.seed);
+          kijoRing(m.x,m.y,boss&&boss.enraged?24:18,175,13,m.seed);
           if(typeof spawnFirePillar==='function') spawnFirePillar(m.x,m.y,'키죠');
         } else {
           const pa=Math.atan2(player.y-m.y,player.x-m.x);
-          kijoFan(m.x,m.y,pa,3,0.22,215,8,false);
+          kijoFan(m.x,m.y,pa,3,0.22,215,12,false);
         }
       } else if(m.type==='mood'){
         if(m.mood==='laugh'){
           const pa=Math.atan2(player.y-m.y,player.x-m.x);
-          kijoFan(m.x,m.y,pa,boss&&boss.enraged?9:6,0.17,245,9,false);
+          kijoFan(m.x,m.y,pa,boss&&boss.enraged?9:6,0.17,245,13,false);
         } else {
           const n=boss&&boss.enraged?9:6;
-          for(let i=0;i<n;i++) eBullets.push({x:clamp(m.x+rand(-120,120),40,W-40),y:-12,vx:rand(-18,18),vy:rand(185,235),r:8,dmg:9,life:4.2,srcName:'키죠'});
+          for(let i=0;i<n;i++) eBullets.push({x:clamp(m.x+rand(-120,120),40,W-40),y:-12,vx:rand(-18,18),vy:rand(185,235),r:8,dmg:13,life:4.2,srcName:'키죠'});
         }
       }
     }
@@ -5864,8 +5879,8 @@ function updateKijoFx(dt){
     if(p.fireT<=0){
       p.fireT=boss&&boss.enraged?0.36:0.48;
       const pa=Math.atan2(player.y-p.y,player.x-p.x);
-      eBullets.push({x:p.x,y:p.y,vx:Math.cos(pa)*210,vy:Math.sin(pa)*210,r:7,dmg:8,life:3.4,srcName:'키죠'});
-      eBullets.push({x:p.x,y:p.y,vx:0,vy:195,r:7,dmg:8,life:3.4,srcName:'키죠'});
+      eBullets.push({x:p.x,y:p.y,vx:Math.cos(pa)*210,vy:Math.sin(pa)*210,r:7,dmg:12,life:3.4,srcName:'키죠'});
+      eBullets.push({x:p.x,y:p.y,vx:0,vy:195,r:7,dmg:12,life:3.4,srcName:'키죠'});
     }
     if(!p.hit&&dist2(p.x,p.y,player.x,player.y)<(p.r+player.r)**2){ p.hit=true; hurtPlayer(14,'탈춤 가면'); }
   }
@@ -5906,7 +5921,9 @@ function updateBoss(dt){
   }
   b.phaseT+=dt; b.attackT-=dt; b.angle+=dt*1.2; if(b.hitT>0)b.hitT-=dt;
   if(b.reflectT>0) b.reflectT-=dt;
-  if(!b.enraged && b.hp<b.maxhp*0.4){ b.enraged=true; b.spd*=1.4; banner("격노!","보스가 분노한다",1300); chatSys("🔥 보스 격노 — 채팅 카오스 monkaS"); }
+  if(!b.enraged && b.hp<b.maxhp*0.4){ b.enraged=true; b.spd*=1.4; banner("격노!","보스가 분노한다",1300); chatSys("🔥 보스 격노 — 채팅 카오스 monkaS");
+    if(b.key==='kijo'){ b._kijoBag=null; b._kijoRep=0; banner("👹 가면의 마귀 각성","광란의 가면 해금!",1400); screenShake=Math.max(screenShake||0,16); kijoFrenzy(b); }
+  }
   if(stunned) return;
   if(b.key==='kijo'){ b.restT=0; b.restWaitT=0; b.restWaitDur=0; }
   if(b.key==='kijo'&&b.intent&&b.intent.label==='마안') return;
@@ -5933,8 +5950,14 @@ function updateBoss(dt){
       for(let i=0;i<8;i++) enemyShootAt(b, b.x+Math.cos(i/8*TAU)*100, b.y+Math.sin(i/8*TAU)*100, 200,8);
     }
     if(b.pattern==='summon'){
-      b.atkN=(b.atkN||0)+1;
-      const phase=b.atkN%8;
+      let phase;
+      if((b._kijoRep||0)>0){ b._kijoRep--; phase=b._kijoPhase; b.attackT=rate*0.55; }   // 단순 탄막 집중 반복 중
+      else {
+        b.atkN=(b.atkN||0)+1;
+        phase=nextFromBag(b,'_kijoBag',b.enraged?9:8);   // 셔플백 (격노 시 9번째=광란의 가면 포함)
+        b._kijoPhase=phase;
+        if(phase===2||phase===7){ b._kijoRep=2+(Math.random()<0.5?1:0); b.attackT=rate*0.55; }   // 회전나선/음식폭격 → 3~4회 집중
+      }
       if(phase===0){
         // ① 가면 뒤집기: 진짜/가짜 가면을 구분하는 속임수 탄막
         kijoMaskFlip(b);
@@ -5944,7 +5967,7 @@ function updateBoss(dt){
       } else if(phase===2){
         // ③ 2갈래 회전 나선
         const k=b.enraged?14:11, base=b.angle*2.6;
-        for(let i=0;i<k;i++){ throwFood(b, base+i/k*TAU, 185, 9); throwFood(b, -base+i/k*TAU+0.3, 175, 9); }
+        for(let i=0;i<k;i++){ throwFood(b, base+i/k*TAU, 185, 13); throwFood(b, -base+i/k*TAU+0.3, 175, 13); }
       } else if(phase===3){
         // ④ 탈춤 행진: 가면들이 측면에서 지나가며 탄을 뿌림
         kijoParadePattern(b);
@@ -5958,18 +5981,21 @@ function updateBoss(dt){
       } else if(phase===6){
         // ⑦ 가면 낙인: 플레이어 주변 공간을 잠깐 봉쇄
         kijoMaskBrand(b);
-      } else {
-        // ⑤ 음식 폭격 (낙하·증가)
+      } else if(phase===7){
+        // ⑦ 음식 폭격 (낙하·증가)
         const n=b.enraged?8:6;
         const fall=b.enraged?0.8:1;   // 격노 시 낙하 음식 속도 완화
-        for(let i=0;i<n;i++){ const fx=rand(50,W-50); eBullets.push({x:fx,y:-12,vx:rand(-25,25),vy:rand(165,205)*fall,r:13,dmg:9,life:4.2,foodImg:pickFood(),spin:rand(0,TAU),spinV:rand(-7,7)}); }
+        for(let i=0;i<n;i++){ const fx=rand(50,W-50); eBullets.push({x:fx,y:-12,vx:rand(-25,25),vy:rand(165,205)*fall,r:13,dmg:13,life:4.2,foodImg:pickFood(),spin:rand(0,TAU),spinV:rand(-7,7)}); }
         banner("음식 폭격!","",600);
-        kijoQueueDamageWindow(b,b.enraged?1.55:2.15,b.enraged?1.25:1.55);
+        if((b._kijoRep||0)<=0) kijoQueueDamageWindow(b,b.enraged?1.55:2.15,b.enraged?1.25:1.55);   // 반복 마지막에만 휴식
+      } else {
+        // ⑧ [격노 전용] 광란의 가면
+        kijoFrenzy(b);
       }
       // 격노 보너스: 유도하는 음식탄 (피하기 까다로움)
       if(b.enraged && Math.random()<0.32){
         const pa=Math.atan2(player.y-b.y,player.x-b.x);
-        for(let i=0;i<5;i++) throwFood(b, pa+i/5*TAU, 175, 9, 1.25);
+        for(let i=0;i<5;i++) throwFood(b, pa+i/5*TAU, 175, 13, 1.25);
       }
     }
     if(b.pattern==='spiral'){
@@ -6950,11 +6976,11 @@ function update(dt){
         e.atkT=(e.atkT==null?1.4:e.atkT)-dt;
         if(e.atkT<=0){
           // 새 패턴 세트 시작 시점: ph3 강림 슬램 → ph2~3 충전 폭발 → 일반 패턴
-          if((e.atkRep||0)<=0 && ph>=3 && (e._slamCd=(e._slamCd||0)-1)<=0 && Math.random()<0.26){
+          if((e.atkRep||0)<=0 && ph>=3 && (e._slamCd=(e._slamCd||0)-1)<=0 && Math.random()<0.34){
             e.slamState='warn'; e.slamT=0.9; e._slamCd=3;
             banner('💢 강림 예고','발밑을 피하라!',900); if(typeof beep==='function')beep(70,0.3,'sawtooth',0.07); screenShake=Math.max(screenShake||0,6);
             e.atkT=0.5;
-          } else if((e.atkRep||0)<=0 && ph>=2 && (e._climaxCd=(e._climaxCd||0)-1)<=0 && Math.random()<0.30){
+          } else if((e.atkRep||0)<=0 && ph>=2 && (e._climaxCd=(e._climaxCd||0)-1)<=0 && Math.random()<0.36){
             e.climaxT=ph>=3?1.3:1.1; e._climaxCd=2;
             banner('🔥 과부하 충전','흩어져라!',1000); if(typeof beep==='function')beep(55,0.5,'sawtooth',0.08); screenShake=Math.max(screenShake||0,7);
             e.atkT=1.0;
