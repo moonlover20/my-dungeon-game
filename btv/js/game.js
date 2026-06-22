@@ -5417,7 +5417,7 @@ function pickHyechulPattern(e,ph){
 function hyechulFan(e,ph){
   const pa=Math.atan2(player.y-e.y,player.x-e.x);
   const n=ph>=3?7:(ph>=2?5:5), spread=ph>=3?0.17:(ph>=2?0.22:0.18), sp=ph>=3?260:(ph>=2?250:235), dmg=ph>=3?17:(ph>=2?15:13);
-  for(let i=-(n-1)/2;i<=(n-1)/2;i++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa+i*spread)*sp,vy:Math.sin(pa+i*spread)*sp,r:ph>=3?9:8,dmg,life:ph>=2?3.4:3,spore:true,home:ph>=3?1.2:0});
+  for(let i=-(n-1)/2;i<=(n-1)/2;i++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa+i*spread)*sp,vy:Math.sin(pa+i*spread)*sp,r:ph>=3?9:8,dmg,life:ph>=2?3.4:3,spore:true,home:0});
   banner('산성 부채꼴','피해라!',650);
 }
 function hyechulRain(e,ph){
@@ -5511,7 +5511,7 @@ function hyechulNextPhase(e){
   burst(e.x,e.y,col,34,440); burst(e.x,e.y,'#ffffff',12,280);
   if(typeof sfx!=='undefined' && sfx.boss) sfx.boss();
   beep(ph===2?180:90,0.5,'sawtooth',0.07); beep(ph===2?95:60,0.6,'sine',0.06);
-  const line=ph===2?'\uAEBC\uC9C8\uC774 \uAC08\uB77C\uC9C4\uB2E4...':'\uBC14\uB2E5 \uC544\uB798\uC5D0\uC11C \uB465\uC9C0\uAC00 \uC5F4\uB9B0\uB2E4';
+  const line=ph===2?'\uAECD\uC9C8\uC774 \uAC08\uB77C\uC9C4\uB2E4...':'\uBC14\uB2E5 \uC544\uB798\uC5D0\uC11C \uB465\uC9C0\uAC00 \uC5F4\uB9B0\uB2E4';
   const name=ph===2?'\uB808\uC5B4 \uBCC0\uC774':'\uD558\uC774\uBE0C \uAC1C\uBC29';
   bossEvolve={ phase:ph, t:0, line, name, col, e };
   cutsceneT=2.9;
@@ -7017,10 +7017,10 @@ function update(dt){
         const tx=clamp(player.x,80,W-80), xgap=Math.abs(tx-e.x);
         const xspd=e.spd*(0.8+Math.min(1.2,xgap/200));        // 멀수록 빠르게 (0.8~2.0배)로 추적 → 예측 깨기
         e.x+=Math.sign(tx-e.x)*Math.min(xgap,xspd*dt);
-        e._hoverT=(e._hoverT==null?rand(5,8):e._hoverT)-dt;
+        e._hoverT=(e._hoverT==null?rand(3,5):e._hoverT)-dt;
         let yBase=player.y-210;
-        if(e._hoverT<0 && e._hoverT>-1.4) yBase=player.y-120;  // 5~8초마다 1.4초간 더 내려와 압박
-        else if(e._hoverT<=-1.4) e._hoverT=rand(5,8);
+        if(e._hoverT<0 && e._hoverT>-1.4) yBase=player.y-75;  // 3~5초마다 1.4초간 더 깊게 내려와 압박
+        else if(e._hoverT<=-1.4) e._hoverT=rand(3,5);
         const ty=clamp(yBase+Math.sin(e.wob*1.5)*26,110,300);  // 떠다님 + 약간 넓힌 범위
         e.y+=Math.sign(ty-e.y)*Math.min(Math.abs(ty-e.y),e.spd*0.7*dt);
         // 소환은 비중을 낮춰 가끔만 — 발사 패턴에 집중
@@ -7043,7 +7043,7 @@ function update(dt){
             banner('🔥 과부하 충전','흩어져라!',1000); if(typeof beep==='function')beep(55,0.5,'sawtooth',0.08); screenShake=Math.max(screenShake||0,7);
             e.atkT=1.0;
           } else {
-            if((e.atkRep||0)<=0){ e._focusPat=pickHyechulFocusPattern(e,ph); e.atkRep=({rain:4,acidSwamp:4,homingSpore:1,acidStorm:1}[e._focusPat])||(3+(Math.random()<0.5?1:0)); }
+            if((e.atkRep||0)<=0){ e._focusPat=pickHyechulFocusPattern(e,ph); e.atkRep=({rain:4,acidSwamp:4,homingSpore:1,acidStorm:1,fan:2}[e._focusPat])||(3+(Math.random()<0.5?1:0)); }
             runHyechulPatternFocus(e,ph,e._focusPat);
             e.atkRep--;
             if(e.atkRep>0) e.atkT=ph===1?0.80:(ph===2?0.68:0.58);   // 세트 내 반복 간격(짧음)
