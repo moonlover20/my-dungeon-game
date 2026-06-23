@@ -2875,6 +2875,43 @@ function countEnemyHazards(kind,srcName){
 function warnAoE(x,y,r,warnT,liveT,dmg,srcName,col){
   hazards.push({x:clamp(x,34,W-34),y:clamp(y,90,H-50),t:0,warnT:warnT||0.75,liveT:liveT||0.45,r:r||80,hit:false,dmg:dmg||10,srcName:srcName||null,col:col||null});
 }
+function kiterRush(e,a,d,dt){
+  // 안티-터틀: 후반 카이터가 플레이어의 거리벌리기에 들이대 근접 스윕. 러시 중이면 true(일반 AI 스킵)
+  if((e._rushCd||0)>0) e._rushCd-=dt;
+  if(!e._rush){
+    if(d>340) e._turtleT=(e._turtleT||0)+dt; else e._turtleT=Math.max(0,(e._turtleT||0)-dt*1.6);
+    if((e._turtleT||0)>=4.5 && (e._rushCd||0)<=0){
+      e._rush='wind'; e._rushT=0.5; e._turtleT=0; e.faceAng=a;
+      banner('⚡ 들이댄다!','거리를 좁힌다',650); burst(e.x,e.y,e.color,12,180); if(typeof beep==='function')beep(200,0.1,'square',0.05);
+      return true;
+    }
+    return false;
+  }
+  if(e._rush==='wind'){
+    e._rushT-=dt; e.faceAng=a; e._rushAx=Math.cos(a); e._rushAy=Math.sin(a);
+    if(e._rushT<=0){ e._rush='dash'; e._rushT=0.6; if(typeof sfx!=='undefined'&&sfx.enemyDash) sfx.enemyDash(); }
+    return true;
+  }
+  if(e._rush==='dash'){
+    e._rushT-=dt;
+    e.x=clamp(e.x+e._rushAx*e.spd*4.2*dt,e.r,W-e.r);
+    e.y=clamp(e.y+e._rushAy*e.spd*4.2*dt,e.r,H-e.r);
+    e.faceAng=Math.atan2(e._rushAy,e._rushAx);
+    const wall=e.x<=e.r||e.x>=W-e.r||e.y<=e.r||e.y>=H-e.r;
+    if(d<e.r+player.r+34 || e._rushT<=0 || wall){
+      e._rush='sweep'; e._rushT=0.45;
+      warnAoE(e.x,e.y,rand(94,106),0.35,0.4,Math.max(10,Math.round((e.dmg||10)*1.4)),(e.name||e.label)+' 근접 스윕',e.color);
+      burst(e.x,e.y,'#ffd34d',16,220); screenShake=Math.max(screenShake||0,5); if(typeof beep==='function')beep(120,0.14,'sawtooth',0.06);
+    }
+    return true;
+  }
+  if(e._rush==='sweep'){
+    e._rushT-=dt;
+    if(e._rushT<=0){ e._rush=null; e._rushCd=rand(6.5,8.5); e.stunT=Math.max(e.stunT||0,0.35); }
+    return true;
+  }
+  return false;
+}
 function spawnGravityWell(x,y,r,life,pull,dmg,srcName){
   if(sfx.enemyCast) sfx.enemyCast();
   hazards.push({kind:'gravitywell',x:clamp(x,50,W-50),y:clamp(y,105,H-60),r:r||135,t:0,life:life||2.8,warnT:0.75,pull:pull||185,dmg:dmg||0,tickCd:0,srcName:srcName||'gravity',seed:rand(0,TAU)});
@@ -3896,6 +3933,7 @@ function updateIntentPatterns(e,dt){
       burst(tx,ty,'#ff4d6d',18,220);
       screenShake=Math.max(screenShake||0,5);
       if(typeof beep==='function')beep(90,0.18,'sawtooth',0.06);
+      const ra=Math.atan2(player.y-e.y,player.x-e.x); e._rollAx=Math.cos(ra); e._rollAy=Math.sin(ra); e._rollT=0.7; burst(e.x,e.y,'#ff4d6d',10,170);   // 낙과 후 굴러 들이받기
       e._fallCd=4.5;
     });
   }else if(e.type==='slime_red'&&cd('_redDashCd',5.5)){
@@ -5928,6 +5966,16 @@ function hyechulAcidStorm(e,ph){
   }
   banner('🌪 산성 폭풍','빈 틈으로 피하라!',900); if(typeof beep==='function')beep(110,0.25,'sawtooth',0.06); screenShake=Math.max(screenShake||0,5);
 }
+function hyechulCreepTide(e,ph){
+  // [2페+] 점막 잠식: 한쪽 끝에서 점막이 밀려와 깨끗한 바닥을 좁힌다. 점막 위=둔화. 선단을 쏘면 밀려난다.
+  if(hazards.some(h=>h.kind==='creepTide')) return;   // 동시 1개
+  const fromLeft=Math.random()<0.5, edge=fromLeft?40:W-40, dir=fromLeft?1:-1;
+  const maxFrac=ph>=3?0.86:0.78, maxFront=edge+dir*(W-80)*maxFrac;
+  hazards.push({kind:'creepTide',dir,edge,front:edge,maxFront,spd:ph>=3?150:120,
+    t:0,warnT:0.85,life:ph>=3?13:11,phase:'advance',seed:rand(0,TAU)});
+  banner('🟣 점막 잠식','바닥이 먹힌다 — 선단을 쏴서 밀어내라!',1100);
+  if(typeof beep==='function')beep(70,0.4,'sawtooth',0.06); screenShake=Math.max(screenShake||0,5);
+}
 function pickHyechulFocusPattern(e,ph){
   const pool=ph>=3?['fan','rain','ring','acidSwamp','acidSwamp','homingSpore','homingSpore','acidStorm','acidStorm']
             :ph>=2?['fan','rain','ring','acidSwamp','acidSwamp','homingSpore','homingSpore']
@@ -6353,6 +6401,65 @@ function updateKijoFx(dt){
   }
   kijoParades=kijoParades.filter(p=>p.t<p.life&&p.x>-90&&p.x<W+90);
 }
+function beginKijoGaze(b){
+  return setIntent(b,'👁','보지 마',1.1,()=>{
+    b.gazeT=b.enraged?3.4:2.8; b.gazeStareT=0; b.gazeFireT=0.6;
+    banner('👁 보지 마!','커서를 키죠에서 떼고 눈먼 사격을',1100);
+    if(typeof beep==='function')beep(120,0.3,'sawtooth',0.06); screenShake=Math.max(screenShake||0,6);
+    b._gazeCd=14;
+  });
+}
+function beginKijoStage(b){
+  return setIntent(b,'🎭','무대 암전',1.2,()=>{
+    b.stageT=b.enraged?5.6:4.6; b.stageHitT=0;
+    const n=b.enraged?2:1, spots=[];
+    for(let i=0;i<n;i++) spots.push({x:rand(140,W-140),y:rand(170,H-150),r:120});
+    b.stageSpots=spots;
+    banner('🎭 무대 암전','조명을 피해 어둠에 숨어라',1200);
+    if(typeof beep==='function')beep(70,0.45,'sine',0.06); screenShake=Math.max(screenShake||0,7);
+    b._stageCd=18;
+  });
+}
+function updateKijoGaze(b,dt){
+  if(!(b.gazeT>0)) return;
+  b.gazeT-=dt;
+  const aimAng=Math.atan2(mouseY-player.y,mouseX-player.x);
+  const toBoss=Math.atan2(b.y-player.y,b.x-player.x);
+  const off=Math.abs(angleDiff(aimAng,toBoss));
+  b.gazeAimOff=off;
+  const cone=0.46, looking=off<cone;
+  const grace=b.enraged?0.42:0.55;   // 유예: 콘 안에서 이만큼 버텨야 피해 시작
+  if(looking){
+    b.gazeCharge=Math.min(1,(b.gazeCharge||0)+dt/grace);
+    if(b.gazeCharge>=1){
+      b.gazeStareT=(b.gazeStareT||0)+dt;
+      const tick=b.enraged?0.78:0.95;
+      if(b.gazeStareT>=tick){ b.gazeStareT-=tick; hurtPlayer(b.enraged?16:12,'키죠의 시선'); hitFlash=Math.max(hitFlash||0,0.22); }
+    }
+  } else {
+    b.gazeCharge=Math.max(0,(b.gazeCharge||0)-dt*2.2);   // 콘 벗어나면 빠르게 식음
+    b.gazeStareT=Math.max(0,(b.gazeStareT||0)-dt*1.6);
+  }
+  // 충전 중 상승 경고음
+  if(looking && (b.gazeCharge||0)<1){ b._gazeBeepT=(b._gazeBeepT||0)-dt; if(b._gazeBeepT<=0){ b._gazeBeepT=0.11; if(typeof beep==='function')beep(300+(b.gazeCharge||0)*430,0.05,'square',0.03); } }
+  // 시선 동안 가벼운 견제 링(눈먼 사격 + 회피 강제)
+  b.gazeFireT=(b.gazeFireT==null?0.7:b.gazeFireT)-dt;
+  if(b.gazeFireT<=0){ b.gazeFireT=b.enraged?0.78:1.0; kijoRing(b.x,b.y,b.enraged?10:8,148,12,(b.angle||0)*1.3); }
+  if(b.gazeT<=0){ b.gazeStareT=0; b.gazeCharge=0; }
+}
+function updateKijoStage(b,dt){
+  if(!(b.stageT>0)) return;
+  b.stageT-=dt;
+  const spots=b.stageSpots||[]; let inLight=false;
+  const spd=b.enraged?108:88;
+  for(const s of spots){
+    const dx=player.x-s.x, dy=player.y-s.y, d=Math.hypot(dx,dy)||1;
+    s.x=clamp(s.x+dx/d*spd*dt,60,W-60); s.y=clamp(s.y+dy/d*spd*dt,120,H-80);
+    if(dist2(player.x,player.y,s.x,s.y)<s.r*s.r) inLight=true;
+  }
+  if(inLight){ b.stageHitT=(b.stageHitT||0)-dt; if(b.stageHitT<=0){ b.stageHitT=0.45; hurtPlayer(b.enraged?15:11,'스포트라이트'); hitFlash=Math.max(hitFlash||0,0.22); } }
+  if(b.stageT<=0) b.stageSpots=null;
+}
 function updateBossIntentPatterns(b,dt){
   if(!b) return;
   tickIntent(b,dt);
@@ -6360,6 +6467,8 @@ function updateBossIntentPatterns(b,dt){
   const cd=(name,base)=>{ b[name]=(b[name]==null?rand(base*0.65,base*1.2):b[name])-dt; return b[name]<=0&&!b.intent; };
   if(b.key==='kijo'){
     if(b.hp<=b.maxhp*0.3&&!b._madness){ b._madness=true; setIntent(b,'💀','광기',1.5,()=>{ b.intentSpeedMul=1.4; banner('💀 광기','키죠의 패턴이 빨라진다',1100); }); }
+    else if((b.gazeT||0)<=0&&(b.stageT||0)<=0&&cd('_gazeCd',14)) beginKijoGaze(b);
+    else if((b.gazeT||0)<=0&&(b.stageT||0)<=0&&cd('_stageCd',18)) beginKijoStage(b);
     else if(cd('_evilEyeCd',8)) beginKijoEvilEye(b);
     else if(cd('_maskBombCd',11)) setIntent(b,'🎭','가면 폭발',1.5,()=>{ for(let i=0;i<4;i++){ const x=clamp(player.x+rand(-150,150),50,W-50), y=clamp(player.y+rand(-120,120),90,H-60); setTimeout(()=>intentShockwave(x,y,90,16,'가면 폭발'),5000); burst(x,y,'#c0392b',8,120); } b._maskBombCd=12; });
   }else if(b.key==='seungwoo'){
@@ -6394,6 +6503,7 @@ function updateBoss(dt){
   if(stunned) return;
   if(b.key==='kijo'){ b.restT=0; b.restWaitT=0; b.restWaitDur=0; }
   if(b.key==='kijo'&&b.intent&&b.intent.label==='마안') return;
+  if(b.key==='kijo'){ updateKijoGaze(b,dt); updateKijoStage(b,dt); if((b.gazeT||0)>0||(b.stageT||0)>0) b.attackT=Math.max(b.attackT,0.5); }
   // 플레이어 추적(느슨) — 순서 기억 중엔 추적 정지, 타일 링 위로 물러나 그 자리에서 사격
   const a=Math.atan2(player.y-b.y,player.x-b.x);
   const sp=b.spd*(b.enraged?1.3:1)*statusMoveMul(b);
@@ -7093,6 +7203,9 @@ function update(dt){
     const d=Math.hypot(player.x-e.x,player.y-e.y);
     if((e.stunImmuneT=(e.stunImmuneT||0))>0) e.stunImmuneT=Math.max(0,e.stunImmuneT-dt);
     if((e.stunT=(e.stunT||0))>0){ e.stunT-=dt; }
+    else if((e.ai==='cleaver_thrower'||e.ai==='boomerang_thrower') && kiterRush(e,a,d,dt)){
+      // 안티-터틀 러시 진행 중 — 일반 카이팅 AI 스킵
+    }
     else if(e.ai==='chase'){
       if((e.lungeA=e.lungeA||0)>0){ const lm=(e.type==='goblin_warrior')?5.2:4.0; e.lungeA-=dt; e.x+=e.lvx*e.spd*lm*dt; e.y+=e.lvy*e.spd*lm*dt;
         // 러라 잔상 폭발: 돌진 중 잔상 위치를 기록하고, 돌진 종료 시 2초 후 폭발
@@ -7130,8 +7243,15 @@ function update(dt){
         }
       }
     }else if(e.ai==='erratic'){
-      const wob=Math.sin(e.wob*2)*0.6;
-      e.x+=Math.cos(a+wob)*e.spd*dt; e.y+=Math.sin(a+wob)*e.spd*dt;
+      if(e.type==='apple' && (e._rollT||0)>0){
+        e._rollT-=dt; e.wob+=dt*16;   // 빠른 회전 = 구르는 느낌
+        e.x=clamp(e.x+e._rollAx*e.spd*3.6*dt,e.r,W-e.r);
+        e.y=clamp(e.y+e._rollAy*e.spd*3.6*dt,e.r,H-e.r);
+        if(e._rollT<=0) e.stunT=Math.max(e.stunT||0,0.3);   // 구른 뒤 짧은 경직
+      } else {
+        const wob=Math.sin(e.wob*2)*0.6;
+        e.x+=Math.cos(a+wob)*e.spd*dt; e.y+=Math.sin(a+wob)*e.spd*dt;
+      }
     }else if(e.ai==='shooter'){
       // 거리 유지하며 사격
       if(d<e.range*0.6){ e.x-=Math.cos(a)*e.spd*dt; e.y-=Math.sin(a)*e.spd*dt; }
@@ -7152,6 +7272,15 @@ function update(dt){
           for(let i=0;i<3;i++) setTimeout(()=>{ if(enemies.includes(e)){ const sa=pa+(i-1)*0.045; eBullets.push({x:e.x,y:e.y,vx:Math.cos(sa)*260,vy:Math.sin(sa)*260,r:7,dmg:e.dmg,life:4,srcName:e.name,style:enemyBulletStyle(e),col:e.color}); } }, i*85);
           // 가끔 좌우 견제탄으로 옆길을 살짝 막는다
           if(e.shotN%6===0){ setTimeout(()=>{ if(enemies.includes(e)){ for(const off of [-0.5,0.5]) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa+off)*230,vy:Math.sin(pa+off)*230,r:7,dmg:Math.max(5,Math.round(e.dmg*0.85)),life:3.6,srcName:e.name,style:enemyBulletStyle(e),col:e.color}); if(typeof beep==='function')beep(300,0.05,'square',0.03); } }, 300); }
+        } else if(e.type==='killjoy'){
+          // 고기동 난사: 빠른 3연사 + 매 4번째 부채꼴 5연 스프레드
+          const pa=Math.atan2(player.y-e.y,player.x-e.x);
+          if(e.shotN%4===0){
+            for(let i=-2;i<=2;i++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa+i*0.13)*300,vy:Math.sin(pa+i*0.13)*300,r:6,dmg:Math.max(6,Math.round(e.dmg*0.8)),life:3.4,srcName:e.name,style:enemyBulletStyle(e),col:e.color});
+            if(typeof beep==='function')beep(440,0.05,'square',0.03);
+          } else {
+            for(let i=0;i<3;i++) setTimeout(()=>{ if(enemies.includes(e)){ const sa=pa+rand(-0.06,0.06); eBullets.push({x:e.x,y:e.y,vx:Math.cos(sa)*320,vy:Math.sin(sa)*320,r:6,dmg:e.dmg,life:3.2,srcName:e.name,style:enemyBulletStyle(e),col:e.color}); } }, i*70);
+          }
         } else enemyShootAt(e,player.x,player.y,240,7,e.dmg);
         e.coolT=e.cool;
       }
@@ -7522,7 +7651,10 @@ function update(dt){
         e.atkT=(e.atkT==null?1.4:e.atkT)-dt;
         if(e.atkT<=0){
           // 새 패턴 세트 시작 시점: ph3 강림 슬램 → ph2~3 충전 폭발 → 일반 패턴
-          if((e.atkRep||0)<=0 && ph>=3 && (e._slamCd=(e._slamCd||0)-1)<=0 && Math.random()<0.34){
+          if((e.atkRep||0)<=0 && ph>=2 && (e._tideCd=(e._tideCd||0)-1)<=0 && !hazards.some(h=>h.kind==='creepTide') && Math.random()<0.28){
+            hyechulCreepTide(e,ph); e._tideCd=4;
+            e.atkT=ph>=3?1.4:1.6;
+          } else if((e.atkRep||0)<=0 && ph>=3 && (e._slamCd=(e._slamCd||0)-1)<=0 && Math.random()<0.34){
             e.slamState='warn'; e.slamT=0.9; e._slamCd=3;
             banner('💢 강림 예고','발밑을 피하라!',900); if(typeof beep==='function')beep(70,0.3,'sawtooth',0.07); screenShake=Math.max(screenShake||0,6);
             e.atkT=0.5;
@@ -7530,6 +7662,10 @@ function update(dt){
             e.climaxT=ph>=3?1.3:1.1; e._climaxCd=2;
             banner('🔥 과부하 충전','흩어져라!',1000); if(typeof beep==='function')beep(55,0.5,'sawtooth',0.08); screenShake=Math.max(screenShake||0,7);
             e.atkT=1.0;
+          } else if((e.atkRep||0)<=0 && (e._rushCd=(e._rushCd||0)-1)<=0 && enemies.filter(o=>o.type==='zergling'||o.type==='mutalisk'||o.type==='ultra').length>=3 && Math.random()<0.45){
+            hyechulSummonRush(e); e._rushCd=2;
+            if(typeof beep==='function')beep(150,0.25,'sawtooth',0.06); screenShake=Math.max(screenShake||0,5);
+            e.atkT=ph===1?1.6:(ph===2?1.4:1.2);
           } else {
             if((e.atkRep||0)<=0){ e._focusPat=pickHyechulFocusPattern(e,ph); e.atkRep=({rain:4,acidSwamp:4,homingSpore:1,acidStorm:1,fan:2}[e._focusPat])||(3+(Math.random()<0.5?1:0)); }
             runHyechulPatternFocus(e,ph,e._focusPat);
@@ -7550,9 +7686,10 @@ function update(dt){
         if(e.coolT<=0 && d<470){
           if(e.type==='rhino_beetle'){
             const worms=enemies.filter(x=>x.type==='earthworm').length, roll=Math.random();
-            if(worms<6 && roll<0.24){ e.cs='cast'; e.csT=0.6; }
-            else if(roll<0.5){ e.cs='spit'; e.csT=0.35; e.spitRep=3+(Math.random()<0.5?1:0); e.aimX=Math.cos(a); e.aimY=Math.sin(a); }
-            else if(roll<0.72){ e.cs='burst'; e.csT=0.55; e.burstRep=3+(Math.random()<0.5?1:0); }
+            if(worms<6 && roll<0.20){ e.cs='cast'; e.csT=0.6; }
+            else if(roll<0.42){ e.cs='spit'; e.csT=0.35; e.spitRep=3+(Math.random()<0.5?1:0); e.aimX=Math.cos(a); e.aimY=Math.sin(a); }
+            else if(roll<0.61){ e.cs='burst'; e.csT=0.55; e.burstRep=3+(Math.random()<0.5?1:0); }
+            else if(roll<0.74){ e.cs='emote'; e.csT=0.7; }
             else { e.cs='wind'; e.csT=0.52; if(sfx.enemyWarn) sfx.enemyWarn(); }
           } else { e.cs='wind'; e.csT=e.type==='pobear'?0.55:0.45; if(sfx.enemyWarn) sfx.enemyWarn(); }
         }
@@ -7605,8 +7742,8 @@ function update(dt){
           e._jumpTx=null; e._jumpTy=null; e._jumpMax=null;
         }
       } else if(e.cs==='reaim'){
-        e.csT-=dt; e.wob+=dt*28; e.faceAng=a;
-        if(e.csT<=0){ const ra=Math.atan2(player.y-e.y,player.x-e.x); e.aimX=Math.cos(ra); e.aimY=Math.sin(ra); e.cs='dash'; e.csT=0.50; playPatternSfx('enemyDash2',()=>{ beep(180,0.08,'sawtooth',0.05); setTimeout(()=>beep(330,0.045,'square',0.03),45); },0.22); }
+        e.csT-=dt; e.wob+=dt*28; e.faceAng=Math.atan2(e.aimY,e.aimX);
+        if(e.csT<=0){ e.cs='dash'; e.csT=0.50; playPatternSfx('enemyDash2',()=>{ beep(180,0.08,'sawtooth',0.05); setTimeout(()=>beep(330,0.045,'square',0.03),45); },0.22); }
       } else if(e.cs==='dash'){
         e.csT-=dt; e.faceAng=Math.atan2(e.aimY,e.aimX);
         const dashMul=e.type==='rhino_beetle'?6.1:(e.type==='pobear'?5.9:5.5); e.x+=e.aimX*e.spd*dashMul*dt; e.y+=e.aimY*e.spd*dashMul*dt;
@@ -7622,8 +7759,24 @@ function update(dt){
             banner('💥 반동 재돌진!','',550);
           } else { e._bounced=false; e.csT=0; e.stunT=0.9; burst(e.x,e.y,'#caa14a',14,200); screenShake=Math.max(screenShake,6); }
         }
-        if(e.csT<=0 && !e._bounced){ e._bounced=false; if(e.type==='rhino_beetle'&&e.hp<=e.maxhp*0.55&&!e._doubleDashUsed&&Math.random()<0.65){ e._doubleDashUsed=true; e.cs='reaim'; e.csT=rand(0.22,0.32); e.coolT=0; burst(e.x,e.y,'#ffd34d',10,160); } else { e.cs='rest'; e.csT=0.6; e.coolT=1.7; } }
+        if(e.csT<=0 && !e._bounced){ e._bounced=false; if(e.type==='rhino_beetle'&&e.hp<=e.maxhp*0.55&&!e._doubleDashUsed&&Math.random()<0.65){ e._doubleDashUsed=true; e.cs='reaim'; e.csT=rand(0.5,0.6); e.coolT=0; { const ra=Math.atan2(player.y-e.y,player.x-e.x); e.aimX=Math.cos(ra); e.aimY=Math.sin(ra); } burst(e.x,e.y,'#ffd34d',10,160); } else { e.cs='rest'; e.csT=0.6; e.coolT=1.7; } }
         if(e.csT<=0 && e._bounced){ e._bounced=false; e.cs='rest'; e.csT=0.6; e.coolT=1.7; }
+      } else if(e.cs==='emote'){
+        // D. 긁기 — 화면 가장자리에서 이모트 탄이 빈틈을 두고 플레이어로 수렴
+        e.csT-=dt; e.wob+=dt*20; e.faceAng=a;
+        if(e.csT<=0){
+          const N=18, gap=2+Math.floor(Math.random()*3), gs=Math.floor(Math.random()*N);
+          const px=player.x, py=player.y;
+          for(let i=0;i<N;i++){
+            if(i>=gs && i<gs+gap) continue;   // 회피 가능한 빈틈
+            const a2=i/N*TAU, sx=clamp(px+Math.cos(a2)*330,20,W-20), sy=clamp(py+Math.sin(a2)*330,20,H-20);
+            const ia=Math.atan2(py-sy,px-sx);
+            eBullets.push({x:sx,y:sy,vx:Math.cos(ia)*205,vy:Math.sin(ia)*205,r:7,dmg:16,life:3.2,srcName:(e.name||e.label)+' 긁기',col:'#9146ff'});
+          }
+          burst(player.x,player.y,'#9146ff',14,200); banner('긁혔다!','',650);
+          if(typeof beep==='function')beep(360,0.08,'square',0.05);
+          e.cs='rest'; e.csT=0.5; e.coolT=1.4;
+        }
       } else { e.csT-=dt; if(e.csT<=0) e.cs='approach'; }
     }
     else if(e.ai==='kkotchung'){
@@ -12482,15 +12635,17 @@ function drawEnemy(e){
   if(e.type==='hoonsangtae'&&e.hp<=e.maxhp*0.5){ ctx.save(); ctx.strokeStyle='rgba(255,77,109,'+(0.45+0.35*Math.abs(Math.sin(e.wob*4)))+')'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(0,0,e.r+5,0,TAU); ctx.stroke(); ctx.restore(); }
   if(e.type==='sniper_viewer'&&e.aimBeam&&!e.aimBeam.fired){ ctx.save(); ctx.strokeStyle='rgba(255,38,56,0.82)'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(0,0,e.r+4+2*Math.sin(e.wob*4),0,TAU); ctx.stroke(); ctx.restore(); }
   if(e.ai==='reflector'&&(e.reflectT||0)>0){ ctx.save(); ctx.strokeStyle='rgba(139,232,255,0.9)'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(0,0,e.r+9+3*Math.sin(e.wob*5),0,TAU); ctx.stroke(); ctx.restore(); }
+  if((e._armorBuff||0)>0&&e.type!=='namu'){ ctx.save(); ctx.globalAlpha=0.45+0.3*Math.abs(Math.sin((e.wob||0)*4)); ctx.strokeStyle='#5fa84a'; ctx.lineWidth=2.5; ctx.setLineDash([5,4]); ctx.beginPath(); ctx.arc(0,0,e.r+8,0,TAU); ctx.stroke(); ctx.setLineDash([]); ctx.restore(); }
+  if(e.type==='namu'&&(e._namuBuffT||0)>0){ ctx.save(); ctx.globalAlpha=0.4+0.35*Math.abs(Math.sin((e.wob||0)*3)); ctx.strokeStyle='#8fe06a'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(0,0,e.r+12+2*Math.sin((e.wob||0)*3),0,TAU); ctx.stroke(); ctx.globalAlpha=0.9; ctx.font='bold 13px sans-serif'; ctx.textAlign='center'; ctx.fillText('🛡',0,-e.r-15); ctx.textAlign='left'; ctx.restore(); }
   if(e.ai==='magnet'){ ctx.save(); ctx.globalAlpha=0.22+0.08*Math.sin(e.wob*3); ctx.strokeStyle='#ff4d5a'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(0,0,e.range||230,0,TAU); ctx.stroke(); ctx.restore(); }
   if((e.emergeWarnT||0)>0||(e.teleWarnT||0)>0){ ctx.save(); ctx.strokeStyle=e.ai==='submerge_charge'?'#7ad7ff':'#ff4dd2'; ctx.lineWidth=3; ctx.setLineDash([9,6]); ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo((e.aimX||0)*210,(e.aimY||0)*210); ctx.stroke(); ctx.restore(); }
   if(e.eliteViewer){ ctx.save(); ctx.strokeStyle='rgba(255,60,60,'+(0.45+0.4*Math.abs(Math.sin(e.wob*2.5)))+')'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(0,0,e.r+8,0,TAU); ctx.stroke(); ctx.restore(); }
-  if(e.ai==='charge' && (e.cs==='wind'||e.cs==='spit')){
-    const len=e.cs==='wind'?135:78;
+  if(e.ai==='charge' && (e.cs==='wind'||e.cs==='spit'||e.cs==='reaim')){
+    const len=(e.cs==='wind'||e.cs==='reaim')?135:78;
     ctx.save(); ctx.strokeStyle='rgba(255,70,70,'+(0.35+0.45*Math.abs(Math.sin(e.wob)))+')'; ctx.lineWidth=3; ctx.setLineDash([7,6]);
     ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo((e.aimX||0)*len,(e.aimY||0)*len); ctx.stroke(); ctx.restore();
-  } else if(e.ai==='charge' && (e.cs==='cast'||e.cs==='burst')){
-    const col=e.cs==='burst'?'202,161,74':'232,122,138';
+  } else if(e.ai==='charge' && (e.cs==='cast'||e.cs==='burst'||e.cs==='emote')){
+    const col=e.cs==='burst'?'202,161,74':(e.cs==='emote'?'145,70,255':'232,122,138');
     ctx.save(); ctx.strokeStyle='rgba('+col+','+(0.4+0.4*Math.abs(Math.sin(e.wob)))+')'; ctx.lineWidth=3;
     ctx.beginPath(); ctx.arc(0,0,e.r+12+4*Math.sin(e.wob*2),0,TAU); ctx.stroke(); ctx.restore();
   } else if(e.ai==='charge' && e.cs==='jump'){
@@ -12848,6 +13003,34 @@ function updateHazards(dt){
       if(h.t>=h.life) hazards.splice(i,1);
       continue;
     }
+    if(h.kind==='creepTide'){
+      const yTop=100, yBot=H-50;
+      if(h.t>=h.warnT){
+        if(h.phase!=='recede'){
+          h.front+=h.dir*h.spd*dt;
+          // 선단 근처 플레이어 탄 → 밀어내기
+          let push=0;
+          for(let bi=0;bi<pBullets.length;bi++){ const b=pBullets[bi]; if(b.y>yTop&&b.y<yBot&&Math.abs(b.x-h.front)<48){ push++; if(push<=8) burst(b.x,b.y,'#d68bff',2,110); } }
+          if(push>0) h.front-=h.dir*Math.min(push,10)*140*dt;
+          h.front=(h.dir>0)?clamp(h.front,h.edge,h.maxFront):clamp(h.front,h.maxFront,h.edge);
+        } else {
+          h.front-=h.dir*h.spd*1.7*dt;
+          if((h.dir>0&&h.front<=h.edge)||(h.dir<0&&h.front>=h.edge)){ hazards.splice(i,1); continue; }
+        }
+      }
+      // 점막 위 = 둔화
+      if(h.t>=h.warnT && player.y>yTop && player.y<yBot && (h.dir>0?player.x<h.front:player.x>h.front)) player._creepSlow=true;
+      // 방치 페널티: 점막이 많이 깔리면 혜철이가 바이오매스로 회복 → 밀어낼 이유
+      if(h.t>=h.warnT && h.phase!=='recede'){
+        const cov=Math.abs(h.front-h.edge)/(W-80);
+        if(cov>0.35){ const hc=enemies.find(o=>o.type==='hyechul'); if(hc&&hc.hp<hc.maxhp){ hc.hp=Math.min(hc.maxhp,hc.hp+cov*0.011*hc.maxhp*dt); if(Math.random()<0.25) burst(hc.x,hc.y,'#9a4fc0',2,130); } }
+      }
+      // 혜철이 없으면 즉시 후퇴 / 수명 종료 임박 시 후퇴
+      if(!enemies.some(o=>o.type==='hyechul')) h.phase='recede';
+      else if(h.t>=h.life-2.5 && h.phase==='advance') h.phase='recede';
+      if(h.t>=h.life){ hazards.splice(i,1); }
+      continue;
+    }
     if(h.kind==='movelock'){
       if(!h.done&&h.t>=h.warnT){
         h.done=true;
@@ -12966,6 +13149,51 @@ function drawHazards(){
       ctx.beginPath(); ctx.ellipse(h.x,h.y,h.r,h.r*0.62,0,0,TAU); ctx.stroke();
       ctx.globalAlpha=0.3*a; ctx.fillStyle='#9a4fc0';
       for(let k=0;k<4;k++){ const ka=k/4*TAU+h.t; ctx.beginPath(); ctx.arc(h.x+Math.cos(ka)*h.r*0.5,h.y+Math.sin(ka)*h.r*0.32,h.r*0.22,0,TAU); ctx.fill(); }
+      ctx.restore(); continue;
+    }
+    if(h.kind==='creepTide'){
+      const yTop=100, yBot=H-50, hh=yBot-yTop, warn=h.t<h.warnT;
+      ctx.save();
+      if(warn){
+        const k=h.t/h.warnT, bw=84, bx0=h.dir>0?0:W-bw;
+        const gg=ctx.createLinearGradient(h.dir>0?0:W,0,h.dir>0?bw:W-bw,0);
+        gg.addColorStop(0,'rgba(150,79,192,'+(0.30*(0.5+0.5*Math.abs(Math.sin(h.t*14))))+')');
+        gg.addColorStop(1,'rgba(150,79,192,0)');
+        ctx.fillStyle=gg; ctx.fillRect(bx0,yTop,bw,hh);
+        ctx.globalAlpha=0.5+0.3*Math.abs(Math.sin(h.t*14));
+        ctx.strokeStyle='#c46bff'; ctx.lineWidth=2.5; ctx.setLineDash([10,8]);
+        const ex=h.dir>0?bw*k:W-bw*k; ctx.beginPath(); ctx.moveTo(ex,yTop); ctx.lineTo(ex,yBot); ctx.stroke(); ctx.setLineDash([]);
+        ctx.restore(); continue;
+      }
+      const edge=h.edge, front=h.front, w=Math.max(1,Math.abs(front-edge)), seg=20, tt=h.t;
+      // 물결치는 유기적 선단(점막 혀)
+      const frontX=(yy)=>front - h.dir*(6 + 7*Math.sin(yy*0.035+tt*2.2) + 4*Math.sin(yy*0.09-tt*1.4));
+      // 본체: 벽쪽 짙음 → 선단쪽 발광 그라데이션
+      const g=ctx.createLinearGradient(edge,0,front,0);
+      g.addColorStop(0,'rgba(28,14,42,0.64)'); g.addColorStop(0.55,'rgba(74,32,104,0.56)'); g.addColorStop(1,'rgba(150,64,190,0.5)');
+      ctx.beginPath(); ctx.moveTo(edge,yTop); ctx.lineTo(edge,yBot);
+      for(let s=seg;s>=0;s--){ const yy=yTop+s/seg*hh; ctx.lineTo(frontX(yy),yy); }
+      ctx.closePath(); ctx.fillStyle=g; ctx.fill();
+      // 정맥(벽→선단으로 뻗는 줄기)
+      ctx.globalAlpha=0.38; ctx.strokeStyle='#7a3f9f'; ctx.lineWidth=2;
+      for(let v=0;v<5;v++){ const vy=yTop+(v+0.5)/5*hh+Math.sin(tt*0.8+v)*10, fx=frontX(vy);
+        ctx.beginPath(); ctx.moveTo(edge,vy);
+        ctx.bezierCurveTo(edge+(fx-edge)*0.4,vy+18*Math.sin(v+tt),edge+(fx-edge)*0.7,vy-14*Math.cos(v*1.3+tt),fx,vy); ctx.stroke(); }
+      // 농포(끓는 방울) — 짙은 베이스 + 밝은 하이라이트
+      for(let k=0;k<10;k++){ const ka=h.seed+k*1.27+tt*0.9;
+        const bx=edge+h.dir*((Math.sin(ka)*0.5+0.5)*w*0.92), by=yTop+(Math.cos(ka*1.7)*0.5+0.5)*hh, br=4+3*Math.sin(tt*2.5+k);
+        ctx.globalAlpha=0.55; ctx.fillStyle='#3a1c52'; ctx.beginPath(); ctx.arc(bx,by,br+1.5,0,TAU); ctx.fill();
+        ctx.globalAlpha=0.7; ctx.fillStyle='#b06bd8'; ctx.beginPath(); ctx.arc(bx-br*0.3,by-br*0.3,br*0.6,0,TAU); ctx.fill(); }
+      ctx.globalAlpha=1;
+      // 발광 막(선단 물결 라인 — 쏘는 가장자리)
+      ctx.shadowColor='#d68bff'; ctx.shadowBlur=16; ctx.globalAlpha=0.85+0.15*Math.sin(tt*6);
+      ctx.strokeStyle='#e6a8ff'; ctx.lineWidth=3.5; ctx.beginPath();
+      for(let s=0;s<=seg;s++){ const yy=yTop+s/seg*hh, fx=frontX(yy); s===0?ctx.moveTo(fx,yy):ctx.lineTo(fx,yy); }
+      ctx.stroke();
+      // 내측 보조 라인(두께감)
+      ctx.shadowBlur=0; ctx.globalAlpha=0.4; ctx.strokeStyle='#7a3f9f'; ctx.lineWidth=1.5; ctx.beginPath();
+      for(let s=0;s<=seg;s++){ const yy=yTop+s/seg*hh, fx=frontX(yy)-h.dir*6; s===0?ctx.moveTo(fx,yy):ctx.lineTo(fx,yy); }
+      ctx.stroke();
       ctx.restore(); continue;
     }
     if(h.kind==='movelock'){
@@ -13203,6 +13431,57 @@ function drawKijoFx(){
     ctx.beginPath(); ctx.arc(boss.x,boss.y,r,ang-0.9,ang+0.9); ctx.stroke();
     ctx.globalAlpha=0.12*a; ctx.fillStyle='#ffd34d';
     ctx.beginPath(); ctx.moveTo(boss.x,boss.y); ctx.arc(boss.x,boss.y,r+46,ang-0.9,ang+0.9); ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+  // === 무대 암전(스포트라이트) — 빛=위험, 어둠=안전 ===
+  if(boss&&boss.key==='kijo'&&(boss.stageT||0)>0){
+    ctx.save();
+    ctx.globalAlpha=0.62; ctx.fillStyle='#08040e'; ctx.fillRect(0,0,W,H);
+    for(const s of (boss.stageSpots||[])){
+      const g=ctx.createRadialGradient(s.x,s.y,8,s.x,s.y,s.r);
+      g.addColorStop(0,'rgba(255,224,150,0.40)'); g.addColorStop(0.7,'rgba(255,180,110,0.18)'); g.addColorStop(1,'rgba(255,150,90,0)');
+      ctx.globalAlpha=1; ctx.globalCompositeOperation='lighter'; ctx.fillStyle=g; ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,TAU); ctx.fill();
+      ctx.globalCompositeOperation='source-over';
+      ctx.globalAlpha=0.5+0.3*Math.sin(performance.now()/120); ctx.strokeStyle='#ff5a5a'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,TAU); ctx.stroke();
+    }
+    ctx.restore();
+  }
+  // === 보지 마(시선) — 키죠를 조준하면 피해 ===
+  if(boss&&boss.key==='kijo'&&(boss.gazeT||0)>0){
+    const charge=clamp(boss.gazeCharge||0,0,1), armed=charge>=1;
+    const off=(boss.gazeAimOff==null?9:boss.gazeAimOff), warnBand=0.85;
+    const near=clamp((warnBand-off)/(warnBand-0.46),0,1);   // 콘에 얼마나 가까운지(1=콘 안)
+    const hot=Math.max(near*0.6,charge);
+    ctx.save();
+    // 시선 줄기 (가까울수록/충전될수록 붉고 굵게)
+    ctx.globalAlpha=0.28+0.4*hot; ctx.strokeStyle=armed?'#ff2d4d':(hot>0.3?'#ff8a4d':'#c46bff'); ctx.lineWidth=2+3*hot; ctx.setLineDash([8,7]);
+    ctx.beginPath(); ctx.moveTo(boss.x,boss.y); ctx.lineTo(player.x,player.y); ctx.stroke(); ctx.setLineDash([]);
+    // 키죠 거대 눈
+    const er=boss.r+16+3*Math.sin(performance.now()/110);
+    ctx.globalAlpha=0.6; ctx.strokeStyle=armed?'#ff2d4d':'#d68bff'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.arc(boss.x,boss.y,er,0,TAU); ctx.stroke();
+    ctx.globalAlpha=0.85; ctx.fillStyle=armed?'#ff2d4d':'#c46bff';
+    ctx.beginPath(); ctx.arc(boss.x,boss.y,7,0,TAU); ctx.fill();
+    // === 커서 경고 ===
+    if(near>0.02||charge>0){
+      const mx=mouseX, my=mouseY, warn=Math.max(near,charge);
+      const col=armed?'#ff2d4d':(charge>0?'#ff5a2a':'#ffd34d');
+      const rr=Math.max(9,26-12*warn+2*Math.sin(performance.now()/70));
+      ctx.globalAlpha=0.5+0.4*warn; ctx.strokeStyle=col; ctx.lineWidth=2.5;
+      ctx.beginPath(); ctx.arc(mx,my,rr,0,TAU); ctx.stroke();
+      // 충전 게이지 호 (콘 안에서 충전 중)
+      if(charge>0&&!armed){ ctx.globalAlpha=0.95; ctx.strokeStyle='#ff2d4d'; ctx.lineWidth=3.5; ctx.beginPath(); ctx.arc(mx,my,rr,-Math.PI/2,-Math.PI/2+charge*TAU); ctx.stroke(); }
+      ctx.globalAlpha=0.85+0.15*Math.sin(performance.now()/80); ctx.fillStyle=col; ctx.textAlign='center';
+      ctx.font='bold 16px sans-serif'; ctx.fillText('👁', mx, my-rr-8);
+      if(near>0.5||charge>0){ ctx.font='bold 11px sans-serif'; ctx.fillText(armed?'보지 마!':'시선 피해!', mx, my+rr+15); }
+      ctx.textAlign='left';
+    }
+    // 피해 중 화면 비네트
+    if(armed){
+      const vg=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*0.3,W/2,H/2,Math.max(W,H)*0.62);
+      vg.addColorStop(0,'rgba(255,40,60,0)'); vg.addColorStop(1,'rgba(255,40,60,'+(0.22+0.12*Math.sin(performance.now()/70))+')');
+      ctx.globalAlpha=1; ctx.fillStyle=vg; ctx.fillRect(0,0,W,H);
+    }
     ctx.restore();
   }
 }
