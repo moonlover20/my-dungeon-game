@@ -3201,7 +3201,7 @@ function a3SafeZone(x,y,r,rEnd,warnT,killT,dmg,label){
 // 파괴 목표물 — 제한시간 내 못 부수면 효과 발동 (꽃봉오리/심장/코어/속박닻)
 function a3Objective(x,y,opts){
   opts=opts||{};
-  const hp=Math.max(40,Math.round((opts.hp||220)*(typeof diffSet!=='undefined'?diffSet.hp:1)));
+  const hp=Math.max(40,Math.round((opts.hp||220)*(typeof diffSet!=='undefined'?(1+(diffSet.hp-1)*0.55):1)));
   enemies.push({
     type:'boss_orb',sprite:null,name:opts.label||'목표물',label:opts.label||'목표물',
     x:clamp(x,40,W-40),y:clamp(y,110,H-90),r:opts.r||26,
@@ -3238,8 +3238,8 @@ function drawBossOrb(e){
 }
 
 // ===== 상태형 패턴 서브시스템 (장막 · 순서기억 · 전멸기 안전지대 · 분신) =====
-let a3veil=null, a3seq=null, a3strike=null, a3tether=null, set3Poll=null;
-function clearA3Systems(){ a3veil=null; a3seq=null; a3strike=null; a3tether=null; set3Poll=null; }
+let a3veil=null, a3seq=null, a3strike=null, a3tether=null, set3Poll=null, set3Ring=null, set3Ad=null;
+function clearA3Systems(){ a3veil=null; a3seq=null; a3strike=null; a3tether=null; set3Poll=null; set3Ring=null; set3Ad=null; if(typeof player==='object'&&player) player._adBlockT=0; }
 
 // 마녀의 장막 — 화면 암전, 플레이어 주변만 보임
 function a3Veil(dur,label){
@@ -3409,9 +3409,9 @@ function onsterChainBurst(e){
 }
 
 // ── 세트3형제 셔플백 풀 + 디스패처 ──
-const SET3_PATS_P1=['cone','cross','spin','push','vine','pull','grab','quake','wallslam','brothercross'];
-const SET3_PATS_P2=['breath','spin','brand','decoy','crossslash','cloneslash','wall','tripleSlash','iaido'];
-const SET3_PATS_P3=['objective','breath','bombard','interference','channel','orb','hijack','donationBomb','livepoll'];
+const SET3_PATS_P1=['cone','cross','spin','push','vine','pull','grab','quake','wallslam','brothercross','sumoring'];
+const SET3_PATS_P2=['breath','spin','brand','decoy','crossslash','cloneslash','wall','tripleSlash','iaido','timeslash','hiddenblade'];
+const SET3_PATS_P3=['objective','breath','bombard','interference','channel','orb','hijack','donationBomb','livepoll','adtime'];
 function runSet3Pat(b,p){
   // P1 현진 (물리·그랩)
   if(p==='cone') a3ConeSlam(b,5,20,'#ff4dd2');
@@ -3422,6 +3422,7 @@ function runSet3Pat(b,p){
   else if(p==='pull') a3PullSlam(b,'현진 끌어치기',30);
   else if(p==='grab') set3GrabCombo(b);
   else if(p==='brothercross') set3BrotherCross(b);
+  else if(p==='sumoring') set3SumoRing(b);
   else if(p==='quake') set3QuakeChain(b);
   else if(p==='wallslam') set3HyeonjinWallSlam(b);
   // P2 번검 (검기·분신)
@@ -3433,8 +3434,10 @@ function runSet3Pat(b,p){
   else if(p==='wall') set3BladeWall(b);
   else if(p==='tripleSlash') set3BeongeomTripleSlash(b);
   else if(p==='iaido') set3IaidoAfterimage(b);
+  else if(p==='timeslash') set3TimeSlash(b);
+  else if(p==='hiddenblade') set3HiddenBlade(b);
   // P3 케케로로 (방송 점거)
-  else if(p==='objective'){ if(sfx.enemyCore) sfx.enemyCore(); a3Objective(W/2,H*0.34,{hp:300,fuse:7.0,fail:'aoe',failDmg:44,label:'신호 코어',color:'#ff4dd2',r:30,owner:b}); banner('📡 신호 코어','부수지 못하면 전체 피해',1000); }
+  else if(p==='objective'){ if(sfx.enemyCore) sfx.enemyCore(); a3Objective(W/2,H*0.34,{hp:210,fuse:7.0,fail:'aoe',failDmg:44,label:'신호 코어',color:'#ff4dd2',r:30,owner:b}); banner('📡 신호 코어','부수지 못하면 전체 피해',1000); }
   else if(p==='bombard') set3KekeBombard(b);
   else if(p==='interference') set3KekeInterference(b);
   else if(p==='channel') set3KekeChannelWave(b);
@@ -3442,6 +3445,7 @@ function runSet3Pat(b,p){
   else if(p==='hijack') set3KekeHijack(b);
   else if(p==='donationBomb') set3KekeDonationBomb(b);
   else if(p==='livepoll') set3LivePoll(b);
+  else if(p==='adtime') set3AdTime(b);
   else if(p==='grablock') set3GrabLock(b);
   else if(p==='identify') set3Identify(b);
   else if(p==='reflect') set3SignalReflect(b);
@@ -3751,7 +3755,7 @@ function set3KekeHijack(b){
   for(let i=0;i<2;i++){
     const real=(i===realIdx);
     a3Objective(slots[i][0],slots[i][1],{
-      hp: real?300:999999, fuse:8.0, fail:'aoe', failDmg: real?46:0,
+      hp: real?220:999999, fuse:8.0, fail:'aoe', failDmg: real?46:0,
       label:'방송 장악 코어', color:'#ff4dd2', r:30, owner:b
     });
     const orb=enemies[enemies.length-1];
@@ -3831,9 +3835,66 @@ function set3LivePoll(b){
     set3Poll=null;
   }, 1500);
 }
+// ── [세트3 P1 현진 · 기믹] 씨름판 — 링 안에서 버텨라(밖=위험). 현진이 계속 밀쳐냄 ──
+function set3SumoRing(b){
+  if(sfx.enemyDash) sfx.enemyDash();
+  set3Ring={x:clamp(player.x,260,W-260),y:clamp(player.y,260,H-240),r:240,t:0,life:5.0,owner:b,_chip:0,_pushT:1.0};
+  banner('🤼 씨름판','링 안에서 버텨라 — 밖으로 밀려나면 위험',1200);
+  screenShake=Math.max(screenShake||0,8);
+  if(typeof beep==='function')beep(90,0.18,'sawtooth',0.05);
+}
+// ── [세트3 P2 번검 · 기믹] 시간 베기 — 느려졌다가(슬로우) 검이 지나면 확 빨라짐(가속) ──
+function set3TimeSlash(b){
+  if(sfx.enemyGlitch) sfx.enemyGlitch();
+  banner('⏳ 시간 베기','느려진다… 검이 지나면 가속',1100);
+  timeScale=0.4; slowmoT=0.7;   // 슬로우 (slowmoT가 timeScale 유지/자동복원)
+  if(typeof beep==='function')beep(120,0.2,'sine',0.05);
+  setTimeout(()=>{ if(!a3Alive(b))return;
+    const base=Math.atan2(player.y-b.y,player.x-b.x);
+    for(let i=-1;i<=1;i++) kijoLaserWarns.push({x:b.x,y:b.y,ang:base+i*0.3,width:20,range:840,t:0,warn:0.5,color:'#38e8ff',fired:false,sniper:true,dmg:18,srcName:'시간 베기'});
+    timeScale=2.4; slowmoT=0.55;   // 가속
+    if(sfx.enemyLaser) sfx.enemyLaser(); banner('⚡ 가속','빨라진다!',700);
+    if(typeof beep==='function')beep(900,0.08,'square',0.05);
+  }, 650);
+}
+// ── [세트3 P2 번검 · 기믹] 보이지 않는 검 — 검기 경고선이 거의 안 보임. 소리·본체 방향으로 읽어라 ──
+function set3HiddenBlade(b){
+  if(sfx.enemyCast) sfx.enemyCast();
+  banner('🌑 보이지 않는 검','경고선이 흐릿하다 — 소리로 읽어라',1200);
+  for(let i=0;i<4;i++){
+    const base=Math.atan2(player.y-b.y,player.x-b.x)+rand(-0.55,0.55);
+    kijoLaserWarns.push({x:b.x,y:b.y,ang:base,width:20,range:840,t:0,warn:0.9,color:'#38e8ff',fired:false,sniper:true,dmg:18,srcName:'보이지 않는 검',_hidden:true});
+  }
+  if(typeof beep==='function'){ beep(300,0.1,'sine',0.04); setTimeout(()=>beep(520,0.1,'sine',0.04),320); setTimeout(()=>beep(820,0.12,'square',0.05),640); }
+}
+// ── [세트3 P3 케케로로 · 기믹] 광고 타임 — 사격 봉쇄. 화면의 SKIP 버튼에 닿아야 해제 ──
+function set3AdTime(b){
+  if(sfx.enemyWarn) sfx.enemyWarn();
+  const sx=clamp(rand(W*0.16,W*0.84),90,W-90), sy=clamp(rand(H*0.24,H*0.78),130,H-90);
+  set3Ad={t:0,life:5.0,skip:{x:sx,y:sy,r:46},owner:b,_chip:0};
+  player._adBlockT=5.0;
+  banner('📺 광고 중','사격 불가 — SKIP 버튼으로 가서 닿아라',1300);
+  if(typeof beep==='function')beep(440,0.1,'square',0.05);
+}
 
 function updateA3Systems(dt){
-  if(state!=='play'){ a3veil=null; a3seq=null; a3strike=null; a3tether=null; set3Poll=null; return; }
+  if(state!=='play'){ a3veil=null; a3seq=null; a3strike=null; a3tether=null; set3Poll=null; set3Ring=null; set3Ad=null; if(player) player._adBlockT=0; return; }
+  if(player&&player._adBlockT>0) player._adBlockT=Math.max(0,player._adBlockT-dt);
+  if(set3Ring){
+    const R=set3Ring; R.t+=dt; R._chip-=dt; R._pushT-=dt;
+    const dx=player.x-R.x, dy=player.y-R.y, d=Math.hypot(dx,dy)||0.001;
+    if(R._pushT<=0){ R._pushT=1.2; if((player.dodging||0)<=0){ const a=Math.atan2(dy,dx); player.x=clamp(player.x+Math.cos(a)*145,player.r,W-player.r); player.y=clamp(player.y+Math.sin(a)*145,player.r,H-player.r); burst(player.x,player.y,'#ff4dd2',8,150); banner('💪 밀쳐낸다','안으로 버텨라',500); if(typeof beep==='function')beep(110,0.1,'sawtooth',0.05); } }
+    const dx2=player.x-R.x, dy2=player.y-R.y, d2=Math.hypot(dx2,dy2);
+    if(d2>R.r){ const a=Math.atan2(dy2,dx2); player.x=clamp(R.x+Math.cos(a)*(R.r-12),player.r,W-player.r); player.y=clamp(R.y+Math.sin(a)*(R.r-12),player.r,H-player.r); if(R._chip<=0){ hurtPlayer(16,'씨름판 이탈'); R._chip=0.55; burst(player.x,player.y,'#ff4dd2',10,160); } }
+    if(R.t>=R.life){ burst(R.x,R.y,'#ffd34d',14,200); set3Ring=null; }
+  }
+  if(set3Ad){
+    const A=set3Ad; A.t+=dt;
+    if(dist2(player.x,player.y,A.skip.x,A.skip.y)<(A.skip.r+player.r)**2){
+      banner('✅ SKIP','광고 건너뛰기!',800); burst(A.skip.x,A.skip.y,'#5dff9b',20,240); if(sfx.pick) sfx.pick();
+      player._adBlockT=0; set3Ad=null;
+    } else if(A.t>=A.life){ player._adBlockT=0; set3Ad=null; }   // 시간초과 자동 해제(소프트락 방지)
+  }
   if(a3veil){ a3veil.t+=dt; if(a3veil.t>=a3veil.dur) a3veil=null; }
   if(a3seq){
     a3seq.t+=dt;
@@ -3947,8 +4008,26 @@ function drawA3World(){
     });
     ctx.restore();
   }
+  if(set3Ring){
+    const R=set3Ring;
+    ctx.save();
+    ctx.globalAlpha=0.10; ctx.fillStyle='#ffd34d'; ctx.beginPath(); ctx.arc(R.x,R.y,R.r,0,TAU); ctx.fill();
+    ctx.globalAlpha=0.85; ctx.strokeStyle='#ffd34d'; ctx.lineWidth=5; ctx.setLineDash([14,9]); ctx.beginPath(); ctx.arc(R.x,R.y,R.r,0,TAU); ctx.stroke(); ctx.setLineDash([]);
+    ctx.globalAlpha=0.5+0.3*Math.sin(performance.now()/120); ctx.strokeStyle='#ff8a3d'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(R.x,R.y,R.r+8,0,TAU); ctx.stroke();
+    ctx.restore();
+  }
+  if(set3Ad){
+    const A=set3Ad, s=A.skip, pulse=0.6+0.4*Math.sin(performance.now()/90);
+    ctx.save();
+    ctx.globalAlpha=0.25*pulse; ctx.fillStyle='#5dff9b'; ctx.beginPath(); ctx.arc(s.x,s.y,s.r+10,0,TAU); ctx.fill();
+    ctx.globalAlpha=0.95; ctx.fillStyle='#0c2a1a'; ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,TAU); ctx.fill();
+    ctx.strokeStyle='#5dff9b'; ctx.lineWidth=3; ctx.stroke();
+    ctx.fillStyle='#5dff9b'; ctx.font='bold 18px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('SKIP',s.x,s.y); ctx.fillStyle='#fff'; ctx.font='bold 11px sans-serif'; ctx.fillText('▶▶',s.x,s.y+16);
+    ctx.textAlign='left'; ctx.textBaseline='alphabetic';
+    ctx.restore();
+  }
 }
-// 화면 좌표(변환 밖)에서 렌더 — 장막/전멸기 틴트
 function drawA3Screen(){
   if(a3veil){
     const k=clamp(a3veil.t/0.5,0,1)*clamp((a3veil.dur-a3veil.t)/0.6,0,1), rev=a3veil.reveal;
@@ -7233,7 +7312,7 @@ function update(dt){
 
   // 발사
   if(player.fireTimer>0) player.fireTimer-=dt;
-  if((mouseDown || (typeof autoFire!=='undefined'&&autoFire)) && player.fireTimer<=0 && !roomCleared && !(player.stunT>0)){
+  if((mouseDown || (typeof autoFire!=='undefined'&&autoFire)) && player.fireTimer<=0 && !roomCleared && !(player.stunT>0) && !(player._adBlockT>0)){
     playerShoot(); if(tutorial)tutorial.shot=true;
     player.fireTimer=playerShootCooldown(player);
   }
@@ -13527,8 +13606,9 @@ function drawKijoMaskShape(x,y,r,kind,alpha,seed){
 }
 function drawKijoFx(){
   for(const w of kijoLaserWarns){
+    const hid=w._hidden?0.12:1;
     const k=clamp(w.t/w.warn,0,1);
-    const fade=w.t<=w.warn?1:clamp(1-(w.t-w.warn)/0.32,0,1);
+    const fade=(w.t<=w.warn?1:clamp(1-(w.t-w.warn)/0.32,0,1))*hid;
     const sx=w.x, sy=w.y, ex=w.x+Math.cos(w.ang)*w.range, ey=w.y+Math.sin(w.ang)*w.range;
     const nx=-Math.sin(w.ang), ny=Math.cos(w.ang), half=w.width;
     const pulse=0.55+0.45*Math.sin(performance.now()/55);
@@ -13695,7 +13775,8 @@ function bulletKind(b){
     else { const n=b.srcName||'';
       if(/키죠|가면/.test(n)) k='mask';
       else if(/온스터|사슬/.test(n)) k='chain';
-      else if(/케케로로|세트3|현진|번검|신호|분신/.test(n)) k='energy';
+      else if(/케케로로|에너지구|신호 간섭|채널 점거|송출|후원|생방송 투표|역송출/.test(n)) k='glitch';
+      else if(/현진|번검|세트3|검기|분신|삼연참|거합|시간 베기|보이지 않는 검|형제 협공/.test(n)) k='shard';
       else if(/박제인간/.test(n)) k='needle';
       else if(/양갱/.test(n)) k='jelly';
       else if(/승우/.test(n)) k='glitch';
