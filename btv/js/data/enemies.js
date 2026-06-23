@@ -1,4 +1,4 @@
-﻿const ENEMY_TYPES={
+const ENEMY_TYPES={
   // === 1막: 고블린 소굴 ===
   goblin_warrior :{name:"러부엉",  r:24, hp:28, spd:86, dmg:11, color:"#6fae4e", xp:8,  ai:"chase", lunge:true, label:"러부엉"},
   goblin_archer  :{name:"대파",  r:22, hp:18, spd:50, dmg:8,  color:"#7bbf5a", xp:10, ai:"shooter", range:340, cool:1.25, label:"대파"},
@@ -6,7 +6,7 @@
   goblin_bomber  :{name:"블페러", r:23, hp:22, spd:108, dmg:6,  color:"#9aa83f", xp:11, ai:"chase", explode:true, label:"블페러"},
   hoonsangtae   :{name:"\uD6C8\uC0C1\uD0DC", r:30, hp:48, spd:55, dmg:10, color:"#e25572", xp:38, ai:"cleaver_thrower", range:320, cool:1.55, label:"\uD6C8\uC0C1\uD0DC"},
   jaemin        :{name:"\uC7AC\uBBFC", r:27, hp:42, spd:68, dmg:9, color:"#f0a84a", xp:36, ai:"boomerang_thrower", range:440, cool:1.95, label:"\uC7AC\uBBFC"},
-  sniper_viewer :{name:"\uC800\uACA9\uB7EC", r:26, hp:34, spd:28, dmg:13, touchDmg:10, color:"#d83a3a", xp:42, ai:"sniper_laser", range:1200, cool:1.8, label:"\uC800\uACA9\uB7EC"},
+  sniper_viewer :{name:"\uC800\uACA9\uB7EC", r:26, hp:116, spd:28, dmg:13, touchDmg:10, color:"#d83a3a", xp:320, ai:"sniper_laser", range:1200, cool:1.8, label:"\uC800\uACA9\uB7EC"},
   stream_watcher:{name:"\uBC29\uD50C\uB7EC", r:26, hp:40, spd:44, dmg:10, color:"#4fc0d8", xp:34, ai:"movement_lock", range:360, cool:2.6, label:"\uBC29\uD50C\uB7EC"},
   rhino_beetle   :{name:"자잘자",   r:34, hp:170, spd:78, dmg:16, touchDmg:16, color:"#3a2418", xp:75, ai:"charge", armor:0.15, label:"자잘자"},
   earthworm      :{name:"지렁이", r:12, hp:10, spd:82, dmg:6, color:"#e87a8a", xp:0, ai:"erratic", label:"지렁이"},
@@ -38,7 +38,7 @@
   // --- 2막 어려운 적 ---
   pobear        :{name:"포베어", r:30, hp:148, spd:66, dmg:22, touchDmg:18, color:"#c8884a", xp:330, ai:"charge", armor:0.08, label:"포베어"},
   blackstar     :{name:"흑별",   r:27, hp:132, spd:42, dmg:17, touchDmg:14, color:"#17111f", xp:315, ai:"orbit", range:300, cool:1.15, label:"흑별"},
-  killjoy       :{name:"킬조이", r:26, hp:116, spd:104,dmg:18, touchDmg:14, color:"#38e8ff", xp:320, ai:"shooter", range:405, cool:0.90, label:"킬조이"},
+  killjoy       :{name:"킬조이", r:26, hp:34, spd:104,dmg:18, touchDmg:14, color:"#38e8ff", xp:42, ai:"shooter", range:405, cool:0.90, label:"킬조이"},
   apple         :{name:"사과",   r:27, hp:128, spd:64, dmg:20, color:"#ff4d6d", xp:310, ai:"erratic", range:300, cool:1.25, label:"사과"},
   // === 3막 전용 몬스터 ===
   act3_domin     :{name:"\uB3C4\uBBFC", r:23, hp:94,  spd:88, dmg:22, touchDmg:24, color:"#7ad7ff", xp:118, ai:"submerge_charge", range:420, cool:2.6, label:"\uB3C4\uBBFC"},
@@ -61,12 +61,12 @@ const ACT_POOLS=[
   { normal:["act3_domin","act3_buffering","act3_magnet","act3_mirror"], elite:["act3_truck"] },
 ];
 const ACT1_WEAK_ENEMY_IDS=["goblin_warrior","goblin_archer","goblin_shaman","goblin_bomber"];
-const ACT1_LATE_ENEMY_IDS=["hoonsangtae","jaemin","sniper_viewer","stream_watcher"];
-const ACT1_PRIORITY_CAPS={sniper_viewer:3,stream_watcher:3,jaemin:3,hoonsangtae:3};
+const ACT1_LATE_ENEMY_IDS=["hoonsangtae","jaemin","killjoy","stream_watcher"];
+const ACT1_PRIORITY_CAPS={killjoy:3,stream_watcher:3,jaemin:3,hoonsangtae:3};
 // === 2막 잡몹 분리 ===
 const ACT2_BASIC_ENEMY_IDS=["gwangcheon_gim","reura","namu","ketter"];      // 일반몹: 광천김/러라/나무/케터
-const ACT2_LATE_ENEMY_IDS=["pobear","blackstar","killjoy","apple"];          // 어려운 적: 포베어/흑별/킬조이/사과
-const ACT2_PRIORITY_CAPS={blackstar:3,killjoy:3,apple:3,pobear:3};                    // 방당 최대 3마리 허용
+const ACT2_LATE_ENEMY_IDS=["pobear","blackstar","sniper_viewer","apple"];          // 어려운 적: 포베어/흑별/저격러/사과
+const ACT2_PRIORITY_CAPS={blackstar:3,sniper_viewer:3,apple:3,pobear:3};                    // 방당 최대 3마리 허용
 // 3막 전용 풀: 초반/중반/후반을 나눠 강한 조합이 너무 일찍 겹치지 않게 한다.
 const ACT3_BASIC_ENEMY_IDS=["act3_domin","act3_buffering","act3_magnet"];
 const ACT3_MID_ENEMY_IDS=["act3_mirror","act3_alppano","act3_clone"];
@@ -95,7 +95,7 @@ function enemyTypeCounts(list){
   return counts;
 }
 function act2DangerScore(id){
-  return id==='blackstar'||id==='killjoy'||id==='apple'?2:(id==='pobear'?1:0);
+  return id==='blackstar'||id==='sniper_viewer'||id==='apple'?2:(id==='pobear'?1:0);
 }
 function act3DangerScore(id){
   return id==='act3_truck'?4:(id==='act3_clone'||id==='act3_kullje'?3:(id==='act3_domin'||id==='act3_buffering'||id==='act3_magnet'||id==='act3_mirror'||id==='act3_alppano'?2:0));
@@ -126,8 +126,8 @@ function pickNormalEnemyForRoom(a,row,counts){
     const basic=ACT2_BASIC_ENEMY_IDS;
     let hard=ACT2_LATE_ENEMY_IDS.filter(id=>!ACT2_PRIORITY_CAPS[id]||(counts[id]||0)<ACT2_PRIORITY_CAPS[id]);
     hard=hard.filter(id=>countDangerScore(counts,act2DangerScore)+act2DangerScore(id)<=cap);
-    if((counts.blackstar||0)>0) hard=hard.filter(id=>id==='pobear'||(id!=='killjoy'&&id!=='apple'));
-    if((counts.killjoy||0)>0&&(counts.apple||0)>0) hard=hard.filter(id=>id==='pobear'||id==='blackstar');
+    if((counts.blackstar||0)>0) hard=hard.filter(id=>id==='pobear'||(id!=='sniper_viewer'&&id!=='apple'));
+    if((counts.sniper_viewer||0)>0&&(counts.apple||0)>0) hard=hard.filter(id=>id==='pobear'||id==='blackstar');
     const wantHard=Math.random()<hardRate;
     let choices=wantHard?hard:basic;
     if(!choices.length) choices=wantHard?basic:hard;
