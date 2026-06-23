@@ -4985,6 +4985,11 @@ const PERF_LIMITS={
   pBullets:900,
   eBullets:1200
 };
+let PB_GLOW=2.0; // 플레이어 탄 글로우 외곽원 배율(클수록 번짐 강함). 1.6~2.4 권장
+let EC_FACE_STAGGER=24; // 아웃트로 벽 얼굴 생성 간격(ms). 작을수록 빨리 채워짐. 16~36 권장
+let EC_GLITCH_FILTER_MS=55; // 아웃트로 VHS 글리치 SVG필터(변위/색수차) 갱신 간격(ms). 작을수록 부드럽지만 무거움. 40~90 권장
+let EC_WALL_FACE_PX=80; // 아웃트로 피날레 벽 얼굴 내부 해상도(px). 작을수록 가벼움(화면엔 100%로 확대). 64~128 권장
+let EC_GLITCH_HEAVY=false; // 아웃트로 글리치 VHS 변위필터(#ecVhs) 사용. true=원본 비주얼(저사양 심한 렉), false=가벼운 흔들림+스태틱/인버트 플래시만(렉 원인 제거). 기본 false 권장
 let perfDebugT=0;
 let roomBgGlitchLast=0;
 let hudValueCache={};
@@ -6981,7 +6986,6 @@ function gp_gravity(b){ gGrav={x:W/2,y:H*0.46,r:240,t:6}; banner('🕳 중력장
 function gp_walls(b){ gWalls=[{x:-40,y:0,w:130+rand(0,40),h:H,t:5},{x:W-90-rand(0,40),y:0,w:130,h:H,t:5}]; banner('▦ 격벽','가운데로',800); gAimed(b,7,12); }
 function gp_homing(b){ gHoming(b,12); banner('유도탄','',600); }
 function gp_shield(b){ GL.shield=5; banner('🛡 공격 반사','뒤로 돌아라',900); }
-function gp_fakesafe(b){ gZones=[]; const n=4,ri=irand(0,n-1); for(let i=0;i<n;i++){const w=160,h=120; gZones.push({x:rand(20,W-w-20),y:rand(120,H-h-20),w,h,real:i===ri,t:0,warn:3.2,kill:2.6,fake:true});} banner('가짜 안전구역','진짜를 골라라',1000); }
 function gp_clones(b){ gClones=[]; for(let i=0;i<4;i++) gClones.push({x:clamp(b.x+rand(-170,170),60,W-60),y:clamp(b.y+rand(-40,70),60,260),fireT:rand(.3,.9),t:5}); banner('잔상 분신','본체만 때린다',900); }
 function gp_rotate(b){ if(sfx.enemyGlitch) sfx.enemyGlitch(); const m=irand(0,2); if(m===0)gView.rotT=Math.PI/2*(Math.random()<.5?1:-1); else if(m===1)gView.rotT=Math.PI; else gView.fxT=-1; GL.rotActive=6; banner('↻ 화면 붕괴','',800); gAimed(b,6,11); }
 function gp_crashRain(b){ GL.frameDrop=Math.max(GL.frameDrop||0,3.8); const n=b.enraged?34:26; for(let i=0;i<n;i++) gShot(rand(20,W-20),-14,Math.PI/2+rand(-0.08,0.08),rand(230,315),rand(6,9),13); banner('▒ 데이터 폭우','위에서 쏟아진다',850); }
@@ -7003,13 +7007,13 @@ function beginSeungwooDeleteCommand(b){
 }
 
 const GP1=[gp_straight,gp_blacksafe,gp_straight,gp_slow,gp_straight,gp_track];
-const GP2=[gp_mirror,gp_homing,gp_framedrop,gp_gravity,gp_walls,gp_fakesafe,gp_clones,gp_rotate,gp_buffering];
-const GP3=[gp_crashRain,gp_tongueRush,gp_gravity,gp_totalCollapse,gp_fakesafe,gp_clones,gp_rotate,gp_shield,gp_buffering];
+const GP2=[gp_mirror,gp_homing,gp_framedrop,gp_gravity,gp_walls,gp_clones,gp_rotate,gp_buffering];
+const GP3=[gp_crashRain,gp_tongueRush,gp_gravity,gp_totalCollapse,gp_clones,gp_rotate,gp_shield,gp_buffering];
 const SEUNGWOO_REPEAT=new Set([gp_straight,gp_crashRain,gp_tongueRush,gp_homing]);
 
 function seungwooPatternTag(fn){
   if(fn===gp_mirror||fn===gp_rotate||fn===gp_framedrop||fn===gp_gravity) return 'control';
-  if(fn===gp_blacksafe||fn===gp_fakesafe||fn===gp_walls) return 'zone';
+  if(fn===gp_blacksafe||fn===gp_walls) return 'zone';
   if(fn===gp_clones||fn===gp_shield) return 'summon';
   return 'damage';
 }
@@ -7018,7 +7022,6 @@ function pickSeungwooPattern(b,list){
   if(b._lastGp) pool=pool.filter(fn=>fn!==b._lastGp);
   if(b._lastGp2) pool=pool.filter(fn=>fn!==b._lastGp2);
   if(b._lastGpTag==='control') pool=pool.filter(fn=>seungwooPatternTag(fn)!=='control');
-  if(b._lastGp===gp_fakesafe) pool=pool.filter(fn=>fn!==gp_totalCollapse);
   if((GL.mirror>0||GL.rotActive>0)) pool=pool.filter(fn=>fn!==gp_totalCollapse);
   if(!pool.length) pool=list.slice();
   const fn=pick(pool);
@@ -13791,8 +13794,13 @@ function bulletKind(b){
 function drawEBullet(b){
   const kind=bulletKind(b);
   const base=(b.col&&(kind==='shard'||kind==='silk'))?b.col:(KIND_COL[kind]||'#38e8ff');
-  const pal={'1':base,'2':_shade(base,-0.5),'3':_shade(base,0.6)};
-  if(kind==='glitch'){ pal['1']='#38e8ff'; pal['2']=_shade('#38e8ff',-0.5); pal['3']='#ff4dd2'; }
+  let pal=b._pal;
+  // 팔레트 캐싱: _shade는 base/kind 바뀔 때만 재계산(비행 중 색 변하는 탄도 안전하게 갱신)
+  if(!pal||b._palBase!==base||b._palKind!==kind){
+    if(kind==='glitch'){ pal={'1':'#38e8ff','2':_shade('#38e8ff',-0.5),'3':'#ff4dd2'}; }
+    else { pal={'1':base,'2':_shade(base,-0.5),'3':_shade(base,0.6)}; }
+    b._pal=pal; b._palBase=base; b._palKind=kind;
+  }
   const rows=BULLET_PATTERNS[kind]; const w=rows[0].length;
   const pu=Math.max(2,(b.r*2.3)/Math.max(w,rows.length));
   ctx.save(); ctx.translate(b.x,b.y);
@@ -13861,8 +13869,10 @@ function draw(){
   }
   for(const b of pBullets){
     if(!b||!Number.isFinite(b.x)||!Number.isFinite(b.y)) continue;
-    ctx.save();ctx.shadowColor=b.crit?'#ffd34d':'#38e8ff';ctx.shadowBlur=8;
-    circle(b.x,b.y,b.r||4,b.crit?'#ffe28a':'#bff8ff',b.crit?'#a8740a':'#1d8fa0'); ctx.restore();
+    const _r=b.r||4, _glow=b.crit?'#ffd34d':'#38e8ff';
+    // 글로우: shadowBlur 대신 옅은 외곽원 1패스(=PB_GLOW). 네온감 유지하며 비용 대폭 절감
+    ctx.globalAlpha=0.26; circle(b.x,b.y,_r*PB_GLOW,_glow); ctx.globalAlpha=1;
+    circle(b.x,b.y,_r,b.crit?'#ffe28a':'#bff8ff',b.crit?'#a8740a':'#1d8fa0');
   }
   drawDashFx();
   // 플레이어
@@ -14004,7 +14014,7 @@ function loop(now){
   recoverInvisiblePause();
   if(typeof updFps==='function') updFps(dt);
   if(!paused){ update(dt); if(typeof updateDmgNums==='function') updateDmgNums(dt); }
-  draw();
+  if(state!=='end') draw();   // 아웃트로/결과창에선 전투 캔버스 렌더 생략(엔딩 오버레이가 덮음) — 렉 원인
   if(!paused){ updateMusic(dt); }
   { const sb=$('skipCutBtn'); if(sb) sb.style.display=(state==='play'&&cutsceneT>0)?'inline-block':'none'; }
   requestAnimationFrame(loop);
@@ -15277,16 +15287,21 @@ const EndingCredits=(function(){
     power=power||1;const dur=120+power*80;
     const c=D('ecContent'),dz=D('ecDisp'),oR=D('ecOffR'),oB=D('ecOffB');
     if(!c)return;
-    c.style.filter='url(#ecVhs)';const tr=D('ecTrack');if(tr)tr.style.opacity=.5;
-    const t0=performance.now();
+    const tr=D('ecTrack');if(tr)tr.style.opacity=.5;
+    if(EC_GLITCH_HEAVY)c.style.filter='url(#ecVhs)'; // 변위/난류 필터는 저사양 렉 주범 → 기본 OFF
+    const t0=performance.now();let lastFx=-1e9;
     (function anim(){
       if(!running){resetFx();return;}
-      const k=(performance.now()-t0)/dur;
+      const now=performance.now(),k=(now-t0)/dur;
       if(k>=1){c.style.filter='none';c.style.transform='';if(tr)tr.style.opacity=0;if(dz)dz.setAttribute('scale',0);if(oR)oR.setAttribute('dx',0);if(oB)oB.setAttribute('dx',0);return;}
-      const wob=Math.sin(k*Math.PI);
-      if(dz)dz.setAttribute('scale',((6+power*16)*wob).toFixed(1));
-      if(oR)oR.setAttribute('dx',((Math.random()*2-1)*(2+power*5)).toFixed(1));
-      if(oB)oB.setAttribute('dx',((Math.random()*2-1)*(2+power*5)).toFixed(1));
+      // feDisplacementMap/feOffset 재계산은 매우 무거움 → HEAVY일 때만, 그것도 EC_GLITCH_FILTER_MS 간격으로
+      if(EC_GLITCH_HEAVY && now-lastFx>=EC_GLITCH_FILTER_MS){
+        lastFx=now;const wob=Math.sin(k*Math.PI);
+        if(dz)dz.setAttribute('scale',((6+power*16)*wob).toFixed(1));
+        if(oR)oR.setAttribute('dx',((Math.random()*2-1)*(2+power*5)).toFixed(1));
+        if(oB)oB.setAttribute('dx',((Math.random()*2-1)*(2+power*5)).toFixed(1));
+      }
+      // 화면 흔들림은 compositor-only라 저렴 → 매 프레임 유지(글리치 느낌의 핵심)
       c.style.transform='translateY('+((Math.random()*2-1)*power*3).toFixed(1)+'px)';
       requestAnimationFrame(anim);
     })();
@@ -15403,15 +15418,17 @@ const EndingCredits=(function(){
     if(ci===SEQ.length+1){ // 피날레 벽 + 액자별 혈흔 + 비워짐
       ecShow('ecFinale');
       {const fin=D('ecFinale');if(fin)fin.classList.remove('bleed');}
-      const w=D('ecWall');if(w){w.innerHTML='';
+      const w=D('ecWall');if(w){w.innerHTML=''; const ecCells=[];
         SEQ.forEach(e=>{const cell=document.createElement('div');cell.className='ec-cell';
-          const c=document.createElement('canvas');c.width=c.height=128;cell.appendChild(c);
+          const c=document.createElement('canvas');c.width=c.height=EC_WALL_FACE_PX;cell.appendChild(c);
           const bd=document.createElement('div');bd.className='ec-cell-blood';
           const dl=Math.random()*2.2, du=2.4+Math.random()*1.6;
           bd.style.setProperty('--dl',dl.toFixed(2)+'s');
           bd.style.setProperty('--dur',du.toFixed(2)+'s');
           c.style.setProperty('--era',(dl+du*0.72).toFixed(2)+'s');
-          cell.appendChild(bd);w.appendChild(cell);drawFace(c,e,false);});
+          cell.appendChild(bd);w.appendChild(cell);ecCells.push(c);});
+        // 얼굴 생성을 프레임에 분산(stagger): 22장 동기 일괄 → 프리즈 제거. EC_FACE_STAGGER로 간격(ms) 조절
+        ecCells.forEach((c,i)=>pushT(()=>{ if(running) drawFace(c,SEQ[i],false); }, i*EC_FACE_STAGGER));
         glitch(2);
         pushT(()=>{[...w.querySelectorAll('.ec-cell canvas')].forEach((c,i)=>pushT(()=>{if(running)drawFace(c,SEQ[i],true);},i*30));glitch(2.5);},2400);
       }
