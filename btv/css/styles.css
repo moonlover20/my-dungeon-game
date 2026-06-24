@@ -2972,12 +2972,12 @@
   }
   .evtoast{
     --accent:#38e8ff;--glow:rgba(56,232,255,.6);
-    position:relative;display:flex;align-items:center;gap:11px;
-    max-width:min(560px,90%);padding:8px 18px 8px 11px;
+    position:relative;display:flex;align-items:center;gap:26px;
+    max-width:min(880px,94%);padding:20px 44px 20px 28px;
     background:rgba(7,4,14,.9);
-    border:2px solid var(--accent);
-    outline:2px dashed var(--accent);outline-offset:3px;
-    box-shadow:0 0 0 2px #000,0 0 20px var(--glow);
+    border:3px solid var(--accent);
+    outline:3px dashed var(--accent);outline-offset:5px;
+    box-shadow:0 0 0 3px #000,0 0 34px var(--glow);
     opacity:0;transform:translateY(-24px) scale(.96);
     font-family:'Galmuri11','Apple SD Gothic Neo','Malgun Gothic',sans-serif;
     white-space:nowrap;image-rendering:pixelated;
@@ -2989,13 +2989,13 @@
   @keyframes evtFlick{0%{filter:brightness(2.4)}50%{filter:brightness(.4)}100%{filter:none}}
   .evtoast::after{content:"";position:absolute;inset:0;pointer-events:none;
     background:repeating-linear-gradient(0deg,rgba(0,0,0,.2) 0 1px,transparent 1px 3px);}
-  .evt-ico{flex:0 0 auto;width:34px;height:34px;display:flex;align-items:center;justify-content:center;
-    image-rendering:pixelated;filter:drop-shadow(0 0 5px var(--glow));}
-  .evt-ico svg{width:34px;height:34px;display:block;}
+  .evt-ico{flex:0 0 auto;width:80px;height:80px;display:flex;align-items:center;justify-content:center;
+    image-rendering:pixelated;filter:drop-shadow(0 0 9px var(--glow));}
+  .evt-ico svg{width:80px;height:80px;display:block;}
   .evt-txt{display:flex;flex-direction:column;line-height:1.22;}
-  .evt-big{font-size:16px;font-weight:bold;color:var(--accent);letter-spacing:1px;
+  .evt-big{font-size:40px;font-weight:bold;color:var(--accent);letter-spacing:1px;
     text-shadow:0 2px 0 #000,0 0 9px var(--glow);}
-  .evt-small{font-size:12px;color:#cfe9ff;letter-spacing:.5px;text-shadow:0 1px 0 #000;margin-top:2px;}
+  .evt-small{font-size:28px;color:#cfe9ff;letter-spacing:.5px;text-shadow:0 1px 0 #000;margin-top:6px;}
   .evtoast.gold {--accent:#ffd24d;--glow:rgba(255,210,77,.65);}
   .evtoast.gold .evt-small{color:#ffe9b0;}
   .evtoast.relic{--accent:#c08bff;--glow:rgba(146,70,255,.7);}
@@ -3006,8 +3006,9 @@
   .evtoast.warn .evt-small{color:#ffd2d6;}
   .evtoast.info {--accent:#38e8ff;--glow:rgba(56,232,255,.6);}
   @media (max-width:560px){
-    .evt-big{font-size:14px;}.evt-small{font-size:11px;}
-    .evtoast{max-width:94%;white-space:normal;}
+    .evt-big{font-size:26px;}.evt-small{font-size:18px;}
+    .evt-ico,.evt-ico svg{width:54px;height:54px;}
+    .evtoast{max-width:94%;white-space:normal;gap:16px;padding:14px 20px;}
   }
 
 /* ===== 메타 알림 토스트 (화면 구석, 흐름 방해 없는 작은 알림) v1.0 ===== */
