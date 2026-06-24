@@ -2842,21 +2842,18 @@
 }
 
 /* ===== 김봉식 실종안심센터 — 엔딩 크레딧 (아날로그 호러) v1.4.15 ===== */
-  #ovEnding{padding:0;background:#000;z-index:75;overflow:hidden;backdrop-filter:none;}
+  #ovEnding{padding:0;background:#000;z-index:75;overflow:hidden;}
   #ecTV{position:relative;width:100%;height:100%;background:#070510;overflow:hidden;
-    /* 그룹 filter 제거: 내부 애니(티커/밴드/그레인/배경)가 매 프레임 전체 재래스터를 유발해 렉의 주원인이었음.
-       색감 보강이 필요하면 아래를 켜되, 켜는 순간 렉 재발 가능 → 권장X
-       filter:contrast(1.2) brightness(1.02) saturate(1.05); */
+    filter:contrast(1.2) brightness(1.02) saturate(1.05);
     font-family:'Galmuri11','Apple SD Gothic Neo','Malgun Gothic',sans-serif;}
   #ecContent{position:absolute;inset:0;will-change:filter,transform;}
   #ecBg{position:absolute;inset:-8%;background:
     radial-gradient(120% 80% at 30% 10%,rgba(146,70,255,.28),transparent 60%),
     radial-gradient(120% 90% at 80% 90%,rgba(255,77,210,.18),transparent 55%),
     linear-gradient(160deg,#160f28,#251a36 40%,#321f3a 70%,#0d0916);
-    /* filter(blur+saturate) 제거: ecDrift transform 애니와 겹쳐 매 프레임 재블러 → 렉 유발. 드리프트만 유지 */
-    animation:ecDrift 26s ease-in-out infinite;}
+    filter:blur(2px) saturate(.8);animation:ecDrift 26s ease-in-out infinite;}
   @keyframes ecDrift{0%,100%{transform:scale(1.06)}50%{transform:scale(1.13) translate(-2%,1.5%)}}
-  #ecPalms{position:absolute;inset:0;opacity:.5;/* mix-blend-mode 제거: 전체화면 블렌드가 매 프레임 재합성 유발 */
+  #ecPalms{position:absolute;inset:0;opacity:.5;mix-blend-mode:multiply;
     background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='300'><g fill='%23000'><path d='M60 300 q-4 -120 2 -150 q-30 18 -52 6 q26 4 50 -14 q-30 -2 -44 -22 q24 12 46 0 q-18 -22 -10 -44 q12 26 18 40 q8 -22 30 -30 q-16 18 -22 36 q22 -8 44 4 q-26 0 -42 18 q26 6 40 26 q-30 -16 -50 -6 q6 36 4 156 z'/></g></svg>") repeat-x bottom/300px;}
 
   #ovEnding .ec-scene{position:absolute;inset:0;display:none;}
@@ -2924,10 +2921,10 @@
   #ecBars .ec-smpte{position:absolute;inset:0;display:flex;}
   #ecBars .ec-smpte span{flex:1;}
 
-  #ecScan{position:absolute;inset:0;z-index:40;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.2) 0,rgba(0,0,0,.2) 1px,transparent 2px,transparent 3px);/* mix-blend-mode 제거(합성 비용) */}
+  #ecScan{position:absolute;inset:0;z-index:40;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.2) 0,rgba(0,0,0,.2) 1px,transparent 2px,transparent 3px);mix-blend-mode:multiply;}
   #ecBand{position:absolute;left:0;right:0;height:22%;z-index:41;pointer-events:none;background:linear-gradient(180deg,transparent,rgba(255,255,255,.07) 45%,rgba(255,255,255,.12) 50%,rgba(255,255,255,.07) 55%,transparent);animation:ecBandMove 6.5s linear infinite;}
   @keyframes ecBandMove{0%{top:-25%}100%{top:105%}}
-  #ecGrain{position:absolute;inset:-14%;z-index:42;pointer-events:none;opacity:.14;background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");animation:ecGrainMove .5s steps(3) infinite;/* mix-blend-mode 제거(합성 비용) */}
+  #ecGrain{position:absolute;inset:-50%;z-index:42;pointer-events:none;opacity:.14;background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");animation:ecGrainMove .5s steps(3) infinite;mix-blend-mode:overlay;}
   @keyframes ecGrainMove{0%{transform:translate(0,0)}33%{transform:translate(-4%,3%)}66%{transform:translate(3%,-2%)}100%{transform:translate(-2%,-3%)}}
   #ecVig{position:absolute;inset:0;z-index:43;pointer-events:none;background:radial-gradient(120% 120% at 50% 50%,transparent 52%,rgba(0,0,0,.62) 100%);}
   #ecTrack{position:absolute;inset:0;z-index:44;pointer-events:none;opacity:0;mix-blend-mode:screen;background:repeating-linear-gradient(0deg,transparent 0,transparent 6px,rgba(255,255,255,.4) 7px,transparent 9px,rgba(56,232,255,.25) 11px,transparent 14px);}
@@ -2966,3 +2963,107 @@
   #ecBlack.on{opacity:1;}
   #ecSub{display:none;position:absolute;inset:0;z-index:49;align-items:center;justify-content:center;pointer-events:none;text-align:center;
     color:#ff2222;font-weight:bold;font-size:clamp(40px,11vmin,150px);letter-spacing:3px;text-shadow:0 0 26px #ff0000,3px 3px 0 #000;background:rgba(0,0,0,.45);}
+
+/* ===== 미지 이벤트 알림 토스트 (상단 픽셀 배너) v1.0 ===== */
+  #eventToastHost{
+    position:absolute;left:0;right:0;top:16px;z-index:90;
+    display:flex;flex-direction:column;align-items:center;gap:8px;
+    pointer-events:none;
+  }
+  .evtoast{
+    --accent:#38e8ff;--glow:rgba(56,232,255,.6);
+    position:relative;display:flex;align-items:center;gap:11px;
+    max-width:min(560px,90%);padding:8px 18px 8px 11px;
+    background:rgba(7,4,14,.9);
+    border:2px solid var(--accent);
+    outline:2px dashed var(--accent);outline-offset:3px;
+    box-shadow:0 0 0 2px #000,0 0 20px var(--glow);
+    opacity:0;transform:translateY(-24px) scale(.96);
+    font-family:'Galmuri11','Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+    white-space:nowrap;image-rendering:pixelated;
+  }
+  .evtoast.show{animation:evtIn .24s steps(5) forwards,evtFlick .14s steps(2) 1;}
+  .evtoast.hide{animation:evtOut .3s steps(5) forwards;}
+  @keyframes evtIn{from{opacity:0;transform:translateY(-24px) scale(.96);}to{opacity:1;transform:translateY(0) scale(1);}}
+  @keyframes evtOut{from{opacity:1;transform:translateY(0);}to{opacity:0;transform:translateY(-20px);}}
+  @keyframes evtFlick{0%{filter:brightness(2.4)}50%{filter:brightness(.4)}100%{filter:none}}
+  .evtoast::after{content:"";position:absolute;inset:0;pointer-events:none;
+    background:repeating-linear-gradient(0deg,rgba(0,0,0,.2) 0 1px,transparent 1px 3px);}
+  .evt-ico{flex:0 0 auto;width:34px;height:34px;display:flex;align-items:center;justify-content:center;
+    image-rendering:pixelated;filter:drop-shadow(0 0 5px var(--glow));}
+  .evt-ico svg{width:34px;height:34px;display:block;}
+  .evt-txt{display:flex;flex-direction:column;line-height:1.22;}
+  .evt-big{font-size:16px;font-weight:bold;color:var(--accent);letter-spacing:1px;
+    text-shadow:0 2px 0 #000,0 0 9px var(--glow);}
+  .evt-small{font-size:12px;color:#cfe9ff;letter-spacing:.5px;text-shadow:0 1px 0 #000;margin-top:2px;}
+  .evtoast.gold {--accent:#ffd24d;--glow:rgba(255,210,77,.65);}
+  .evtoast.gold .evt-small{color:#ffe9b0;}
+  .evtoast.relic{--accent:#c08bff;--glow:rgba(146,70,255,.7);}
+  .evtoast.relic .evt-small{color:#e4d3ff;}
+  .evtoast.heal {--accent:#40ee80;--glow:rgba(64,238,128,.6);}
+  .evtoast.heal .evt-small{color:#c8ffd8;}
+  .evtoast.warn {--accent:#ff5560;--glow:rgba(255,85,96,.7);}
+  .evtoast.warn .evt-small{color:#ffd2d6;}
+  .evtoast.info {--accent:#38e8ff;--glow:rgba(56,232,255,.6);}
+  @media (max-width:560px){
+    .evt-big{font-size:14px;}.evt-small{font-size:11px;}
+    .evtoast{max-width:94%;white-space:normal;}
+  }
+
+/* ===== 메타 알림 토스트 (화면 구석, 흐름 방해 없는 작은 알림) v1.0 ===== */
+  #metaToastHost{
+    position:absolute;right:10px;top:10px;z-index:88;
+    display:flex;flex-direction:column;align-items:flex-end;gap:5px;
+    pointer-events:none;max-width:52%;
+  }
+  .mtoast{
+    --accent:#38e8ff;
+    display:flex;align-items:center;gap:7px;
+    padding:4px 11px 4px 6px;
+    background:rgba(7,4,14,.84);
+    border:1px solid var(--accent);
+    box-shadow:0 0 0 1px #000,0 2px 0 #000;
+    font-family:'Galmuri11','Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+    font-size:12px;white-space:nowrap;image-rendering:pixelated;
+    opacity:0;transform:translateX(16px);
+  }
+  .mtoast.show{animation:mtIn .2s steps(3) forwards;}
+  .mtoast.hide{animation:mtOut .26s steps(3) forwards;}
+  @keyframes mtIn{from{opacity:0;transform:translateX(16px);}to{opacity:1;transform:translateX(0);}}
+  @keyframes mtOut{from{opacity:1;transform:translateX(0);}to{opacity:0;transform:translateX(16px);}}
+  .mt-ico{flex:0 0 auto;width:18px;height:18px;display:flex;align-items:center;justify-content:center;}
+  .mt-ico svg{width:18px;height:18px;display:block;}
+  .mt-txt{font-weight:bold;letter-spacing:.5px;text-shadow:0 1px 0 #000;color:var(--accent);}
+  .mtoast.gold  {--accent:#ffd24d;}
+  .mtoast.potion{--accent:#7ee7b0;}
+  .mtoast.item  {--accent:#c08bff;}
+  .mtoast.warn  {--accent:#ff5560;}
+  .mtoast.info  {--accent:#38e8ff;}
+  @media (max-width:560px){
+    .mtoast{font-size:11px;}.mt-ico{width:16px;height:16px;}.mt-ico svg{width:16px;height:16px;}
+  }
+
+/* ===== 예약 버프/디버프 상시 배지 (전투 중 좌상단) v1.0 ===== */
+  #combatBadges{
+    position:absolute;left:10px;top:10px;z-index:86;
+    display:flex;flex-direction:column;align-items:flex-start;gap:4px;
+    pointer-events:none;max-width:46%;
+  }
+  .cbadge{
+    --accent:#ffd24d;
+    display:inline-flex;align-items:center;
+    padding:3px 9px 3px 8px;
+    background:rgba(7,4,14,.78);
+    border-left:3px solid var(--accent);
+    box-shadow:0 1px 0 #000;
+    font-family:'Galmuri11','Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+    font-size:11px;font-weight:bold;letter-spacing:.5px;white-space:nowrap;
+    color:var(--accent);text-shadow:0 1px 0 #000;
+    image-rendering:pixelated;
+    animation:cbIn .22s steps(3) both;
+  }
+  @keyframes cbIn{from{opacity:0;transform:translateX(-10px);}to{opacity:1;transform:translateX(0);}}
+  .cbadge.buff   {--accent:#ffd24d;}
+  .cbadge.special{--accent:#c08bff;}
+  .cbadge.debuff {--accent:#ff5560;}
+  @media (max-width:560px){ .cbadge{font-size:10px;padding:2px 7px;} }
