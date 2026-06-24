@@ -36,21 +36,21 @@ const ENEMY_TYPES={
   namu          :{name:"나무",   r:25, hp:97,  spd:40, dmg:17, touchDmg:17, color:"#5fa84a", xp:96, ai:"chase",   label:"나무"},
   ketter        :{name:"케터",   r:22, hp:73,  spd:58, dmg:11,  color:"#7ed957", xp:86,  ai:"orbit", range:285, cool:1.25, label:"케터"},
   // --- 2막 어려운 적 ---
-  pobear        :{name:"포베어", r:30, hp:148, spd:66, dmg:22, touchDmg:18, color:"#c8884a", xp:330, ai:"charge", armor:0.08, label:"포베어"},
+  pobear        :{name:"포베어", r:30, hp:148, spd:66, dmg:20, touchDmg:18, color:"#c8884a", xp:330, ai:"charge", armor:0.08, label:"포베어"},
   blackstar     :{name:"흑별",   r:27, hp:132, spd:42, dmg:17, touchDmg:14, color:"#17111f", xp:315, ai:"orbit", range:300, cool:1.15, label:"흑별"},
-  killjoy       :{name:"킬조이", r:26, hp:34, spd:104,dmg:18, touchDmg:14, color:"#38e8ff", xp:42, ai:"shooter", range:405, cool:0.90, label:"킬조이"},
-  apple         :{name:"사과",   r:27, hp:128, spd:64, dmg:20, color:"#ff4d6d", xp:310, ai:"erratic", range:300, cool:1.25, label:"사과"},
+  killjoy       :{name:"킬조이", r:26, hp:34, spd:104,dmg:13, touchDmg:10, color:"#38e8ff", xp:42, ai:"shooter", range:405, cool:1.10, label:"킬조이"},
+  apple         :{name:"사과",   r:27, hp:128, spd:64, dmg:18, color:"#ff4d6d", xp:310, ai:"erratic", range:300, cool:1.25, label:"사과"},
   // === 3막 전용 몬스터 ===
-  act3_domin     :{name:"\uB3C4\uBBFC", r:23, hp:94,  spd:88, dmg:22, touchDmg:24, color:"#7ad7ff", xp:118, ai:"submerge_charge", range:420, cool:2.6, label:"\uB3C4\uBBFC"},
+  act3_domin     :{name:"\uB3C4\uBBFC", r:23, hp:86,  spd:88, dmg:18, touchDmg:18, color:"#7ad7ff", xp:118, ai:"submerge_charge", range:420, cool:3.2, label:"\uB3C4\uBBFC"},
   act3_mirror    :{name:"오픈더", r:24, hp:112, spd:46, dmg:14,  touchDmg:14,  color:"#8be8ff", xp:128, ai:"reflector", range:360, cool:3.8, label:"오픈더"},
-  act3_magnet    :{name:"소실아", r:23, hp:116, spd:42, dmg:13,  touchDmg:13,  color:"#ff4d5a", xp:122, ai:"magnet", range:250, cool:1.7, label:"소실아"},
-  act3_buffering :{name:"바나나", r:22, hp:90,  spd:72, dmg:15, touchDmg:14,  color:"#38e8ff", xp:116, ai:"blink_lagfield", range:330, cool:2.0, label:"바나나"},
+  act3_magnet    :{name:"소실아", r:23, hp:116, spd:42, dmg:11,  touchDmg:13,  color:"#ff4d5a", xp:122, ai:"magnet", range:220, cool:2.3, label:"소실아"},
+  act3_buffering :{name:"바나나", r:22, hp:84,  spd:72, dmg:12, touchDmg:14,  color:"#38e8ff", xp:116, ai:"blink_lagfield", range:330, cool:2.8, label:"바나나"},
   act3_alppano   :{name:"\uC54C\uBE60\uB178", r:27, hp:190, spd:24, dmg:13,  touchDmg:12,  color:"#ffd34d", xp:455, ai:"summoner", range:340, cool:3.8, label:"\uC54C\uBE60\uB178"},
-  act3_kullje    :{name:"\uCFFC\uC81C", r:26, hp:165, spd:92, dmg:28, touchDmg:24, color:"#ff4dd2", xp:500, ai:"stealth_assassin", range:360, cool:4.8, label:"\uCFFC\uC81C"},
+  act3_kullje    :{name:"\uCFFC\uC81C", r:26, hp:165, spd:92, dmg:21, touchDmg:18, color:"#ff4dd2", xp:500, ai:"stealth_assassin", range:360, cool:6.0, label:"\uCFFC\uC81C"},
   act3_clone     :{name:"타포", r:25, hp:165, spd:62, dmg:18, touchDmg:16, color:"#b86bff", xp:480, ai:"splitter", range:320, cool:1.05, label:"타포"},
   act3_truck     :{name:"노잭", r:40, hp:360, spd:24, dmg:16, touchDmg:13, color:"#58d8ff", xp:850, ai:"beam_sweep", range:620, cool:5.8, armor:0.18, label:"노잭"},
   act3_sand_soldier:{name:"\uBAA8\uB798\uBCD1\uC0AC", r:13, hp:34, spd:112, dmg:10, touchDmg:10, color:"#e0b85a", xp:0, ai:"chase", summoned:true, noReward:true, noKillScore:true, label:"\uBAA8\uB798\uBCD1\uC0AC"},
-  onster      :{name:"\uC628\uC2A4\uD130", r:58, hp:5000, spd:34, dmg:18, touchDmg:18, color:"#8d72ff", xp:1800, ai:"onster", range:360, cool:1.35, label:"\uC628\uC2A4\uD130"},
+  onster      :{name:"\uC628\uC2A4\uD130", r:58, hp:4000, spd:34, dmg:18, touchDmg:18, color:"#8d72ff", xp:1800, ai:"onster", range:360, cool:1.35, label:"\uC628\uC2A4\uD130"},
   yanggaeng     :{name:"박제인간", r:58, hp:3400, spd:48, dmg:17, touchDmg:17, color:"#111111", xp:2200, ai:"bagjein", cool:1.7, label:"박제인간"},
   // === 2막 엘리트: 양갱 (3페이즈) ===
   kkotchung     :{name:"양갱", r:37, hp:270, spd:50, dmg:16, touchDmg:21, color:"#f7a8d0", xp:900,  ai:"kkotchung", cool:1.32, label:"미주"},
@@ -72,7 +72,7 @@ const ACT3_BASIC_ENEMY_IDS=["act3_domin","act3_buffering","act3_magnet"];
 const ACT3_MID_ENEMY_IDS=["act3_mirror","act3_alppano","act3_clone"];
 const ACT3_LATE_ENEMY_IDS=["act3_kullje"];
 const ACT3_ELITE_ENEMY_IDS=["act3_truck"];
-const ACT3_PRIORITY_CAPS={act3_mirror:1,act3_alppano:1,act3_clone:1,act3_kullje:1,act3_truck:1,act3_magnet:1,act3_domin:2};
+const ACT3_PRIORITY_CAPS={act3_mirror:1,act3_alppano:1,act3_clone:1,act3_kullje:1,act3_truck:1,act3_magnet:1,act3_domin:1,act3_buffering:2};
 function normalEnemyPoolFor(a,row){
   const pool=ACT_POOLS[Math.min(a-1,ACT_POOLS.length-1)];
   const base=(pool&&pool.normal?pool.normal:[]).slice();
@@ -98,7 +98,7 @@ function act2DangerScore(id){
   return id==='blackstar'||id==='sniper_viewer'||id==='apple'?2:(id==='pobear'?1:0);
 }
 function act3DangerScore(id){
-  return id==='act3_truck'?4:(id==='act3_clone'||id==='act3_kullje'?3:(id==='act3_domin'||id==='act3_buffering'||id==='act3_magnet'||id==='act3_mirror'||id==='act3_alppano'?2:0));
+  return id==='act3_truck'?5:(id==='act3_kullje'?4:(id==='act3_clone'||id==='act3_domin'||id==='act3_magnet'||id==='act3_buffering'?3:(id==='act3_mirror'||id==='act3_alppano'?2:0)));
 }
 function countDangerScore(counts,scorer){
   let total=0; counts=counts||{};
@@ -157,7 +157,8 @@ function pickNormalEnemyForRoom(a,row,counts){
     if(Math.random()<lateRate && latePool.length) choices=latePool;
     else if(Math.random()<hardRate && mid.length) choices=mid;
     else choices=basic.length?basic:mid.concat(latePool);
-    if(!choices.length) choices=ACT3_BASIC_ENEMY_IDS.concat(ACT3_MID_ENEMY_IDS,ACT3_LATE_ENEMY_IDS).filter(id=>ENEMY_TYPES[id]&&filterDanger(id));
+    if(!choices.length) choices=ACT3_BASIC_ENEMY_IDS.concat(ACT3_MID_ENEMY_IDS,ACT3_LATE_ENEMY_IDS).filter(id=>ENEMY_TYPES[id]&&filterCaps(id)&&filterDanger(id));
+    if(!choices.length) choices=ACT3_BASIC_ENEMY_IDS.concat(ACT3_MID_ENEMY_IDS).filter(id=>ENEMY_TYPES[id]&&filterCaps(id));
     if(!choices.length) choices=ACT3_BASIC_ENEMY_IDS.filter(id=>ENEMY_TYPES[id]);
     const id=pick(choices.length?choices:basic);
     counts[id]=(counts[id]||0)+1;
