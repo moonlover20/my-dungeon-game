@@ -1,4 +1,4 @@
-"use strict";
+﻿"use strict";
 /* =========================================================
    JS MAINTENANCE MAP
    This file intentionally stays single-file for fast vibe coding.
@@ -5339,7 +5339,7 @@ const ACT_TUNING=[
   {enemyHpMul:1,eliteHpMul:1,bossHpMul:1,bossXp:350,bossGold:[105,170],killGoldMul:1,shopPriceMul:1,name:"1막"},
   {enemyHpMul:1,eliteHpMul:1,bossHpMul:1,bossXp:3100,bossGold:[105,170],killGoldMul:1,shopPriceMul:1,name:"2막"},
   // 3막 최종보스 전투 시간 완화: 일반몹/정예 체감은 유지하고 보스 HP만 낮춘다.
-  {enemyHpMul:1.18,eliteHpMul:1.18,bossHpMul:1.25,bossXp:4400,bossGold:[150,230],killGoldMul:1.25,shopPriceMul:1.06,name:"3막 · 심연 속"}
+  {enemyHpMul:1.12,eliteHpMul:1.12,bossHpMul:1.10,bossXp:4400,bossGold:[150,230],killGoldMul:1.25,shopPriceMul:1.06,name:"3막 · 심연 속"}
 ];
 function actTuning(a){ return ACT_TUNING[Math.max(1,Math.min(MAX_ACT,Number(a)||1))]||ACT_TUNING[1]; }
 let timeScale=1;
@@ -6274,7 +6274,7 @@ function hurtPlayer(dmg, src){
   if(player.iframes>0||player.dodging>0||player.buffs.shield>0) return;
   if(player.hitShield>0){ player.hitShield--; player.iframes=0.6; burst(player.x,player.y,'#8be8ff',16,200); return; }
   if(player.perfectDodgeArmed){ player.perfectDodgeArmed=false; player.perfectDodgeCheckT=0; }
-  if(src) lastKiller=src; if((roomIsBoss||roomIsMidboss)&&act>=2){ dmg*=(act>=3?1.6:1.3); }  // 보스방 막별 데미지 가중(2막 x1.3 / 3막 x1.6)
+  if(src) lastKiller=src; if((roomIsBoss||roomIsMidboss)&&act>=2){ dmg*=(act>=3?1.45:1.25); }  // 보스방 막별 데미지 가중(2막 x1.25 / 3막 x1.45)
   const dmgCalc=calculatePlayerIncomingDamage(dmg,{source:src});
   if(window.DEBUG_COMBAT){
     console.debug('[combat] incomingDamage', {
@@ -9586,16 +9586,16 @@ function eventUndoLevelPerkEffect(pk){
   if(!eventIsTransformableLevelPerk(pk)) return false;
   switch(pk.name){
     case '공격 특화': player.dmg-=2; break;
-    case '속사 특화': player.fireAdd-=0.08; break;
+    case '속사 특화': player.fireAdd-=0.10; break;
     case '민첩 특화': player.spd-=12; break;
     case '활력': player.maxhp=Math.max(1,player.maxhp-15); player.hp=Math.min(player.hp,player.maxhp); break;
-    case '방어 특화': player.armor-=0.03; break;
+    case '방어 특화': player.armor-=0.04; break;
     case '광부': player.goldMul-=0.10; break;
     case '대구경': player.bulletSize-=0.10; break;
     case '재생': player.regen-=0.5; break;
-    case '경험치 부스트': player.xpMul-=0.10; break;
+    case '경험치 부스트': player.xpMul-=0.15; break;
     case '도네 알림': player.donateChance-=0.05; break;
-    case '정밀 조준': player.critChance-=0.05; break;
+    case '정밀 조준': player.critChance-=0.07; break;
     case '충격파': player.stunChance-=0.05; break;
     case '관통': player.pierce-=1; break;
     case '반사': player.bounce-=1; break;
@@ -9608,7 +9608,7 @@ function eventUndoLevelPerkEffect(pk){
     case '고속탄': player.bulletSpeedMul-=0.20; break;
     case '화염탄': player.burn-=4; break;
     case '독침': player.poison-=3; break;
-    case '가시 갑옷': player.thorns-=7; break;
+    case '가시 갑옷': player.thorns-=10; break;
     case '잔상': player.dodgeIframeBonus-=0.1; break;
     case '점화': player.statusDotDmgMul-=0.10; break;
     case '부식 표식': player.statusDmgMul-=0.08; break;
@@ -10584,7 +10584,7 @@ const EVENTS=[
    ]},
   {tag:'👑 왕의 보관함',title:'금빛 보관함',body:'묵직한 자물쇠가 왕관 모양으로 빛난다. 정식 열쇠는 비싸고, 힘으로 열면 피를 본다.',
    choices:[
-     {t:'열쇠 사용 — 300G → 신화 유물',disabled:()=>gold<300,f:()=>{spendGold(300,'event');updateHUD();eventGiveRelic({tiers:['mythic']},finishNode);}},
+     {t:'열쇠 사용 — 300G → 전설 70% / 신화 30%',disabled:()=>gold<300,f:()=>{spendGold(300,'event');updateHUD();eventGiveRelic({tiers:[Math.random()<0.70?'legend':'mythic']},finishNode);}},
      {t:'강제로 연다 → 체력 50% 손실, 전설 유물',f:()=>{eventHpCostPct(0.50);eventGiveRelic({tiers:['legend']},finishNode);}},
      {t:'포기',f:()=>finishNode()},
    ]},
@@ -11233,17 +11233,17 @@ EXTRA_PERK_ICON_SPECS.forEach(([n,c,c2,m])=>{ if(!PERK_ICONS[n]) PERK_ICONS[n]=m
 const LEVEL_PERKS=[
   // ===== 일반 Common =====
   {g:'common',icon:'⚔️',name:'공격 특화',desc:'공격력 +2',apply:p=>{p.dmg+=2;}},
-  {g:'common',icon:'⚡',name:'속사 특화',desc:'발사 속도 +8%',apply:p=>{p.fireAdd+=0.08;}},
+  {g:'common',icon:'⚡',name:'속사 특화',desc:'발사 속도 +10%',apply:p=>{p.fireAdd+=0.10;}},
   {g:'common',icon:'🥾',name:'민첩 특화',desc:'이동 속도 +12',apply:p=>{p.spd+=12;}},
   {g:'common',icon:'❤️',name:'활력',desc:'최대 체력 +15, 10 회복',apply:p=>{p.maxhp+=15;healPlayer(10,player.x,player.y);}},
-  {g:'common',icon:'🛡️',name:'방어 특화',desc:'받는 피해 -3%',apply:p=>{p.armor+=0.03;}},
+  {g:'common',icon:'🛡️',name:'방어 특화',desc:'받는 피해 -4%',apply:p=>{p.armor+=0.04;}},
   {g:'common',icon:'🧲',name:'광부',desc:'골드 획득량 +10%',apply:p=>{p.goldMul+=0.10;}},
   {g:'common',icon:'💥',name:'대구경',desc:'투사체 크기 +10%',apply:p=>{p.bulletSize+=0.10;}},
   {g:'common',icon:'🌿',name:'재생',desc:'초당 체력 +0.5',apply:p=>{p.regen+=0.5;}},
-  {g:'rare',icon:'📈',name:'경험치 부스트',desc:'경험치 획득량 +10%',apply:p=>{p.xpMul+=0.10;}},
+  {g:'rare',icon:'📈',name:'경험치 부스트',desc:'경험치 획득량 +15%',apply:p=>{p.xpMul+=0.15;}},
   {g:'common',icon:'💸',name:'도네 알림',desc:'처치 시 골드 폭탄 5%',apply:p=>{p.donateChance+=0.05;}},
   // ===== 희귀 Rare =====
-  {g:'common',icon:'🎯',name:'정밀 조준',desc:'치명타 확률 +5%',apply:p=>{p.critChance+=0.05;}},
+  {g:'common',icon:'🎯',name:'정밀 조준',desc:'치명타 확률 +7%',apply:p=>{p.critChance+=0.07;}},
   {g:'rare',icon:'🩸',name:'흡혈',desc:'삭제된 레벨업 특성',removed:true,skip:()=>true,apply:p=>{}},
   {g:'rare',icon:'🔔',name:'충격파',desc:'기절 확률 +5%',apply:p=>{p.stunChance+=0.05;}},
   {g:'rare',icon:'🍢',name:'관통',desc:'관통 +1',apply:p=>{p.pierce+=1;}},
@@ -11258,7 +11258,7 @@ const LEVEL_PERKS=[
   {g:'rare',icon:'🔥',name:'화염탄',desc:'명중 시 3초간 화상. 찍을 때마다 화상 피해 +4.',apply:p=>{p.burn+=4;}},
   {g:'epic',icon:'❄️',name:'빙결탄',desc:'삭제된 레벨업 특성',removed:true,skip:()=>true,apply:p=>{}},
   {g:'rare',icon:'🟢',name:'독침',desc:'명중 시 독을 부여합니다. 스택당 초당 독 피해 +3. 독은 최대 6스택까지 중첩됩니다.',apply:p=>{p.poison+=3;}},
-  {g:'rare',icon:'🌵',name:'가시 갑옷',desc:'피격 시 주변 적에게 주는 가시 피해 +7.',apply:p=>{p.thorns+=7;}},
+  {g:'rare',icon:'🌵',name:'가시 갑옷',desc:'피격 시 주변 적에게 주는 가시 피해 +10.',apply:p=>{p.thorns+=10;}},
   {g:'epic',icon:'💨',name:'추진력',desc:'회피 후 2.5초 동안 발사속도 +50%.',skip:p=>p.dodgeHaste,apply:p=>{p.dodgeHaste=true;}},
   {g:'rare',icon:'👻',name:'잔상',desc:'회피 무적 시간 +0.1초. 중복 가능.',apply:p=>{p.dodgeIframeBonus+=0.1;}},
   {g:'rare',icon:'🧨',name:'점화',desc:'상태이상 피해 +10%',apply:p=>{p.statusDotDmgMul+=0.10;}},
