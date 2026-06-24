@@ -3016,7 +3016,8 @@ function onsterAwaken(e){
   if(typeof clearA3Systems==='function') clearA3Systems();
   e.awakened=true; e.phase=2; e.sprite='onster_p2'; e.color='#ff4dd2'; e.intentInvuln=1.5; e.stunT=1.5; e.spd*=1.28; e.cool=Math.max(0.75,(e.cool||1.35)*0.72);
   eBullets.length=0; hazards=[]; screenShake=Math.max(screenShake||0,22); hitFlash=Math.max(hitFlash||0,0.55);
-  banner('온스터 각성','사슬이 끊어졌다',1600);
+  bossEvolve={phase:2, t:0, line:'사슬이 끊어졌다', name:'각성', col:e.color, e};
+  cutsceneT=1.6;
   for(let i=0;i<24;i++){ const a=i/24*TAU; eBullets.push({x:e.x,y:e.y,vx:Math.cos(a)*230,vy:Math.sin(a)*230,r:8,dmg:9,life:3.2,srcName:'온스터 사슬 파편'}); }
   if(typeof beep==='function'){ beep(90,0.45,'sawtooth',0.07); beep(240,0.36,'triangle',0.05); }
 }
@@ -5065,6 +5066,7 @@ let treeIntroShown=false;
 let screenShake=0, hitFlash=0;
 // ── 이벤트 → 다음 전투/보상에 적용되는 모디파이어 ──
 let nextCombatMods=null;      // {hpMul,spdMul,atkMul,cntMul,fireHandicap,rewardMul,xpMul,ally,challenge,specialReward,banner}
+let activeCombatBadges=[];    // 이번 전투에 적용 중인 예약 버프/디버프 (HUD 상시 배지)
 let combatRewardMul=1;        // 이번 전투 보상 골드 배수
 let combatXpMul=1;            // 이번 전투 처치 경험치 배수
 let nextShopDiscount=0;       // 다음 상점 1회성 할인 (0~1, 예: 0.1 = 10% 할인)
@@ -5104,6 +5106,34 @@ function queueNextCombatMod(mod){
 function resetCombatModState(){
   nextCombatMods=null; combatRewardMul=1; combatXpMul=1; combatChallenge=null; combatSpecialReward=null; combatTookHit=false; combatTempAlly=false; nextGoldPenalty=0;
 }
+// 예약 버프/디버프를 이번 전투용 배지 목록으로 변환
+function buildCombatBadges(M){
+  const out=[];
+  const fmt=v=>{ const n=Number(v)||1; return (Math.round(n*100)/100).toString().replace(/\.0+$/,''); };
+  if(M){
+    if(Number(M.rewardMul)>1) out.push({tone:'buff',label:'보상 ×'+fmt(M.rewardMul)});
+    if(Number(M.xpMul)>1) out.push({tone:'buff',label:'경험치 ×'+fmt(M.xpMul)});
+    if(M.ally) out.push({tone:'buff',label:'아군 합류'});
+    if(M.challenge==='nohit') out.push({tone:'special',label:'노히트 도전'});
+    else if(M.challenge) out.push({tone:'special',label:'도전 과제'});
+    if(Number(M.hpMul)>1||Number(M.spdMul)>1||Number(M.atkMul)>1||Number(M.cntMul)>1) out.push({tone:'debuff',label:'적 강화'});
+    if(Number(M.fireHandicap)>1) out.push({tone:'debuff',label:'발사속도 ↓'});
+  }
+  if(Number(nextGoldPenalty)>0) out.push({tone:'debuff',label:'골드 -'+Math.round(nextGoldPenalty*100)+'%'});
+  return out;
+}
+function renderCombatBadges(){
+  const host=document.getElementById('combatBadges');
+  if(!host) return;
+  host.innerHTML='';
+  activeCombatBadges.forEach(b=>{
+    const el=document.createElement('span');
+    el.className='cbadge '+(b.tone||'buff');
+    el.textContent=b.label;
+    host.appendChild(el);
+  });
+}
+function clearCombatBadges(){ activeCombatBadges=[]; renderCombatBadges(); }
 function resetPlayer(){
   Object.assign(player,{
     x:W/2,y:H/2,r:14,hp:70,maxhp:70,spd:175,
@@ -5214,6 +5244,12 @@ function renderPotions(){
 const bannerEl=$('banner');
 function banner(big,small,ms){
   if(big==='CLEAR' && roomHadElite) small=eliteClearText(currentEliteKind());
+  // 미지 이벤트 결과 처리 중의 알림은 잘 보이는 상단 픽셀 배너(토스트)로 전환
+  // (선택지를 고르면 hideAll()로 ovEvent가 먼저 닫히므로 표시상태가 아니라 플래그로 판별)
+  if(eventResultActive && state!=='play' && typeof eventToast==='function'){
+    eventToast(eventToastKindFromText(big,small), big, small, Math.max(ms||0,2500));
+    return;
+  }
   if(roomHadElite && ms===1400 && String(small||'').indexOf('+')>=0){
     const m=String(small||'').match(/\+(\d+)/);
     big=eliteRewardTitle(currentEliteKind());
@@ -5225,6 +5261,79 @@ function banner(big,small,ms){
   clearTimeout(bannerEl._t);
   bannerEl._t=setTimeout(()=>bannerEl.classList.remove('show'),ms||1600);
 }
+
+// ---------- 미지 이벤트 알림 토스트 (상단 픽셀 배너) ----------
+// 골드폭탄·유물획득·회복 등 짧은 획득/발생 알림을 화면 상단에 2.5초 띄운다.
+// kind: 'gold' | 'relic' | 'heal' | 'warn' | 'info'
+const EVENT_TOAST_ICONS={
+  gold:'<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" shape-rendering="crispEdges"><rect x="5" y="1" width="6" height="1" fill="#7a4d00"/><rect x="3" y="2" width="10" height="1" fill="#7a4d00"/><rect x="2" y="3" width="12" height="10" fill="#7a4d00"/><rect x="3" y="14" width="10" height="1" fill="#7a4d00"/><rect x="5" y="15" width="6" height="1" fill="#7a4d00"/><rect x="4" y="3" width="8" height="1" fill="#ffe98a"/><rect x="3" y="4" width="10" height="9" fill="#ffd24d"/><rect x="4" y="13" width="8" height="1" fill="#e0a020"/><rect x="4" y="4" width="2" height="1" fill="#fff3c0"/><rect x="3" y="5" width="1" height="4" fill="#fff3c0"/><rect x="7" y="4" width="2" height="8" fill="#9a6500"/><rect x="6" y="6" width="4" height="1" fill="#9a6500"/><rect x="6" y="9" width="4" height="1" fill="#9a6500"/></svg>',
+  relic:'<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" shape-rendering="crispEdges"><rect x="4" y="2" width="8" height="2" fill="#caa6ff"/><rect x="3" y="4" width="10" height="2" fill="#a86bff"/><rect x="3" y="6" width="10" height="2" fill="#9146ff"/><rect x="4" y="8" width="8" height="2" fill="#7a2dd0"/><rect x="5" y="10" width="6" height="2" fill="#5a1aa0"/><rect x="6" y="12" width="4" height="1" fill="#3a0d70"/><rect x="7" y="13" width="2" height="1" fill="#2a0858"/><rect x="5" y="3" width="2" height="1" fill="#f3e6ff"/><rect x="6" y="5" width="1" height="3" fill="#e4d0ff"/></svg>',
+  heal:'<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" shape-rendering="crispEdges"><rect x="3" y="3" width="3" height="2" fill="#40ee80"/><rect x="10" y="3" width="3" height="2" fill="#40ee80"/><rect x="2" y="5" width="12" height="3" fill="#40ee80"/><rect x="3" y="8" width="10" height="2" fill="#2ed070"/><rect x="4" y="10" width="8" height="1" fill="#2ed070"/><rect x="5" y="11" width="6" height="1" fill="#22b060"/><rect x="6" y="12" width="4" height="1" fill="#22b060"/><rect x="7" y="13" width="2" height="1" fill="#1a9050"/><rect x="4" y="4" width="2" height="1" fill="#a8ffc8"/></svg>',
+  warn:'<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" shape-rendering="crispEdges"><rect x="7" y="1" width="2" height="1" fill="#ff5560"/><rect x="6" y="2" width="4" height="1" fill="#ff5560"/><rect x="5" y="3" width="6" height="2" fill="#ff5560"/><rect x="4" y="5" width="8" height="2" fill="#ff5560"/><rect x="3" y="7" width="10" height="2" fill="#ff5560"/><rect x="2" y="9" width="12" height="2" fill="#ff5560"/><rect x="1" y="11" width="14" height="2" fill="#ff5560"/><rect x="1" y="13" width="14" height="1" fill="#aa2a32"/><rect x="7" y="5" width="2" height="4" fill="#1a0608"/><rect x="7" y="10" width="2" height="2" fill="#1a0608"/></svg>',
+  info:'<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" shape-rendering="crispEdges"><rect x="7" y="0" width="2" height="5" fill="#38e8ff"/><rect x="0" y="7" width="5" height="2" fill="#38e8ff"/><rect x="11" y="7" width="5" height="2" fill="#38e8ff"/><rect x="7" y="11" width="2" height="5" fill="#38e8ff"/><rect x="6" y="6" width="4" height="4" fill="#aef4ff"/><rect x="7" y="7" width="2" height="2" fill="#fff"/><rect x="3" y="3" width="2" height="2" fill="#38e8ff"/><rect x="11" y="3" width="2" height="2" fill="#38e8ff"/><rect x="3" y="11" width="2" height="2" fill="#38e8ff"/><rect x="11" y="11" width="2" height="2" fill="#38e8ff"/></svg>'
+};
+function eventToastKindFromText(big,small){
+  const k=String(big||'')+' '+String(small||'');
+  if(/획득!|\] 획득|유물/.test(k)) return 'relic';
+  if(/골드|🪙|대박|순이익|\+\s*\d+\s*G/i.test(k)) return 'gold';
+  if(/회복|체력\s*가득|풀회복/.test(k)) return 'heal';
+  if(/경고|실패|쪽박|벌금|하락|증발|부족|이탈|손상|깎/.test(k)) return 'warn';
+  return 'info';
+}
+let _evtToastBusy=false;
+const _evtToastQ=[];
+// 미지 이벤트 선택지를 고른 뒤 결과 알림이 토스트로 가야 하는 구간을 표시
+let eventResultActive=false;
+function eventToast(kind,big,small,ms){
+  _evtToastQ.push({kind:kind||'info',big:big||'',small:small||'',ms:Math.max(ms||0,2200)});
+  _evtToastPump();
+}
+function _evtToastPump(){
+  if(_evtToastBusy||!_evtToastQ.length) return;
+  const host=document.getElementById('eventToastHost');
+  if(!host){ _evtToastQ.length=0; return; }
+  _evtToastBusy=true;
+  const d=_evtToastQ.shift();
+  const el=document.createElement('div');
+  el.className='evtoast '+d.kind;
+  const icon=EVENT_TOAST_ICONS[d.kind]||EVENT_TOAST_ICONS.info;
+  el.innerHTML='<span class="evt-ico">'+icon+'</span><span class="evt-txt"><span class="evt-big"></span><span class="evt-small"></span></span>';
+  el.querySelector('.evt-big').textContent=d.big;
+  const sm=el.querySelector('.evt-small');
+  if(d.small) sm.textContent=d.small; else sm.remove();
+  host.appendChild(el);
+  try{ if(typeof sfx!=='undefined'&&sfx.pick) sfx.pick(); }catch(e){}
+  requestAnimationFrame(()=>el.classList.add('show'));
+  setTimeout(()=>{
+    el.classList.remove('show'); el.classList.add('hide');
+    setTimeout(()=>{ el.remove(); _evtToastBusy=false; _evtToastPump(); },320);
+  }, d.ms);
+}
+try{ window.eventToast=eventToast; }catch(e){}
+
+// ---------- 메타 알림 토스트 (화면 구석, 흐름을 막지 않는 짧은 알림) ----------
+// 도네/포션/상점 구매처럼 전투·화면 진행과 무관한 알림용. 여러 개가 동시에 쌓일 수 있다.
+// opts: { icon, tone:'gold'|'potion'|'item'|'warn'|'info', ms }
+function metaToastIcon(name){
+  if(name==='potion') return '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" shape-rendering="crispEdges"><rect x="6" y="1" width="4" height="1" fill="#cfe9ff"/><rect x="6" y="2" width="4" height="2" fill="#9bb8d4"/><rect x="5" y="4" width="6" height="2" fill="#7ee7b0"/><rect x="4" y="6" width="8" height="7" fill="#2ed070"/><rect x="4" y="13" width="8" height="1" fill="#1a9050"/><rect x="5" y="8" width="6" height="4" fill="#9bf3c4"/><rect x="5" y="5" width="2" height="1" fill="#c8ffe0"/></svg>';
+  return EVENT_TOAST_ICONS[name]||EVENT_TOAST_ICONS.info;
+}
+const META_TOAST_MAX=4;
+function metaToast(text,opts){
+  opts=opts||{};
+  const host=document.getElementById('metaToastHost');
+  if(!host) return;
+  while(host.children.length>=META_TOAST_MAX && host.firstChild){ host.firstChild.remove(); }
+  const tone=opts.tone||'info';
+  const el=document.createElement('div');
+  el.className='mtoast '+tone;
+  el.innerHTML='<span class="mt-ico">'+metaToastIcon(opts.icon||tone)+'</span><span class="mt-txt"></span>';
+  el.querySelector('.mt-txt').textContent=text||'';
+  host.appendChild(el);
+  requestAnimationFrame(()=>el.classList.add('show'));
+  setTimeout(()=>{ el.classList.remove('show'); el.classList.add('hide'); setTimeout(()=>el.remove(),280); }, opts.ms||1500);
+}
+try{ window.metaToast=metaToast; }catch(e){}
 
 // ---------- 전투 구역 시작 ----------
 const BOSS_INTRO_LINES={
@@ -5477,6 +5586,8 @@ function loadRunCheckpoint(){
 
 // ===== JS: Combat flow =====
 function startCombat(kind, fresh){
+  eventResultActive=false;
+  clearCombatBadges();
   if(fresh===undefined) fresh=true;
   lastRoomKind=kind;
   // 보스/중간보스전은 회피 공간을 넓혀준다
@@ -5615,6 +5726,8 @@ function startCombat(kind, fresh){
     if(M.specialReward) combatSpecialReward=M.specialReward;
     if(M.ally && !player.minion){ player.minion={ang:0,fireT:0,x:player.x,y:player.y}; combatTempAlly=true; }
     if(M.banner) banner(M.banner.big, M.banner.small||'', 1600);
+    activeCombatBadges=buildCombatBadges(M);
+    renderCombatBadges();
   }
   if(player.roomShield>0) player.buffs.shield=Math.max(player.buffs.shield,player.roomShield);
   // 일반 방 신규 입장 시 2초 정지 미리보기 — 적/탄이 멈춰 몬스터를 파악할 시간 제공(보스/엘리트/재도전 제외)
@@ -6410,7 +6523,7 @@ function killEnemy(e){
     gainXP(e.xp);
     if(player.lifesteal>0 && Math.random()<player.lifesteal){ healPlayerNoDrop(5,player.x,player.y-player.r-18); }
     if(player.healOnKill>0){ healPlayer(player.healOnKill,e.x,e.y); }
-    if(player.donateChance>0 && Math.random()<player.donateChance){ const dg=irand(24,58); addGold(dg,'other'); banner('💸 도네 알림!','+'+dg+' G',900); burst(e.x,e.y,'#ffd34d',18,240); }
+    if(player.donateChance>0 && Math.random()<player.donateChance){ const dg=irand(24,58); addGold(dg,'other'); metaToast('💸 +'+dg+'G',{tone:'gold',ms:1200}); burst(e.x,e.y,'#ffd34d',18,240); }
   }
   // 골드: 처치 즉시 획득 (소환몹은 무한 스폰이라 미지급)
   if(countsForKillScore){
@@ -8878,6 +8991,7 @@ function selectNode(node){
 
 // update()의 클리어 판정에서 호출
 function onCombatCleared(){
+  clearCombatBadges();
   const t=pendingNode?pendingNode.type:'fight';
   combatClearGrace=true;
   clearCombatThreats();
@@ -8890,7 +9004,7 @@ function onCombatCleared(){
   combatXpMul=1;
   if(player.infiniteRefill&&Math.random()<0.20){
     const pot=rollPotion();
-    if(addPotion(pot)) setTimeout(()=>banner('무한 리필',pot.name+' 획득',1100),180);
+    if(addPotion(pot)) setTimeout(()=>metaToast(pot.name+' 획득',{icon:'potion',tone:'potion',ms:1500}),180);
   }
   const eliteKind=currentEliteKind();
   banner('CLEAR', t==='boss'?'보스 격파!':(t==='midboss'?'중간보스 격파!':(t==='elite'?eliteClearText(eliteKind):'정리 완료')), 1000);
@@ -8933,6 +9047,7 @@ function onCombatCleared(){
   }, 700);
 }
 function finishNode(){
+  eventResultActive=false;
   const wasBoss = pendingNode && pendingNode.type==='boss';
   if(pendingNode){ pendingNode.done=true; mapData.currentId=pendingNode.id; }
   pendingNode=null;
@@ -10103,7 +10218,7 @@ function showEventPanel(tag,title,body,choices){
     if(disabled) el.style.opacity='0.45';
     el.style.setProperty('--ev-accent',theme.accent);
     el.innerHTML='<div class="ttl">'+c.t+'</div>'+(c.desc?'<div class="desc">'+c.desc+'</div>':'');
-    el.onclick=()=>{ if(el.disabled) return; Array.from(cont.children).forEach(ch=>{ ch.disabled=true; }); evStopScene(); hideAll(); c.f(); };
+    el.onclick=()=>{ if(el.disabled) return; Array.from(cont.children).forEach(ch=>{ ch.disabled=true; }); evStopScene(); hideAll(); eventResultActive=true; c.f(); };
     cont.appendChild(el);
   });
 
@@ -11418,9 +11533,9 @@ function shopCard(it,items,idx){
     const purchaseCost=Math.max(0,Math.round(Number(it.cost)||0));
     if(soldNow) return;
     if(it.pending) return;
-    if(trainingLockedNow){ banner('훈련 완료','이미 구매한 훈련입니다',900); return; }
-    if(potionFullNow){ banner('포션 가득','3개까지만',900); return; }
-    if(gold<purchaseCost){ banner('골드 부족','',900); return; }
+    if(trainingLockedNow){ metaToast('이미 구매한 훈련',{tone:'warn',ms:1100}); return; }
+    if(potionFullNow){ metaToast('포션 가득 (최대 3개)',{tone:'warn',ms:1100}); return; }
+    if(gold<purchaseCost){ metaToast('골드 부족',{tone:'warn',ms:1000}); return; }
     shopPurchaseLock=true;
     gold-=purchaseCost;
     it.pending=true;
@@ -11445,7 +11560,7 @@ function shopCard(it,items,idx){
       refreshStockedShopSpecial(it);
     }else it.bought=true;
     sfx.coin();
-    if(!it.skipBuyBanner) banner((it.potion||it.kind==='special'||it.kind==='training'?it.name:it.icon)+' 구매!',shopPurchaseBannerSmall(it),it.kind==='training'?2200:1400);
+    if(!it.skipBuyBanner) metaToast((it.potion||it.kind==='special'||it.kind==='training'?it.name:it.icon)+' 구매',{icon:(it.potion?'potion':'item'),tone:(it.potion?'potion':'item'),ms:1800});
     shopPurchaseLock=false;
     updateHUD();
     renderShop(items);
