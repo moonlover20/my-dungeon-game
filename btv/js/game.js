@@ -654,13 +654,13 @@ const RELICS=[
   {id:"curse_crown",name:"저주의 왕관",icon:"👑",desc:"공격력 +15. 받는 피해 +30%.",cls:"curse",apply:p=>{p.dmg+=15;p.damageTakenMul+=0.30;}},
   {id:"direction_compass",name:"방향성 나침반",icon:"🧭",desc:"경험치 획득량 +30%, 이동속도 +10%.",cls:"boon",apply:p=>{p.xpMul+=0.30;p.moveSpeedAdd+=0.10;}},
   {id:"whale_card",name:"큰손 카드",icon:"💳",desc:"상점 가격 -20%, 골드 획득량 +20%.",cls:"boon",apply:p=>{p.shopCostMul-=0.20;p.goldMul+=0.20;}},
-  {id:"no_spend_wallet",name:"무소비의 지갑",icon:"👛",desc:"골드 획득량 +35%.",cls:"boon",apply:p=>{p.goldMul+=0.35;}},
+  {id:"no_spend_wallet",name:"무소비의 지갑",icon:"👛",desc:"골드 획득량 +50%.",cls:"boon",apply:p=>{p.goldMul+=0.50;}},
   {id:"hardcore_transmitter",name:"하드코어 송출기",icon:"📡",desc:"보스 피해 +45%, 공격력 +7.",cls:"boon",apply:p=>{p.bossDmgMul+=0.45;p.dmg+=7;}},
   {id:"nohit_wings",name:"무피격의 날개",icon:"🪽",desc:"이동속도 +40%, 회피 쿨타임 -20%.",cls:"boon",apply:p=>{p.moveSpeedAdd+=0.40;p.dodgeCdMul-=0.20;}},
   {id:"bizarre_mask",name:"기괴한 가면",icon:"🎭",desc:"공격력 +12, 관통 +1.",cls:"boon",apply:p=>{p.dmg+=12;p.pierce+=1;}},
   {id:"void_heart",name:"공허의 심장",icon:"🌑",desc:"공격력 +12, 치명타 확률 +20%.",cls:"boon",apply:p=>{p.dmg+=12;p.critChance+=0.20;}},
   {id:"guardian_shield",name:"수호자의 방패",icon:"🛡️",desc:"받는 피해 -25%.",cls:"boon",apply:p=>{p.armor+=0.25;}},
-  {id:"greed_ring",name:"탐욕의 반지",icon:"💎",desc:"골드 획득량 +50%. 상점 가격 +20%.",cls:"boon",apply:p=>{p.goldMul+=0.5;p.shopCostMul+=0.20;}},
+  {id:"greed_ring",name:"탐욕의 반지",icon:"💎",desc:"골드 획득량 +65%. 상점 가격 -15%.",cls:"boon",apply:p=>{p.goldMul+=0.65;p.shopCostMul-=0.15;}},
   {id:"time_warp",name:"시간 왜곡기",icon:"🔄",desc:"레벨업 시 체력 완전 회복.",cls:"boon",apply:p=>{p.levelFullHeal=true;}},
   {id:"old_boots",name:"낡은 군화",icon:"🥾",desc:"이동속도 +15%.",cls:"boon",apply:p=>{p.moveSpeedAdd+=0.15;}},
   {id:"strange_mushroom",name:"이상한 버섯",icon:"🍄",desc:"받는 피해 -10%.",cls:"boon",apply:p=>{p.armor+=0.1;}},
@@ -2039,6 +2039,9 @@ function conditionalAttackFlat(p){
     const stacks=Math.min(12,Math.floor((Number(gold)||0)/100));
     flat+=stacks*(Number(p.goldPowerAtkFlat)||0);
   }
+  if(p.maxhpPowerAtkFlat){
+    flat+=Math.floor((Number(p.maxhp)||0)/100)*(Number(p.maxhpPowerAtkFlat)||0);
+  }
   if((p.investmentReturn||p.investmentReturnAtkFlat)&&gold>=150){
     flat+=Number(p.investmentReturnAtkFlat)||3;
   }
@@ -2255,6 +2258,9 @@ function getAttackBonusBreakdown(){
   }
   if(player.goldPowerAtkFlat){
     addSpecialPart(parts,'현질의 힘',Math.min(12,Math.floor((Number(gold)||0)/100))*(Number(player.goldPowerAtkFlat)||0),'패시브 노드');
+  }
+  if(player.maxhpPowerAtkFlat){
+    addSpecialPart(parts,'최후의 방송',Math.floor((Number(player.maxhp)||0)/100)*(Number(player.maxhpPowerAtkFlat)||0),'패시브 노드');
   }
   if((player.investmentReturn||player.investmentReturnAtkFlat)&&gold>=150) addSpecialPart(parts,'투자 수익',Number(player.investmentReturnAtkFlat)||4,'패시브 노드');
   if(player.ominousAdaptationAtkFlat||player.ominousAdaptation) addSpecialPart(parts,'불길한 적응',curseRelicStacks(player)*(Number(player.ominousAdaptationAtkFlat)||(player.ominousAdaptation?2:0)),'레벨업 특성');
@@ -2811,8 +2817,22 @@ function relicAttackPower(mult){
 function isKkotMain(e){
   return !!(e&&e.type==='kkotchung'&&!e.clone);
 }
+function igniteDetonate(src){
+  if(!src) return;
+  const base=(src.burnDmg||0)*statusDotDamageMul()*3, R=120;   // 남은 화상 DoT의 ×3
+  burst(src.x,src.y,'#ff7a2a',18,260); screenShake=Math.max(screenShake||0,4);
+  for(const o of enemies.slice()){
+    if(o===src||!o) continue;
+    if(dist2(o.x,o.y,src.x,src.y)<R*R){
+      o.hp-=base*(1-(o.armor||0)); o.hitT=0.1;
+      if((o.burnT||0)<=0){ o.burnT=2; o.burnDmg=src.burnDmg||player.burn||4; }   // 불 번짐
+      if(o.hp<=0) killEnemy(o);   // killEnemy 직접 호출로 점화 무한연쇄 방지
+    }
+  }
+}
 function handleEnemyDefeat(e){
   if(!e||!enemies.includes(e)) return false;
+  if(player&&player.ignite&&(e.burnT||0)>0&&(e.burnDmg||0)>0) igniteDetonate(e);
   if(e._onDefeat){ const cb=e._onDefeat; e._onDefeat=null; try{cb(e);}catch(_){} }
   if(e.type==='hyechul'&&(e.phase||1)<3){ hyechulNextPhase(e); return true; }
   if(isKkotMain(e)&&(e.phase||1)<3){ kkotNextPhase(e); return true; }
@@ -6334,7 +6354,7 @@ function statusMoveMul(e){
 function applyBulletStatuses(e){
   if(player.burn>0){ e.burnT=3; e.burnDmg=player.burn; }
   if(player.chill>0){ e.chillT=2.5; }
-  if(player.poison>0){ e.psStacks=Math.min((e.psStacks||0)+1,6); e.psT=4; e.psDmg=player.poison; }
+  if(player.poison>0){ e.psStacks=Math.min((e.psStacks||0)+1,(player.poisonMaxStacks||6)); e.psT=4; e.psDmg=player.poison; }
 }
 function updateBossStatuses(b,dt){
   if(!b) return false;
@@ -8968,8 +8988,8 @@ function genMap(){
 function rollNodeType(row){
   const bag=[];
   for(let i=0;i<42;i++) bag.push('fight');
-  for(let i=0;i<24;i++) bag.push('event');
-  if(row>=1) for(let i=0;i<15;i++) bag.push('shop');
+  for(let i=0;i<30;i++) bag.push('event');
+  if(row>=1) for(let i=0;i<10;i++) bag.push('shop');
   return pick(bag);
 }
 function isProtectedMapNode(n){
@@ -9743,6 +9763,38 @@ const EVENT_THEMES = {
   '3막 · 심연의 구독자':{scene:'act3_abyss_subscriber',accent:'#38e8ff',bg:'radial-gradient(ellipse at 50% 55%,#020818 0%,#020208 66%)',tags:[{t:'고급 보상',c:'#cc88cc',bg:'rgba(60,0,70,.55)'},{t:'위험',c:'#ff5050',bg:'rgba(80,0,0,.55)'}],asset:'evt_act3_abyss_subscriber'},
   '3막 · 방송 종료 버튼':{scene:'act3_end_stream',accent:'#ff4d6d',bg:'radial-gradient(ellipse at 50% 52%,#1a0408 0%,#050208 66%)',tags:[{t:'후반',c:'#ff4d6d',bg:'rgba(80,0,20,.55)'},{t:'전투',c:'#ff8840',bg:'rgba(60,20,0,.55)'}],asset:'evt_act3_end_stream'},
 
+  // ── 팬 캐릭터 카메오 ─────────────────────────────────────────
+  '🚪 타포 합방':   {scene:'roulette', accent:'#9146ff', bg:'radial-gradient(ellipse at 50% 60%,#140820 0%,#0a0814 60%)', tags:[{t:'합방',c:'#9146ff',bg:'rgba(40,0,80,.55)'},{t:'도박',c:'#ffaa00',bg:'rgba(55,35,0,.55)'}]},
+  '📣 전미닝 직관': {scene:'ticket',   accent:'#38e8ff', bg:'radial-gradient(ellipse at 50% 60%,#06182a 0%,#0a0814 60%)', tags:[{t:'응원',c:'#38e8ff',bg:'rgba(0,50,80,.55)'},{t:'버프',c:'#5dff9b',bg:'rgba(0,55,25,.55)'}]},
+  '🍗 김춘식 배달': {scene:'chest',    accent:'#ffaa00', bg:'radial-gradient(ellipse at 60% 45%,#1a1200 0%,#0a0814 60%)', tags:[{t:'랜덤',c:'#ffaa00',bg:'rgba(55,35,0,.55)'},{t:'회복',c:'#40ee80',bg:'rgba(0,50,20,.55)'}]},
+  '👻 소실아':      {scene:'soul',     accent:'#aa66dd', bg:'radial-gradient(ellipse at 50% 55%,#0c0818 0%,#06040c 64%)', tags:[{t:'미스터리',c:'#aa66dd',bg:'rgba(40,0,70,.55)'},{t:'도박',c:'#ffaa00',bg:'rgba(55,35,0,.55)'}]},
+  '💪 훈상태 단련': {scene:'gladiator',accent:'#ff8840', bg:'radial-gradient(ellipse at 50% 70%,#1a0c04 0%,#0a0814 60%)', tags:[{t:'단련',c:'#ff8840',bg:'rgba(60,20,0,.55)'},{t:'성장',c:'#5dff9b',bg:'rgba(0,55,25,.55)'}]},
+
+  // ── 팬 카메오 2차 ─────────────────────────────────────────
+  '🍮 양갱 디저트':   {scene:'potion',   accent:'#40ee80', bg:'radial-gradient(ellipse at 50% 55%,#08200f 0%,#0a0814 60%)', tags:[{t:'회복',c:'#40ee80',bg:'rgba(0,50,20,.55)'}]},
+  '🪲 자잘자 채집':   {scene:'chest',    accent:'#88aa40', bg:'radial-gradient(ellipse at 45% 60%,#101808 0%,#0a0814 60%)', tags:[{t:'채집',c:'#88aa40',bg:'rgba(40,55,0,.55)'},{t:'도박',c:'#ffaa00',bg:'rgba(55,35,0,.55)'}]},
+  '😴 졸고 있는 승우': {scene:'well',     accent:'#7aa8ff', bg:'radial-gradient(ellipse at 50% 60%,#08122a 0%,#0a0814 60%)', tags:[{t:'휴식',c:'#7aa8ff',bg:'rgba(0,30,70,.55)'}]},
+  '🐤 대파와 아기새': {scene:'well',     accent:'#ffd24d', bg:'radial-gradient(ellipse at 50% 58%,#1a1600 0%,#0a0814 60%)', tags:[{t:'회복',c:'#40ee80',bg:'rgba(0,50,20,.55)'}]},
+  '🎤 광천김 노래':   {scene:'ticket',   accent:'#38e8ff', bg:'radial-gradient(ellipse at 50% 55%,#06182a 0%,#0a0814 60%)', tags:[{t:'힐링',c:'#40ee80',bg:'rgba(0,50,20,.55)'},{t:'버프',c:'#38e8ff',bg:'rgba(0,50,80,.55)'}]},
+  '⛷️ 르블이 스키':   {scene:'dice',     accent:'#9bd4ff', bg:'radial-gradient(ellipse at 50% 70%,#0a1424 0%,#0a0814 60%)', tags:[{t:'도박',c:'#ffaa00',bg:'rgba(55,35,0,.55)'}]},
+  '🌳 나무 그늘':     {scene:'well',     accent:'#5dff9b', bg:'radial-gradient(ellipse at 50% 60%,#08200f 0%,#0a0814 60%)', tags:[{t:'회복',c:'#40ee80',bg:'rgba(0,50,20,.55)'}]},
+  '✨ 파이리 텐션':   {scene:'roulette', accent:'#ff8840', bg:'radial-gradient(ellipse at 50% 60%,#1c0c00 0%,#0a0814 60%)', tags:[{t:'랜덤',c:'#ffaa00',bg:'rgba(55,35,0,.55)'}]},
+  '🗣️ 말대모 잔소리': {scene:'book',     accent:'#6688ff', bg:'radial-gradient(ellipse at 40% 50%,#080a20 0%,#0a0814 60%)', tags:[{t:'조언',c:'#6688ff',bg:'rgba(0,15,60,.55)'}]},
+  '🕊️ 비둘기 떼':    {scene:'dice',     accent:'#cfd6e0', bg:'radial-gradient(ellipse at 50% 60%,#12141c 0%,#0a0814 60%)', tags:[{t:'도박',c:'#ffaa00',bg:'rgba(55,35,0,.55)'}]},
+  '💰 러라 투자':     {scene:'royal',    accent:'#ffd24d', bg:'radial-gradient(ellipse at 50% 30%,#181400 0%,#0a0814 60%)', tags:[{t:'골드',c:'#ffd24d',bg:'rgba(60,45,0,.55)'},{t:'도박',c:'#ffaa00',bg:'rgba(55,35,0,.55)'}]},
+  '💔 킬조이의 부탁': {scene:'collector',accent:'#ff6b9d', bg:'radial-gradient(ellipse at 40% 55%,#1c0814 0%,#0a0814 60%)', tags:[{t:'거래',c:'#ffcc30',bg:'rgba(60,45,0,.55)'},{t:'도박',c:'#ffaa00',bg:'rgba(55,35,0,.55)'}]},
+  '💕 한쥐 썸':       {scene:'roulette', accent:'#ff6b9d', bg:'radial-gradient(ellipse at 50% 60%,#1c0814 0%,#0a0814 60%)', tags:[{t:'연애',c:'#ff6b9d',bg:'rgba(70,0,30,.55)'},{t:'도박',c:'#ffaa00',bg:'rgba(55,35,0,.55)'}]},
+  '😤 미주의 매도':   {scene:'altar',    accent:'#ff5560', bg:'radial-gradient(ellipse at 50% 60%,#1c0610 0%,#0a0814 60%)', tags:[{t:'분노',c:'#ff5560',bg:'rgba(80,0,20,.55)'},{t:'공격',c:'#ff8840',bg:'rgba(60,20,0,.55)'}]},
+  '🦈 도민 사냥':     {scene:'gladiator',accent:'#38e8ff', bg:'radial-gradient(ellipse at 50% 70%,#06182a 0%,#0a0814 60%)', tags:[{t:'전투',c:'#ff8840',bg:'rgba(60,20,0,.55)'}]},
+  '🌹 로즈의 장미':   {scene:'temple',   accent:'#ff4d6d', bg:'radial-gradient(ellipse at 50% 40%,#1c0610 0%,#0a0814 60%)', tags:[{t:'거래',c:'#ffcc30',bg:'rgba(60,45,0,.55)'},{t:'유물',c:'#cc88cc',bg:'rgba(60,0,70,.55)'}]},
+  '📺 러부엉 합방':   {scene:'ticket',   accent:'#9146ff', bg:'radial-gradient(ellipse at 50% 55%,#120820 0%,#0a0814 60%)', tags:[{t:'합방',c:'#9146ff',bg:'rgba(40,0,80,.55)'},{t:'보상',c:'#ffd24d',bg:'rgba(60,45,0,.55)'}]},
+  '🎧 케터 DJ':       {scene:'storm',    accent:'#c98bff', bg:'radial-gradient(ellipse at 50% 55%,#120820 0%,#0a0814 60%)', tags:[{t:'단련',c:'#c98bff',bg:'rgba(40,0,80,.55)'}]},
+  '🎖️ 온스터 난입':  {scene:'gladiator',accent:'#5dff9b', bg:'radial-gradient(ellipse at 50% 70%,#06180c 0%,#05040a 64%)', tags:[{t:'군대',c:'#5dff9b',bg:'rgba(0,55,25,.55)'},{t:'전투',c:'#ff8840',bg:'rgba(60,20,0,.55)'}]},
+  '🩸 마지막 방송':   {scene:'altar',    accent:'#ff4d6d', bg:'radial-gradient(ellipse at 50% 55%,#1c0408 0%,#05040a 64%)', tags:[{t:'올인',c:'#ff4d6d',bg:'rgba(80,0,20,.55)'},{t:'도박',c:'#ffaa00',bg:'rgba(55,35,0,.55)'}]},
+  '💀 폐허가 된 채널': {scene:'coffin',   accent:'#aa66dd', bg:'radial-gradient(ellipse at 50% 58%,#0c0818 0%,#05040a 64%)', tags:[{t:'유물',c:'#cc88cc',bg:'rgba(60,0,70,.55)'},{t:'저주',c:'#aa55ff',bg:'rgba(40,0,80,.55)'}]},
+  '🃏 운명의 더블링': {scene:'roulette', accent:'#ffd24d', bg:'radial-gradient(ellipse at 50% 60%,#1a1400 0%,#05040a 64%)', tags:[{t:'도박',c:'#ffaa00',bg:'rgba(55,35,0,.55)'},{t:'골드',c:'#ffd24d',bg:'rgba(60,45,0,.55)'}]},
+  '⚖️ 최후의 계약':   {scene:'soul',     accent:'#ff5560', bg:'radial-gradient(ellipse at 50% 55%,#1c0610 0%,#05040a 64%)', tags:[{t:'대가',c:'#ff5560',bg:'rgba(80,0,20,.55)'},{t:'강화',c:'#ff8840',bg:'rgba(60,20,0,.55)'}]},
+
 };
 
 // ── 씬 씬 씬: 픽셀아트 캔버스 렌더러 ──────────────────────────
@@ -10396,6 +10448,17 @@ function evDrawScene(sceneId, canvas){
 //  기존 인터페이스 (tag, title, body, choices) 완전 유지
 //  theme은 EVENT_THEMES에서 tag로 자동 조회, 없으면 기본값
 // ================================================================
+// 미지 이벤트 선택지: 결과/보상을 숨기고 '행동'만 표시 (더 미지스럽게)
+// 라벨이 "행동 — 효과" / "행동 → 보상" 구조면 구분자 앞(행동/대가)만 남긴다.
+// 결과는 선택 후 토스트로 공개 → "골라야 알 수 있다".
+let mysteryHideOutcome=true;
+function mysteryChoiceLabel(t){
+  if(!mysteryHideOutcome) return t;
+  const i=String(t).search(/\s[—→]\s/);
+  return i>=0 ? String(t).slice(0,i).trim() : t;
+}
+try{ window.toggleMysteryOutcome=()=>{ mysteryHideOutcome=!mysteryHideOutcome; return mysteryHideOutcome?'미지 결과 숨김 ON':'결과 표시(원래대로) ON'; }; }catch(e){}
+
 function showEventPanel(tag,title,body,choices){
   // ── 테마 조회 ──────────────────────────────────────────────
   const theme = EVENT_THEMES[tag] || {
@@ -10454,7 +10517,7 @@ function showEventPanel(tag,title,body,choices){
     el.disabled=!!disabled;
     if(disabled) el.style.opacity='0.45';
     el.style.setProperty('--ev-accent',theme.accent);
-    el.innerHTML='<div class="ttl">'+c.t+'</div>'+(c.desc?'<div class="desc">'+c.desc+'</div>':'');
+    el.innerHTML='<div class="ttl">'+mysteryChoiceLabel(c.t)+'</div>'+(c.desc?'<div class="desc">'+c.desc+'</div>':'');
     el.onclick=()=>{ if(el.disabled) return; Array.from(cont.children).forEach(ch=>{ ch.disabled=true; }); evStopScene(); hideAll(); eventResultActive=true; c.f(); };
     cont.appendChild(el);
   });
@@ -10674,7 +10737,230 @@ const EVENTS=[
      {t:'훔친다 — 45% 확률 유물 획득, 실패 시 체력 30% 손실',f:()=>{if(Math.random()<0.45) eventGiveCleanRelic({},finishNode); else {const loss=eventHpCostCurrentPct(0.30);banner('도둑질 실패','체력 -'+loss,1500);finishNode();}}},
      {t:'아무것도 사지 않는다',f:()=>finishNode()},
    ]},
+  // ====================================================
+  //  팬 캐릭터 카메오 이벤트 — 시청자 닉네임 (팬게임)
+  // ====================================================
+  {id:'fan_tapo',tag:'🚪 타포 합방',title:'노쇼의 타포',body:'타포가 합방을 잡자고 했다. 그런데 약속 시간이 한참 지나도 들어오질 않는다. 기다릴까, 먼저 시작할까?',
+   choices:[
+     {t:'기다린다 — 45% 늦참(보상 2배) / 55% 노쇼(적 강화)',f:()=>{
+       if(Math.random()<0.45){
+         queueNextCombatMod({rewardMul:2,hpMul:1.10,banner:{big:'타포 늦참!',small:'합방 보상 2배 · 적 강화'}});
+         banner('🚪 타포 등장','"미안 미안 ㅋㅋ" 다음 전투 보상 2배',1600);
+       }else{
+         queueNextCombatMod({hpMul:1.20,spdMul:1.08,banner:{big:'타포 노쇼…',small:'기다리는 새 적이 몰려왔다'}});
+         banner('🚪 타포 노쇼','끝내 들어오지 않았다…',1500);
+       }
+       finishNode();}},
+     {t:'먼저 시작한다 — 골드 +50',f:()=>{addGold(50,'event');try{sfx.coin&&sfx.coin();}catch(e){}banner('혼자 진행','골드 +50',1300);updateHUD();finishNode();}},
+     {t:'그냥 넘어간다',f:()=>finishNode()},
+   ]},
+  {id:'fan_jeonmining',tag:'📣 전미닝 직관',title:'응원봉 든 전미닝',body:'전미닝이 응원봉과 플랜카드를 들고 직관 왔다. "봉식님 화이팅!" 어떤 응원을 받을까?',
+   choices:[
+     {t:'함께 외친다 — 다음 전투 아군 1명',disabled:()=>!!player.minion,f:()=>{queueNextCombatMod({ally:true,banner:{big:'전미닝 합류!',small:'함께 싸운다'}});banner('📣 응원 합류','다음 전투 아군 1명',1500);finishNode();}},
+     {t:'응원 도네 — 골드 +70, 경험치 +30',f:()=>{addGold(70,'event');try{sfx.coin&&sfx.coin();}catch(e){}gainXP(30);banner('📣 응원 도네','골드 +70 / 경험치 +30',1500);updateHUD();finishNode();}},
+     {t:'기운 충전 — 체력 25% 회복, 최대 체력 +5',f:()=>{eventMaxHpDelta(5);healPlayer(Math.max(20,Math.round(player.maxhp*0.25)),player.x,player.y);banner('📣 함성','체력 회복 / 최대 체력 +5',1400);finishNode();}},
+   ]},
+  {id:'fan_kimchunsik',tag:'🍗 김춘식 배달',title:'"아무거나" 시키는 김춘식',body:'김춘식이 "배고프죠? 아무거나 시켜드세요~" 하고 배달 후원을 쐈다. 뭐가 올지는 본인도 모른단다.',
+   choices:[
+     {t:'아무거나 받는다 — 랜덤(회복 / 포션 / 골드 / 체함)',f:()=>{
+       const r=pick(['heal','potion','gold','sick']);
+       if(r==='heal'){healPlayer(Math.max(25,Math.round(player.maxhp*0.30)),player.x,player.y);banner('🍗 든든하다','체력 회복',1400);finishNode();}
+       else if(r==='potion'){eventAddPotionOrGold(rollPotion(),40);banner('🍗 디저트까지','포션 획득',1400);finishNode();}
+       else if(r==='gold'){addGold(80,'event');try{sfx.coin&&sfx.coin();}catch(e){}banner('🍗 잔돈도 줌','골드 +80',1400);updateHUD();finishNode();}
+       else{const loss=Math.max(1,Math.round(player.maxhp*0.10));player.hp=Math.max(1,player.hp-loss);banner('🍗 체했다…','체력 -'+loss,1400);updateHUD();finishNode();}}},
+     {t:'메뉴 고른다 — 골드 30 지불, 포션 확정',disabled:()=>gold<30,f:()=>{spendGold(30,'event');updateHUD();eventAddPotionOrGold(rollPotion(),35);banner('🍗 정주문','포션 획득',1300);finishNode();}},
+     {t:'사양한다',f:()=>finishNode()},
+   ]},
+  {id:'fan_sosila',tag:'👻 소실아',title:'사라지는 구독자 소실아',body:'소실아가 익명 후원을 쏘고는 채팅창에서 곧바로 사라졌다. 흔적만 희미하게 남아 있다.',
+   choices:[
+     {t:'흔적을 쫓는다 — 35% 유물 / 35% 골드 +120 / 30% 소실(꽝)',f:()=>{
+       const r=Math.random();
+       if(r<0.35){eventGiveCleanRelic({},finishNode);}
+       else if(r<0.70){addGold(120,'event');try{sfx.coin&&sfx.coin();}catch(e){}banner('👻 흔적 발견','골드 +120',1400);updateHUD();finishNode();}
+       else{banner('👻 소실…','흔적은 사라졌다',1300);finishNode();}}},
+     {t:'조용히 받는다 — 골드 +60, 경험치 +20',f:()=>{addGold(60,'event');try{sfx.coin&&sfx.coin();}catch(e){}gainXP(20);banner('👻 익명 후원','골드 +60 / 경험치 +20',1400);updateHUD();finishNode();}},
+     {t:'무시한다',f:()=>finishNode()},
+   ]},
+  {id:'fan_hunsangtae',tag:'💪 훈상태 단련',title:'폼 체크하는 훈상태',body:'훈상태가 "오늘 폼 어떰? 같이 몸 좀 풀자" 하고 단련을 자처한다. 빡세게 굴릴수록 남는 게 많다.',
+   choices:[
+     {t:'혹독하게 — 현재 체력 12% 소모, 공격력 +1.5 (영구)',f:()=>{eventHpCostCurrentPct(0.12);player.dmg+=1.5;banner('💪 빡센 단련','공격력 +1.5',1400);updateHUD();finishNode();}},
+     {t:'가볍게 — 현재 체력 6% 소모, 이동 +12 (영구)',f:()=>{eventHpCostCurrentPct(0.06);player.spd+=12;banner('💪 가벼운 단련','이동속도 +12',1400);updateHUD();finishNode();}},
+     {t:'컨디션 조절 — 체력 20% 회복(단련 안 함)',f:()=>{healPlayer(Math.max(20,Math.round(player.maxhp*0.20)),player.x,player.y);banner('💪 컨디션 회복','체력 회복',1300);finishNode();}},
+   ]},
+  // ====================================================
+  //  팬 카메오 2차 — 막별 배치는 EVENT_ACT_MAP 참조
+  // ===== 1막 (가볍게/회복) =====
+  {id:'fan_yanggaeng',tag:'🍮 양갱 디저트',title:'달달한 양갱',body:'양갱이 "당 떨어졌죠?" 하며 디저트를 잔뜩 후원했다. 달달한 게 기운을 북돋운다.',
+   choices:[
+     {t:'양갱을 먹는다 — 체력 30% 회복, 최대 체력 +3',f:()=>{eventMaxHpDelta(3);healPlayer(Math.max(20,Math.round(player.maxhp*0.30)),player.x,player.y);banner('🍮 달달구리','체력 회복 / 최대 체력 +3',1400);finishNode();}},
+     {t:'포션에 곁들인다 — 골드 30 지불, 포션 1개',disabled:()=>gold<30,f:()=>{spendGold(30,'event');updateHUD();eventAddPotionOrGold(rollPotion(),35);banner('🍮 디저트 세트','포션 획득',1300);finishNode();}},
+     {t:'사양한다',f:()=>finishNode()},
+   ]},
+  {id:'fan_jajalja',tag:'🪲 자잘자 채집',title:'벌레 채집가 자잘자',body:'자잘자가 채집통을 들고 "희귀한 놈 잡으러 가자!"며 채집을 권한다.',
+   choices:[
+     {t:'채집한다 — 40% 희귀(골드+90) / 40% 평범(XP+40) / 20% 빈손',f:()=>{const r=Math.random();if(r<0.40){addGold(90,'event');try{sfx.coin&&sfx.coin();}catch(e){}banner('🪲 희귀 채집','골드 +90',1400);updateHUD();}else if(r<0.80){gainXP(40);banner('🪲 평범한 수확','경험치 +40',1400);}else{banner('🪲 허탕','아무것도 못 잡았다',1300);}finishNode();}},
+     {t:'장비를 산다 — 골드 30 지불, 경험치 +50 확정',disabled:()=>gold<30,f:()=>{spendGold(30,'event');updateHUD();gainXP(50);banner('🪲 채집 성공','경험치 +50',1400);finishNode();}},
+     {t:'안 간다',f:()=>finishNode()},
+   ]},
+  {id:'fan_seungwoo',tag:'😴 졸고 있는 승우',title:'코 고는 승우',body:'승우가 방송 보다가 코를 골며 잠들었다. 새근새근 소리에 덩달아 나른해진다.',
+   choices:[
+     {t:'같이 눈 붙인다 — 체력 완전 회복, 다음 전투 적 소폭 강화',f:()=>{player.hp=player.maxhp;updateHUD();queueNextCombatMod({hpMul:1.12,banner:{big:'늦잠 후유증',small:'적이 조금 강해졌다'}});banner('😴 단잠','체력 가득',1400);finishNode();}},
+     {t:'깜짝 깨운다 — 골드 +60 (놀라서 후원 실수)',f:()=>{addGold(60,'event');try{sfx.coin&&sfx.coin();}catch(e){}banner('😴 깜짝!','승우 후원 실수 +60',1300);updateHUD();finishNode();}},
+     {t:'그냥 둔다',f:()=>finishNode()},
+   ]},
+  {id:'fan_daepa',tag:'🐤 대파와 아기새',title:'대파와 아기새 자야',body:'대파가 아기새 자야를 품에 안고 나타났다. 자야가 삐약대며 먹이를 조른다.',
+   choices:[
+     {t:'둘 다 돌본다 — 체력 25% 회복, 경험치 +40',f:()=>{healPlayer(Math.max(18,Math.round(player.maxhp*0.25)),player.x,player.y);gainXP(40);banner('🐤 훈훈','체력 회복 / 경험치 +40',1400);finishNode();}},
+     {t:'먹이를 산다 — 골드 40 지불, 최대 체력 +5',disabled:()=>gold<40,f:()=>{spendGold(40,'event');eventMaxHpDelta(5);banner('🐤 무럭무럭','최대 체력 +5',1300);finishNode();}},
+     {t:'지나간다',f:()=>finishNode()},
+   ]},
+  {id:'fan_gwangcheon',tag:'🎤 광천김 노래',title:'목소리 좋은 광천김',body:'광천김이 즉석에서 한 곡 뽑는다. 듣고 있으면 마음이 편안해지고 분위기가 달아오른다.',
+   choices:[
+     {t:'노래를 듣는다 — 체력 30% 회복',f:()=>{healPlayer(Math.max(22,Math.round(player.maxhp*0.30)),player.x,player.y);banner('🎤 힐링 보이스','체력 회복',1300);finishNode();}},
+     {t:'떼창한다 — 다음 전투 적 공격력 -12%',f:()=>{queueNextCombatMod({atkMul:0.88,banner:{big:'떼창의 기세',small:'적이 주춤한다'}});banner('🎤 떼창!','다음 전투 적 공격력 -12%',1400);finishNode();}},
+     {t:'다음에 듣는다',f:()=>finishNode()},
+   ]},
+  {id:'fan_reubeul',tag:'⛷️ 르블이 스키',title:'스키 못 타는 르블이',body:'르블이가 슬로프 위에서 부들부들 떨고 있다. "같이… 타자…" 넘어질 게 뻔하지만.',
+   choices:[
+     {t:'같이 탄다 — 60% 성공(XP+60) / 40% 같이 굴러 체력 10%',f:()=>{if(Math.random()<0.60){gainXP(60);banner('⛷️ 활강 성공','경험치 +60',1400);}else{const loss=Math.max(1,Math.round(player.maxhp*0.10));player.hp=Math.max(1,player.hp-loss);banner('⛷️ 같이 굴렀다','체력 -'+loss,1400);updateHUD();}finishNode();}},
+     {t:'구경한다 — 골드 +50 (시청자 빵 터짐)',f:()=>{addGold(50,'event');try{sfx.coin&&sfx.coin();}catch(e){}banner('⛷️ 명장면','골드 +50',1300);updateHUD();finishNode();}},
+     {t:'말린다',f:()=>finishNode()},
+   ]},
+  {id:'fan_namu',tag:'🌳 나무 그늘',title:'나무 아래 휴식',body:'나무가 "잠깐 쉬었다 가요" 하며 그늘을 내준다. 자연의 기운이 감돈다.',
+   choices:[
+     {t:'기대어 쉰다 — 체력 25% 회복, 경험치 +30',f:()=>{healPlayer(Math.max(18,Math.round(player.maxhp*0.25)),player.x,player.y);gainXP(30);banner('🌳 산들바람','체력 회복 / 경험치 +30',1400);finishNode();}},
+     {t:'열매를 딴다 — 50% 포션 / 50% 골드 +50',f:()=>{if(Math.random()<0.50){eventAddPotionOrGold(rollPotion(),40);banner('🌳 열매','포션 획득',1300);}else{addGold(50,'event');try{sfx.coin&&sfx.coin();}catch(e){}banner('🌳 열매','골드 +50',1300);updateHUD();}finishNode();}},
+     {t:'지나간다',f:()=>finishNode()},
+   ]},
+  {id:'fan_pairi',tag:'✨ 파이리 텐션',title:'열정 가득 파이리',body:'파이리가 채팅을 불태우며 텐션을 끌어올린다. "가자 가자!" 에너지가 전염된다.',
+   choices:[
+     {t:'텐션을 받는다 — 랜덤(골드 / 경험치 / 포션)',f:()=>{const r=pick(['gold','xp','potion']);if(r==='gold'){addGold(70,'event');try{sfx.coin&&sfx.coin();}catch(e){}banner('✨ 불타는 후원','골드 +70',1300);updateHUD();}else if(r==='xp'){gainXP(60);banner('✨ 열정 충전','경험치 +60',1300);}else{eventAddPotionOrGold(rollPotion(),40);banner('✨ 깜짝 선물','포션 획득',1300);}finishNode();}},
+     {t:'차분히 받는다 — 골드 30 지불, 경험치 +40 확정',disabled:()=>gold<30,f:()=>{spendGold(30,'event');updateHUD();gainXP(40);banner('✨ 침착하게','경험치 +40',1300);finishNode();}},
+     {t:'사양한다',f:()=>finishNode()},
+   ]},
+  {id:'fan_maldaemo',tag:'🗣️ 말대모 잔소리',title:'잔소리꾼 말대모',body:'말대모가 듣기 싫은 잔소리를 늘어놓는다. 가만 들어보면 다 맞는 말이라 약이 오른다.',
+   choices:[
+     {t:'귀담아듣는다 — 공격력 +1 (영구)',f:()=>{player.dmg+=1;banner('🗣️ 뼈 때리는 조언','공격력 +1',1400);updateHUD();finishNode();}},
+     {t:'흘려듣는다 — 체력 15% 회복',f:()=>{healPlayer(Math.max(12,Math.round(player.maxhp*0.15)),player.x,player.y);banner('🗣️ 한 귀로','체력 회복',1300);finishNode();}},
+     {t:'말대꾸한다 — 골드 +40, 다음 전투 적 강화',f:()=>{addGold(40,'event');try{sfx.coin&&sfx.coin();}catch(e){}queueNextCombatMod({hpMul:1.12,banner:{big:'말싸움 후폭풍',small:'적이 거칠어졌다'}});banner('🗣️ 받아쳤다','골드 +40 / 다음 전투 강화',1400);updateHUD();finishNode();}},
+   ]},
+  {id:'fan_bidulgi',tag:'🕊️ 비둘기 떼',title:'모여드는 비둘기',body:'비둘기 떼가 구구대며 모여든다. 모이를 주면 뭔가 물어다 줄지도?',
+   choices:[
+     {t:'모이를 준다 — 골드 20 지불, 70% 골드 +70 / 30% 깃털만',disabled:()=>gold<20,f:()=>{spendGold(20,'event');updateHUD();if(Math.random()<0.70){addGold(70,'event');try{sfx.coin&&sfx.coin();}catch(e){}banner('🕊️ 보답','비둘기가 골드를 물어왔다 +70',1400);updateHUD();}else{banner('🕊️ 깃털만','보답은 깃털 한 장…',1300);}finishNode();}},
+     {t:'쫓아낸다 — 경험치 +30',f:()=>{gainXP(30);banner('🕊️ 훠이훠이','경험치 +30',1300);finishNode();}},
+     {t:'무시한다',f:()=>finishNode()},
+   ]},
+  // ===== 2막 (거래/도박) =====
+  {id:'fan_reura',tag:'💰 러라 투자',title:'골드 굴리는 러라',body:'러라가 "골드는 굴려야 불죠" 하며 솔깃한 투자를 권한다.',
+   choices:[
+     {t:'맡긴다 — 골드 50 지불, 60% +130 / 40% 증발',disabled:()=>gold<50,f:()=>{spendGold(50,'event');updateHUD();if(Math.random()<0.60){addGold(130,'event');try{sfx.coin&&sfx.coin();}catch(e){}banner('💰 투자 성공','골드 +130',1500);updateHUD();}else{banner('💰 투자 실패','50G 증발…',1400);}finishNode();}},
+     {t:'환전한다 — 골드 110 지불, 랜덤 유물',disabled:()=>gold<110,f:()=>{spendGold(110,'event');updateHUD();eventGiveCleanRelic({},finishNode);}},
+     {t:'거절한다',f:()=>finishNode()},
+   ]},
+  {id:'fan_killjoy',tag:'💔 킬조이의 부탁',title:'소율 바라기 킬조이',body:'평소 시비 걸던 킬조이가 머뭇대며 "소율한테 줄 선물… 사는 거 좀 도와줘" 하고 골드를 부탁한다.',
+   choices:[
+     {t:'도와준다 — 골드 80 지불, 70% 유물 보답 / 30% 먹튀',disabled:()=>gold<80,f:()=>{spendGold(80,'event');updateHUD();if(Math.random()<0.70){eventGiveCleanRelic({},finishNode);}else{banner('💔 먹튀','킬조이가 소율이랑 사라졌다…',1500);finishNode();}}},
+     {t:'연애 코치를 해준다 — 경험치 +50, 골드 +30',f:()=>{gainXP(50);addGold(30,'event');try{sfx.coin&&sfx.coin();}catch(e){}banner('💔 코치비','경험치 +50 / 골드 +30',1400);updateHUD();finishNode();}},
+     {t:'거절한다',f:()=>finishNode()},
+   ]},
+  {id:'fan_hanjwi',tag:'💕 한쥐 썸',title:'연애 세포 한쥐',body:'한쥐가 발그레한 얼굴로 썸 얘기를 꺼낸다. "이거… 되는 각인가?" 도박 같은 연애 상담.',
+   choices:[
+     {t:'썸을 민다 — 50% 성공(유물) / 50% 차임(골드 -30)',f:()=>{if(Math.random()<0.50){eventGiveCleanRelic({},finishNode);}else{const s=Math.min(gold,30);if(s>0)spendGold(s,'event');updateHUD();banner('💕 차였다','골드 -'+s,1400);finishNode();}}},
+     {t:'친구로 남는다 — 골드 +60, 경험치 +30',f:()=>{addGold(60,'event');try{sfx.coin&&sfx.coin();}catch(e){}gainXP(30);banner('💕 좋은 친구','골드 +60 / 경험치 +30',1400);updateHUD();finishNode();}},
+     {t:'회피한다',f:()=>finishNode()},
+   ]},
+  {id:'fan_miju',tag:'😤 미주의 매도',title:'사정없는 미주',body:'미주가 가차없이 매섭게 디스를 날린다. 약은 오르는데, 이상하게 화력이 끓어오른다.',
+   choices:[
+     {t:'받아친다 — 공격력 +2 (영구), 다음 전투 적 강화',f:()=>{player.dmg+=2;queueNextCombatMod({hpMul:1.12,banner:{big:'분노의 화력',small:'적이 거칠어졌다'}});banner('😤 발끈!','공격력 +2',1400);updateHUD();finishNode();}},
+     {t:'사과한다 — 골드 40 지불, 체력 20% 회복',disabled:()=>gold<40,f:()=>{spendGold(40,'event');healPlayer(Math.max(15,Math.round(player.maxhp*0.20)),player.x,player.y);banner('😤 휴전','체력 회복',1300);finishNode();}},
+     {t:'무시한다',f:()=>finishNode()},
+   ]},
+  {id:'fan_domin',tag:'🦈 도민 사냥',title:'상어 텐션 도민',body:'대학생 도민이 상어처럼 눈을 번뜩이며 "같이 사냥 ㄱ?" 하고 달려든다.',
+   choices:[
+     {t:'사냥 간다 — 강화 정예전(보상 대폭 증가)',f:()=>{queueNextCombatMod({hpMul:1.45,spdMul:1.08,rewardMul:1.5,xpMul:1.3,banner:{big:'상어 사냥 개시!',small:'정예를 물어뜯어라 · 보상 ↑'}});hideAll();startCombat('fight');state='play';syncChrome();}},
+     {t:'리포트를 돕는다 — 골드 50 지불, 경험치 +60',disabled:()=>gold<50,f:()=>{spendGold(50,'event');updateHUD();gainXP(60);banner('🦈 과제 완료','경험치 +60',1400);finishNode();}},
+     {t:'거절한다',f:()=>finishNode()},
+   ]},
+  {id:'fan_rose',tag:'🌹 로즈의 장미',title:'장미와 함께 로즈',body:'로즈가 붉은 장미 한 다발과 함께 우아하게 후원한다. "좋은 밤 되세요."',
+   choices:[
+     {t:'장미를 받는다 — 골드 +100, 다음 상점 10% 할인',f:()=>{addGold(100,'event');try{sfx.coin&&sfx.coin();}catch(e){}nextShopDiscount=Math.max(nextShopDiscount,0.10);banner('🌹 우아한 후원','골드 +100 / 다음 상점 -10%',1500);updateHUD();finishNode();}},
+     {t:'꽃다발을 거래한다 — 골드 120 지불, 랜덤 유물',disabled:()=>gold<120,f:()=>{spendGold(120,'event');updateHUD();eventGiveCleanRelic({},finishNode);}},
+     {t:'정중히 거절한다',f:()=>finishNode()},
+   ]},
+  {id:'fan_reubueong',tag:'📺 러부엉 합방',title:'BJ 러부엉',body:'베테랑 BJ 러부엉이 합방을 제안한다. 노련해서 타포처럼 펑크 낼 일은 없어 보인다.',
+   choices:[
+     {t:'합방한다 — 다음 전투 보상 1.5배, 적 소폭 강화',f:()=>{queueNextCombatMod({rewardMul:1.5,hpMul:1.15,banner:{big:'러부엉 합방!',small:'보상 1.5배 · 적 강화'}});banner('📺 합방 성사','다음 전투 보상 1.5배',1400);finishNode();}},
+     {t:'게스트로 출연한다 — 골드 +90, 경험치 +30',f:()=>{addGold(90,'event');try{sfx.coin&&sfx.coin();}catch(e){}gainXP(30);banner('📺 게스트 출연','골드 +90 / 경험치 +30',1400);updateHUD();finishNode();}},
+     {t:'거절한다',f:()=>finishNode()},
+   ]},
+  {id:'fan_keteo',tag:'🎧 케터 DJ',title:'비트 메이커 케터',body:'케터가 디제잉을 시작한다. 비트에 몸을 맡기면 손이 절로 빨라질 것 같다.',
+   choices:[
+     {t:'비트를 탄다 — 현재 체력 8% 소모, 발사속도 +10% (영구)',f:()=>{eventHpCostCurrentPct(0.08);player.fireAdd+=0.10;banner('🎧 리듬 각성','발사속도 +10%',1400);updateHUD();finishNode();}},
+     {t:'신청곡을 넣는다 — 골드 40 지불, 경험치 +40',disabled:()=>gold<40,f:()=>{spendGold(40,'event');updateHUD();gainXP(40);banner('🎧 선곡','경험치 +40',1300);finishNode();}},
+     {t:'패스한다',f:()=>finishNode()},
+   ]},
+  // ===== 3막 (절정/호러) =====
+  {id:'fan_onster',tag:'🎖️ 온스터 난입',title:'군기반장 온스터',body:'온스터가 군기를 잡겠다며 스타 대회판을 엎으러 난입했다. "정신 상태가 글러먹었어!" 빡센 기합 아니면 정면 대결.',
+   choices:[
+     {t:'군기 훈련을 받는다 — 체력 30% 소모, 공격력 +2 · 이동 +15 (영구)',f:()=>{eventHpCostPct(0.30);player.dmg+=2;player.spd+=15;banner('🎖️ 지옥 훈련','공격력 +2 / 이동 +15',1600);updateHUD();finishNode();}},
+     {t:'대회를 지킨다 — 강화 정예전(보상 대폭 증가)',f:()=>{queueNextCombatMod({hpMul:1.6,spdMul:1.12,atkMul:1.1,rewardMul:1.6,xpMul:1.4,banner:{big:'대회를 지켜라!',small:'온스터를 막아내라 · 보상 ↑↑'}});hideAll();startCombat('fight');state='play';syncChrome();}},
+     {t:'도망친다 — 골드 50 지불',disabled:()=>gold<50,f:()=>{spendGold(50,'event');updateHUD();banner('🎖️ 줄행랑','군기 회피 -50G',1300);finishNode();}},
+   ]},
+  // ===== 3막 전용 추가 (고위험 거래/올인) =====
+  {id:'mz_last_show',tag:'🩸 마지막 방송',title:'최후의 송출',body:'화면 구석에 "마지막 방송"이라는 붉은 자막이 뜬다. 모든 걸 걸 시간이다.',
+   choices:[
+     {t:'전 재산을 건다 — 60% 2.2배 / 40% 파산',disabled:()=>gold<80,f:()=>{const g=gold;spendGold(g,'event');if(Math.random()<0.60){addGold(Math.round(g*2.2),'event');try{sfx.coin&&sfx.coin();}catch(e){}banner('🩸 잭팟!','골드 2.2배',1600);}else{banner('🩸 파산','전 재산이 증발했다…',1600);}updateHUD();finishNode();}},
+     {t:'목숨을 건다 — 체력 60% 손실 → 전설 유물 2개 중 택1',f:()=>{eventHpCostPct(0.60);eventOfferRelics(2,{tiers:['legend']},'🩸 마지막 헌신','피로 쥐어짠 전설이다.',finishNode);}},
+     {t:'안전하게 마무리한다 — 골드 +100, 체력 30% 회복',f:()=>{addGold(100,'event');try{sfx.coin&&sfx.coin();}catch(e){}healPlayer(Math.max(24,Math.round(player.maxhp*0.30)),player.x,player.y);banner('🩸 무사 종료','골드 +100 / 체력 회복',1500);updateHUD();finishNode();}},
+   ]},
+  {id:'mz_dead_channel',tag:'💀 폐허가 된 채널',title:'죽은 채널',body:'오래전 버려진 채널의 잔해. 값나가는 게 묻혀 있지만, 그 위에 저주가 내려앉아 있다.',
+   choices:[
+     {t:'약탈한다 — 60% 에픽+ 유물 / 40% 저주 유물',f:()=>{if(Math.random()<0.60){eventGiveRelic({tiers:['epic','legend']},finishNode);}else{eventGiveRelic({curseOnly:true},finishNode);}}},
+     {t:'조심히 뒤진다 — 골드 100 지불, 깨끗한 유물',disabled:()=>gold<100,f:()=>{spendGold(100,'event');updateHUD();eventGiveCleanRelic({tiers:['rare','epic']},finishNode);}},
+     {t:'떠난다',f:()=>finishNode()},
+   ]},
+  {id:'mz_doubling',tag:'🃏 운명의 더블링',title:'두 배의 도박',body:'그림자 딜러가 카드를 뒤집는다. "가진 걸 두 배로… 아니면 반으로."',
+   choices:[
+     {t:'골드를 더블링한다 — 50% 2배 / 50% 절반',disabled:()=>gold<50,f:()=>{const g=gold;if(Math.random()<0.50){addGold(g,'event');try{sfx.coin&&sfx.coin();}catch(e){}banner('🃏 더블!','골드 2배',1600);}else{spendGold(Math.floor(g*0.5),'event');banner('🃏 반토막','골드 절반…',1600);}updateHUD();finishNode();}},
+     {t:'유물에 건다 — 골드 150 지불, 60% 전설 / 40% 저주',disabled:()=>gold<150,f:()=>{spendGold(150,'event');updateHUD();if(Math.random()<0.60){eventGiveRelic({tiers:['legend']},finishNode);}else{eventGiveRelic({curseOnly:true},finishNode);}}},
+     {t:'발을 뺀다',f:()=>finishNode()},
+   ]},
+  {id:'mz_final_pact',tag:'⚖️ 최후의 계약',title:'악마의 계약서',body:'붉은 계약서가 펼쳐진다. 큰 힘에는 큰 대가가 따른다.',
+   choices:[
+     {t:'힘의 계약 — 최대 체력 30% 감소 → 공격력 +5',f:()=>{eventMaxHpMul(0.70);player.dmg+=5;banner('⚖️ 힘의 대가','공격력 +5',1600);updateHUD();finishNode();}},
+     {t:'민첩의 계약 — 공격력 -3 → 이동 +40, 발사속도 +15%',f:()=>{player.dmg=Math.max(1,player.dmg-3);player.spd+=40;player.fireAdd+=0.15;banner('⚖️ 민첩의 대가','이동 +40 / 발사속도 +15%',1600);updateHUD();finishNode();}},
+     {t:'계약을 거절한다',f:()=>finishNode()},
+   ]},
 ];
+
+// ── 막별 이벤트 배치 (tag 기준; 미등록 = 전 막 공용) ──────────────
+//  1막: 가볍게/회복 위주 (저위험)  2막: 거래/도박 (중위험)  3막: 절정/호러 (고위험·고보상)
+//  공용: 구독 알림 · 검투장 · 타포 · 전미닝 (막 무관)
+const EVENT_ACT_MAP={
+  // 1막 — 가볍게 / 회복
+  '🏋 부서진 훈련장':[1],'🍲 수상한 요리사':[1],'🗺 낡은 지도':[1],'🩸 피 묻은 우물':[1],
+  '🧭 길 잃은 모험가':[1],'🌫 검은 안개':[1],'📦 고장난 보급 상자':[1],'🍗 김춘식 배달':[1],'💪 훈상태 단련':[1],
+  // 2막 — 거래 / 도박
+  '🩸 수상한 제단':[2],'🎭 가면 상인':[2],'💀 저주받은 보물상자':[2],'🕯 영혼 거래':[2],'🎲 혼돈의 룰렛':[2],
+  '🧪 수상한 물약':[2],'📚 금지된 서적':[2],'🧲 떠돌이 수집가':[2],'🔥 불타는 제물':[2],'⏳ 시간의 균열':[2],
+  '🪞 뒤틀린 거울':[2],'🗿 잊힌 조각상':[2],'📚 침묵의 도서관':[2],'👻 소실아':[2],
+  // 3막 — 절정 / 호러 (고위험·고보상). ACT3_EVENTS 8종이 별도로 합류한다.
+  '👑 왕의 보관함':[3],'⚰ 봉인된 관':[3],'💎 탐욕의 신전':[3],'🕶 검은 시장':[3],
+  // ── 팬 카메오 2차 ──
+  // 1막
+  '🍮 양갱 디저트':[1],'🪲 자잘자 채집':[1],'😴 졸고 있는 승우':[1],'🐤 대파와 아기새':[1],'🎤 광천김 노래':[1],
+  '⛷️ 르블이 스키':[1],'🌳 나무 그늘':[1],'✨ 파이리 텐션':[1],'🗣️ 말대모 잔소리':[1],'🕊️ 비둘기 떼':[1],
+  // 2막
+  '💰 러라 투자':[2],'💔 킬조이의 부탁':[2],'💕 한쥐 썸':[2],'😤 미주의 매도':[2],'🦈 도민 사냥':[2],
+  '🌹 로즈의 장미':[2],'📺 러부엉 합방':[2],'🎧 케터 DJ':[2],
+  // 3막
+  '🎖️ 온스터 난입':[3],
+  '🩸 마지막 방송':[3],'💀 폐허가 된 채널':[3],'🃏 운명의 더블링':[3],'⚖️ 최후의 계약':[3],
+};
+function eventActMatch(ev){
+  const m=EVENT_ACT_MAP[ev.tag];
+  return !m || m.indexOf(act)>=0;
+}
 
 function act3EventBand(band){
   const row=Number(currentRow)||0;
@@ -10766,15 +11052,17 @@ const ACT3_EVENTS=[
 ];
 
 function startEvent(){
-  const basePool=EVENTS.filter(ev=>!ev.filter||ev.filter());
+  // 현재 막에 해당하는 이벤트만 (acts 미지정=공용, 지정=해당 막 전용)
+  const basePool=EVENTS.filter(ev=>(!ev.filter||ev.filter())&&eventActMatch(ev));
   const act3Pool=(act===3&&typeof ACT3_EVENTS!=='undefined')?ACT3_EVENTS.filter(ev=>!ev.filter||ev.filter()):[];
   let pool=basePool;
   if(act3Pool.length){
-    // Act 3 gets its own mystery flavor most of the time, while legacy events
-    // still appear often enough to keep the run varied.
-    pool=Math.random()<0.72?act3Pool:basePool.concat(act3Pool);
+    // 3막은 전용 호러 이벤트(ACT3_EVENTS)와 막 공용/3막 EVENTS를 절반씩 섞는다.
+    pool=Math.random()<0.55?act3Pool:basePool.concat(act3Pool);
   }
-  const ev=pick(pool.length?pool:basePool);
+  // 안전망: 어떤 이유로 막 풀이 비면 필터 무시한 전체 EVENTS로 폴백
+  if(!pool.length) pool=EVENTS.filter(ev=>!ev.filter||ev.filter());
+  const ev=pick(pool);
   showEventPanel(ev.tag,ev.title,ev.body,ev.choices);
 }
 
@@ -10912,7 +11200,8 @@ function usePotion(i){
   try{ p.use(player); }
   finally{ delete player._usingPotion; }
   if(player.alchemySurge){
-    addPotionBuff(player,{id:'alchemy_surge',name:'연금 폭주',label:'공격력 +5',icon:'🧪',desc:'포션 사용 후 공격력 증가',t:6,atkFlat:5,refreshOnly:true});
+    const sf=Number(player.alchemySurgeFlat)||5;
+    addPotionBuff(player,{id:'alchemy_surge',name:'연금 폭주',label:'공격력 +'+sf,icon:'🧪',desc:'포션 사용 후 공격력 증가',t:6,atkFlat:sf,refreshOnly:true});
   }
   sfx.pick();
   banner(p.name,'사용',1000);
@@ -15192,7 +15481,7 @@ function spEffects(p){
 
   add(p.burn>0,'🔥','화염탄 +'+Math.round(p.burn),'화염탄','명중 시 3초간 화상. 찍을 때마다 화상 피해 +4','burn');
   add(p.chill>0,'❄️','빙결탄','빙결탄','명중한 적을 둔화시킨다','freeze');
-  add(p.poison>0,'🟢','독침 '+Math.round(p.poison)+'/초','독침','독 피해: 스택당 초당 '+Math.round(p.poison)+'. 최대 독 스택: 6. 최대 중첩 시 초당 피해: '+Math.round(p.poison)+' × 6 = '+Math.round(p.poison*6)+'. 표시 방식: 독 피해는 계속 들어가지만, 화면 숫자는 약 0.35초마다 한 번씩 묶여서 표시됩니다.','poison');
+  add(p.poison>0,'🟢','독침 '+Math.round(p.poison)+'/초','독침','독 피해: 스택당 초당 '+Math.round(p.poison)+'. 최대 독 스택: '+(p.poisonMaxStacks||6)+'. 최대 중첩 시 초당 피해: '+Math.round(p.poison)+' × '+(p.poisonMaxStacks||6)+' = '+Math.round(p.poison*(p.poisonMaxStacks||6))+'. 표시 방식: 독 피해는 계속 들어가지만, 화면 숫자는 약 0.35초마다 한 번씩 묶여서 표시됩니다.','poison');
   add(p.statusDotDmgMul>0,'🔥','상태이상 피해 +'+pc(p.statusDotDmgMul),'상태이상 강화','독·화상 초당 피해 증가','status-dot-damage');
   add(p.statusDmgMul>0,'🔥','상태 대상 피해 +'+pc(p.statusDmgMul),'상태 대상 피해','상태이상 적에게 주는 직접 피해 증가','status-damage');
   add(p.statusCritChance>0,'🔥','원소 과부하 +'+pc(p.statusCritChance),'원소 과부하','상태이상 걸린 적에게 치명타 확률 증가. 치명타 상한 적용','elemental-overload');
@@ -15378,8 +15667,8 @@ function renderInventory(){
   if(p.statusCritChance>0) stats.push(['상태 치명타', '+'+Math.round(p.statusCritChance*100)+'%']);
   if(p.chillCritChance>0) stats.push(['둔화 치명타', '+'+Math.round(p.chillCritChance*100)+'%']);
   if(p.poison>0) stats.push(['독 피해', '스택당 초당 '+Math.round(p.poison)]);
-  if(p.poison>0) stats.push(['최대 독 스택', '6']);
-  if(p.poison>0) stats.push(['최대 중첩 시 초당 피해', Math.round(p.poison)+' × 6 = '+Math.round(p.poison*6)]);
+  if(p.poison>0) stats.push(['최대 독 스택', String(p.poisonMaxStacks||6)]);
+  if(p.poison>0) stats.push(['최대 중첩 시 초당 피해', Math.round(p.poison)+' × '+(p.poisonMaxStacks||6)+' = '+Math.round(p.poison*(p.poisonMaxStacks||6))]);
   if(p.poisonDotDmgMul>0) stats.push(['독 피해 배율', '+'+Math.round(p.poisonDotDmgMul*100)+'%']);
   if(p.statusDotDmgMul>0) stats.push(['독/화상 배율', '+'+Math.round(p.statusDotDmgMul*100)+'%']);
   if(p.statusDmgMul>0) stats.push(['상태 대상 피해', '+'+Math.round(p.statusDmgMul*100)+'%']);
@@ -16685,6 +16974,70 @@ window.a3help=function(){
   ].join('\n'));
   return 'see console';
 };
+// ── 미지 이벤트 콘솔 점검 ──────────────────────────────────
+function _mzActOf(tag){ const m=(typeof EVENT_ACT_MAP!=='undefined')?EVENT_ACT_MAP[tag]:null; return m?m.join(','):'공용'; }
+window.mzhelp=function(){
+  console.log([
+    '── 미지 이벤트 점검 ──',
+    'mzlist(act?)   : 미지 목록 (막별·종수). 예: mzlist(2)',
+    'mzpool(act?)   : 해당 막 출현 풀. 예: mzpool(3)',
+    'mz("타포")      : id/제목/tag 부분일치로 패널 강제 출력',
+    'mztest(act?)   : 해당 막 풀에서 랜덤 출현. 예: mztest(2), mztest(3)',
+    'mzrate()       : 노드 비율 + 미지모드 상태',
+    'toggleMysteryOutcome() : 선택지 결과 숨김 ON/OFF',
+  ].join('\n'));
+  return 'see console';
+};
+window.mzlist=function(a){
+  const E=EVENTS.map(e=>({id:e.id||'',tag:e.tag,act:_mzActOf(e.tag)}));
+  const rows=a?E.filter(e=>e.act.split(',').includes(String(a))):E;
+  console.log('── EVENTS '+rows.length+'/'+EVENTS.length+'종 '+(a?'('+a+'막)':'(전체)')+' ──');
+  rows.forEach(e=>console.log('  ['+String(e.act).padEnd(4)+'] '+e.tag+(e.id?'  ('+e.id+')':'')));
+  if(!a && typeof ACT3_EVENTS!=='undefined'){ console.log('── ACT3 '+ACT3_EVENTS.length+'종 (3막 호러) ──'); ACT3_EVENTS.forEach(e=>console.log('  '+e.tag+'  ('+e.id+')')); }
+  return rows.length+'종';
+};
+window.mzpool=function(a){
+  const saved=act; if(a!=null) act=a;
+  try{
+    const base=EVENTS.filter(ev=>(!ev.filter||ev.filter())&&(typeof eventActMatch==='undefined'||eventActMatch(ev)));
+    const a3=(act===3&&typeof ACT3_EVENTS!=='undefined')?ACT3_EVENTS.filter(ev=>!ev.filter||ev.filter()):[];
+    console.log('── '+act+'막 출현 풀 ──');
+    console.log('일반 EVENTS '+base.length+'종: '+base.map(e=>e.tag).join(' · '));
+    if(a3.length) console.log('ACT3 '+a3.length+'종: '+a3.map(e=>e.tag).join(' · '));
+    return (base.length+a3.length)+'종';
+  } finally { act=saved; }
+};
+window.mz=function(q){
+  q=String(q||'');
+  const all=EVENTS.concat(typeof ACT3_EVENTS!=='undefined'?ACT3_EVENTS:[]);
+  const hit=all.find(e=>e.id&&e.id===q) || all.find(e=>(e.id&&e.id.indexOf(q)>=0)||e.tag.indexOf(q)>=0||(e.title&&e.title.indexOf(q)>=0));
+  if(!hit){ console.log('못 찾음: "'+q+'" — mzlist()로 목록 확인'); return null; }
+  showEventPanel(hit.tag,hit.title,hit.body,hit.choices);
+  return hit.tag;
+};
+window.mztest=function(a){
+  const saved=act, tAct=(a==null?act:a);
+  if(a!=null) act=a;   // 풀 필터(eventActMatch)가 act를 참조하므로 임시 변경
+  try{
+    const base=EVENTS.filter(ev=>(!ev.filter||ev.filter())&&(typeof eventActMatch==='undefined'||eventActMatch(ev)));
+    const a3=(act===3&&typeof ACT3_EVENTS!=='undefined')?ACT3_EVENTS.filter(ev=>!ev.filter||ev.filter()):[];
+    let pool=base; if(a3.length) pool=Math.random()<0.55?a3:base.concat(a3);
+    if(!pool.length) pool=EVENTS.filter(ev=>!ev.filter||ev.filter());
+    const ev=pick(pool);
+    showEventPanel(ev.tag,ev.title,ev.body,ev.choices);
+    return tAct+'막 랜덤 미지: '+ev.tag;
+  } finally { act=saved; }   // 즉시 원복 (게임 막 상태 오염 방지)
+};
+window.mzrate=function(){
+  console.log([
+    '── 노드 비율 (rollNodeType bag) ──',
+    'fight 42 / event 30 / shop 10  →  미지 ≈ 28.8%(맵당 ~14.5) · 상점 ≈ 9.5% · 전투 ≈ 47%',
+    '미지 결과 숨김: '+(typeof mysteryHideOutcome!=='undefined'&&mysteryHideOutcome?'ON (행동만 표시)':'OFF (결과 노출)'),
+    '현재 막: '+(typeof act!=='undefined'?act:'?'),
+  ].join('\n'));
+  return 'see console';
+};
+
 window.debugGiveAct3Build=function(){
   act=3; gold+=650; level=Math.max(level,8); xp=0; xpNext=Math.max(xpNext,120);
   const addIds=['redbull','sniper','crit_glasses','vampire_fang'].map(id=>relicById(id)).filter(Boolean);
@@ -17242,6 +17595,12 @@ const TREE_NODES = [
     apply:p=>{ p.statusSpread=true; p.statusDmgMul+=0.20; } },
   { id:'t_venom_mature', name:'맹독 숙성', icon:'🟢', branch:'status', req:['t_poison2'], cost:2,
     desc:'독 초당 피해 +30%, 공격력 -1', apply:p=>{ p.poisonDotDmgMul=(Number(p.poisonDotDmgMul)||0)+0.30; p.dmg=Math.max(1,p.dmg-1); } },
+  { id:'t_venom_cultivate', name:'맹독 배양', icon:'🧪', branch:'status', req:['t_venom_mature'], cost:2, isMiniKeystone:true,
+    desc:'독 최대 스택 +3 (6 → 9)', skip:p=>(p.poisonMaxStacks||6)>=9,
+    apply:p=>{ p.poisonMaxStacks=(Number(p.poisonMaxStacks)||6)+3; } },
+  { id:'t_ignite', name:'점화', icon:'🔥', branch:'status', req:['t_dmg'], cost:3, isMiniKeystone:true,
+    desc:'화상 입은 적 처치 시 남은 화상 피해 ×3을 주변에 폭발(불 번짐)', skip:p=>p.ignite,
+    apply:p=>{ p.ignite=true; } },
   { id:'t_frost_mark', name:'냉기 각인', icon:'❄️', branch:'status', req:['t_chill'], cost:2,
     desc:'둔화된 적에게 치명타 확률 +8%', apply:p=>{ p.chillCritChance=(Number(p.chillCritChance)||0)+0.08; } },
   { id:'elemental_overload', name:'원소 과부하', icon:'🔥', branch:'status', req:['t_dmg'], cost:2, isMiniKeystone:true,
@@ -17311,6 +17670,9 @@ const TREE_NODES = [
   { id:'vamp_shield', name:'흡혈 보호막', icon:'🛡️', branch:'survive', req:['regen_overload','v_steal'], cost:3, isKeystone:true,
     desc:'초과 회복량을 보호막으로 전환. 자연 재생 효과 -30%', skip:p=>p.overhealShieldRate>0,
     apply:p=>{ p.overhealShieldRate=Math.max(p.overhealShieldRate||0,0.5); p.overhealShieldCap=Math.max(p.overhealShieldCap||0,0.2); p.regenMul-=0.30; } },
+  { id:'v_last_show', name:'최후의 방송', icon:'💀', branch:'survive', req:['vamp_shield'], cost:3, isKeystone:true,
+    desc:'최대 체력 100당 공격력 +5 — 탱킹이 곧 화력', skip:p=>p.maxhpPowerAtkFlat>0,
+    apply:p=>{ p.maxhpPowerAtkFlat=(Number(p.maxhpPowerAtkFlat)||0)+5; } },
 
   // ══════════════════════════════════
   // ⚡ 기동 라인 — "신나는 방송"
@@ -17346,6 +17708,27 @@ const TREE_NODES = [
   { id:'shadow_barrage', name:'그림자 탄막', icon:'🌑', branch:'speed', req:['perfect_dodge','m_dtap'], cost:3, isKeystone:true,
     desc:'Q 후 1초 동안 투사체 +2. 베인Q 쿨다운 +25%', skip:p=>p.shadowBarrage,
     apply:p=>{ p.shadowBarrage=true; p.shadowBarrageExtraShots=2; p.dodgeCdMul+=0.25; } },
+
+  // ══════════════════════════════════
+  // 🧪 연금 라인 — "방송용 영약"
+  // ══════════════════════════════════
+  { id:'a_amp1', name:'연금 입문', icon:'🧪', branch:'alchemy', req:['hub'], cost:1,
+    desc:'포션 효과 +12%', apply:p=>{ p.potionAmp=(Number(p.potionAmp)||0)+0.12; } },
+  { id:'a_amp2', name:'조제 숙련', icon:'⚗️', branch:'alchemy', req:['a_amp1'], cost:1,
+    desc:'포션 효과 추가 +12%', apply:p=>{ p.potionAmp=(Number(p.potionAmp)||0)+0.12; } },
+  { id:'a_recovery', name:'회복 조제', icon:'💚', branch:'alchemy', req:['a_amp1'], cost:2,
+    desc:'포션 효과 +15%, 초당 체력 +0.5', apply:p=>{ p.potionAmp=(Number(p.potionAmp)||0)+0.15; p.regen+=0.5; } },
+  { id:'a_refill', name:'자동 보급', icon:'♻️', branch:'alchemy', req:['a_amp2'], cost:2,
+    desc:'방 클리어 시 20% 확률로 랜덤 포션 획득', once:true, skip:p=>p.infiniteRefill,
+    apply:p=>{ p.infiniteRefill=true; } },
+  { id:'a_surge', name:'연금 폭주', icon:'🔥', branch:'alchemy', req:['a_amp2'], cost:2, isMiniKeystone:true,
+    desc:'포션 사용 후 6초간 공격력 +5', once:true, skip:p=>p.alchemySurge,
+    apply:p=>{ p.alchemySurge=true; } },
+  { id:'a_potency', name:'농축 조제', icon:'⚗️', branch:'alchemy', req:['a_recovery'], cost:2,
+    desc:'포션 효과 추가 +20%', apply:p=>{ p.potionAmp=(Number(p.potionAmp)||0)+0.20; } },
+  { id:'a_master', name:'만능 영약', icon:'🧪', branch:'alchemy', req:['a_surge','a_potency'], cost:3, isKeystone:true,
+    desc:'포션 효과 +40%, 포션 사용 후 공격력 버프 강화(+5→+9)', skip:p=>p.alchemyMaster,
+    apply:p=>{ p.alchemyMaster=true; p.potionAmp=(Number(p.potionAmp)||0)+0.40; p.alchemySurge=true; p.alchemySurgeFlat=9; } },
 ];
 
 // 찍힌 노드 id Set
@@ -17408,6 +17791,7 @@ const TREE_BRANCH_ANGLE = {
   survive: -Math.PI / 2 + Math.PI * 0.43,
   status: -Math.PI / 2 - Math.PI * 0.84,
   gold: -Math.PI / 2 + Math.PI * 0.84,
+  alchemy: Math.PI / 2,
 };
 const TREE_NODE_POS2 = {
   m_spd1:[1.95,-0.62], m_fire1:[1,0.25], m_spd2:[2.35,-0.44], m_fire2:[2,0.22],
@@ -17419,13 +17803,14 @@ const TREE_NODE_POS2 = {
   gamblers_blade:[5,-0.70], shotgun_mastery:[1.6,1.28], barrage_focus:[3,0.50],
   v_hp1:[1.7,-0.46], v_armor1:[1,0.22], v_hp2:[2.25,-0.36], v_armor2:[2,0.22],
   v_regen:[3,-0.30], v_alchemy_pouch:[3.25,-1.02], v_steal:[4,-0.24], v_thorns:[4,0.24], v_undead:[5,0], v_blood_cycle:[4,-0.92], v_shield_training:[3,0.64],
-  regen_overload:[4,-0.74], vamp_shield:[5,-0.54],
+  regen_overload:[4,-0.74], vamp_shield:[5,-0.54], v_last_show:[6,-0.42],
   t_burn1:[1,-0.22], t_poison1:[1.9,0.62], t_burn2:[2,-0.22], t_poison2:[2.55,0.64],
   t_chill:[3,0.32], t_dmg:[3,-0.22], t_stun:[4,0], t_spread:[5,0], t_venom_mature:[3.25,1.02], t_frost_mark:[4,0.72],
-  elemental_overload:[4,-0.82], corrosive_spread:[6,-0.38],
+  elemental_overload:[4,-0.82], corrosive_spread:[6,-0.38], t_venom_cultivate:[4.2,1.06], t_ignite:[4.4,-0.45],
   g_gold1:[1,-0.22], g_gold2:[2,-0.22], g_bargain:[2.4,0.58], g_xp1:[4,0.82], g_xp2:[5,0.64],
   g_donate:[3,0.22], g_power:[3,-0.22], g_magnet:[4,0], g_jackpot:[5,0],
   investment_return:[4,-0.50], greed_contract:[6,-0.26],
+  a_amp1:[1,0], a_amp2:[2,0.25], a_recovery:[2,-0.25], a_refill:[3,0.45], a_surge:[3,0.10], a_potency:[3,-0.35], a_master:[4,-0.10],
 };
 
 let treeAtlasSelected = 'hub';
