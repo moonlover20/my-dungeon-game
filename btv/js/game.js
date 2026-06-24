@@ -1,4 +1,4 @@
-﻿"use strict";
+"use strict";
 /* =========================================================
    JS MAINTENANCE MAP
    This file intentionally stays single-file for fast vibe coding.
@@ -4637,7 +4637,7 @@ function calcScoreBreakdown(data){
   data=data||{};
   const floor=scoreInt(data.floor!=null?data.floor:data.reachedFloor,1,1);
   const scoreAct=scoreInt(data.act,1,1);
-  const globalFloor=(scoreAct-1)*FLOORS_PER_ACT+floor;
+  const globalFloor=globalFloorOf(scoreAct,floor);
   const scoreKills=scoreInt(data.kills!=null?data.kills:data.totalKills,0,0);
   const scoreLevel=scoreInt(data.level,1,1);
   const elapsedSec=Math.max(0,scoreNumber(data.elapsedSec!=null?data.elapsedSec:data.clearTime,0));
@@ -5333,13 +5333,40 @@ let combatTempAlly=false;     // 이번 전투 한정 아군 여부
 let nextGoldPenalty=0;        // 다음 전투 보상 골드 감소(0~1)
 let act=1, mapData=null, currentRow=0;
 const MAX_ACT=3;
+// ── 막별 맵 설정: 1·2막 15층 유지, 3막만 10층 압축 최종장 ──
+// rows = 보스 row 인덱스(= 콘텐츠 row 수). 콘텐츠 row 0..rows-1, 보스 row = rows.
+// 전역 MAP_ROWS/MIDBOSS_ROW/CAMP1_ROW/CAMP2_ROW(act1/2 기본값)는 변경하지 않고 아래 cfg로 라우팅한다.
+const ACT_MAP_CONFIG={
+  1:{rows:14, mid:7, camp1:6, camp2:13, totalFloors:15},
+  2:{rows:14, mid:7, camp1:6, camp2:13, totalFloors:15},
+  3:{rows:9,  mid:4, camp1:3, camp2:8,  totalFloors:10}
+};
+function mapCfg(a){ return ACT_MAP_CONFIG[Math.max(1,Math.min(MAX_ACT,Number(a)||1))]||ACT_MAP_CONFIG[1]; }
+function mapRowsForAct(a){ return mapCfg(a).rows; }
+function midbossRowForAct(a){ return mapCfg(a).mid; }
+function camp1RowForAct(a){ return mapCfg(a).camp1; }
+function camp2RowForAct(a){ return mapCfg(a).camp2; }
+// 3막은 층수가 줄어 row가 낮아지므로 "전투 난이도 계산에 한해" 15층 기준으로 진행도를 환산(1·2막은 그대로).
+function rowDifficultyValue(a,row){
+  row=Number(row)||0;
+  if(Number(a)===3) return row*(14/9);
+  return row;
+}
+// 글로벌 누적 층(점수용). act1/2가 15층으로 유지되므로 기존 (a-1)*15+floor 와 수치 동일.
+function globalFloorOf(a,floor){
+  a=Math.max(1,Math.min(MAX_ACT,Number(a)||1)); floor=Number(floor)||0;
+  if(a<=1) return floor;
+  if(a===2) return 15+floor;
+  if(a===3) return 30+floor;
+  return (a-1)*15+floor;
+}
 const ACT_BOSS=[0,3,4]; // 1막 키죠 / 2막 승우(글리치) / 3막 세트3형제
 const ACT_TUNING=[
   null,
   {enemyHpMul:1,eliteHpMul:1,bossHpMul:1,bossXp:350,bossGold:[105,170],killGoldMul:1,shopPriceMul:1,name:"1막"},
   {enemyHpMul:1,eliteHpMul:1,bossHpMul:1,bossXp:3100,bossGold:[105,170],killGoldMul:1,shopPriceMul:1,name:"2막"},
   // 3막 최종보스 전투 시간 완화: 일반몹/정예 체감은 유지하고 보스 HP만 낮춘다.
-  {enemyHpMul:1.12,eliteHpMul:1.12,bossHpMul:1.10,bossXp:4400,bossGold:[150,230],killGoldMul:1.25,shopPriceMul:1.06,name:"3막 · 심연 속"}
+  {enemyHpMul:1.12,eliteHpMul:1.12,bossHpMul:1.10,bossXp:4400,bossGold:[150,230],killGoldMul:1.30,shopPriceMul:1.06,name:"3막 · 심연 속"}
 ];
 function actTuning(a){ return ACT_TUNING[Math.max(1,Math.min(MAX_ACT,Number(a)||1))]||ACT_TUNING[1]; }
 let timeScale=1;
@@ -5868,7 +5895,8 @@ function startCombat(kind, fresh){
   if(typeof GL!=='undefined'){ for(const k in GL) GL[k]=0; }
   if(typeof gView!=='undefined'){ gView.rot=0;gView.rotT=0;gView.fx=1;gView.fy=1;gView.fxT=1;gView.fyT=1; }
   const row=currentRow;
-  const diff=1+(act-1)*0.6+row*0.08;
+  const mid=midbossRowForAct(act);
+  const diff=1+(act-1)*0.6+rowDifficultyValue(act,row)*0.08;
   minionPool=normalEnemyPoolFor(act,row);
   const roomSpawnCounts={};
 
@@ -5884,10 +5912,10 @@ function startCombat(kind, fresh){
     const normalPool=normalEnemyPoolFor(act,row);
     let base=rand(3,5)+act*1.0+row*0.35;
     if(act===1) base*=1.15;               // 1막 일반방 밀도 소폭 상향
-    if(row<MIDBOSS_ROW) base*=0.6;        // 중보 전: 약한 몹 중심, 낮은 밀도
-    else if(row>MIDBOSS_ROW) base*=(act===1||act===2)?0.7:1.4; // 1·2막 후반은 강한 일반몹 비중으로 압박, 물량은 완화
-    const countMax=act>=3?9:(((act===1||act===2)&&row>MIDBOSS_ROW)?11:16);
-    let count=clamp(Math.round(base*diffSet.cnt), row<MIDBOSS_ROW?2:4, countMax);
+    if(row<mid) base*=0.6;        // 중보 전: 약한 몹 중심, 낮은 밀도
+    else if(row>mid) base*=(act===1||act===2)?0.7:1.05; // 1·2막 후반은 강한 일반몹 비중으로 압박, 물량은 완화 / 3막은 고유 기믹몹 소수전
+    const countMax=act>=3?7:(((act===1||act===2)&&row>mid)?11:16);
+    let count=clamp(Math.round(base*diffSet.cnt), row<mid?2:4, countMax);
     if(kind==='midboss'){
       if(act>=3){
         spawnEnemy('onster', W/2, 145, diff);
@@ -5921,7 +5949,7 @@ function startCombat(kind, fresh){
       }
     }else if(kind==='elite'){
       // 자잘자 정예전 — 전용 엘리트 노드에서만 등장 (잡몹 소수 + 자잘자)
-      const minions=clamp(Math.round(count*(act>=3?0.38:0.6)),act>=3?2:1,act>=3?4:6);
+      const minions=clamp(Math.round(count*(act>=3?0.38:0.6)),act>=3?2:1,act>=3?3:6);
       for(let i=0;i<minions;i++) spawnRandomEnemy(pickNormalEnemyForRoom(act,row,roomSpawnCounts), diff, 60, H-180);
       if(act>=3){
         // TODO(act3-content): 3막 전용 정예 연출/패턴을 추가하면 이 placeholder 분기를 교체한다.
@@ -6681,7 +6709,7 @@ function spawnStallReinforcements(){
   const P=ACT_POOLS[Math.min(act-1,ACT_POOLS.length-1)];
     const roomSpawnCounts=enemyTypeCounts(enemies);
   const normalPool=normalEnemyPoolFor(act,currentRow);
-  const diff=1+(act-1)*0.6+currentRow*0.08;
+  const diff=1+(act-1)*0.6+rowDifficultyValue(act,currentRow)*0.08;
   const n=act>=2?3:2;
   for(let i=0;i<n;i++){
     spawnRandomEnemy(pickNormalEnemyForRoom(act,currentRow,roomSpawnCounts), diff, 80, H-180);
@@ -8023,9 +8051,9 @@ function update(dt){
       if(e.coolT<=0&&live<5){ const n=Math.min(5-live,2+(Math.random()<0.55?1:0)); for(let j=0;j<n;j++) spawnAct3SandSoldier(e); e.coolT=e.cool||5.6; if(typeof beep==='function')beep(180,0.12,'triangle',0.04); }
       if(e.coolT<=0&&live>=5) e.coolT=1.2;
     }else if(e.ai==='stealth_assassin'){
-      if((e.stealthT||0)>0){ e.stealthT-=dt; e.wob+=dt*8; if(e.stealthT<=0){ const side=(Math.random()<0.5?-1:1), back=(player.facing||a)+Math.PI; e.x=clamp(player.x+Math.cos(back)*rand(115,155)+Math.cos(back+Math.PI/2)*side*rand(30,70),e.r,W-e.r); e.y=clamp(player.y+Math.sin(back)*rand(115,155)+Math.sin(back+Math.PI/2)*side*rand(30,70),e.r,H-e.r); const da=Math.atan2(player.y-e.y,player.x-e.x); e.aimX=Math.cos(da); e.aimY=Math.sin(da); e.teleWarnT=0.45; burst(e.x,e.y,'#ff4dd2',10,160); } }
-      else if((e.teleWarnT||0)>0){ e.teleWarnT-=dt; e.wob+=dt*12; if(e.teleWarnT<=0){ e.assDashT=0.38; e._dashHit=false; if(typeof beep==='function')beep(520,0.08,'square',0.04); } }
-      else if((e.assDashT||0)>0){ e.assDashT-=dt; e.x+=e.aimX*e.spd*7.2*dt; e.y+=e.aimY*e.spd*7.2*dt; if(!e._dashHit&&dist2(e.x,e.y,player.x,player.y)<(e.r+player.r+12)**2){ e._dashHit=true; hurtPlayer(Math.max(10,e.dmg||20),e.name||e.label); burst(player.x,player.y,'#ff4dd2',12,190); } if(e.assDashT<=0){ e.coolT=e.cool||6.2; } }
+      if((e.stealthT||0)>0){ e.stealthT-=dt; e.wob+=dt*8; if(e.stealthT<=0){ const side=(Math.random()<0.5?-1:1), back=(player.facing||a)+Math.PI; e.x=clamp(player.x+Math.cos(back)*rand(115,155)+Math.cos(back+Math.PI/2)*side*rand(30,70),e.r,W-e.r); e.y=clamp(player.y+Math.sin(back)*rand(115,155)+Math.sin(back+Math.PI/2)*side*rand(30,70),e.r,H-e.r); const da=Math.atan2(player.y-e.y,player.x-e.x); e.aimX=Math.cos(da); e.aimY=Math.sin(da); e.teleWarnT=0.62; burst(e.x,e.y,'#ff4dd2',10,160); } }
+      else if((e.teleWarnT||0)>0){ e.teleWarnT-=dt; e.wob+=dt*12; if(e.teleWarnT<=0){ e.assDashT=0.34; e._dashHit=false; if(typeof beep==='function')beep(520,0.08,'square',0.04); } }
+      else if((e.assDashT||0)>0){ e.assDashT-=dt; e.x+=e.aimX*e.spd*5.8*dt; e.y+=e.aimY*e.spd*5.8*dt; if(!e._dashHit&&dist2(e.x,e.y,player.x,player.y)<(e.r+player.r+12)**2){ e._dashHit=true; hurtPlayer(Math.max(10,e.dmg||20),e.name||e.label); burst(player.x,player.y,'#ff4dd2',12,190); } if(e.assDashT<=0){ e.coolT=e.cool||6.2; } }
       else { if(d>95){ e.x+=Math.cos(a)*e.spd*0.82*dt; e.y+=Math.sin(a)*e.spd*0.82*dt; } else { e.x-=Math.cos(a)*e.spd*0.5*dt; e.y-=Math.sin(a)*e.spd*0.5*dt; }
         e._shurT=(e._shurT==null?rand(1.4,2.4):e._shurT)-dt;
         if(e._shurT<=0 && e.coolT>0.5){ const pa=Math.atan2(player.y-e.y,player.x-e.x); for(let i=-1;i<=1;i++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa+i*0.22)*255,vy:Math.sin(pa+i*0.22)*255,r:6,dmg:Math.max(8,Math.round((e.dmg||20)*0.35)),life:3,srcName:e.name||e.label,col:'#ff4dd2'}); burst(e.x,e.y,'#ff4dd2',8,140); e._shurT=rand(1.8,2.8); if(typeof beep==='function')beep(440,0.06,'square',0.04); }
@@ -8033,7 +8061,7 @@ function update(dt){
     }else if(e.ai==='submerge_charge'){
       if(e.submerged==null){ e.submerged=true; e.coolT=rand(0.8,1.8); }
       if((e.emergeWarnT||0)>0){ e.emergeWarnT-=dt; if(e.emergeWarnT<=0){ e.submerged=false; e.chargeT=0.52; if(typeof beep==='function')beep(220,0.1,'sawtooth',0.05); { const pa=Math.atan2(player.y-e.y,player.x-e.x); for(let i=-2;i<=2;i++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa+i*0.2)*210,vy:Math.sin(pa+i*0.2)*210,r:7,dmg:12,life:3,srcName:(e.name||e.label)+' 물보라',col:'#7ad7ff'}); } } }
-      else if((e.chargeT||0)>0){ e.chargeT-=dt; e.x+=e.aimX*e.spd*6.0*dt; e.y+=e.aimY*e.spd*6.0*dt; if(!e._biteHit&&dist2(e.x,e.y,player.x,player.y)<(e.r+player.r+8)**2){ e._biteHit=true; hurtPlayer(Math.max(9,e.dmg||16),e.name||e.label); } if(e.chargeT<=0||e.x<=e.r||e.x>=W-e.r||e.y<=e.r||e.y>=H-e.r){ e.submerged=true; e._biteHit=false; e.coolT=e.cool||3.8; } }
+      else if((e.chargeT||0)>0){ e.chargeT-=dt; e.x+=e.aimX*e.spd*4.8*dt; e.y+=e.aimY*e.spd*4.8*dt; if(!e._biteHit&&dist2(e.x,e.y,player.x,player.y)<(e.r+player.r+8)**2){ e._biteHit=true; hurtPlayer(Math.max(9,e.dmg||16),e.name||e.label); } if(e.chargeT<=0||e.x<=e.r||e.x>=W-e.r||e.y<=e.r||e.y>=H-e.r){ e.submerged=true; e._biteHit=false; e.coolT=e.cool||3.8; } }
       else if(e.submerged){ e.x+=Math.cos(a+Math.sin(e.wob)*0.7)*e.spd*0.32*dt; e.y+=Math.sin(a+Math.sin(e.wob)*0.7)*e.spd*0.32*dt;
         e._sprayT=(e._sprayT==null?rand(1.6,2.6):e._sprayT)-dt;
         if(e._sprayT<=0 && d<560 && e.coolT>0.6){ const pa=Math.atan2(player.y-e.y,player.x-e.x); for(let i=-1;i<=1;i++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa+i*0.26)*200,vy:Math.sin(pa+i*0.26)*200,r:7,dmg:Math.max(8,Math.round((e.dmg||16)*0.5)),life:3.4,home:1.1,srcName:e.name||e.label,col:'#7ad7ff'}); burst(e.x,e.y,'#7ad7ff',8,120); e._sprayT=rand(2.0,3.0); if(typeof beep==='function')beep(260,0.08,'sine',0.04); }
@@ -8936,12 +8964,13 @@ let pendingNode=null;
 
 function nodeXY(row,col){
   const x=MAP_PADX + col*((MAP_W-2*MAP_PADX)/(MAP_COLS-1));
-  const totalRows=MAP_ROWS+1;
+  const totalRows=mapRowsForAct(act)+1;
   const y=MAP_H-MAP_PADY - row*((MAP_H-2*MAP_PADY)/(totalRows-1));
   return {x,y};
 }
 function genMap(){
   const nm={}; const edges=new Set();
+  const cfg=mapCfg(act), rows=cfg.rows, mid=cfg.mid, camp1=cfg.camp1, camp2=cfg.camp2;
   const key=(r,c)=>r+'_'+c;
   function ensure(r,c){
     const k=key(r,c);
@@ -8951,7 +8980,7 @@ function genMap(){
   for(let p=0;p<5;p++){          // 5개의 경로를 무작위로 위로
     let c=irand(0,MAP_COLS-1);
     ensure(0,c);
-    for(let r=0;r<MAP_ROWS-1;r++){
+    for(let r=0;r<rows-1;r++){
       let nc=clamp(c+irand(-1,1),0,MAP_COLS-1);
       ensure(r,c); ensure(r+1,nc);
       edges.add(key(r,c)+'>'+key(r+1,nc));
@@ -8959,28 +8988,28 @@ function genMap(){
     }
   }
   // 보스 노드 (상단 중앙)
-  const bp=nodeXY(MAP_ROWS,(MAP_COLS-1)/2);
-  nm['boss']={id:'boss',row:MAP_ROWS,col:(MAP_COLS-1)/2,x:bp.x,y:bp.y,type:'boss',next:[],done:false};
-  Object.values(nm).forEach(n=>{ if(n.row===MAP_ROWS-1) edges.add(n.id+'>boss'); });
+  const bp=nodeXY(rows,(MAP_COLS-1)/2);
+  nm['boss']={id:'boss',row:rows,col:(MAP_COLS-1)/2,x:bp.x,y:bp.y,type:'boss',next:[],done:false};
+  Object.values(nm).forEach(n=>{ if(n.row===rows-1) edges.add(n.id+'>boss'); });
   edges.forEach(e=>{ const [f,t]=e.split('>'); if(nm[f]) nm[f].next.push(t); });
   // 타입 배정
   const nodes=Object.values(nm);
   nodes.forEach(n=>{
     if(n.type==='boss') return;
     if(n.row===0){ n.type='fight'; return; }
-    if(n.row===MIDBOSS_ROW){ n.type='midboss'; return; }   // 8층 중간보스 관문
+    if(n.row===mid){ n.type='midboss'; return; }   // 중간보스 관문(act별)
     // 모닷불 관문(중간보스 전·보스 전): 무작위성 부여 — 줄마다 모닷불이 아닐 수도 있음
-    if(n.row===CAMP1_ROW||n.row===CAMP2_ROW){ n.type=Math.random()<0.5?'campfire':rollNodeType(n.row); return; }
+    if(n.row===camp1||n.row===camp2){ n.type=Math.random()<0.5?'campfire':rollNodeType(n.row); return; }
     n.type=rollNodeType(n.row);
   });
   ensureType(nodes,'shop',1,edges);
-  ensureTypeInRow(nodes,'campfire',CAMP1_ROW,edges);   // 휴식 보장: 각 관문 줄에 모닷불 최소 1개
-  ensureTypeInRow(nodes,'campfire',CAMP2_ROW,edges);
+  ensureTypeInRow(nodes,'campfire',camp1,edges);   // 휴식 보장: 각 관문 줄에 모닷불 최소 1개
+  ensureTypeInRow(nodes,'campfire',camp2,edges);
   placeEliteNodes(nodes);   // 자잘자 엘리트 노드 1~2개 (낮은 층 제외)
   smoothMapNodeSequences(nodes,edges);
   ensureType(nodes,'shop',1,edges);
-  ensureTypeInRow(nodes,'campfire',CAMP1_ROW,edges);
-  ensureTypeInRow(nodes,'campfire',CAMP2_ROW,edges);
+  ensureTypeInRow(nodes,'campfire',camp1,edges);
+  ensureTypeInRow(nodes,'campfire',camp2,edges);
   const startIds=nodes.filter(n=>n.row===0).map(n=>n.id);
   mapData={nm,nodes,edges:[...edges],startIds,currentId:null,reach:new Set(startIds)};
   buildBackdrop(act);
@@ -9030,9 +9059,10 @@ function ensureTypeInRow(nodes,type,row,edges){
 }
 // 자잘자(엘리트) 노드 배치 — 낮은 층 제외, 난이도별 개수만큼 같은 줄 중복 없이 분산
 function placeEliteNodes(nodes){
+  const cfg=mapCfg(act), rows=cfg.rows;
   const want=Math.max(1, Number(diffSet.eliteCount)||irand(1,2));
-  const cand=nodes.filter(n=>n.type==='fight' && n.row>=4 && n.row<MAP_ROWS-1 &&
-    n.row!==MIDBOSS_ROW && n.row!==CAMP1_ROW && n.row!==CAMP2_ROW);
+  const cand=nodes.filter(n=>n.type==='fight' && n.row>=4 && n.row<rows-1 &&
+    n.row!==cfg.mid && n.row!==cfg.camp1 && n.row!==cfg.camp2);
   const usedRows=new Set(); let placed=0;
   while(placed<want && cand.length){
     const n=cand.splice(irand(0,cand.length-1),1)[0];
@@ -9049,7 +9079,8 @@ function smoothMapNodeSequences(nodes,edges){
     const [from,to]=e.split('>');
     if(byId[from]&&byId[to]) prevMap[to].push(from);
   });
-  const fixedRows=new Set([0,MIDBOSS_ROW,CAMP1_ROW,CAMP2_ROW]);
+  const _scfg=mapCfg(act);
+  const fixedRows=new Set([0,_scfg.mid,_scfg.camp1,_scfg.camp2]);
   function canChange(n){
     if(!n) return false;
     if(n.type==='boss'||n.type==='midboss'||n.type==='elite') return false;
@@ -10964,10 +10995,10 @@ function eventActMatch(ev){
 
 function act3EventBand(band){
   const row=Number(currentRow)||0;
-  const mid=(typeof MIDBOSS_ROW!=='undefined'?MIDBOSS_ROW:7);
-  const camp2=(typeof CAMP2_ROW!=='undefined'?CAMP2_ROW:13);
-  if(band==='early') return row<=mid+1;
-  if(band==='mid') return row>=Math.max(1,mid-1)&&row<=camp2+1;
+  const cfg=mapCfg(3);
+  const mid=cfg.mid, camp2=cfg.camp2;
+  if(band==='early') return row<=mid;
+  if(band==='mid') return row>=Math.max(1,mid-1)&&row<=camp2-1;
   if(band==='late') return row>=Math.max(1,camp2-2);
   return true;
 }
@@ -17810,7 +17841,7 @@ const TREE_NODE_POS2 = {
   g_gold1:[1,-0.22], g_gold2:[2,-0.22], g_bargain:[2.4,0.58], g_xp1:[4,0.82], g_xp2:[5,0.64],
   g_donate:[3,0.22], g_power:[3,-0.22], g_magnet:[4,0], g_jackpot:[5,0],
   investment_return:[4,-0.50], greed_contract:[6,-0.26],
-  a_amp1:[1,0], a_amp2:[2,0.25], a_recovery:[2,-0.25], a_refill:[3,0.45], a_surge:[3,0.10], a_potency:[3,-0.35], a_master:[4,-0.10],
+  a_amp1:[1.45,0], a_amp2:[2.45,0.25], a_recovery:[2.55,-0.25], a_refill:[3.55,0.45], a_surge:[3.55,0.10], a_potency:[3.60,-0.35], a_master:[4.65,-0.10],
 };
 
 let treeAtlasSelected = 'hub';
@@ -17847,7 +17878,40 @@ function getTreeLayout(W,H){
     const d = 132 + (depth-1)*120;
     pos[id] = {x:Math.cos(angle)*d, y:Math.sin(angle)*d};
   }
+  relaxTreeNodeCollisions(pos);
   return pos;
+}
+// 그리기/클릭 판정에 쓰이는 getTreeLayout 결과(pos)에만 적용되는 결정론적 충돌 보정.
+// TREE_NODE_POS2 원본은 변형하지 않으며, 입력이 매 프레임 동일하므로 결과도 동일 → 노드가 흔들리지 않는다.
+// 클릭/그리기 모두 같은 pos를 참조하므로 판정 좌표와 그리기 좌표가 어긋나지 않는다.
+function relaxTreeNodeCollisions(pos){
+  const items=[];
+  for(const id in pos){
+    const fixed=(id==='hub');
+    const r=fixed?30:treeNodeVisualRadius(treeNodeById(id));
+    items.push({p:pos[id], r:r, fixed:fixed});
+  }
+  const ITERS=4;
+  for(let iter=0; iter<ITERS; iter++){
+    for(let i=0;i<items.length;i++){
+      for(let j=i+1;j<items.length;j++){
+        const A=items[i], B=items[j];
+        const minDist=A.r+B.r+18;
+        let dx=B.p.x-A.p.x, dy=B.p.y-A.p.y;
+        let d=Math.hypot(dx,dy);
+        if(d>0 && d<minDist){
+          const push=(minDist-d)*0.5;
+          dx/=d; dy/=d;
+          if(A.fixed && !B.fixed){ B.p.x+=dx*push*2; B.p.y+=dy*push*2; }
+          else if(!A.fixed && B.fixed){ A.p.x-=dx*push*2; A.p.y-=dy*push*2; }
+          else if(!A.fixed && !B.fixed){ A.p.x-=dx*push; A.p.y-=dy*push; B.p.x+=dx*push; B.p.y+=dy*push; }
+        } else if(d===0 && !B.fixed){
+          // 좌표가 완전히 일치하는 극단적 경우만 결정론적으로 미세 분리(항상 동일 방향 → 흔들림 없음)
+          B.p.x += (A.r+B.r)*0.5;
+        }
+      }
+    }
+  }
 }
 const TREE_PIXEL_PATTERNS = {
   hub:{p:['...111...','..12221..','.1222221.','.12.2.21.','.1222221.','..12221..','...111...','....1....','...111...'],c:{1:'#38e8ff',2:'#f4fcff'}},
