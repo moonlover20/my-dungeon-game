@@ -8960,6 +8960,90 @@ function potionIconHTML(potionOrId,sizeClass){
   return '<span class="'+rankBuildText(cls+' potion-pix-fallback')+'">'+rankBuildText((pot&&pot.icon)||'🧪')+'</span>';
 }
 const NODE_COL ={fight:'#9b8fc4',midboss:'#ffae42',shop:'#5dff9b',event:'#8be8ff',boss:'#ff4d6d',campfire:'#ff8c3a',elite:'#ff4d4d'};
+// ── 슬더스풍 양피지 지도 팔레트 ──
+const MAP_INK='#3a2414';        // 기본 잉크(짙은 갈색)
+const MAP_PAPER='#e8d8ad';      // 노드 종이색
+const MAP_PAPER_HI='#f3e8c8';   // 노드 종이 밝은색(아이콘 대비용)
+const MAP_GOLD='#b6791f';       // 선택 가능 강조(금갈색)
+const MAP_BOSS_INK='#8a3320';   // 완료 체크용 붉은 잉크
+const MAP_OUTLINE='#2a1709';    // 아이콘 외곽선(짙은 갈색)
+// 노드 타입별 선명한 색 — 양피지 위에서 확 띄게(외곽선과 함께 사용)
+const MAP_NODE_COLOR={
+  fight:'#c0392b',    // 전투 — 브릭 레드
+  event:'#2f7fb0',    // 미지 — 잉크 블루
+  shop:'#cf9b16',     // 상점 — 골드
+  campfire:'#e0641f', // 모닥불 — 엠버 오렌지
+  elite:'#8a3fb0',    // 엘리트 — 퍼플
+  midboss:'#4f9d3a',  // 중간보스 — 벌레 그린
+  boss:'#a8202e'      // 보스 — 크림슨
+};
+// 단색이 아니라 '선명한 색 채움 + 짙은 외곽선' 실루엣 아이콘. (0,0) 중심, 대략 -8..8 박스.
+function mapInkIcon(type,color){
+  color=color||MAP_NODE_COLOR[type]||MAP_INK;
+  const O=MAP_OUTLINE;
+  const wrap='<g stroke="'+O+'" stroke-width="0.9" stroke-linejoin="round">';
+  switch(type){
+    case 'fight':{ // 교차한 칼(꽉 찬 실루엣)
+      const sword='<path d="M0 -7.6 L1.4 -2 L1.4 2.8 L-1.4 2.8 L-1.4 -2 Z"/>'+
+        '<rect x="-3.1" y="2.6" width="6.2" height="1.6" rx="0.4"/>'+
+        '<rect x="-0.85" y="4" width="1.7" height="3.1" rx="0.4"/>'+
+        '<circle cx="0" cy="7.6" r="1.05"/>';
+      return '<g fill="'+color+'" stroke="'+O+'" stroke-width="0.9" stroke-linejoin="round">'+
+        '<g transform="rotate(38)">'+sword+'</g><g transform="rotate(-38)">'+sword+'</g></g>';
+    }
+    case 'elite': // 해골
+      return wrap+
+        '<path fill="'+color+'" d="M-5.5 -3 a5.5 5.5 0 0 1 11 0 v2.6 q0 1.8 -1.6 2.5 v2 a1.1 1.1 0 0 1 -1.1 1.1 h-0.6 v-1.7 h-1.2 v1.7 h-1.6 v-1.7 h-1.2 v1.7 h-0.6 a1.1 1.1 0 0 1 -1.1 -1.1 v-2 q-1.6 -0.7 -1.6 -2.5 z"/>'+
+        '<circle cx="-2.4" cy="-1.4" r="1.7" fill="'+O+'" stroke="none"/>'+
+        '<circle cx="2.4" cy="-1.4" r="1.7" fill="'+O+'" stroke="none"/>'+
+        '<path d="M0 0.4 l-1.1 2 h2.2 z" fill="'+O+'" stroke="none"/>'+
+      '</g>';
+    case 'shop': // 돈자루
+      return wrap+
+        '<path fill="'+color+'" d="M-2 -4.6 q-1 1.6 -2.6 2.6 q-2.8 1.8 -2.8 5.4 a6.2 5 0 0 0 12.8 0 q0 -3.6 -2.8 -5.4 q-1.6 -1 -2.6 -2.6 z"/>'+
+        '<path d="M-2.4 -4.6 h4.8" stroke-width="1.5" stroke-linecap="round"/>'+
+        '<path d="M-3.6 -2.5 q3.6 1.6 7.2 0" fill="none" stroke-width="1"/>'+
+        '<circle cx="0" cy="2.4" r="2.1" fill="none" stroke-width="1"/>'+
+        '<path d="M0 0.9 v3" stroke-width="0.9"/>'+
+      '</g>';
+    case 'event':{ // 물음표(두껍게 + 외곽선)
+      const q='M-3 -3.4 a3.1 3.1 0 0 1 5.9 1.5 q0 2.1 -2.3 3.1 q-1 0.5 -1 2.1';
+      return '<g fill="none" stroke-linecap="round" stroke-linejoin="round">'+
+        '<path d="'+q+'" stroke="'+O+'" stroke-width="4.6"/>'+
+        '<path d="'+q+'" stroke="'+color+'" stroke-width="2.7"/>'+
+        '<circle cx="-0.6" cy="6.2" r="1.7" fill="'+O+'"/>'+
+        '<circle cx="-0.6" cy="6.2" r="0.95" fill="'+color+'"/>'+
+      '</g>';
+    }
+    case 'campfire': // 모닥불(불꽃 + 장작)
+      return '<g stroke="'+O+'" stroke-width="0.9" stroke-linejoin="round">'+
+        '<path d="M-6.5 6 L5.5 1.5" stroke="#5a3414" stroke-width="2.1" stroke-linecap="round"/>'+
+        '<path d="M-5.5 1.5 L6.5 6" stroke="#5a3414" stroke-width="2.1" stroke-linecap="round"/>'+
+        '<path fill="'+color+'" d="M0.4 -6.8 q3.1 2.9 3.1 6.2 a3.1 3.1 0 0 1 -6.2 0 q0 -1.9 1.5 -3.5 q0 1.9 1.6 2.3 q-1.5 -2.7 0 -5 z"/>'+
+        '<path fill="#ffd24a" stroke="none" d="M0 -1.6 q1.5 1.3 1.5 2.9 a1.5 1.5 0 0 1 -3 0 q0 -1 1.5 -2.9 z"/>'+
+      '</g>';
+    case 'midboss': // 중간보스 — 뿔 달린 괴수 머리(성난 눈 + 송곳니)
+      return wrap+
+        '<path fill="'+color+'" d="M-3.6 -3.4 Q-6.6 -4.6 -7 -8.2 Q-4.4 -6 -2.6 -3.8 Z"/>'+
+        '<path fill="'+color+'" d="M3.6 -3.4 Q6.6 -4.6 7 -8.2 Q4.4 -6 2.6 -3.8 Z"/>'+
+        '<path fill="'+color+'" d="M-5 -1 C-5 -4.3 -2.6 -5.3 0 -5.3 C2.6 -5.3 5 -4.3 5 -1 C5 3.3 3 6.7 0 7.3 C-3 6.7 -5 3.3 -5 -1 Z"/>'+
+        '<path d="M-3.9 -2.3 L-1.2 -1 L-3.9 -0.1 Z" fill="'+O+'" stroke="none"/>'+
+        '<path d="M3.9 -2.3 L1.2 -1 L3.9 -0.1 Z" fill="'+O+'" stroke="none"/>'+
+        '<path d="M-3.3 2.7 L3.3 2.7 L2.2 5.3 L1.1 3.4 L0 5.5 L-1.1 3.4 L-2.2 5.3 Z" fill="'+O+'" stroke="none"/>'+
+      '</g>';
+    case 'boss': // 왕관(금색 + 붉은 보석)
+      return wrap+
+        '<path fill="#caa024" d="M-7.6 4 L-7.6 -3.6 L-3.2 0.7 L0 -5.8 L3.2 0.7 L7.6 -3.6 L7.6 4 Z"/>'+
+        '<rect x="-7.6" y="3.5" width="15.2" height="2.9" rx="0.5" fill="#caa024"/>'+
+        '<circle cx="0" cy="-5.8" r="1.3" fill="#a8202e"/>'+
+        '<circle cx="-4.5" cy="1.5" r="1" fill="#a8202e" stroke="none"/>'+
+        '<circle cx="4.5" cy="1.5" r="1" fill="#a8202e" stroke="none"/>'+
+        '<circle cx="0" cy="0.5" r="1.1" fill="#a8202e" stroke="none"/>'+
+      '</g>';
+    default:
+      return '<circle cx="0" cy="0" r="2.4" fill="'+color+'" stroke="'+O+'" stroke-width="0.9"/>';
+  }
+}
 let pendingNode=null;
 
 function nodeXY(row,col){
@@ -9270,14 +9354,39 @@ function renderMap(){
   const cont=$('mapSvg');
   const reach=mapData.reach;
   const cur=mapData.currentId?mapData.nm[mapData.currentId]:null;
-  let s='<svg viewBox="0 0 '+MAP_W+' '+MAP_H+'" xmlns="http://www.w3.org/2000/svg">'+
+  const W=MAP_W, H=MAP_H;
+  let s='<svg viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg">'+
     '<defs>'+
-      '<radialGradient id="mapAura" cx="50%" cy="50%" r="70%"><stop offset="0%" stop-color="#241a3d"/><stop offset="55%" stop-color="#171025"/><stop offset="100%" stop-color="#0d0916"/></radialGradient>'+
-      '<pattern id="mapGrid" width="38" height="38" patternUnits="userSpaceOnUse"><path d="M38 0H0V38" fill="none" stroke="rgba(155,143,196,.13)" stroke-width="1"/></pattern>'+
-      '<filter id="mapRoadGlow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="3.4" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>'+
+      // 양피지 그라데이션(가운데 밝은 베이지 → 가장자리 회갈색)
+      '<radialGradient id="mapParch" cx="48%" cy="40%" r="78%"><stop offset="0%" stop-color="#efe1bb"/><stop offset="48%" stop-color="#e4d2a4"/><stop offset="82%" stop-color="#ccb27c"/><stop offset="100%" stop-color="#b69862"/></radialGradient>'+
+      // 비네트(가장자리 어둡게)
+      '<radialGradient id="mapVig" cx="50%" cy="50%" r="74%"><stop offset="58%" stop-color="rgba(60,38,18,0)"/><stop offset="100%" stop-color="rgba(46,28,12,0.46)"/></radialGradient>'+
+      // 잡티/점 패턴
+      '<pattern id="mapSpeck" width="48" height="48" patternUnits="userSpaceOnUse" patternTransform="rotate(7)">'+
+        '<circle cx="6" cy="9" r="0.9" fill="rgba(74,48,22,.13)"/><circle cx="27" cy="4" r="0.6" fill="rgba(74,48,22,.1)"/>'+
+        '<circle cx="39" cy="21" r="1.1" fill="rgba(74,48,22,.11)"/><circle cx="15" cy="31" r="0.7" fill="rgba(74,48,22,.1)"/>'+
+        '<circle cx="33" cy="40" r="0.8" fill="rgba(74,48,22,.11)"/><circle cx="2" cy="42" r="0.5" fill="rgba(74,48,22,.08)"/></pattern>'+
+      // 종이 섬유 노이즈(은은한 갈색 틴트)
+      '<filter id="mapPaper" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="0.012 0.02" numOctaves="2" seed="7" result="n"/><feColorMatrix in="n" type="matrix" values="0 0 0 0 0.36  0 0 0 0 0.24  0 0 0 0 0.1  0 0 0 0.05 0"/></filter>'+
+      // 찢긴 듯한 종이 가장자리(가벼운 변위)
+      '<filter id="mapRough"><feTurbulence type="fractalNoise" baseFrequency="0.022" numOctaves="2" seed="4" result="t"/><feDisplacementMap in="SourceGraphic" in2="t" scale="6"/></filter>'+
+      // 길에 깔리는 부드러운 그림자(네온 글로우 대체)
+      '<filter id="mapRoadSoft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="1.1"/></filter>'+
     '</defs>'+
-    '<rect class="map-bg" x="0" y="0" width="'+MAP_W+'" height="'+MAP_H+'" fill="url(#mapAura)"/>'+
-    '<rect class="map-grid" x="0" y="0" width="'+MAP_W+'" height="'+MAP_H+'" fill="url(#mapGrid)"/>'+
+    // 낡은 판(종이 뒤 배경)
+    '<rect x="0" y="0" width="'+W+'" height="'+H+'" fill="#2b1d10"/>'+
+    // 찢긴 가장자리의 양피지 면
+    '<g filter="url(#mapRough)"><rect x="9" y="9" width="'+(W-18)+'" height="'+(H-18)+'" rx="4" fill="url(#mapParch)"/></g>'+
+    '<rect x="9" y="9" width="'+(W-18)+'" height="'+(H-18)+'" filter="url(#mapPaper)" opacity="0.65"/>'+
+    '<rect x="9" y="9" width="'+(W-18)+'" height="'+(H-18)+'" fill="url(#mapSpeck)"/>'+
+    // 접힌 자국(희미한 세로 크레이즈)
+    '<line x1="'+Math.round(W*0.36)+'" y1="12" x2="'+Math.round(W*0.36)+'" y2="'+(H-12)+'" stroke="rgba(70,44,20,.07)" stroke-width="2"/>'+
+    '<line x1="'+Math.round(W*0.68)+'" y1="12" x2="'+Math.round(W*0.68)+'" y2="'+(H-12)+'" stroke="rgba(70,44,20,.06)" stroke-width="2"/>'+
+    // 물자국/얼룩
+    '<ellipse cx="'+Math.round(W*0.22)+'" cy="'+Math.round(H*0.74)+'" rx="58" ry="40" fill="rgba(96,60,26,.06)"/>'+
+    '<ellipse cx="'+Math.round(W*0.8)+'" cy="'+Math.round(H*0.28)+'" rx="46" ry="34" fill="rgba(96,60,26,.05)"/>'+
+    '<circle cx="'+Math.round(W*0.62)+'" cy="'+Math.round(H*0.6)+'" r="26" fill="none" stroke="rgba(110,70,30,.08)" stroke-width="2"/>'+
+    '<rect x="9" y="9" width="'+(W-18)+'" height="'+(H-18)+'" fill="url(#mapVig)"/>'+
     '<g class="map-roads">';
   mapData.edges.forEach(e=>{
     const [f,t]=e.split('>'); const a=mapData.nm[f], b=mapData.nm[t]; if(!a||!b) return;
@@ -9293,17 +9402,36 @@ function renderMap(){
   s+='</g>';
   mapData.nodes.forEach(n=>{
     const isReach=reach.has(n.id), isCur=cur&&cur.id===n.id;
-    const col=NODE_COL[n.type]||'#9b8fc4';
-    const op=n.done?0.35:(isReach||isCur?1:0.5);
-    let ring='';
-    if(isReach) ring='<circle cx="'+n.x+'" cy="'+n.y+'" r="17" fill="none" stroke="#38e8ff" stroke-width="2"><animate attributeName="r" values="16;20;16" dur="1.4s" repeatCount="indefinite"/></circle>';
-    if(isCur) ring='<circle cx="'+n.x+'" cy="'+n.y+'" r="17" fill="none" stroke="#fff" stroke-width="2"/>';
-    s+='<g class="mapnode'+(isReach?' reach':'')+'" data-id="'+n.id+'" opacity="'+op+'">'+ring+
-       '<circle cx="'+n.x+'" cy="'+n.y+'" r="13" fill="#1a1330" stroke="'+col+'" stroke-width="2.5"/>'+
-       (NODE_PIX[n.type]?('<image class="map-node-pix" href="'+NODE_PIX[n.type]+'" x="'+(n.x-10)+'" y="'+(n.y-10)+'" width="20" height="20" style="image-rendering:pixelated"/>'):('<text x="'+n.x+'" y="'+(n.y+4)+'" font-size="12" text-anchor="middle">'+(NODE_ICON[n.type]||'?')+'</text>'))+'</g>';
+    const col=MAP_NODE_COLOR[n.type]||MAP_INK;
+    const done=n.done;
+    const op=done?0.5:(isReach||isCur?1:0.72);
+    let deco='';
+    // 선택 가능: 천천히 커지는 금색 점선 링
+    if(isReach && !isCur){
+      deco+='<circle cx="'+n.x+'" cy="'+n.y+'" r="17.5" fill="none" stroke="'+MAP_GOLD+'" stroke-width="2" stroke-dasharray="3 4">'+
+        '<animate attributeName="r" values="16.5;20;16.5" dur="1.5s" repeatCount="indefinite"/>'+
+        '<animate attributeName="opacity" values="0.95;0.45;0.95" dur="1.5s" repeatCount="indefinite"/></circle>';
+    }
+    // 현재 위치: 두꺼운 잉크 링 + 위쪽 봉식 위치 포인터
+    if(isCur){
+      deco+='<circle cx="'+n.x+'" cy="'+n.y+'" r="18.5" fill="none" stroke="'+MAP_INK+'" stroke-width="2.6"/>'+
+            '<circle cx="'+n.x+'" cy="'+n.y+'" r="21.5" fill="none" stroke="'+MAP_GOLD+'" stroke-width="1.3" stroke-dasharray="2 5"/>'+
+            '<path d="M'+(n.x-4.8)+' '+(n.y-23)+' L'+(n.x+4.8)+' '+(n.y-23)+' L'+n.x+' '+(n.y-14.5)+' Z" fill="'+MAP_INK+'" stroke="'+MAP_PAPER_HI+'" stroke-width="0.8"/>';
+    }
+    // 도장 느낌 — 그림자 → 밝은 종이 원 → 타입색 이중 테두리(아이콘이 확 보이게)
+    const stamp='<circle cx="'+(n.x+0.8)+'" cy="'+(n.y+1.6)+'" r="13.5" fill="rgba(50,30,14,.22)"/>'+
+                '<circle cx="'+n.x+'" cy="'+n.y+'" r="13.5" fill="'+MAP_PAPER_HI+'"/>'+
+                '<circle cx="'+n.x+'" cy="'+n.y+'" r="13.5" fill="none" stroke="'+col+'" stroke-width="2.8"/>'+
+                '<circle cx="'+n.x+'" cy="'+n.y+'" r="13.5" fill="none" stroke="'+MAP_OUTLINE+'" stroke-width="0.9" opacity="0.55"/>';
+    const icon='<g transform="translate('+n.x+','+n.y+')" opacity="'+(done?0.85:1)+'">'+mapInkIcon(n.type,col)+'</g>';
+    // 완료: 흐리게 + 잉크 체크 도장
+    const check=done?('<path d="M'+(n.x-4.5)+' '+(n.y+0.5)+' l3 3.2 l6.4 -7.4" fill="none" stroke="'+MAP_BOSS_INK+'" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/>'):'';
+    s+='<g class="mapnode'+(isReach?' reach':'')+(isCur?' current':'')+(done?' done':'')+'" data-id="'+n.id+'" opacity="'+op+'">'+
+       deco+stamp+icon+check+'</g>';
   });
   s+='</svg>';
   cont.innerHTML=s;
+  renderMapLegend();
   setupMapPan();
   const centerBtn=$('mapCenterBtn');
   if(centerBtn) centerBtn.onclick=()=>focusReachableMapNodes(true);
@@ -9311,6 +9439,18 @@ function renderMap(){
   cont.querySelectorAll('.mapnode.reach').forEach(g=>{
     g.style.cursor='pointer';
   });
+}
+// 양피지 지도 하단 범례(있으면 1회 채움)
+function renderMapLegend(){
+  const el=$('mapLegend'); if(!el || el._filled) return;
+  const items=[['fight','전투'],['event','미지'],['shop','상점'],['campfire','모닥불'],['elite','엘리트'],['midboss','중간보스'],['boss','보스']];
+  el.innerHTML=items.map(it=>{
+    const t=it[0], label=it[1], col=MAP_NODE_COLOR[t]||MAP_INK;
+    return '<span class="leg"><svg viewBox="-10 -10 20 20" width="18" height="18">'+
+      '<circle r="9" fill="'+MAP_PAPER_HI+'" stroke="'+col+'" stroke-width="1.7"/>'+
+      '<g transform="scale(0.72)">'+mapInkIcon(t,col)+'</g></svg><b>'+label+'</b></span>';
+  }).join('');
+  el._filled=true;
 }
 
 function selectNode(node){
@@ -11611,13 +11751,13 @@ function showTreeIntro(){
 }
 // ===== 일렉트릭 보더(레벨업 카드 번개 테두리) — ElectricBorder 바닐라 이식 =====
 // 원작 영감: @BalintFerenczy · codepen KwdoyEN (React→vanilla). 카드별 캔버스 1장 + 공유 rAF 루프.
-let EB_OCTAVES=8;    // 노이즈 옥타브(클수록 미세 크랙 디테일·무거움) 5~10
+let EB_OCTAVES=5;    // 노이즈 옥타브(클수록 미세 크랙 디테일·무거움) 5~10
 let EB_CHAOS=0.11;   // 흔들림 진폭
 let EB_DISPLACE=9;   // 변위 px(작을수록 테두리에 밀착 · 깔끔) · 카드 간격 침범 주의
 let EB_OFFSET=22;    // 캔버스 여유 패딩(변위+글로우보다 커야 안 잘림)
 let EB_SPEED=0.9;    // 애니 속도
 let EB_COLOR='#7df9ff'; // 기본 번개색(시안). EB_TIER=true면 카드 등급색 사용
-let EB_TIER=false;      // true=등급색(전설 금 등) · false=EB_COLOR 단색(레퍼런스풍)
+let EB_TIER=true;       // true=등급색(전설 금 등) · false=EB_COLOR 단색(레퍼런스풍)
 const ElectricBorder=(function(){
   const list=[]; let raf=null, lastT=0;
   const rnd=x=>(Math.sin(x*12.9898)*43758.5453)%1;
@@ -11659,7 +11799,7 @@ const ElectricBorder=(function(){
     ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0,0,en.canvas.width,en.canvas.height); ctx.scale(dpr,dpr);
     const left=EB_OFFSET,top=EB_OFFSET,bw=w-2*EB_OFFSET,bh=h-2*EB_OFFSET;
     const maxR=Math.min(bw,bh)/2,r=Math.min(en.radius,maxR);
-    const per=2*(bw+bh)+2*Math.PI*r,n=Math.max(64,Math.floor(per/2)); // 촘촘하게 → 각짐 제거
+    const per=2*(bw+bh)+2*Math.PI*r,n=Math.max(48,Math.floor(per/4)); // 성능 절약: 선분 수를 줄여도 카드 크기에서는 충분히 부드럽다
     ctx.beginPath();
     for(let i=0;i<=n;i++){
       const p=i/n,pt=rrPoint(p,left,top,bw,bh,r);
@@ -12280,11 +12420,13 @@ function shopCard(it,items,idx){
   };
   return el;
 }
-$('shopLeave').onclick=()=>{
+const leaveShopFn=()=>{
   hideAll();
   const a=shopAfter; shopAfter=null;
   if(a) a(); else { state='play'; syncChrome(); }
 };
+$('shopLeave').onclick=leaveShopFn;
+{ const _slt=$('shopLeaveTop'); if(_slt) _slt.onclick=leaveShopFn; }
 
 // ---------- 렌더 ----------
 let bgPattern=null;
@@ -14949,7 +15091,7 @@ function loop(now){
   recoverInvisiblePause();
   if(typeof updFps==='function') updFps(dt);
   if(!paused){ update(dt); if(typeof updateDmgNums==='function') updateDmgNums(dt); }
-  if(state!=='end') draw();   // 아웃트로/결과창에선 전투 캔버스 렌더 생략(엔딩 오버레이가 덮음) — 렉 원인
+  if(state==='play') draw();   // 선택/미지/보상 오버레이 중에는 마지막 전투 프레임을 유지해 렌더 비용을 줄인다
   if(!paused){ updateMusic(dt); }
   { const sb=$('skipCutBtn'); if(sb) sb.style.display=(state==='play'&&cutsceneT>0)?'inline-block':'none'; }
   requestAnimationFrame(loop);
