@@ -568,9 +568,9 @@ function isDiscovered(type,id){
 }
 // ---------- 난이도 ----------
 const DIFFS={
-  easy:  {key:'easy',  label:'쉬움',   hp:1.3, dmg:1.25,cnt:1.1, spd:1.00, eliteCount:2, col:'#5dff9b', desc:'적 체력 x1.3 · 공격 x1.25 · 수 x1.1 · 속도 x1.0 · 정예 2 · 재도전 무제한', maxRetries:Infinity},
-  normal:{key:'normal',label:'보통',   hp:2.2, dmg:2.1, cnt:1.45,spd:1.13, eliteCount:3, col:'#ffd34d', desc:'적 체력 x2.2 · 공격 x2.1 · 수 x1.45 · 속도 x1.13 · 정예 3 · 재도전 3회', maxRetries:3},
-  hard:  {key:'hard',  label:'어려움', hp:2.9, dmg:2.7, cnt:1.7, spd:1.22, eliteCount:5, col:'#ff4d6d', desc:'적 체력 x2.9 · 공격 x2.7 · 수 x1.7 · 속도 x1.22 · 정예 5 · 재도전 1회', maxRetries:1},
+  easy:  {key:'easy',  label:'쉬움',   hp:1.3, dmg:1.25,cnt:1.1, spd:1.00, eliteCount:2, col:'#5dff9b', desc:'누구나 깰 수 있는 난이도입니다.<br>50% 배율 · 재도전 무제한', maxRetries:Infinity},
+  normal:{key:'normal',label:'보통',   hp:2.2, dmg:2.1, cnt:1.45,spd:1.13, eliteCount:3, col:'#ffd34d', desc:'일반적인 난이도입니다.<br>100% 배율 · 재도전 10회', maxRetries:10},
+  hard:  {key:'hard',  label:'어려움', hp:2.9, dmg:2.7, cnt:1.7, spd:1.22, eliteCount:5, col:'#ff4d6d', desc:'모든 패턴을 숙지한 플레이어에게만 추천드립니다. 매우 어렵습니다.<br>200% 배율 · 재도전 3회', maxRetries:3},
 };
 let diffSet=DIFFS.easy;
 function grantRetryCharge(amount = 1, sourceLabel = '재도전권'){
@@ -11609,6 +11609,110 @@ function showTreeIntro(){
   show('treeIntro');
   return true;
 }
+// ===== 일렉트릭 보더(레벨업 카드 번개 테두리) — ElectricBorder 바닐라 이식 =====
+// 원작 영감: @BalintFerenczy · codepen KwdoyEN (React→vanilla). 카드별 캔버스 1장 + 공유 rAF 루프.
+let EB_OCTAVES=8;    // 노이즈 옥타브(클수록 미세 크랙 디테일·무거움) 5~10
+let EB_CHAOS=0.11;   // 흔들림 진폭
+let EB_DISPLACE=9;   // 변위 px(작을수록 테두리에 밀착 · 깔끔) · 카드 간격 침범 주의
+let EB_OFFSET=22;    // 캔버스 여유 패딩(변위+글로우보다 커야 안 잘림)
+let EB_SPEED=0.9;    // 애니 속도
+let EB_COLOR='#7df9ff'; // 기본 번개색(시안). EB_TIER=true면 카드 등급색 사용
+let EB_TIER=false;      // true=등급색(전설 금 등) · false=EB_COLOR 단색(레퍼런스풍)
+const ElectricBorder=(function(){
+  const list=[]; let raf=null, lastT=0;
+  const rnd=x=>(Math.sin(x*12.9898)*43758.5453)%1;
+  function noise2D(x,y){
+    const i=Math.floor(x),j=Math.floor(y),fx=x-i,fy=y-j;
+    const a=rnd(i+j*57),b=rnd(i+1+j*57),c=rnd(i+(j+1)*57),d=rnd(i+1+(j+1)*57);
+    const ux=fx*fx*(3-2*fx),uy=fy*fy*(3-2*fy);
+    return a*(1-ux)*(1-uy)+b*ux*(1-uy)+c*(1-ux)*uy+d*ux*uy;
+  }
+  function octNoise(x,time,seed){
+    let y=0,amp=EB_CHAOS,freq=10;
+    for(let i=0;i<EB_OCTAVES;i++){ y+=amp*noise2D(freq*x+seed*100,time*freq*0.3); freq*=1.6; amp*=0.7; }
+    return y;
+  }
+  const corner=(cx,cy,r,sa,arc,p)=>{const a=sa+p*arc;return{x:cx+r*Math.cos(a),y:cy+r*Math.sin(a)};};
+  function rrPoint(t,left,top,w,h,r){
+    const sw=w-2*r,sh=h-2*r,ca=(Math.PI*r)/2,per=2*sw+2*sh+4*ca,dist=t*per;let acc=0;
+    if(dist<=acc+sw)return{x:left+r+(dist-acc),y:top};acc+=sw;
+    if(dist<=acc+ca)return corner(left+w-r,top+r,r,-Math.PI/2,Math.PI/2,(dist-acc)/ca);acc+=ca;
+    if(dist<=acc+sh)return{x:left+w,y:top+r+(dist-acc)};acc+=sh;
+    if(dist<=acc+ca)return corner(left+w-r,top+h-r,r,0,Math.PI/2,(dist-acc)/ca);acc+=ca;
+    if(dist<=acc+sw)return{x:left+w-r-(dist-acc),y:top+h};acc+=sw;
+    if(dist<=acc+ca)return corner(left+r,top+h-r,r,Math.PI/2,Math.PI/2,(dist-acc)/ca);acc+=ca;
+    if(dist<=acc+sh)return{x:left,y:top+h-r-(dist-acc)};acc+=sh;
+    return corner(left+r,top+r,r,Math.PI,Math.PI/2,(dist-acc)/ca);
+  }
+  function sizeOf(en){
+    const r=en.card.getBoundingClientRect(); if(!r.width) return;
+    const w=r.width+EB_OFFSET*2,h=r.height+EB_OFFSET*2,dpr=Math.min(window.devicePixelRatio||1,2);
+    en.w=w; en.h=h; en.dpr=dpr;
+    en.canvas.width=Math.round(w*dpr); en.canvas.height=Math.round(h*dpr);
+    en.canvas.style.width=w+'px'; en.canvas.style.height=h+'px';
+    en.canvas.style.left=(-EB_OFFSET)+'px'; en.canvas.style.top=(-EB_OFFSET)+'px';
+    en.radius=parseFloat(getComputedStyle(en.card).borderTopLeftRadius)||14;
+  }
+  function drawOne(en){
+    if(!en.w) return;
+    const ctx=en.ctx,w=en.w,h=en.h,dpr=en.dpr;
+    ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0,0,en.canvas.width,en.canvas.height); ctx.scale(dpr,dpr);
+    const left=EB_OFFSET,top=EB_OFFSET,bw=w-2*EB_OFFSET,bh=h-2*EB_OFFSET;
+    const maxR=Math.min(bw,bh)/2,r=Math.min(en.radius,maxR);
+    const per=2*(bw+bh)+2*Math.PI*r,n=Math.max(64,Math.floor(per/2)); // 촘촘하게 → 각짐 제거
+    ctx.beginPath();
+    for(let i=0;i<=n;i++){
+      const p=i/n,pt=rrPoint(p,left,top,bw,bh,r);
+      const dx=pt.x+octNoise(p*8,en.time,0)*EB_DISPLACE, dy=pt.y+octNoise(p*8,en.time,1)*EB_DISPLACE;
+      if(i===0) ctx.moveTo(dx,dy); else ctx.lineTo(dx,dy);
+    }
+    ctx.closePath(); ctx.lineCap='round'; ctx.lineJoin='round';
+    // 같은 경로를 2패스: 넓고 흐릿한 글로우 → 가늘고 밝은 코어 (레퍼런스풍 블룸)
+    ctx.shadowColor=en.color; ctx.shadowBlur=13; ctx.globalAlpha=0.5;
+    ctx.strokeStyle=en.color; ctx.lineWidth=3; ctx.stroke();
+    ctx.shadowBlur=4; ctx.globalAlpha=1;
+    ctx.strokeStyle=en.coreColor; ctx.lineWidth=1; ctx.stroke();
+    ctx.globalAlpha=1; ctx.shadowBlur=0;
+  }
+  function loop(now){
+    if(!lastT) lastT=now;
+    const dt=Math.min(0.05,(now-lastT)/1000); lastT=now;
+    for(let i=list.length-1;i>=0;i--){
+      const en=list[i];
+      if(!en.card.isConnected){ teardown(en); list.splice(i,1); continue; }
+      en.time+=dt*EB_SPEED; try{ drawOne(en); }catch(_){}
+    }
+    if(list.length) raf=requestAnimationFrame(loop); else { raf=null; lastT=0; }
+  }
+  function teardown(en){ try{ if(en.ro)en.ro.disconnect(); }catch(_){} if(en.canvas.parentNode) en.canvas.parentNode.removeChild(en.canvas); }
+  function lighten(hex,amt){
+    const m=/^#?([0-9a-f]{6})$/i.exec(String(hex||'')); if(!m) return '#dffbff';
+    const v=parseInt(m[1],16); let r=(v>>16)&255,g=(v>>8)&255,b=v&255;
+    r=Math.round(r+(255-r)*amt); g=Math.round(g+(255-g)*amt); b=Math.round(b+(255-b)*amt);
+    return '#'+((1<<24)|(r<<16)|(g<<8)|b).toString(16).slice(1);
+  }
+  function attach(card,tierColor){
+    if(!card) return;
+    if(getComputedStyle(card).position==='static') card.style.position='relative';
+    const color=EB_TIER?(tierColor||EB_COLOR):EB_COLOR;
+    const core=lighten(color,0.55);
+    // 글로우 헤일로는 CSS(.perkcard)에서 담당 → 등급별 펄스/쉬머와 충돌 없음.
+    const cv=document.createElement('canvas');
+    cv.style.cssText='position:absolute;pointer-events:none;z-index:4;';
+    card.appendChild(cv);
+    const en={card,canvas:cv,ctx:cv.getContext('2d'),color,coreColor:core,time:Math.random()*10,ro:null};
+    sizeOf(en);
+    try{ en.ro=new ResizeObserver(()=>sizeOf(en)); en.ro.observe(card); }catch(_){}
+    list.push(en);
+    if(!raf){ lastT=0; raf=requestAnimationFrame(loop); }
+  }
+  function clear(){
+    list.forEach(teardown); list.length=0;
+    if(raf){ cancelAnimationFrame(raf); raf=null; } lastT=0;
+  }
+  if(typeof window!=='undefined') window.addEventListener('resize',()=>{ list.forEach(sizeOf); });
+  return {attach,clear};
+})();
 function showLevelUp(){
   if(!tierIntroShown){ tierIntroShown=true; show('tierIntro'); return; }
   const picks=rollPerks(3);
@@ -11629,7 +11733,7 @@ function showLevelUp(){
   picks.forEach(pk=>{
     const t=PERK_TIERS[pk.g];
     const el=document.createElement('button');
-    el.className='perkcard perk-'+pk.g; el.style.borderColor=t.col;
+    el.className='perkcard perk-'+pk.g; el.dataset.ebColor=t.col;
     el.title=perkTooltipText(pk);
     el.innerHTML='<div class="pk-ic">'+(PERK_ICONS[pk.name]?'<img class="pk-img" src="'+PERK_ICONS[pk.name]+'" alt="">':pk.icon)+'</div><div class="pk-nm">'+pk.name+'</div>'+
       '<div class="pk-gr" style="color:'+t.col+'">['+t.name+']</div>'+
@@ -11639,6 +11743,7 @@ function showLevelUp(){
   });
   confirmBtn.onclick=()=>{ if(selPerk) pickLevelPerk(selPerk); };
   show('level');
+  cont.querySelectorAll('.perkcard').forEach(el=>ElectricBorder.attach(el, el.dataset.ebColor));
   perkEntranceFx(picks);   // 전설+ 등장 연출
 }
 function pickLevelPerk(pk){
@@ -11672,11 +11777,16 @@ const SMALL_REWARDS=[
 function offerSmallReward(){
   const tmp=SMALL_REWARDS.slice(), picks=[];
   for(let i=0;i<3 && tmp.length;i++) picks.push(tmp.splice(irand(0,tmp.length-1),1)[0]);
-  const cont=$('rewardChoices'); cont.innerHTML='';
-  picks.forEach(rw=>{ const el=document.createElement('button'); el.className='choice';
-    el.innerHTML='<div class="ttl"><span class="icon">'+rw.icon+'</span>'+rw.name+'</div><div class="desc">'+rw.desc+'</div>';
-    el.onclick=()=>pickReward(rw); cont.appendChild(el); });
+  const cont=$('rewardChoices'); cont.className='perkrow'; cont.innerHTML='';
+  picks.forEach(rw=>{
+    const el=document.createElement('button'); el.className='perkcard perk-reward';
+    el.innerHTML='<div class="pk-ic">'+(rw.icon||'🎁')+'</div><div class="pk-nm">'+rw.name+'</div>'+
+      '<div class="pk-gr" style="color:#7df9ff">[보급]</div>'+
+      '<div class="pk-ds">'+rw.desc+'</div>';
+    el.onclick=()=>pickReward(rw); cont.appendChild(el);
+  });
   show('reward');
+  if(typeof ElectricBorder!=='undefined') cont.querySelectorAll('.perkcard').forEach(el=>ElectricBorder.attach(el,'#7df9ff'));
 }
 function pickReward(rw){ rw.apply(player); sfx.pick(); updateHUD(); hideAll(); finishNode(); }
 
@@ -14858,7 +14968,7 @@ function skipCutscene(){
 
 // ===== JS: Overlay state machine and UI wiring =====
 const overlays={title:'ovTitle',start:'ovStart',map:'ovMap',relic:'ovRelic',shop:'ovShop',event:'ovEvent',inv:'ovInv',level:'ovLevel',reward:'ovReward',end:'ovEnd',ranking:'ovRanking',achievements:'ovAchievements',database:'ovDatabase',help:'ovHelp',story:'ovStory',entrance:'ovEntrance',tierIntro:'ovTierIntro',treeIntro:'ovTreeIntro',taunt:'ovTaunt',campfire:'ovCampfire'};
-function hideAll(){ if(typeof TooltipManager!=='undefined') TooltipManager.hideAll(); Object.values(overlays).forEach(id=>{ const el=$(id); if(el) el.classList.add('hidden'); }); if(typeof evStopScene==='function') evStopScene(); const _ec=$('ovEnding'); if(_ec) _ec.classList.add('hidden'); if(typeof EndingCredits!=='undefined' && EndingCredits.stop) EndingCredits.stop(); }
+function hideAll(){ if(typeof TooltipManager!=='undefined') TooltipManager.hideAll(); Object.values(overlays).forEach(id=>{ const el=$(id); if(el) el.classList.add('hidden'); }); if(typeof evStopScene==='function') evStopScene(); const _ec=$('ovEnding'); if(_ec) _ec.classList.add('hidden'); if(typeof EndingCredits!=='undefined' && EndingCredits.stop) EndingCredits.stop(); if(typeof ElectricBorder!=='undefined' && ElectricBorder.clear) ElectricBorder.clear(); }
 function syncChrome(){ document.body.classList.toggle('title-mode', state==='title'||state==='start'); }
 function show(st){
   hideAll();
@@ -15995,7 +16105,7 @@ const EndingCredits=(function(){
     ];
 
   // 절차적 몽타주(픽셀 얼굴). 스프라이트 의존 없이 전 몹 대응 + 호러 톤("사람이었다").
-  function drawFace(cv,ent,creep){
+  function renderFace(cv,ent,creep){
     const f=(ent&&ent.f)||{},tint=(ent&&ent.tint)||'#ff4dd2';
     let h=2166136261;const sd=((ent&&ent.n)||'')+(f.hair||'')+(f.eye||'')+(f.mouth||'')+(f.skin||0);
     for(let i=0;i<sd.length;i++){h^=sd.charCodeAt(i);h=Math.imul(h,16777619);}
@@ -16094,6 +16204,51 @@ const EndingCredits=(function(){
     const spk=(W*0.5)|0;for(let k=0;k<spk;k++){const i=(((R()*W)|0)+((R()*W)|0)*W)*4;const c=R()<0.5?0:255;d[i]=d[i+1]=d[i+2]=c;}
     x.putImageData(img,0,0);
     x.restore();
+  }
+
+  // 얼굴 렌더는 시드 기반이라 결정적 → (엔티티·creep·해상도)별 1회만 생성해 캐시, 이후엔 blit만.
+  // 피날레 벽 44장 동시 생성(프리즈)을 카드 구간 유휴시간 프리워밍으로 흡수한다.
+  const _faceCache=new Map();
+  let _warmId=null;
+  function faceKey(ent,creep,W){ return ((ent&&ent.n)||'?')+'|'+(creep?1:0)+'|'+W; }
+  function getFace(ent,creep,W){
+    const k=faceKey(ent,creep,W);
+    let cv=_faceCache.get(k);
+    if(cv) return cv;
+    cv=document.createElement('canvas'); cv.width=cv.height=W;
+    renderFace(cv,ent,creep);
+    _faceCache.set(k,cv);
+    return cv;
+  }
+  function drawFace(cv,ent,creep){
+    if(!cv) return;
+    const W=cv.width;
+    try{
+      const src=getFace(ent,creep,W);
+      const x=cv.getContext('2d');
+      x.clearRect(0,0,W,W); x.drawImage(src,0,0,W,W);
+    }catch(_){ renderFace(cv,ent,creep); }
+  }
+  function prewarmFaces(){
+    if(!SEQ||!SEQ.length) return;
+    const portW=(D('ecPort')&&D('ecPort').width)||128;
+    const jobs=[];
+    SEQ.forEach(e=>{
+      jobs.push([e,false,EC_WALL_FACE_PX]); jobs.push([e,true,EC_WALL_FACE_PX]); // 피날레 벽
+      jobs.push([e,false,portW]);           jobs.push([e,true,portW]);           // 카드 초상
+    });
+    if(playerEnt){ jobs.push([playerEnt,false,portW]); jobs.push([playerEnt,true,portW]); }
+    let qi=0;
+    const ric=window.requestIdleCallback||function(fn){return setTimeout(()=>fn({timeRemaining:()=>8}),50);};
+    function work(dl){
+      while(qi<jobs.length && (!dl || dl.timeRemaining()>4)){
+        if(!running) return;
+        const j=jobs[qi++]; getFace(j[0],j[1],j[2]);
+      }
+      if(qi<jobs.length && running) _warmId=ric(work);
+      else _warmId=null;
+    }
+    _warmId=ric(work);
   }
 
   let timers=[],intervals=[],running=false,onDoneCb=null,idx=0,SEQ=[];
@@ -16275,7 +16430,7 @@ const EndingCredits=(function(){
     intervals.push(setInterval(()=>{if(!running)return;const m=D('ecMth');if(m){m.setAttribute('d','M40 60 q10 -8 20 0');setTimeout(()=>{if(m)m.setAttribute('d','M40 56 q10 10 20 0');},220);}},2600));
     intervals.push(setInterval(()=>{ if(!running)return; const r=Math.random(); if(r<.16)blackout(50+Math.random()*90); else if(r<.23)subliminal(); },1500));
   }
-  function stop(){clearTimers();intervals.forEach(clearInterval);intervals=[];running=false;resetFx();const _hud=D('hud');if(_hud)_hud.style.display='';const _bk=D('ecBlack');if(_bk)_bk.classList.remove('on');const _su=D('ecSub');if(_su)_su.style.display='none';const fin=D('ecFinale');if(fin)fin.classList.remove('bleed');const bl=D('ecBlood');if(bl)bl.innerHTML='';const tv=D('ecTV');if(tv)tv.classList.remove('crtoff');const bp=D('ecBumper');if(bp)bp.style.display='none';try{ if(typeof MUSIC==='object'&&MUSIC&&MUSIC.tracks&&MUSIC.tracks.bgm_final_clear)MUSIC.tracks.bgm_final_clear.playbackRate=1; }catch(_){}}
+  function stop(){clearTimers();intervals.forEach(clearInterval);intervals=[];running=false;if(_warmId!=null){(window.cancelIdleCallback||clearTimeout)(_warmId);_warmId=null;}resetFx();const _hud=D('hud');if(_hud)_hud.style.display='';const _bk=D('ecBlack');if(_bk)_bk.classList.remove('on');const _su=D('ecSub');if(_su)_su.style.display='none';const fin=D('ecFinale');if(fin)fin.classList.remove('bleed');const bl=D('ecBlood');if(bl)bl.innerHTML='';const tv=D('ecTV');if(tv)tv.classList.remove('crtoff');const bp=D('ecBumper');if(bp)bp.style.display='none';try{ if(typeof MUSIC==='object'&&MUSIC&&MUSIC.tracks&&MUSIC.tracks.bgm_final_clear)MUSIC.tracks.bgm_final_clear.playbackRate=1; }catch(_){}}
   function finish(){const cb=onDoneCb;onDoneCb=null;stop();const ov=D('ovEnding');if(ov)ov.classList.add('hidden');if(typeof cb==='function')cb();}
   function play(onDone){
     if(!D('ovEnding'))return; // 마크업 없으면 무시
@@ -16293,6 +16448,7 @@ const EndingCredits=(function(){
     D('ovEnding').classList.remove('hidden');
     const _hud=D('hud'); if(_hud)_hud.style.display='none';
     const sk=D('ecSkip');if(sk)sk.onclick=finish;
+    prewarmFaces();   // 피날레 벽 얼굴을 카드 구간 유휴시간에 미리 생성 → 프리즈 제거
     startTickers();step();
   }
   return {play:play,stop:stop,finish:finish};
