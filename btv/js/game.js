@@ -3111,7 +3111,7 @@ function updateSet3(b,dt){
   b._sigT=(b._sigT==null?5.5:b._sigT)-dt;
   if(b._sigT<=0){
     if(ph===1){ b._sigT=a3Jit(8.5,0.12); }   // 현진 강제 근접(그랩락) 제거 — P1 시그니처 없음
-    else if(ph===2){ if(!enemies.some(o=>o&&o.ai==='decoy')){ set3Identify(b); b._sigT=a3Jit(9,0.12); } else b._sigT=1.2; }
+    else if(ph===2){ b._sigT=a3Jit(9,0.12); }   // 번검 분신 식별 제거 — P2 시그니처 없음
     else { if((b.reflectT||0)<=0){ set3SignalReflect(b); b._sigT=a3Jit(8,0.12); } else b._sigT=1.0; }
   }
   const want=ph===1?165:ph===2?250:300;
@@ -3459,9 +3459,9 @@ function onsterChainWeb(e){
 }
 
 // ── 세트3형제 셔플백 풀 + 디스패처 ──
-const SET3_PATS_P1=['cone','cross','spin','push','vine','pull','grab','quake','wallslam','brothercross','sumoring','genesis'];
-const SET3_PATS_P2=['breath','spin','brand','decoy','crossslash','cloneslash','wall','tripleSlash','iaido','timeslash','hiddenblade','halftime','genesis'];
-const SET3_PATS_P3=['objective','breath','bombard','interference','channel','orb','hijack','donationBomb','livepoll','adtime','blackmage','genesis'];
+const SET3_PATS_P1=['cone','cross','push','wallslam','genesis'];
+const SET3_PATS_P2=['breath','brand','crossslash','tripleSlash','iaido','timeslash','halftime','genesis'];
+const SET3_PATS_P3=['objective','breath','bombard','interference','channel','orb','hijack','donationBomb','adtime','blackmage','genesis'];
 function runSet3Pat(b,p){
   // P1 현진 (물리·그랩)
   if(p==='cone') a3ConeSlam(b,5,20,'#ff4dd2');
@@ -3805,7 +3805,7 @@ function set3KekeHijack(b){
   for(let i=0;i<2;i++){
     const real=(i===realIdx);
     a3Objective(slots[i][0],slots[i][1],{
-      hp: real?220:999999, fuse:8.0, fail:'aoe', failDmg: real?46:0,
+      hp: real?170:999999, fuse:11.0, fail:'aoe', failDmg: real?24:0,
       label:'방송 장악 코어', color:'#ff4dd2', r:30, owner:b
     });
     const orb=enemies[enemies.length-1];
@@ -3825,14 +3825,14 @@ function hijackResolve(b,id,success){
 function set3KekeDonationBomb(b){
   if(sfx.enemyWarn) sfx.enemyWarn();
   banner('💸 후원 폭격','좌표가 따라온다 — 계속 움직여라',1000);
-  const n=irand(5,7), gap=rand(0.45,0.6);
+  const n=irand(4,5), gap=rand(0.6,0.8);
   for(let i=0;i<n;i++){
     setTimeout(()=>{ if(!a3Alive(b))return;
       const last=(i===n-1);
       let tx=player.x, ty=player.y;
       if(i>0&&!last){ const d=playerMoveDir(); tx=clamp(player.x+d.x*rand(70,120),60,W-60); ty=clamp(player.y+d.y*rand(70,120),110,H-80); }
-      if(last){ warnAoE(tx,ty,150,0.85,0.6,26,'후원 폭격','#ff4dd2'); banner('💥 대형 후원','크게 터진다!',800); }
-      else      warnAoE(tx,ty,82,Math.max(0.4,gap*0.85),0.4,18,'후원 폭격','#ffd34d');
+      if(last){ warnAoE(tx,ty,130,1.05,0.6,20,'후원 폭격','#ff4dd2'); banner('💥 대형 후원','크게 터진다!',800); }
+      else      warnAoE(tx,ty,74,Math.max(0.55,gap*0.9),0.4,14,'후원 폭격','#ffd34d');
       if(typeof beep==='function')beep(360+i*30,0.05,'square',0.04);
     }, i*gap*1000);
   }
@@ -17366,11 +17366,25 @@ window.a3test=function(name){
     hijack:      ()=>set3KekeHijack(b),
     donbomb:     ()=>set3KekeDonationBomb(b),
   };
-  if(!name){ console.log('[a3test] 사용 가능 패턴:', Object.keys(map).join(', ')); return Object.keys(map); }
-  const fn=map[name];
-  if(!fn){ console.warn('[a3test] 알 수 없는 패턴:', name, '\n사용 가능:', Object.keys(map).join(', ')); return Object.keys(map); }
+  if(!name){ console.log('[a3test] 사용 가능 패턴:', Object.keys(map).join(', ')); }
+  // ── 디스패처별 정식 패턴명 (이름만 맞으면 전부 발동) ──
+  const SET3=['cone','cross','spin','push','vine','pull','grab','brothercross','sumoring','quake','wallslam','breath','brand','decoy','crossslash','cloneslash','wall','tripleSlash','iaido','timeslash','hiddenblade','objective','bombard','interference','channel','orb','hijack','donationBomb','livepoll','adtime','grablock','identify','reflect','halftime','blackmage','genesis'];
+  const ONST=['grid','tether','anchor','maze','cage','reel','crosslaser','deepbreath','web','burst'];
+  const TRUCK=['signal','adRain','cableX','flood','spinbeam','claim','newsWall','megabeam','beam'];
+  const allNames=[...new Set([...Object.keys(map),...SET3,...ONST,...TRUCK])];
+  if(!name){ console.log('[a3test] 전체 패턴:', allNames.join(', ')); return allNames; }
   if(state!=='play'){ console.warn('[a3test] state가 play가 아님. 먼저 debugStartSet3() / debugStartOnster() / debugGoAct3()'); }
-  fn(); banner('🧪 a3test · '+name,'',900); return name;
+  const fire=(label,fn)=>{ fn(); banner('🧪 a3test · '+label,'',900); return label; };
+  // 1) 별칭 맵 우선
+  if(map[name]) return fire(name, map[name]);
+  // 2) 정식명 자동 라우팅 (대소문자 무시)
+  const ci=s=>String(s).toLowerCase(), findIn=arr=>arr.find(n=>ci(n)===ci(name));
+  let m;
+  if((m=findIn(SET3)))  return fire(m, ()=>runSet3Pat(b,m));
+  if((m=findIn(ONST)))  return fire(m, ()=>runOnsterPat(b,m));
+  if((m=findIn(TRUCK))) return fire(m, ()=>runAct3TruckPattern(b,m));
+  console.warn('[a3test] 알 수 없는 패턴:', name, '\n사용 가능:', allNames.join(', '));
+  return allNames;
 };
 // 무적(체력 자동 회복) — a3god() 켜기 / a3god(false) 끄기
 window.a3god=function(on){
