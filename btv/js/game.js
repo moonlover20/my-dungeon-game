@@ -404,7 +404,7 @@ function desiredMusicKey(){
   if(roomIsBoss && boss && boss.key==='seungwoo') return 'boss';
   if(roomIsMidboss){
     const mb=(enemies||[]).find(e=>e&&e.midboss);
-    if(mb&&mb.type==='onster') return mb.awakened?'bgm_onster_awakened':'bgm_onster_sealed';
+    if(mb&&mb.type==='onster') return 'bgm_onster_sealed';
   }
   // 막 + 전투 타입 매핑 (Act1 일반/엘리트/중간보스/최종보스 세분화)
   const role = roomIsBoss?'boss':roomIsMidboss?'midboss':roomHadElite?'elite':'normal';
@@ -5806,7 +5806,7 @@ const BOSS_INTRO_LINES={
   hyechul:{name:'혜철이',line:'에그는... 곧 깨어나.',tone:'dark',ms:2100},
   kijo:{name:'키죠',line:'보지 마.',sub:'키죠의 마안이 열렸다.',tone:'purple',glitch:true,ms:2100},
   rhino_beetle:{name:'자잘자',line:'oof.',sub:'자잘자가 돌진 준비를 합니다.',ms:1800},
-  kkotchung:{name:'양갱',line:'@#$#@@...',tone:'dark',glitch:true,ms:1900},
+  kkotchung:{name:'양갱',line:'말랑한 줄 알았지?',sub:'꽃잎 사이로 검은 단맛이 번진다.',tone:'dark',glitch:true,ms:2100},
   act3_truck:{name:'노잭',line:'NO JACK.',sub:'송출 신호가 전장을 잠식합니다.',tone:'dark',ms:1900},
   onster:{name:'온스터',line:'아직 깨우지 마라.',sub:'사슬이 바닥을 긁는다.',tone:'dark',ms:2100},
   set3:{name:'세트3형제',line:'형이 나오기 전에 끝내자.',sub:'방송 신호가 세 갈래로 찢어진다.',tone:'dark',ms:2300},
@@ -6723,7 +6723,7 @@ function damageEnemy(e,dmg,crit,fromBullet,bullet){
   e.hp-=dmg*(1-(e.armor||0)); e.hitT=0.1; burst(e.x,e.y,crit?'#ffd34d':e.color,crit?8:4,crit?180:120); sfx.hit();
   if(typeof GS!=='undefined'&&GS.dmgNum&&typeof spawnDmgNum==='function') spawnDmgNum(e.x,e.y-(e.r||10),Math.round(dmg*(1-(e.armor||0))),crit);
   if(crit && player.critHeal>0){ healPlayerNoDrop(player.critHeal,player.x,player.y-player.r-18); } // 치명 흡혈
-  if(e.eliteViewer && eliteKindOf(e)==='yanggaeng' && !e.tauntedHalf && e.hp<=e.maxhp*0.5){ e.tauntedHalf=true; e.taunt={t:4.6,text:'…달콤한 척은 여기까지야.'}; if(typeof sfx!=='undefined'&&sfx.vote) sfx.vote(); }
+  if(e.eliteViewer && eliteKindOf(e)==='yanggaeng' && !e.tauntedHalf && e.hp<=e.maxhp*0.5){ e.tauntedHalf=true; e.taunt={t:4.6,text:'이제 쓴맛도 섞어볼게.'}; if(typeof sfx!=='undefined'&&sfx.vote) sfx.vote(); }
   else if(e.eliteViewer && !e.tauntedHalf && e.hp<=e.maxhp*0.5){ e.tauntedHalf=true; e.taunt={t:4.6,text:'…봉식님? 저 때리시나요?'}; if(typeof sfx!=='undefined'&&sfx.vote) sfx.vote(); }
   applyShockStun(e);
   // 나무: 피격 시 주변 몹 방어력 버프 (3초간 최대 3회 중첩)
@@ -6883,8 +6883,8 @@ function kkotNextPhase(e){
   burst(e.x,e.y,col,28,400); burst(e.x,e.y,'#ffb0d0',10,240);
   if(typeof sfx!=='undefined'&&sfx.boss) sfx.boss();
   beep(ph===2?160:80,0.5,'sawtooth',0.07);
-  const line=ph===2?'……아직도 달달해?':'진짜 양갱이야. 달콤하게 죽어.';
-  const name=ph===2?'각성':'완전 개화 — 연양갱 폭주';
+  const line=ph===2?'껍질 벗기면, 안쪽은 더 진해.':'꽃은 졌고, 단맛만 남았어.';
+  const name=ph===2?'검은 단맛':'심연 개화';
   bossEvolve={phase:ph,t:0,line,name,col,e};
   cutsceneT=2.4;
   // 페이즈2: 반지름 소폭 증가
@@ -6973,7 +6973,7 @@ function eliteRewardTitle(kind){
 }
 function eliteDefeatBubble(kind){
   return kind==='yanggaeng'
-    ? pick(['말랑한 척했는데…','달콤하게 봐주려 했는데…','꽃이라고 얕봤지…','다음엔 더 끈적하게 올게요','흑임자 맛은 아직이야…'])
+    ? pick(['아직… 안 굳었는데…','단맛이… 빠져나가…','꽃잎이 다 떨어졌어…','다음엔 더 진하게 올게…','쓴맛은 아직 남았는데…'])
     : kind==='act3_truck'
     ? pick(['신호가 끊겼다…','송출이 멈췄다…','방송 종료합니다…','다음 송출은 없다…','NO JACK…'])
     : pick(['로블록스 하러 가야겠다…','봉식님… 너무하시네요 Sadge','다음 생엔 더 셀게요…','채금 풀리면 또 봬요','이게 맞나요…? 운영자 호출']);
@@ -7006,7 +7006,7 @@ function killEnemy(e){
     }
   }
   if(e.eliteViewer && eliteKindOf(e)==='yanggaeng'){
-    banner('양갱 처치!','',1100);
+    banner('양갱 처치!','검은 단맛이 흩어진다',1200);
     spawnDeathBubble(e.x, e.y-e.r-12, eliteDefeatBubble('yanggaeng'), 3.4);
     e.eliteViewer=false;
   }
@@ -14339,7 +14339,7 @@ function updateEliteIntro(dt){
     ze.intro=false; ze.introScale=1; ze.stunT=0;
     enemies.forEach(o=>{ o.stunT=0; o.coolT=rand(0.4,1.2); });
     eliteIntro=null; timeScale=0.4; slowmoT=0.3;
-    banner('교전 시작',eliteDisplayName(currentEliteKind()),900);
+    banner('교전 시작',currentEliteKind()==='yanggaeng'?'말랑한 꽃이 피었다':eliteDisplayName(currentEliteKind()),900);
   }
 }
 function drawEliteIntro(){
@@ -17503,6 +17503,89 @@ window.vicious=function(o){
     console.log('[vicious] x'+s, JSON.stringify(VICIOUS)); return VICIOUS;
   }
   Object.assign(VICIOUS,o); VICIOUS.on=true; console.log('[vicious]', JSON.stringify(VICIOUS)); return VICIOUS;
+};
+
+
+// ===== 양갱 패턴 테스트 콘솔 =====
+function _kkotTarget(){
+  return enemies.find(e=>e&&e.type==='kkotchung'&&!e.clone) || enemies.find(e=>e&&e.type==='kkotchung') || null;
+}
+function _kkotPrepareRoom(){
+  if(!runActive){ newGameSkip(); }
+  if(state!=='play'){ hideAll(); state='play'; roomCleared=false; syncChrome(); }
+  roomIsBoss=false; roomIsMidboss=false; roomHadElite=true; roomEliteKind='yanggaeng';
+}
+function _kkotTune(e,phase){
+  if(!e) return e;
+  e.elite=true; e.eliteViewer=true; e.eliteKind='yanggaeng'; e.label=e.clone?'분신':'양갱';
+  e.phase=clamp(Math.round(phase||e.phase||1),1,3);
+  e.x=clamp(e.x||W/2,60,W-60); e.y=clamp(e.y||190,90,H-80);
+  e.atkT=0.25; e.atkN=e.atkN||0; e.climaxT=0; e.eyeOrbs=e.eyeOrbs||[];
+  e.stunT=0; e.coolT=0.2; e.intro=false; e.introScale=1;
+  if(e.phase>=2) e.r=Math.max(e.r||36, e.phase===3?45:41);
+  return e;
+}
+window.kkotspawn=function(phase){
+  _kkotPrepareRoom();
+  enemies=enemies.filter(e=>!(e&&e.type==='kkotchung'));
+  spawnEnemy('kkotchung', W/2, 190, 1);
+  const e=enemies[enemies.length-1];
+  _kkotTune(e, phase||1);
+  e.hp=Math.max(e.hp||1, 1600); e.maxhp=e.hp; e.dmg=Math.round((e.dmg||10)*1.4);
+  e.xp=0; e.tauntedHalf=false; e._cloneMade=false; e._kkBag=[]; e._kkRep=0;
+  if(typeof showBossIntroLine==='function') showBossIntroLine('kkotchung',480,e);
+  if(typeof banner==='function') banner('🧪 양갱 소환','kkottest()로 패턴 확인',1000);
+  return e;
+};
+window.kkotphase=function(phase){
+  const e=_kkotTarget() || window.kkotspawn(phase);
+  _kkotTune(e, phase||1);
+  e._kkBag=[]; e._kkRep=0; e.atkT=0.2;
+  if(typeof banner==='function') banner('🧪 양갱 P'+e.phase,'',800);
+  return e;
+};
+window.kkottest=function(name,phase){
+  const names=['swirl','aim','thorn','fan','slow','rain','boom','clone','buff','lock','implode'];
+  if(!name){ console.log('[kkottest] 패턴:', names.join(', ')); return names; }
+  const e=_kkotTarget() || window.kkotspawn(phase||1);
+  _kkotTune(e, phase||e.phase||1);
+  const key=String(name).toLowerCase();
+  const slotMap={swirl:0,ring:0,aim:1,homing:1,thorn:2,spike:2,fan:3,slow:4,rain:5,storm:5,boom:5,burst:5,climax:5};
+  if(slotMap[key]!=null){
+    e._kkRep=0; e._kkSlot=slotMap[key]; e._kkBag=[slotMap[key]]; e.atkT=0;
+    if(key==='boom'||key==='burst'||key==='climax'){ e.phase=Math.max(e.phase||1,2); e._kkBag=[5]; }
+    if(typeof banner==='function') banner('🧪 양갱 패턴 · '+key,'다음 틱에 발사',800);
+    return {phase:e.phase, pattern:key, slot:e._kkSlot, target:e};
+  }
+  if(key==='clone'){
+    e._cloneMade=false; e.hp=Math.min(e.hp,e.maxhp*0.49); e._kkBuffCd=99; e._kkLockCd=99; e._kkImplodeCd=99;
+    if(typeof banner==='function') banner('🧪 양갱 패턴 · clone','분신 조건 강제',800);
+    return e;
+  }
+  if(key==='buff'){ e._kkBuffCd=0; e._kkLockCd=99; e._kkImplodeCd=99; return e; }
+  if(key==='lock'){ e._kkLockCd=0; e._kkBuffCd=99; e._kkImplodeCd=99; return e; }
+  if(key==='implode'){ e.clone=false; e._kkImplodeCd=0; e._kkBuffCd=99; e._kkLockCd=99; return e; }
+  console.warn('[kkottest] 알 수 없는 패턴:', name, '\n사용 가능:', names.join(', '));
+  return names;
+};
+window.kkotlab=function(phase,pat){
+  window.a3god();
+  const e=window.kkotspawn(phase||1);
+  setTimeout(()=>{ if(pat) window.kkottest(pat,phase||1); },300);
+  console.log('[kkotlab] 예) kkotlab(3,"rain") / kkottest()');
+  return e;
+};
+window.kkothelp=function(){
+  console.log([
+    '── 양갱 패턴 테스트 ──',
+    'kkotlab(phase?,pat?) : 무적+양갱 소환+옵션 패턴. 예: kkotlab(3,"rain")',
+    'kkotspawn(phase?)    : 양갱 소환',
+    'kkotphase(1|2|3)     : 페이즈 강제',
+    'kkottest()           : 패턴 이름 목록',
+    'kkottest("swirl")    : 다음 틱에 해당 패턴 발사',
+    '패턴: swirl aim thorn fan slow rain boom clone buff lock implode',
+  ].join('\n'));
+  return 'see console';
 };
 
 // ===== 3막 신규 패턴 테스트 콘솔 =====
