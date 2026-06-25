@@ -3460,9 +3460,9 @@ function onsterChainWeb(e){
 }
 
 // ── 세트3형제 셔플백 풀 + 디스패처 ──
-const SET3_PATS_P1=['cone','cross','push','wallslam','genesis'];
-const SET3_PATS_P2=['crossslash','tripleSlash','iaido','timeslash','hiddenblade','halftime','genesis'];
-const SET3_PATS_P3=['dominion','objective','donationBomb','adtime','blackmage','genesis'];
+const SET3_PATS_P1=['cone','cross','push','wallslam','lasergrid','bosslaser','genesis'];
+const SET3_PATS_P2=['crossslash','tripleSlash','iaido','timeslash','hiddenblade','bosslaser','lasercross','halftime','genesis'];
+const SET3_PATS_P3=['lasergrid','bosslaser','lasercross','dominion','objective','donationBomb','adtime','blackmage','genesis'];
 function runSet3Pat(b,p){
   // P1 현진 (물리·그랩)
   if(p==='cone') a3ConeSlam(b,5,20,'#ff4dd2');
@@ -3487,6 +3487,10 @@ function runSet3Pat(b,p){
   else if(p==='iaido') set3IaidoAfterimage(b);
   else if(p==='timeslash') set3TimeSlash(b);
   else if(p==='hiddenblade') set3HiddenBlade(b);
+  // 공통 레이저 패턴
+  else if(p==='lasergrid') set3LaserGrid(b);
+  else if(p==='bosslaser') set3BossLaser(b);
+  else if(p==='lasercross') set3LaserCross(b);
   // P3 케케로로 (방송 점거)
   else if(p==='objective'){ if(sfx.enemyCore) sfx.enemyCore(); a3Objective(W/2,H*0.34,{hp:210,fuse:7.0,fail:'aoe',failDmg:44,label:'신호 코어',color:'#ff4dd2',r:30,owner:b}); banner('📡 신호 코어','부수지 못하면 전체 피해',1000); }
   else if(p==='bombard') set3KekeBombard(b);
@@ -3535,6 +3539,53 @@ function set3BladeWall(b){
   // 회전 검기 벽: 보스 중심 긴 회전 바 (안/밖 선택)
   hazards.push({kind:'spinbar',owner:b,x:b.x,y:b.y,len:340,wid:26,ang:rand(0,TAU),rot:(Math.random()<0.5?1:-1)*1.9,t:0,warnT:0.7,liveT:4.2,dmg:18,hitCd:0,srcName:'검기 벽',col:'#38e8ff'});
   banner('🗡 검기 벽','회전 검벽 — 안/밖 결정',800);
+}
+function set3LaserColor(b){
+  const ph=(b&&b.setPhase)||1;
+  return ph===1?'#ff6bc8':(ph===2?'#38e8ff':'#ffd34d');
+}
+function set3LaserName(b){
+  const ph=(b&&b.setPhase)||1;
+  return ph===1?'현진 압살 레이저':(ph===2?'번검 절단 레이저':'케케로로 송출 레이저');
+}
+function set3QueueLaser(x,y,ang,opts){
+  opts=opts||{};
+  kijoLaserWarns.push({
+    x,y,ang,width:opts.width||18,range:opts.range||860,t:0,warn:opts.warn||0.76,
+    color:opts.color||'#38e8ff',fired:false,sniper:true,dmg:opts.dmg||18,
+    srcName:opts.srcName||'세트3 레이저',trackRate:opts.trackRate||0
+  });
+}
+function set3LaserGrid(b){
+  if(sfx.enemyWarn) sfx.enemyWarn();
+  const ph=(b&&b.setPhase)||1, col=set3LaserColor(b), dmg=ph===3?20:18, warn=ph===3?0.72:0.82;
+  const xs=[W*0.16,W*0.32,W*0.50,W*0.68,W*0.84], ys=[H*0.26,H*0.42,H*0.58,H*0.74];
+  const safeX=irand(0,xs.length-1), safeY=irand(0,ys.length-1);
+  banner('가로세로 레이저','비어 있는 교차로를 찾아라',1050);
+  xs.forEach((x,i)=>{ if(i!==safeX) set3QueueLaser(x,70,Math.PI/2,{width:17,range:H+30,warn:warn+i*0.04,dmg,color:col,srcName:'가로세로 레이저'}); });
+  ys.forEach((y,i)=>{ if(i!==safeY) set3QueueLaser(0,y,0,{width:17,range:W+40,warn:warn+0.12+i*0.04,dmg,color:col,srcName:'가로세로 레이저'}); });
+  if(typeof beep==='function')beep(520,0.08,'square',0.04);
+}
+function set3BossLaser(b){
+  if(sfx.enemyCore) sfx.enemyCore();
+  const ph=(b&&b.setPhase)||1, col=set3LaserColor(b), dmg=ph===3?23:20, name=set3LaserName(b);
+  banner('보스 레이저','조준선 끝을 비워라',950);
+  for(let i=0;i<3;i++) setTimeout(()=>{ if(!a3Alive(b))return;
+    const ang=Math.atan2(player.y-b.y,player.x-b.x);
+    set3QueueLaser(b.x,b.y,ang,{width:ph===1?22:20,range:920,warn:0.78,dmg,color:col,srcName:name,trackRate:ph===3?1.0:0.65});
+    if(typeof beep==='function')beep(760+i*80,0.055,'square',0.035);
+  }, i*420);
+}
+function set3LaserCross(b){
+  if(sfx.enemyLaser) sfx.enemyLaser();
+  const ph=(b&&b.setPhase)||1, col=set3LaserColor(b), dmg=ph===3?21:19;
+  banner('십자 레이저','각도가 바뀌며 연속 발사된다',1050);
+  const base=Math.atan2(player.y-b.y,player.x-b.x);
+  for(let w=0;w<3;w++) setTimeout(()=>{ if(!a3Alive(b))return;
+    const off=(w-1)*0.28;
+    for(let k=0;k<4;k++) set3QueueLaser(b.x,b.y,base+off+k*Math.PI/2,{width:18,range:900,warn:0.64,dmg,color:col,srcName:'십자 레이저'});
+    if(typeof beep==='function')beep(360+w*110,0.07,'triangle',0.04);
+  }, w*360);
 }
 // 케케로로(P3) 신규 (safe·veil·순서기억 대체)
 function set3KekeBombard(b){
@@ -17390,12 +17441,15 @@ window.a3test=function(name){
     chainmaze:   ()=>onsterChainMaze(b),
     broken:      ()=>{ b.awakened=true; onsterBrokenChains(b); },
     wallslam:    ()=>set3HyeonjinWallSlam(b),
+    lasergrid:   ()=>set3LaserGrid(b),
+    bosslaser:   ()=>set3BossLaser(b),
+    lasercross:  ()=>set3LaserCross(b),
     tripleslash: ()=>set3BeongeomTripleSlash(b),
     donbomb:     ()=>set3KekeDonationBomb(b),
   };
   if(!name){ console.log('[a3test] 사용 가능 패턴:', Object.keys(map).join(', ')); }
   // ── 디스패처별 정식 패턴명 (이름만 맞으면 전부 발동) ──
-  const SET3=['cone','cross','spin','push','vine','pull','grab','brothercross','sumoring','quake','wallslam','breath','brand','decoy','crossslash','cloneslash','wall','tripleSlash','iaido','timeslash','hiddenblade','objective','bombard','interference','channel','orb','donationBomb','livepoll','adtime','grablock','identify','reflect','halftime','blackmage','genesis'];
+  const SET3=['cone','cross','spin','push','vine','pull','grab','brothercross','sumoring','quake','wallslam','breath','brand','decoy','crossslash','cloneslash','wall','tripleSlash','iaido','timeslash','hiddenblade','lasergrid','bosslaser','lasercross','objective','bombard','interference','channel','orb','donationBomb','livepoll','adtime','grablock','identify','reflect','halftime','blackmage','genesis'];
   const ONST=['grid','tether','anchor','maze','cage','reel','crosslaser','deepbreath','web','burst'];
   const TRUCK=['signal','adRain','cableX','flood','spinbeam','claim','newsWall','megabeam','beam'];
   const allNames=[...new Set([...Object.keys(map),...SET3,...ONST,...TRUCK])];
@@ -17452,7 +17506,7 @@ window.a3help=function(){
     'a3phase(1|2|3)      : 세트3 페이즈 고정(현진/번검/케케로로)',
     'a3onster(true?)     : 온스터 소환(true=각성)',
     '패턴: bind poison brand cone cross spinbar sweep safezone core anchor buds veil seq shadows stones decoy push vine',
-    '신규(v3): claim newswall chainanchor chainmaze broken wallslam tripleslash donbomb',
+    '신규(v3): claim newswall chainanchor chainmaze broken wallslam tripleslash lasergrid bosslaser lasercross donbomb',
   ].join('\n'));
   return 'see console';
 };
@@ -18804,5 +18858,8 @@ function initTreeEvents(){
 }
 
 bootGame();
+
+
+
 
 
