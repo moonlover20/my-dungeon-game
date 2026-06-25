@@ -6017,6 +6017,14 @@ function saveRunCheckpoint(){
     refreshLoadButton();
   }catch(e){ console.warn('run checkpoint save failed',e); }
 }
+function saveRunCheckpointFromAnyState(){
+  if(!runActive || tutorialMode || !mapData){ refreshLoadButton(); return false; }
+  const prevState=state;
+  if(prevState!=='map') state='map';
+  try{ saveRunCheckpoint(); }
+  finally{ state=prevState; }
+  return hasRunCheckpoint();
+}
 function loadRunCheckpoint(){
   let data=null;
   try{ data=JSON.parse(localStorage.getItem(RUN_SAVE_KEY)||'null'); }catch(e){}
@@ -16989,8 +16997,7 @@ function returnToTitleScreen(){
   startBGM();
 }
 function saveAndReturnToTitleScreen(){
-  if(state==='map') saveRunCheckpoint();
-  else refreshLoadButton();
+  saveRunCheckpointFromAnyState();
   introFxReset();
   paused=false; mouseDown=false; autoFire=false; runActive=false;
   roomIsBoss=false; roomIsMidboss=false; cutsceneT=0; bossEvolve=null;
