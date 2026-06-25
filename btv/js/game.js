@@ -3035,10 +3035,12 @@ function runAct3TruckPattern(e,pat){
 function onsterAwaken(e){
   if(sfx.enemyChain) sfx.enemyChain(); setTimeout(()=>{ if(sfx.enemyGlitch) sfx.enemyGlitch(); },90);
   if(typeof clearA3Systems==='function') clearA3Systems();
-  e.awakened=true; e.phase=2; e.sprite='onster_p2'; e.color='#ff4dd2'; e.intentInvuln=1.5; e.stunT=1.5; e.spd*=1.28; e.cool=Math.max(0.75,(e.cool||1.35)*0.72);
+  e.awakened=true; e.phase=2; e.sprite='onster_p2'; e.color='#ff4dd2'; e.intentInvuln=30; e.invulnMax=30; e.stunT=1.5; e.spd*=1.28; e.cool=Math.max(0.75,(e.cool||1.35)*0.72);
   eBullets.length=0; hazards=[]; screenShake=Math.max(screenShake||0,22); hitFlash=Math.max(hitFlash||0,0.55);
-  bossEvolve={phase:2, t:0, line:'사슬이 끊어졌다', name:'각성', col:e.color, e};
+  bossEvolve={phase:2, t:0, line:'사슬이 끊어졌다 · 30초간 무적', name:'각성', col:e.color, e};
   cutsceneT=1.6;
+  banner('🛡 온스터 각성 · 무적 30초','데미지가 들어가지 않는다 — 30초간 버텨라',2400);
+  if(typeof chatRandom==='function') chatRandom('30초간 무적이다 ㄷㄷ');
   for(let i=0;i<24;i++){ const a=i/24*TAU; eBullets.push({x:e.x,y:e.y,vx:Math.cos(a)*230,vy:Math.sin(a)*230,r:8,dmg:9,life:3.2,srcName:'온스터 사슬 파편'}); }
   if(typeof beep==='function'){ beep(90,0.45,'sawtooth',0.07); beep(240,0.36,'triangle',0.05); }
 }
@@ -3052,8 +3054,17 @@ function spawnOnsterMinion(e){
 }
 function onsterChainBeam(e){
   if(sfx.enemyChain) sfx.enemyChain();
-  const ang=Math.atan2(player.y-e.y,player.x-e.x);
-  kijoLaserWarns.push({x:e.x,y:e.y,ang,width:e.awakened?23:17,range:720,t:0,warn:e.awakened?0.70:0.75,color:e.awakened?'#ff4dd2':'#8d72ff',fired:false,sniper:true,dmg:e.awakened?22:16,srcName:'온스터 사슬빔'});
+  // 조준 사슬빔(리드 랜덤 + 랜덤 다발 1~3): 예측 거리를 매번 다르게(0~max) 조준 → 고정 리드 학습 차단. 가끔 측면 플랭크까지.
+  const d=(typeof playerMoveDir==='function')?playerMoveDir():{x:0,y:0};
+  const lead=rand(0, e.awakened?140:115);                // 현위치~한참 앞 사이 랜덤
+  const tx=player.x+d.x*lead, ty=player.y+d.y*lead;
+  const base=Math.atan2(ty-e.y,tx-e.x);
+  const beams=irand(1,3);                                 // 1~3빔 랜덤
+  const angs=[base];
+  if(beams>=2) angs.push(base+rand(0.22,0.40));           // 오른 플랭크
+  if(beams>=3) angs.push(base-rand(0.22,0.40));           // 왼 플랭크
+  const col=e.awakened?'#ff4dd2':'#8d72ff', w=e.awakened?23:17, warn=e.awakened?0.60:0.64, dmg=e.awakened?22:16;
+  for(const a of angs) kijoLaserWarns.push({x:e.x,y:e.y,ang:a,width:w,range:720,t:0,warn,color:col,fired:false,sniper:true,dmg,srcName:'온스터 사슬빔'});
 }
 function set3PhaseName(b){ return (b.setPhase||1)===1?'현진':((b.setPhase||1)===2?'번검':'케케로로'); }
 function set3NextPhase(b){
@@ -3261,8 +3272,8 @@ function drawBossOrb(e){
 
 // ===== 상태형 패턴 서브시스템 (장막 · 순서기억 · 전멸기 안전지대 · 분신) =====
 let a3veil=null, a3seq=null, a3strike=null, a3tether=null, set3Poll=null, set3Ring=null, set3Ad=null;
-let onsterCross=null, onsterBreath=null, set3Half=null, set3Reaper=null;   // 신규: 교차빔/깊은숨결/반반시간/검은마법
-function clearA3Systems(){ a3veil=null; a3seq=null; a3strike=null; a3tether=null; set3Poll=null; set3Ring=null; set3Ad=null; onsterCross=null; onsterBreath=null; set3Half=null; set3Reaper=null; if(typeof player==='object'&&player) player._adBlockT=0; }
+let onsterCross=null, onsterBreath=null, set3Half=null, set3Reaper=null, onsterWeb=null;   // 신규: 교차빔/깊은숨결/반반시간/검은마법/거미줄
+function clearA3Systems(){ a3veil=null; a3seq=null; a3strike=null; a3tether=null; set3Poll=null; set3Ring=null; set3Ad=null; onsterCross=null; onsterBreath=null; set3Half=null; set3Reaper=null; onsterWeb=null; if(typeof player==='object'&&player) player._adBlockT=0; }
 
 // 마녀의 장막 — 화면 암전, 플레이어 주변만 보임
 function a3Veil(dur,label){
@@ -3383,41 +3394,38 @@ function act3TruckSpinBeam(e){
 }
 
 // ── 중보 온스터 전용 사슬 패턴 ──
-const ONSTER_PATS_P1=['grid','chase','whip','bind','poison','anchor','maze','bindexec','counterwhip','reel','crosslaser','deepbreath'];
-const ONSTER_PATS_P2=['grid','chase','whip','bind','poison','burst','anchor','maze','broken','cage','bindexec','counterwhip','reel','crosslaser','deepbreath'];
+const ONSTER_PATS_P1=['grid','anchor','maze','reel','crosslaser','deepbreath'];
+const ONSTER_PATS_P2=['grid','burst','anchor','maze','cage','reel','crosslaser','deepbreath','web'];
 function runOnsterPat(e,p){
   if(p==='grid') onsterChainGrid(e);
-  else if(p==='chase') onsterBindChase(e);
-  else if(p==='whip') onsterWhipSpin(e);
-  else if(p==='bind') a3BindRing(e,e.awakened?5:4,'사슬');
-  else if(p==='poison') a3PoisonTrail(e,5,0.5,e.awakened?13:11,'#9d7bff');
   else if(p==='tether') onsterTether(e);
   else if(p==='anchor') onsterChainAnchor(e);
   else if(p==='maze') onsterChainMaze(e);
-  else if(p==='broken') onsterBrokenChains(e);
   else if(p==='cage') onsterChainCage(e);
-  else if(p==='bindexec') onsterBindExecute(e);
-  else if(p==='counterwhip') onsterCounterWhip(e);
   else if(p==='reel') onsterReelToMinions(e);
   else if(p==='crosslaser') onsterCrossLaser(e);
   else if(p==='deepbreath') onsterDeepBreath(e);
+  else if(p==='web') onsterChainWeb(e);
   else onsterChainBurst(e);
 }
 function onsterChainGrid(e){
-  // 사슬 격자: 가로 2 + 세로 2 사슬 빔을 경고 후 발사, 격자 틈으로 빠져야 함
+  // 사슬 격자(연사형): 빔이 아니라 사슬탄을 가로행+세로열로 연속 사출. _onRep로 2~3회 반복 → 다른 보스 탄막처럼 연사.
   if(sfx.enemyChain) sfx.enemyChain();
-  banner('⛓ 사슬 격자','격자 틈으로 빠져라',850);
-  const dmg=e.awakened?20:16, col=e.awakened?'#ff4dd2':'#8d72ff', warn=e.awakened?0.6:0.74;
-  [H*0.34,H*0.62].forEach(y=>kijoLaserWarns.push({x:0,y,ang:0,width:18,range:W+40,t:0,warn,color:col,fired:false,sniper:true,dmg,srcName:'사슬 격자'}));
-  [W*0.33,W*0.66].forEach(x=>kijoLaserWarns.push({x,y:0,ang:Math.PI/2,width:18,range:H+40,t:0,warn,color:col,fired:false,sniper:true,dmg,srcName:'사슬 격자'}));
-}
-function onsterBindChase(e){
-  // 구속 추격 사슬: 플레이어를 시차로 따라오는 사슬 마커가 순차 내려찍음
-  player.slowDebuffT=Math.max(player.slowDebuffT||0,1.6);
-  if(sfx.enemyChain) sfx.enemyChain();
-  banner('🪝 구속 사슬','연속 내려찍기 — 계속 움직여라',1000);
-  const n=e.awakened?4:3, dmg=e.awakened?26:22;
-  for(let i=0;i<n;i++) setTimeout(()=>{ if(!a3Alive(e))return; hazards.push({x:clamp(player.x,34,W-34),y:clamp(player.y,90,H-50),t:0,warnT:0.5,liveT:0.4,r:96,hit:false,dmg,srcName:'구속 사슬',col:'#8d72ff'}); if(typeof beep==='function')beep(120,0.1,'sawtooth',0.05); }, 480+i*420);
+  if(!e._gridBnT || performance.now()-e._gridBnT>1200){ banner('⛓ 사슬 격자','빈틈으로 누벼라',850); e._gridBnT=performance.now(); }
+  const dmg=e.awakened?16:13, col=e.awakened?'#ff4dd2':'#8d72ff', sp=e.awakened?245:215;
+  const hn=13, vn=10, hgap=irand(0,hn-2), vgap=irand(0,vn-2);
+  const fromTop=Math.random()<0.5, fromLeft=Math.random()<0.5;
+  // 가로행: 위/아래에서 세로로 내려오는 사슬탄 줄 (1~2칸 빈틈)
+  for(let i=0;i<hn;i++){ if(i===hgap||i===hgap+1) continue;
+    const x=W*(0.06+0.88*(i/(hn-1)));
+    eBullets.push({x,y:fromTop?60:H-40,vx:0,vy:(fromTop?1:-1)*sp,r:8,dmg,life:4.8,srcName:'사슬 격자',col});
+  }
+  // 세로열: 왼/오른에서 가로로 가는 사슬탄 줄 (1~2칸 빈틈)
+  for(let j=0;j<vn;j++){ if(j===vgap||j===vgap+1) continue;
+    const y=H*(0.18+0.72*(j/(vn-1)));
+    eBullets.push({x:fromLeft?40:W-40,y,vx:(fromLeft?1:-1)*sp,vy:0,r:8,dmg,life:4.8,srcName:'사슬 격자',col});
+  }
+  if(typeof beep==='function')beep(140,0.06,'square',0.04);
 }
 function onsterWhipSpin(e){
   // 회전 사슬 채찍: 보스 중심 2갈래 회전 바
@@ -3427,10 +3435,27 @@ function onsterWhipSpin(e){
   banner('⛓ 사슬 채찍','회전 사슬을 피해라',750);
 }
 function onsterChainBurst(e){
-  // [각성] 사슬 파편 폭발: 회전 오프셋 전방위 링
-  const k=20, off=(e._cbN=(e._cbN||0)+1)*0.3, dmg=16;
-  for(let i=0;i<k;i++){ const a=off+i/k*TAU; eBullets.push({x:e.x,y:e.y,vx:Math.cos(a)*210,vy:Math.sin(a)*210,r:8,dmg,life:3.4,srcName:'사슬 파편',col:'#ff4dd2'}); }
-  burst(e.x,e.y,'#ff4dd2',14,170);
+  // [각성] 사슬 파편 폭발(버프): 빠른 바깥 링 + 느린 안쪽 링, 회전 오프셋으로 빈틈 이동
+  const off=(e._cbN=(e._cbN||0)+1)*0.3, dmg=18;
+  const ko=18; for(let i=0;i<ko;i++){ const a=off+i/ko*TAU; eBullets.push({x:e.x,y:e.y,vx:Math.cos(a)*245,vy:Math.sin(a)*245,r:8,dmg,life:3.6,srcName:'사슬 파편',col:'#ff4dd2'}); }
+  const ki=14; for(let i=0;i<ki;i++){ const a=-off*1.3+i/ki*TAU; eBullets.push({x:e.x,y:e.y,vx:Math.cos(a)*175,vy:Math.sin(a)*175,r:8,dmg,life:3.8,srcName:'사슬 파편',col:'#c45bff'}); }
+  burst(e.x,e.y,'#ff4dd2',16,190);
+}
+
+// ── [온스터 · 각성 전용] 사슬 거미줄 — 닻 5개를 펜타곤 링으로 연결, 줄에 닿으면 피해. 닻을 부수면 그 변이 끊긴다 ──
+function onsterChainWeb(e){
+  if(onsterWeb) return;
+  if(sfx.enemyChain) sfx.enemyChain();
+  const refs=[], n=5;
+  for(let i=0;i<n;i++){
+    const a=i/n*TAU+rand(-0.12,0.12), rr=rand(255,345);
+    a3Objective(clamp(W/2+Math.cos(a)*rr,60,W-60), clamp(H*0.44+Math.sin(a)*rr*0.66,115,H-80),
+      {hp:100, fuse:12, fail:'aoe', failDmg:30, label:'사슬 거미줄', color:'#9d7bff', r:22, owner:e});
+    refs.push(enemies[enemies.length-1]);
+  }
+  onsterWeb={anchors:refs, t:0, warnT:0.9, dmg:e.awakened?17:14, _hitCd:0, col:'#9d7bff'};
+  banner('🕸 사슬 거미줄','닻 5개를 부숴 변을 끊어라 — 줄에 닿으면 피해',1300);
+  if(typeof beep==='function')beep(120,0.18,'sawtooth',0.05);
 }
 
 // ── 세트3형제 셔플백 풀 + 디스패처 ──
@@ -3661,20 +3686,17 @@ function onsterChainAnchor(e){
 
 // ── [중보 온스터] 사슬 미로 — 불규칙 가로/세로 사슬빔, 안전 통로 1줄 ──
 function onsterChainMaze(e){
+  // 사슬 미로(연사형): _onRep로 3연발. 매 웨이브마다 안전 통로가 랜덤하게 이동 → 통로를 쫓아 누벼야 함
   if(sfx.enemyChain) sfx.enemyChain();
-  const col=e.awakened?'#ff4dd2':'#8d72ff', dmg=e.awakened?18:15, warn=e.awakened?0.72:0.84;
-  const lane=irand(0,2), safeX=[W*0.2,W*0.5,W*0.8][lane], safeW=130;  // 중앙/좌/우 중 안전통로
-  const cast=(extra)=>{
-    let placed=0;
-    for(let i=0;i<8&&placed<5;i++){ const x=rand(60,W-60); if(Math.abs(x-safeX)<safeW) continue;  // 세로빔(안전통로 비움)
-      kijoLaserWarns.push({x,y:0,ang:Math.PI/2,width:16,range:H+40,t:0,warn:warn+(extra||0),color:col,fired:false,sniper:true,dmg,srcName:'사슬 미로'}); placed++; }
-    const hn=1+irand(0,1);                                            // 가로빔 1~2줄(회피 판단)
-    for(let i=0;i<hn;i++){ const y=rand(H*0.30,H*0.78);
-      kijoLaserWarns.push({x:0,y,ang:0,width:16,range:W+40,t:0,warn:warn+(extra||0),color:col,fired:false,sniper:true,dmg,srcName:'사슬 미로'}); }
-  };
-  cast(0);
-  banner('⛓ 사슬 미로','안전 통로로 빠져나가라',1000);
-  if(e.awakened) setTimeout(()=>{ if(!a3Alive(e))return; cast(0.05); banner('⛓ 2차 사슬','반대편에서 또 온다',850); }, 800);
+  const col=e.awakened?'#ff4dd2':'#8d72ff', dmg=e.awakened?18:15, warn=e.awakened?0.66:0.78;
+  const lane=irand(0,2), safeX=[W*0.2,W*0.5,W*0.8][lane], safeW=120;  // 중앙/좌/우 중 안전통로 (웨이브마다 랜덤)
+  let placed=0;
+  for(let i=0;i<9&&placed<6;i++){ const x=rand(60,W-60); if(Math.abs(x-safeX)<safeW) continue;  // 세로빔(안전통로 비움)
+    kijoLaserWarns.push({x,y:0,ang:Math.PI/2,width:16,range:H+40,t:0,warn,color:col,fired:false,sniper:true,dmg,srcName:'사슬 미로'}); placed++; }
+  const hn=1+irand(0,1);                                            // 가로빔 1~2줄(회피 판단)
+  for(let i=0;i<hn;i++){ const y=rand(H*0.30,H*0.78);
+    kijoLaserWarns.push({x:0,y,ang:0,width:16,range:W+40,t:0,warn,color:col,fired:false,sniper:true,dmg,srcName:'사슬 미로'}); }
+  if(!e._mazeBnT || performance.now()-e._mazeBnT>1200){ banner('⛓ 사슬 미로','움직이는 통로로 빠져나가라',1000); e._mazeBnT=performance.now(); }
   if(typeof beep==='function')beep(95,0.14,'sawtooth',0.05);
 }
 
@@ -3927,10 +3949,10 @@ function onsterCrossLaser(e){
   if(sfx.enemyChain) sfx.enemyChain();
   const ph=e.awakened?2:1, dir=(Math.random()<0.5?1:-1);
   onsterCross={owner:e,x:e.x,y:e.y,t:0,warnT:1.2,life:ph===2?5.0:4.2,
-    a1:rand(0,TAU), a2:rand(0,TAU)+Math.PI/2,
-    rot1:dir*0.5, rot2:dir*0.64,          // 같은 방향·미세 속도차 → 빈틈이 닫히지 않음
+    a1:rand(0,TAU), a2:rand(0,TAU)+Math.PI/2, a3:rand(0,TAU)+2.094,
+    rot1:dir*0.5, rot2:dir*0.64, rot3:dir*0.57,   // 세 팔 모두 같은 방향 회전 → 사이 틈은 닫히지 않음(좁아질 뿐)
     width:ph===2?24:22, dmg:ph===2?18:14, _hitCd:0, col:'#8d72ff'};
-  banner('✖ 사슬 교차','같은 방향으로 도는 두 빔 — 사이 빈 칸으로',1300);
+  banner('✖ 사슬 교차','같은 방향으로 도는 세 빔 — 사이 빈 칸으로',1300);
   if(typeof beep==='function')beep(150,0.2,'square',0.05);
 }
 
@@ -3996,7 +4018,7 @@ function set3BlackMage(b){
 }
 
 function updateA3Systems(dt){
-  if(state!=='play'){ a3veil=null; a3seq=null; a3strike=null; a3tether=null; set3Poll=null; set3Ring=null; set3Ad=null; onsterCross=null; onsterBreath=null; set3Half=null; set3Reaper=null; if(player) player._adBlockT=0; return; }
+  if(state!=='play'){ a3veil=null; a3seq=null; a3strike=null; a3tether=null; set3Poll=null; set3Ring=null; set3Ad=null; onsterCross=null; onsterBreath=null; set3Half=null; set3Reaper=null; onsterWeb=null; if(player) player._adBlockT=0; return; }
   if(player&&player._adBlockT>0) player._adBlockT=Math.max(0,player._adBlockT-dt);
 
   // ── 온스터 사슬 교차빔 ──
@@ -4006,11 +4028,11 @@ function updateA3Systems(dt){
     else {
       C.x=C.owner.x; C.y=C.owner.y;
       const active=C.t>=C.warnT;
-      if(active){ C.a1+=C.rot1*dt; C.a2+=C.rot2*dt; }
+      if(active){ C.a1+=C.rot1*dt; C.a2+=C.rot2*dt; C.a3+=C.rot3*dt; }
       if(active && C._hitCd<=0){
         const px=player.x-C.x, py=player.y-C.y;
         const under=(ang)=>Math.abs(-px*Math.sin(ang)+py*Math.cos(ang))<C.width;
-        if((under(C.a1)||under(C.a2)) && (player.dodging||0)<=0){ hurtPlayer(C.dmg,'사슬 교차'); C._hitCd=0.42; }
+        if((under(C.a1)||under(C.a2)||under(C.a3)) && (player.dodging||0)<=0){ hurtPlayer(C.dmg,'사슬 교차'); C._hitCd=0.42; }
       }
       if(C.t>=C.warnT+C.life){ burst(C.x,C.y,C.col,14,180); onsterCross=null; }
     }
@@ -4033,6 +4055,20 @@ function updateA3Systems(dt){
         onsterBreathBlast(B.owner,B.dir,B.dmg,B.ph);
       }
       if(B.t>=B.inhaleT+B.exhaleT) onsterBreath=null;
+    }
+  }
+  // ── 온스터 사슬 거미줄 — 펜타곤 링(인접 변), 변 양끝 닻이 둘 다 살아있을 때만 줄·피해 ──
+  if(onsterWeb){
+    const Wb=onsterWeb; Wb.t+=dt; Wb._hitCd-=dt;
+    const N=Wb.anchors.length, alive=Wb.anchors.filter(o=>o&&enemies.includes(o)).length;
+    if(alive<2){ onsterWeb=null; }
+    else if(Wb.t>=Wb.warnT && Wb._hitCd<=0 && (player.dodging||0)<=0){
+      const segD=(px,py,ax,ay,bx,by)=>{ const dx=bx-ax,dy=by-ay,L=dx*dx+dy*dy||1; let t=((px-ax)*dx+(py-ay)*dy)/L; t=Math.max(0,Math.min(1,t)); return Math.hypot(px-(ax+t*dx),py-(ay+t*dy)); };
+      let hit=false;
+      for(let i=0;i<N&&!hit;i++){ const A=Wb.anchors[i], B=Wb.anchors[(i+1)%N];
+        if(A&&B&&enemies.includes(A)&&enemies.includes(B) && segD(player.x,player.y,A.x,A.y,B.x,B.y)<14) hit=true;
+      }
+      if(hit){ hurtPlayer(Wb.dmg,'사슬 거미줄'); Wb._hitCd=0.5; burst(player.x,player.y,Wb.col,8,150); }
     }
   }
   // ── 번검(P2) 반반 시간 필드 — 페이즈 동안 상시 ──
@@ -4118,7 +4154,7 @@ function updateA3Systems(dt){
     const dx=player.x-tx, dy=player.y-ty, d=Math.hypot(dx,dy);
     if((player.dodging||0)>0 && d>r*0.80){ banner('⛓ 테더 절단!','사슬을 끊었다',800); burst(tx,ty,a3tether.col,18,220); if(sfx.enemyChain) sfx.enemyChain(); a3tether=null; }
     else {
-      if(d>r){ const a=Math.atan2(dy,dx); player.x=clamp(tx+Math.cos(a)*r,player.r,W-player.r); player.y=clamp(ty+Math.sin(a)*r,player.r,H-player.r); a3tether._chip-=dt; if(a3tether._chip<=0){ hurtPlayer(8,'사슬 테더'); a3tether._chip=0.5; } }
+      if(d>r){ const a=Math.atan2(dy,dx); player.x=clamp(tx+Math.cos(a)*r,player.r,W-player.r); player.y=clamp(ty+Math.sin(a)*r,player.r,H-player.r); }
       if(a3tether.t>=a3tether.life){ burst(tx,ty,a3tether.col,12,160); a3tether=null; }
     }
   }
@@ -4186,8 +4222,18 @@ function drawA3World(){
       }
       ctx.restore();
     };
-    drawArm(C.a1); drawArm(C.a2);
+    drawArm(C.a1); drawArm(C.a2); drawArm(C.a3);
     ctx.save(); ctx.globalAlpha=0.92; pxBlob(C.x,C.y,16,16,5,col,_shade(col,-0.4)); ctx.restore();
+  }
+  // ── 온스터 사슬 거미줄 (펜타곤 링) ──
+  if(onsterWeb){
+    const Wb=onsterWeb, live=Wb.t>=Wb.warnT, N=Wb.anchors.length;
+    ctx.save();
+    ctx.globalAlpha=live?0.9:(0.3+0.22*Math.abs(Math.sin(performance.now()/120)));
+    ctx.strokeStyle=Wb.col; ctx.lineWidth=live?5:3; ctx.setLineDash([10,7]);
+    for(let i=0;i<N;i++){ const A=Wb.anchors[i], B=Wb.anchors[(i+1)%N];
+      if(A&&B&&enemies.includes(A)&&enemies.includes(B)){ ctx.beginPath(); ctx.moveTo(A.x,A.y); ctx.lineTo(B.x,B.y); ctx.stroke(); } }
+    ctx.setLineDash([]); ctx.restore();
   }
   // ── 온스터 깊은 숨결 ──
   if(onsterBreath){
@@ -8119,7 +8165,7 @@ function update(dt){
       if(!e.awakened && e.hp<=e.maxhp*0.5) onsterAwaken(e);
 
       const ph=e.awakened?2:1, target=ph===2?280:340;
-      e._tethT=(e._tethT==null?6:e._tethT)-dt; if(e._tethT<=0&&!a3tether){ onsterTether(e); e._tethT=e.awakened?rand(6,8):rand(8.5,11); }
+      e._tethT=(e._tethT==null?12:e._tethT)-dt; if(e._tethT<=0&&!a3tether){ onsterTether(e); e._tethT=e.awakened?rand(12,16):rand(17,22); }
 
       if(d<target*0.7){ e.x-=Math.cos(a)*e.spd*dt; e.y-=Math.sin(a)*e.spd*0.55*dt; }
 
@@ -8141,7 +8187,7 @@ function update(dt){
           const pool=ph===2?ONSTER_PATS_P2:ONSTER_PATS_P1;
           const p=pool[nextFromBag(e,ph===2?'_onBag2':'_onBag1',pool.length)];
           e._onPat=p; runOnsterPat(e,p);
-          if(p==='whip'||p==='grid'||(ph===2&&p==='burst')){ e._onRep=2; e.a3T=a3Jit(ph===2?1.4:1.7,0.1); }
+          if(p==='grid'||p==='maze'||(ph===2&&p==='burst')){ e._onRep=2; e.a3T=a3Jit(ph===2?1.4:1.7,0.1); }
           else e.a3T=a3Jit(ph===2?6.0:6.6,0.12);
         }
       }
@@ -8155,23 +8201,37 @@ function update(dt){
         if(ph===1){
 
           const slot=e.atkN%4;
-          if(slot===0){ const gx=clamp(player.x+rand(-50,50),80,W-80), gy=clamp(player.y+rand(-40,40),100,H-80); warnAoE(gx,gy,95,0.70,0.4,16,'온스터 지면강타','#8d72ff'); if(typeof beep==='function')beep(110,0.12,'sawtooth',0.05); }
+          if(slot===2){
+            // 사슬채찍(랜덤 단수 1~3 · 비대칭 · 간격 지터): 단이 깊어질수록 안쪽으로 좁혀들어옴. 좌우 독립 랜덤이라 안전 틈이 매번 치우침.
+            const stages=irand(1,3);
+            const bands=[[0.30,0.55],[0.18,0.38],[0.08,0.22]];   // 단이 깊을수록 안쪽
+            const cols=['#8d72ff','#a06bff','#c45bff'];
+            let acc=0;
+            for(let s=0;s<stages;s++){
+              const band=bands[Math.min(s,2)], lo=band[0], hi=band[1], col=cols[Math.min(s,2)], warn=s===0?0.54:0.48;
+              const doFire=()=>{ if(!a3Alive(e))return;
+                const b=Math.atan2(player.y-e.y,player.x-e.x), offL=-rand(lo,hi), offR=rand(lo,hi);
+                for(const off of [offL,offR]) kijoLaserWarns.push({x:e.x,y:e.y,ang:b+off,width:16,range:790,t:0,warn,color:col,fired:false,sniper:true,dmg:16,srcName:'온스터 사슬채찍'});
+                if(s>0&&sfx.enemyChain) sfx.enemyChain();
+              };
+              if(s===0) doFire(); else setTimeout(doFire, acc*1000);
+              acc+=rand(0.35,0.65);   // 단 간격 지터
+            }
+          }
+          else onsterChainBeam(e);   // 조준빔(예측 리드 + 랜덤 다발) — 지면강타 삭제분 흡수
 
-          else if(slot===2){ const base=Math.atan2(player.y-e.y,player.x-e.x); for(const off of [-0.44,0.44]){ kijoLaserWarns.push({x:e.x,y:e.y,ang:base+off,width:18,range:760,t:0,warn:0.7,color:'#8d72ff',fired:false,sniper:true,dmg:16,srcName:'온스터 사슬채찍'}); } banner('⛓ 사슬 채찍','정면 양옆을 비워라',800); }
-
-          else onsterChainBeam(e);
-
-          e.atkT=1.65;
+          e.atkT=1.45;
 
         }else{
 
-          if(e.atkN%4===0){ const pa=Math.atan2(player.y-e.y,player.x-e.x); for(let i=-2;i<=2;i++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa+i*0.22)*255,vy:Math.sin(pa+i*0.22)*255,r:8,dmg:15,life:3.5,home:0.55,srcName:'\uC628\uC2A4\uD130 \uC720\uB3C4 \uD30C\uD3B8'}); }
+          if(e.atkN%4===0){
+            // 유도 파편(강화): 5→7갈래, 속도·유도 상향. 직선 회피 불가
+            const pa=Math.atan2(player.y-e.y,player.x-e.x);
+            for(let i=-3;i<=3;i++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa+i*0.19)*275,vy:Math.sin(pa+i*0.19)*275,r:8,dmg:15,life:3.6,home:0.72,srcName:'\uC628\uC2A4\uD130 \uC720\uB3C4 \uD30C\uD3B8'});
+          }
+          else onsterChainBeam(e);   // 조준빔 — 돌진강타 삭제분 흡수
 
-          else if(e.atkN%3===0){ const pa=Math.atan2(player.y-e.y,player.x-e.x); e.x=clamp(e.x+Math.cos(pa)*160,e.r,W-e.r); e.y=clamp(e.y+Math.sin(pa)*95,e.r,H*0.58); intentShockwave(e.x,e.y,120,21,'\uC628\uC2A4\uD130 \uB3CC\uC9C4 \uAC15\uD0C0'); }
-
-          else onsterChainBeam(e);
-
-          e.atkT=1.25;
+          e.atkT=1.10;
 
         }
 
@@ -14642,6 +14702,12 @@ function drawMidbossBar(e){
   ctx.strokeStyle='#ffae42'; ctx.lineWidth=2; ctx.strokeRect(bx,by,bw,bh);
   ctx.fillStyle='#fff'; ctx.font='bold 13px sans-serif'; ctx.textAlign='center';
   ctx.fillText('\u26A0\uFE0F \uC911\uAC04\uBCF4\uC2A4 \u00B7 '+(e.label||'')+(e.type==='onster'&&e.phase>=2?' [각성]':''), W/2, by-8);
+  if((e.intentInvuln||0)>0){
+    const iv=e.intentInvuln, pulse=0.55+0.45*Math.abs(Math.sin(performance.now()/180));
+    ctx.globalAlpha=pulse; ctx.fillStyle='rgba(56,232,255,0.30)'; ctx.fillRect(bx,by,bw,bh); ctx.globalAlpha=1;
+    ctx.fillStyle='#38e8ff'; ctx.font='bold 15px sans-serif';
+    ctx.fillText('🛡 무적 '+iv.toFixed(1)+'초 · 데미지 무효', W/2, by+bh+18);
+  }
   ctx.textAlign='left'; ctx.restore();
 }
 
