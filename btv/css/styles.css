@@ -1404,30 +1404,30 @@
   .relicrow.relic-legend{box-shadow:0 0 10px #ffd34d44;}
   .relicrow.relic-mythic{box-shadow:0 0 16px #ffae4288;}
   @keyframes relicMythicGlow{0%,100%{box-shadow:0 4px 0 #120c20,0 0 16px #ffae4288;}50%{box-shadow:0 4px 0 #120c20,0 0 30px #ffae42ee;}}
-  .perkrow{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px;}
-  .perkcard{display:flex;flex-direction:column;align-items:center;text-align:center;gap:3px;background:#1a1330;border:2px solid var(--line);color:var(--ink);font-family:inherit;padding:16px 8px;cursor:pointer;box-shadow:0 5px 0 #120c20;transition:transform .07s;min-height:148px;}
-  .perkcard:hover{transform:translateY(-3px);}
+  .perkrow{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:18px;}
+  .perkcard{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;background:linear-gradient(180deg,#1b2431 0%,#0e141f 100%);border:1.5px solid rgba(125,249,255,.22);border-radius:16px;color:var(--ink);font-family:inherit;padding:22px 14px;cursor:pointer;box-shadow:0 12px 28px rgba(0,0,0,.5),0 0 14px rgba(125,249,255,.22),inset 0 1px 0 rgba(255,255,255,.06);transition:transform .12s ease,box-shadow .2s ease;min-height:158px;}
+  .perkcard:hover{transform:translateY(-4px);box-shadow:0 16px 32px rgba(0,0,0,.55),0 0 22px rgba(125,249,255,.42),inset 0 1px 0 rgba(255,255,255,.08);}
   .perkcard .pk-ic{font-size:30px;line-height:1;margin-bottom:3px;}
   .perkcard .pk-img{width:48px;height:48px;image-rendering:pixelated;image-rendering:crisp-edges;display:block;margin:0 auto;}
-  .perkcard .pk-nm{font-weight:bold;font-size:14px;}
-  .perkcard .pk-gr{font-size:10px;font-weight:bold;letter-spacing:1px;}
-  .perkcard .pk-ds{font-size:11.5px;color:var(--muted);line-height:1.4;margin-top:2px;}
-  .perkcard.perk-rare{box-shadow:0 5px 0 #120c20, 0 0 9px #5aa9ff44;}
-  .perkcard.perk-epic{box-shadow:0 5px 0 #120c20, 0 0 16px #c46bff88; animation:epicPulse 1.3s ease-in-out infinite;}
-  .perkcard.perk-legend{box-shadow:0 5px 0 #120c20, 0 0 22px #ffd34daa; animation:legendGlow 1.0s ease-in-out infinite;}
-  .perkcard.perk-mythic{border-color:#ff4d4d !important; box-shadow:0 5px 0 #120c20, 0 0 30px #ff4d4dcc; animation:mythicBlaze 0.75s ease-in-out infinite;}
-  @keyframes epicPulse{0%,100%{box-shadow:0 5px 0 #120c20,0 0 12px #c46bff66;}50%{box-shadow:0 5px 0 #120c20,0 0 24px #c46bffdd;}}
-  @keyframes legendGlow{0%,100%{box-shadow:0 5px 0 #120c20,0 0 16px #ffd34d88;}50%{box-shadow:0 5px 0 #120c20,0 0 34px #ffd34dff,0 0 54px #ffae4288;}}
-  @keyframes mythicBlaze{0%,100%{box-shadow:0 5px 0 #120c20,0 0 22px #ff4d4d99;}50%{box-shadow:0 5px 0 #120c20,0 0 46px #ff4d4dff,0 0 80px #ff2a2aaa;}}
+  .perkcard .pk-nm{font-weight:bold;font-size:15px;color:#eaf6ff;letter-spacing:.3px;margin-top:2px;}
+  .perkcard .pk-gr{display:inline-block;font-size:9.5px;font-weight:bold;letter-spacing:1px;padding:2px 10px;border-radius:999px;background:rgba(125,249,255,.10);border:1px solid rgba(125,249,255,.28);}
+  .perkcard .pk-ds{font-size:11.5px;color:#9fb1c6;line-height:1.5;margin-top:3px;}
+  .perkcard.perk-rare{box-shadow:0 12px 28px rgba(0,0,0,.5), 0 0 12px #5aa9ff55;}
+  .perkcard.perk-epic{box-shadow:0 12px 28px rgba(0,0,0,.5), 0 0 18px #c46bff88; animation:epicPulse 1.3s ease-in-out infinite;}
+  .perkcard.perk-legend{box-shadow:0 12px 28px rgba(0,0,0,.5), 0 0 24px #ffd34daa; animation:legendGlow 1.0s ease-in-out infinite;}
+  .perkcard.perk-mythic{border-color:#ff4d4d !important; box-shadow:0 12px 28px rgba(0,0,0,.5), 0 0 32px #ff4d4dcc; animation:mythicBlaze 0.75s ease-in-out infinite;}
+  @keyframes epicPulse{0%,100%{box-shadow:0 12px 28px rgba(0,0,0,.5),0 0 12px #c46bff66;}50%{box-shadow:0 12px 28px rgba(0,0,0,.5),0 0 24px #c46bffdd;}}
+  @keyframes legendGlow{0%,100%{box-shadow:0 12px 28px rgba(0,0,0,.5),0 0 16px #ffd34d88;}50%{box-shadow:0 12px 28px rgba(0,0,0,.5),0 0 34px #ffd34dff,0 0 54px #ffae4288;}}
+  @keyframes mythicBlaze{0%,100%{box-shadow:0 12px 28px rgba(0,0,0,.5),0 0 22px #ff4d4d99;}50%{box-shadow:0 12px 28px rgba(0,0,0,.5),0 0 46px #ff4d4dff,0 0 80px #ff2a2aaa;}}
   /* 영웅+ 카드 번쩍이는 광택 sweep */
-  .perkcard.perk-epic,.perkcard.perk-legend,.perkcard.perk-mythic{position:relative;overflow:hidden;}
+  .perkcard.perk-epic,.perkcard.perk-legend,.perkcard.perk-mythic{position:relative;}
   .perkcard.perk-epic::after,.perkcard.perk-legend::after,.perkcard.perk-mythic::after{
-    content:'';position:absolute;top:-20%;left:-160%;width:55%;height:140%;pointer-events:none;
-    background:linear-gradient(100deg,transparent 0%,rgba(255,255,255,0) 35%,rgba(255,255,255,.6) 50%,rgba(255,255,255,0) 65%,transparent 100%);
-    transform:skewX(-16deg);animation:perkSheen 2.4s ease-in-out infinite;}
-  .perkcard.perk-legend::after{animation-duration:1.8s;background:linear-gradient(100deg,transparent 0%,rgba(255,236,170,0) 35%,rgba(255,236,170,.8) 50%,rgba(255,236,170,0) 65%,transparent 100%);}
-  .perkcard.perk-mythic::after{animation-duration:1.3s;background:linear-gradient(100deg,transparent 0%,rgba(255,210,210,0) 35%,rgba(255,255,255,.92) 50%,rgba(255,210,210,0) 65%,transparent 100%);}
-  @keyframes perkSheen{0%{left:-160%;}55%,100%{left:170%;}}
+    content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:1;
+    background:linear-gradient(100deg,transparent 46%,rgba(255,255,255,.55) 50%,transparent 54%);
+    background-size:300% 100%;background-repeat:no-repeat;animation:perkSheen 2.4s ease-in-out infinite;}
+  .perkcard.perk-legend::after{animation-duration:1.8s;background:linear-gradient(100deg,transparent 46%,rgba(255,236,170,.85) 50%,transparent 54%);background-size:300% 100%;}
+  .perkcard.perk-mythic::after{animation-duration:1.3s;background:linear-gradient(100deg,transparent 46%,rgba(255,255,255,.92) 50%,transparent 54%);background-size:300% 100%;}
+  @keyframes perkSheen{0%{background-position:120% 0;}55%,100%{background-position:-20% 0;}}
   /* 전설+ 등장 연출 (풀스크린 플래시 레이어) */
   #perkFlash{position:fixed;inset:0;pointer-events:none;z-index:99999;opacity:0;display:flex;align-items:center;justify-content:center;}
   #perkFlash.go{opacity:1;}
@@ -2132,7 +2132,7 @@
 #levelConfirm{ margin-top:12px; opacity:.5; }
       #levelConfirm.ready{ opacity:1; background:#1f5d3a; border-color:#5dff9b; box-shadow:0 0 16px rgba(93,255,155,.4); }
       #levelConfirm:disabled{ cursor:not-allowed; }
-      .perkcard.sel{ box-shadow:0 0 0 3px #38e8ff, 0 0 18px rgba(56,232,255,.55) !important; transform:translateY(-3px); }
+      .perkcard.sel{ box-shadow:0 0 0 2.5px #38e8ff, 0 12px 28px rgba(0,0,0,.5), 0 0 22px rgba(56,232,255,.6) !important; transform:translateY(-4px); }
 
 /* ── 패시브 트리 오버레이 ── */
 #ovTree {
