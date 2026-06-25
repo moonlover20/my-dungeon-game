@@ -8968,6 +8968,38 @@ function nodeXY(row,col){
   const y=MAP_H-MAP_PADY - row*((MAP_H-2*MAP_PADY)/(totalRows-1));
   return {x,y};
 }
+// 형제 유일성(슬더스식): 한 노드에서 갈라지는 자식 노드들은 서로 다른 타입이어야 한다.
+// 변경 가능한 타입(fight/event/shop)만 재배정하며, 보장 노드(상점 최후 1개·관문 모닷불·엘리트·보스·중간보스)는 보존한다.
+function enforceMapSiblingUniqueness(nodes,edges){
+  const byId={}; nodes.forEach(n=>{ byId[n.id]=n; });
+  const cfg=mapCfg(act);
+  const fixedRows=new Set([0,cfg.mid,cfg.camp1,cfg.camp2]);
+  const rollPool=['fight','event','shop'];
+  const shopCount=()=>nodes.reduce((s,x)=>s+(x.type==='shop'?1:0),0);
+  function changeable(n){
+    if(!n) return false;
+    if(n.type==='boss'||n.type==='midboss'||n.type==='elite') return false;
+    if(n.row===0) return false;
+    if(fixedRows.has(n.row)&&n.type==='campfire') return false;
+    return true;
+  }
+  for(let pass=0;pass<6;pass++){
+    let changed=false;
+    nodes.forEach(parent=>{
+      const kids=(parent.next||[]).map(id=>byId[id]).filter(Boolean);
+      if(kids.length<2) return;
+      const used=new Set();
+      kids.forEach(k=>{
+        if(used.has(k.type) && changeable(k) && !(k.type==='shop'&&shopCount()<=1)){
+          const opts=rollPool.filter(t=>!used.has(t));
+          if(opts.length){ k.type=pick(opts); changed=true; }
+        }
+        used.add(k.type);
+      });
+    });
+    if(!changed) break;
+  }
+}
 function genMap(){
   const nm={}; const edges=new Set();
   const cfg=mapCfg(act), rows=cfg.rows, mid=cfg.mid, camp1=cfg.camp1, camp2=cfg.camp2;
@@ -8977,13 +9009,24 @@ function genMap(){
     if(!nm[k]){ const p=nodeXY(r,c); nm[k]={id:k,row:r,col:c,x:p.x,y:p.y,type:null,next:[],done:false}; }
     return nm[k];
   }
-  for(let p=0;p<5;p++){          // 5개의 경로를 무작위로 위로
+  // 5개의 경로를 무작위로 위로 — 같은 층 전이에서 경로가 교차하지 않도록 후보 제한
+  const rowEdges={};   // r -> [[fromCol,toCol], ...]
+  function edgeCrosses(r,fc,tc){
+    const arr=rowEdges[r]; if(!arr) return false;
+    for(let i=0;i<arr.length;i++){ if((fc-arr[i][0])*(tc-arr[i][1])<0) return true; }
+    return false;
+  }
+  for(let p=0;p<5;p++){
     let c=irand(0,MAP_COLS-1);
     ensure(0,c);
     for(let r=0;r<rows-1;r++){
-      let nc=clamp(c+irand(-1,1),0,MAP_COLS-1);
+      const cands=[];
+      for(let d=-1;d<=1;d++){ const nc=clamp(c+d,0,MAP_COLS-1); if(cands.indexOf(nc)<0) cands.push(nc); }
+      const safe=cands.filter(nc=>!edgeCrosses(r,c,nc));
+      const nc=pick(safe.length?safe:cands);
       ensure(r,c); ensure(r+1,nc);
-      edges.add(key(r,c)+'>'+key(r+1,nc));
+      const ek=key(r,c)+'>'+key(r+1,nc);
+      if(!edges.has(ek)){ edges.add(ek); (rowEdges[r]||(rowEdges[r]=[])).push([c,nc]); }
       c=nc;
     }
   }
@@ -9010,15 +9053,18 @@ function genMap(){
   ensureType(nodes,'shop',1,edges);
   ensureTypeInRow(nodes,'campfire',camp1,edges);
   ensureTypeInRow(nodes,'campfire',camp2,edges);
+  enforceMapSiblingUniqueness(nodes,edges);   // 갈림길 양쪽 타입 분리(슬더스식)
+  ensureType(nodes,'shop',1,edges);            // 형제 보정 뒤 상점 재보장
+  enforceMapSiblingUniqueness(nodes,edges);
   const startIds=nodes.filter(n=>n.row===0).map(n=>n.id);
   mapData={nm,nodes,edges:[...edges],startIds,currentId:null,reach:new Set(startIds)};
   buildBackdrop(act);
 }
 function rollNodeType(row){
   const bag=[];
-  for(let i=0;i<42;i++) bag.push('fight');
-  for(let i=0;i<30;i++) bag.push('event');
-  if(row>=1) for(let i=0;i<10;i++) bag.push('shop');
+  for(let i=0;i<40;i++) bag.push('fight');
+  for(let i=0;i<40;i++) bag.push('event');
+  if(row>=1) for(let i=0;i<15;i++) bag.push('shop');
   return pick(bag);
 }
 function isProtectedMapNode(n){
