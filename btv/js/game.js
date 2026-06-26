@@ -458,8 +458,8 @@ function desiredMusicKey(){
   if((typeof act3FinalClearActive==='function'&&act3FinalClearActive())||(act>=MAX_ACT&&state==='end')) return 'bgm_final_clear';
   if(!runActive) return 'intro';   // 스토리·엔드 등 기타 비전투 화면
   // 특수 보스 전용 트랙(막 무관, 매핑보다 우선)
-  if(roomIsBoss && boss && boss.key==='set3') return 'act3_final_boss';
-  if(roomIsBoss && boss && boss.key==='seungwoo') return 'boss';
+  if(roomIsBoss && boss && boss.key==='set3') return 'finalBoss';
+  if(roomIsBoss && boss && boss.key==='seungwoo') return 'act3_final_boss';
   if(roomIsMidboss){
     const mb=(enemies||[]).find(e=>e&&e.midboss);
     if(mb&&mb.type==='onster') return 'bgm_onster_sealed';
