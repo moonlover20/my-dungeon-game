@@ -510,6 +510,7 @@ let ambientTimer=0;
 let minionPool=null;
 let tutorial=null;
 let tutorialMode=false, tutorialDoneFlag=false;
+const TUTORIAL_MOVE_RADIUS=42;
 let floatBubbles=[]; // 적이 사라진 자리에 잠시 떠 있는 말풍선
 let lastKiller=null; // 마지막으로 플레이어를 죽인 대상 이름
 let pendingLevels=0;
@@ -1131,6 +1132,19 @@ window.addEventListener('keydown',e=>{
     else { e.preventDefault(); e.stopPropagation(); }
     return;
   }
+  if(tutorialMode&&tutorial&&tutorial.step==='controls'&&(k==='c'||k==='escape')){
+    if(k==='c'){
+      tutorial.controlsC=true;
+      if(!e.repeat && typeof toggleStatPanel==='function' && statPanelEligible()) toggleStatPanel();
+      banner('C 입력 확인','능력치 패널 보기/접기',900);
+    }else{
+      tutorial.controlsEsc=true;
+      banner('ESC 입력 확인','일시정지/메뉴 키',900);
+    }
+    e.preventDefault();
+    e.stopPropagation();
+    return;
+  }
   if(k==='escape'){
     handleEscape(e);
     return;
@@ -1166,7 +1180,15 @@ function canvasPos(e){
 }
 cvs.addEventListener('mousemove',e=>{const p=canvasPos(e);mouseX=p.x;mouseY=p.y;});
 let autoFire=false;
-cvs.addEventListener('mousedown',e=>{ mouseDown=true; if(typeof GS!=='undefined'&&GS.fireToggle){ autoFire=!autoFire; } });
+cvs.addEventListener('mousedown',e=>{
+  mouseDown=true;
+  if(tutorialMode&&tutorial&&tutorial.moved&&!tutorial.shot){
+    autoFire=true;
+    tutorial.autoFireHint=true;
+  }else if(typeof GS!=='undefined'&&GS.fireToggle){
+    autoFire=!autoFire;
+  }
+});
 window.addEventListener('mouseup',()=>{mouseDown=false;});
 cvs.addEventListener('contextmenu',e=>e.preventDefault());
 
@@ -6211,8 +6233,8 @@ function startCombat(kind, fresh){
     renderCombatBadges();
   }
   if(player.roomShield>0) player.buffs.shield=Math.max(player.buffs.shield,player.roomShield);
-  // 일반 방 신규 입장 시 2초 정지 미리보기 — 적/탄이 멈춰 몬스터를 파악할 시간 제공(보스/엘리트/재도전 제외)
-  if(fresh!==false && kind!=='boss' && kind!=='midboss' && kind!=='elite' && !roomHadElite){ roomPreviewT=2.0; }
+  // 신규 전투 입장 시 2초 정지 미리보기 — 모든 방에서 적/탄/플레이어가 멈춰 전투를 파악할 시간 제공
+  if(fresh!==false){ roomPreviewT=2.0; player.dodging=0; player.dashFxTrailT=0; }
   else { roomPreviewT=0; }
   updateHUD();
   refreshSidePanel();
@@ -7899,12 +7921,13 @@ function update(dt){
   updateDashFx(dt);
 
   // 구르기
+  const previewLocked=roomPreviewT>0;
   const wasDashActive=player.dodging>0;
   if(player.dodging>0){ player.dodging=Math.max(0,player.dodging-dt); }
   if(!keys[' ']) dodgeLatch=false;   // 스페이스 떼면 재장전
-  if(keys[' ']&&!dodgeLatch&&player.dodgeCharges>0&&player.dodging<=0&&!(player.moveLockT>0)){
+  if(!previewLocked&&keys[' ']&&!dodgeLatch&&player.dodgeCharges>0&&player.dodging<=0&&!(player.moveLockT>0)){
     dodgeLatch=true;
-    player.dodging=0.22+(player.dodgeIframeBonus||0); if(player.dodgeCd<=0) player.dodgeCd=10*playerDodgeCooldownMul(player); player.dodgeCharges--; updateHUD(); sfx.dodge(); if(tutorial)tutorial.dodged=true;
+    player.dodging=0.22+(player.dodgeIframeBonus||0); if(player.dodgeCd<=0) player.dodgeCd=10*playerDodgeCooldownMul(player); player.dodgeCharges--; updateHUD(); sfx.dodge(); if(tutorial&&tutorial.shot)tutorial.dodged=true;
     if(player.dodgeReload) player.dodgeReloadT=2;
     if(player.perfectDodge){ player.perfectDodgeArmed=true; player.perfectDodgeCheckT=1; }
     if(player.shadowBarrage&&player.shadowBarrageCd<=0){ player.shadowBarrageT=1; player.shadowBarrageCd=6; }
@@ -7925,7 +7948,7 @@ function update(dt){
   let mvy=(keys['s']||keys['arrowdown']?1:0)-(keys['w']||keys['arrowup']?1:0);
   if(typeof GL!=='undefined'&&GL.keyRev>0){ mvx=-mvx; mvy=-mvy; }
   const mRaw=Math.hypot(mvx,mvy);
-  const moveLocked=(player.moveLockT||0)>0;
+  const moveLocked=previewLocked||(player.moveLockT||0)>0;
   const m=moveLocked?0:mRaw;
   let sp=playerMoveSpeed(player)*(player._creepSlow?0.5:1)*(player._slowField?0.5:1)*(player.slowDebuffT>0?0.7:1); if(typeof gSlow!=='undefined'&&gSlow.length&&gSlow.some(f=>dist2(f.x,f.y,player.x,player.y)<f.r*f.r)) sp*=0.45;
   if(player.dodging>0&&!moveLocked){
@@ -7936,7 +7959,7 @@ function update(dt){
       player.dashFxTrailT=0.035;
     }
   }
-  else if(m>0){ player.x+=(mvx/m)*sp*dt; player.y+=(mvy/m)*sp*dt; if(tutorial)tutorial.moved=true; }
+  else if(m>0){ player.x+=(mvx/m)*sp*dt; player.y+=(mvy/m)*sp*dt; }
   player.x=clamp(player.x,player.r,W-player.r);
   player.y=clamp(player.y,player.r,H-player.r);
   if(wasDashActive&&player.dodging<=0){
@@ -7947,7 +7970,7 @@ function update(dt){
   // 발사
   if(player.fireTimer>0) player.fireTimer-=dt;
   if((mouseDown || (typeof autoFire!=='undefined'&&autoFire)) && player.fireTimer<=0 && !roomCleared && !(player.stunT>0) && !(player._adBlockT>0) && !(roomPreviewT>0)){
-    playerShoot(); if(tutorial)tutorial.shot=true;
+    playerShoot(); if(tutorial&&tutorial.moved)tutorial.shot=true;
     player.fireTimer=playerShootCooldown(player);
   }
 
@@ -9104,10 +9127,11 @@ function update(dt){
 
   // 튜토리얼 완료 판정 + 잠시 뒤 닫기
   if(tutorial&&tutorial.active){
-    if(tutorial.moved&&tutorial.shot&&tutorial.dodged&&!tutorial.doneAt) tutorial.doneAt=performance.now()||1;
+    updateTutorialProgress();
+    if(tutorial.moved&&tutorial.shot&&tutorial.dodged&&tutorial.controlsSeen&&!tutorial.doneAt) tutorial.doneAt=performance.now()||1;
     if(tutorial.doneAt&&performance.now()-tutorial.doneAt>2600) tutorial.active=false;
   }
-  if(tutorialMode && tutorial && tutorial.moved && tutorial.shot && tutorial.dodged && !tutorialDoneFlag){ tutorialDoneFlag=true; finishTutorial(); }
+  if(tutorialMode && tutorial && tutorial.moved && tutorial.shot && tutorial.dodged && tutorial.controlsSeen && !tutorialDoneFlag){ tutorialDoneFlag=true; finishTutorial(); }
   // 클리어 판정 (레벨업 등 오버레이 중엔 보류)
   if(state==='play' && !tutorialMode && !roomCleared && enemies.length===0 && !boss && bossBanner<=0){
     roomCleared=true; roomIsMidboss=false;
@@ -14302,26 +14326,95 @@ function drawPlayer(){
 }
 function drawTutorial(){
   if(!tutorial||!tutorial.active||act!==1||state!=='play') return;
-  const lines=[['이동','W A S D 키',tutorial.moved],['조준·발사','마우스 + 클릭',tutorial.shot],['베인 Q (회피)','SPACE 바',tutorial.dodged]];
-  const x=20,y=52, w=410, h=66+lines.length*36;
-  ctx.save();
-  ctx.fillStyle='rgba(14,9,22,0.9)'; ctx.fillRect(x,y,w,h);
-  ctx.strokeStyle='#c98bff'; ctx.lineWidth=3; ctx.strokeRect(x,y,w,h);
-  ctx.textAlign='left';
-  ctx.font='bold 20px sans-serif'; ctx.fillStyle='#ffd34d';
-  ctx.fillText('🎮 튜토리얼 — 조작을 익혀보자!', x+16, y+34);
-  lines.forEach((ln,i)=>{
-    const yy=y+72+i*36;
-    ctx.font='bold 18px sans-serif';
-    ctx.fillStyle=ln[2]?'#5dff9b':'#ffffff';
-    ctx.fillText((ln[2]?'✓  ':'▸  ')+ln[0], x+18, yy);
-    ctx.font='bold 17px sans-serif'; ctx.fillStyle=ln[2]?'#5dff9b':'#8be8ff';
-    ctx.fillText('「'+ln[1]+'」', x+232, yy);
-  });
-  if(tutorial.moved&&tutorial.shot&&tutorial.dodged){
-    ctx.fillStyle='#ffd34d'; ctx.font='bold 18px sans-serif';
-    ctx.fillText('튜토리얼 완료! 🎉', x+18, y+h-14);
+  const step=tutorial.step||'move';
+  const t=performance.now()/1000;
+  if(step==='move'&&tutorial.target){
+    const g=tutorial.target;
+    ctx.save();
+    ctx.globalAlpha=0.18+0.08*Math.sin(t*5);
+    ctx.fillStyle='#5dff9b';
+    ctx.beginPath(); ctx.arc(g.x,g.y,g.r,0,TAU); ctx.fill();
+    ctx.globalAlpha=0.86;
+    ctx.strokeStyle='#5dff9b'; ctx.lineWidth=4; ctx.setLineDash([10,7]);
+    ctx.beginPath(); ctx.arc(g.x,g.y,g.r+6*Math.sin(t*4),0,TAU); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='#ffffff'; ctx.font='bold 15px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.lineWidth=4; ctx.strokeStyle='rgba(0,0,0,.75)';
+    ctx.strokeText('여기로 이동',g.x,g.y-g.r-18);
+    ctx.fillText('여기로 이동',g.x,g.y-g.r-18);
+    ctx.restore();
   }
+  const lines=[
+    ['1. 이동','초록 지점까지 이동',tutorial.moved],
+    ['2. 조준 발사','마우스 → 클릭',tutorial.shot],
+    ['3. 베인Q 회피','SPACE: 무적 돌진',tutorial.dodged],
+    ['4. 보조 키',(tutorial.controlsC?'C✓ 능력치':'C 능력치')+' / '+(tutorial.controlsEsc?'ESC✓ 일시정지':'ESC 일시정지'),tutorial.controlsSeen]
+  ];
+  const activeText=step==='move'
+    ? '초록 원 안으로 이동하세요.'
+    : step==='shoot'
+    ? '허수아비를 조준하고 클릭하세요.'
+    : step==='dodge'
+    ? 'SPACE는 잠시 무적 돌진입니다.'
+    : step==='controls'
+    ? 'C와 ESC를 각각 눌러보세요.'
+    : '튜토리얼 완료! 이제 실전으로 넘어갑니다.';
+  const x=22,y=54, w=Math.min(430,W-44), compact=false, h=350;
+  const activeIdx={move:0,shoot:1,dodge:2,controls:3,done:4}[step]||0;
+  const tip=tutorial.moved&&tutorial.shot&&tutorial.dodged&&tutorial.controlsSeen
+    ? '완료! 실전으로 넘어갑니다.'
+    : step==='shoot'&&tutorial.dummySpawned
+    ? '팁: 한 번 클릭하면 자동 발사 ON'
+    : step==='dodge'
+    ? '팁: 회피 중 잠깐 피해 무시'
+    : step==='controls'
+    ? '팁: C는 능력치, ESC는 일시정지입니다.'
+    : '팁: 초록 원에 들어가세요.';
+  function box(px,py,pw,ph,r,fill,stroke,lw){
+    ctx.beginPath();
+    if(ctx.roundRect) ctx.roundRect(px,py,pw,ph,r);
+    else { ctx.moveTo(px+r,py); ctx.lineTo(px+pw-r,py); ctx.quadraticCurveTo(px+pw,py,px+pw,py+r); ctx.lineTo(px+pw,py+ph-r); ctx.quadraticCurveTo(px+pw,py+ph,px+pw-r,py+ph); ctx.lineTo(px+r,py+ph); ctx.quadraticCurveTo(px,py+ph,px,py+ph-r); ctx.lineTo(px,py+r); ctx.quadraticCurveTo(px,py,px+r,py); }
+    if(fill){ ctx.fillStyle=fill; ctx.fill(); }
+    if(stroke){ ctx.strokeStyle=stroke; ctx.lineWidth=lw||2; ctx.stroke(); }
+  }
+  ctx.save();
+  ctx.textAlign='left';
+  ctx.textBaseline='middle';
+  ctx.shadowColor='rgba(0,0,0,.55)';
+  ctx.shadowBlur=10;
+  box(x,y,w,h,8,'rgba(8,6,16,.94)','rgba(201,139,255,.92)',3);
+  ctx.shadowBlur=0;
+  box(x+6,y+6,w-12,54,6,'rgba(42,24,72,.86)','rgba(255,255,255,.08)',1);
+  const tutorialFont='"Malgun Gothic", "Noto Sans KR", Arial, sans-serif';
+  ctx.fillStyle='#ffd86b';
+  ctx.font='900 30px '+tutorialFont;
+  ctx.fillText('튜토리얼', x+22, y+28);
+  ctx.fillStyle='#ffffff';
+  ctx.font='900 24px '+tutorialFont;
+  ctx.fillText('조작 익히기', x+154, y+28);
+  ctx.fillStyle='#dfe9ff';
+  ctx.font='800 20px '+tutorialFont;
+  ctx.fillText(activeText, x+22, y+76);
+  lines.forEach((ln,i)=>{
+    const rowY=y+108+i*48, rowH=40;
+    const done=!!ln[2], active=i===activeIdx;
+    const fill=done?'rgba(45,120,76,.34)':active?'rgba(255,216,107,.18)':'rgba(255,255,255,.055)';
+    const stroke=done?'rgba(93,255,155,.75)':active?'rgba(255,216,107,.9)':'rgba(139,232,255,.16)';
+    box(x+18,rowY,w-36,rowH,6,fill,stroke,active?2:1);
+    ctx.fillStyle=done?'#5dff9b':active?'#ffd86b':'#ffffff';
+    ctx.font='900 22px '+tutorialFont;
+    ctx.fillText(done?'✓':String(i+1), x+34, rowY+rowH/2);
+    ctx.fillStyle=done?'#caffdc':active?'#fff1ad':'#f2f5ff';
+    ctx.font='900 21px '+tutorialFont;
+    ctx.fillText(ln[0].replace(/^\d+\.\s*/,''), x+62, rowY+rowH/2);
+    ctx.fillStyle=done?'#aaf7c8':active?'#8be8ff':'#b9c8e8';
+    ctx.font='800 19px '+tutorialFont;
+    ctx.fillText(ln[1], x+204, rowY+rowH/2);
+  });
+  box(x+18,y+h-48,w-36,34,6,'rgba(255,216,107,.1)','rgba(255,216,107,.28)',1);
+  ctx.fillStyle='#fff0a8';
+  ctx.font='900 16px '+tutorialFont;
+  ctx.fillText(tip, x+32, y+h-31);
   ctx.restore();
 }
 function updateEliteIntro(dt){
@@ -16928,17 +17021,53 @@ function startTutorial(){
   enemies=[]; pBullets=[]; eBullets=[]; pickups=[]; particles=[]; boss=null;
   roomCleared=false; roomIsBoss=false; kills=0; bossBanner=0;
   player.x=W/2; player.y=H-90;
-  tutorial={active:true,moved:false,shot:false,dodged:false,tabbed:false,doneAt:0};
+  tutorial={active:true,step:'move',moved:false,shot:false,dodged:false,controlsSeen:false,controlsC:false,controlsEsc:false,controlsAt:0,tabbed:false,doneAt:0,
+    target:{x:W/2,y:Math.max(130,H*0.24),r:TUTORIAL_MOVE_RADIUS},dummySpawned:false,autoFireHint:false};
   currentRow=0;
-  for(let i=0;i<3;i++){ spawnEnemy('goblin_warrior', 250+i*180, 165, 0.5); const d=enemies[enemies.length-1]; d.hp=14; d.maxhp=14; d.spd*=0.35; d.dmg=0; d.label='연습 허수아비'; d.dummy=true; }
-  banner("튜토리얼 · 1단계","WASD 이동 · 클릭 발사 · SPACE 베인Q",2400);
+  banner("튜토리얼 · 이동","WASD 중 편한 키로 표시된 위치까지 이동",2600);
   updateHUD();
+}
+function spawnTutorialDummy(){
+  if(!tutorial||tutorial.dummySpawned) return;
+  enemies=[]; pBullets=[]; eBullets=[];
+  spawnEnemy('goblin_warrior', W/2, Math.max(135,H*0.28), 0.5);
+  const d=enemies[enemies.length-1];
+  if(d){
+    d.hp=38; d.maxhp=38; d.spd=0; d.dmg=0; d.touchDmg=0;
+    d.label='고정 허수아비'; d.dummy=true; d.ai='idle'; d.cool=0; d.coolT=999;
+  }
+  tutorial.dummySpawned=true;
+  banner("튜토리얼 · 조준 발사","허수아비를 향해 마우스를 두고 한 번 클릭하면 자동 발사 ON",2800);
+}
+function updateTutorialProgress(){
+  if(!tutorial||!tutorial.active||!tutorialMode) return;
+  if(!tutorial.moved && tutorial.target && dist2(player.x,player.y,tutorial.target.x,tutorial.target.y)<=tutorial.target.r*tutorial.target.r){
+    tutorial.moved=true;
+    tutorial.step='shoot';
+    spawnTutorialDummy();
+  }
+  if(tutorial.moved && tutorial.shot && tutorial.step!=='dodge' && tutorial.step!=='controls' && tutorial.step!=='done'){
+    tutorial.step='dodge';
+    banner("튜토리얼 · 베인Q","SPACE로 짧게 돌진 · 잠시 무적 · 쿨다운 있음",3600);
+  }
+  if(tutorial.moved&&tutorial.shot&&tutorial.dodged&&tutorial.step!=='controls'&&tutorial.step!=='done'){
+    tutorial.step='controls';
+    tutorial.controlsAt=performance.now()||1;
+    tutorial.controlsC=false;
+    tutorial.controlsEsc=false;
+    banner("튜토리얼 · 보조 키","C는 능력치 패널, ESC는 일시정지 키입니다",3600);
+  }
+  if(tutorial.step==='controls'&&tutorial.controlsC&&tutorial.controlsEsc){
+    tutorial.controlsSeen=true;
+    tutorial.step='done';
+  }
 }
 function finishTutorial(){
   tutorialMode=false; roomCleared=true;
   { const _sb=$('skipTutBtn'); if(_sb) _sb.style.display='none'; }
   if(tutorial) tutorial.active=false;
   enemies=[]; pBullets=[]; eBullets=[]; pickups=[]; particles=[];
+  mouseDown=false; autoFire=false;
   banner("튜토리얼 완료!","이제 진짜 방송 시작",1600);
   setTimeout(function(){ showMap(); banner("1막 시작","지도에서 길을 골라라",1700); }, 1000);
 }
