@@ -11,9 +11,9 @@ const ENEMY_TYPES={
   rhino_beetle   :{name:"자잘자",   r:34, hp:170, spd:78, dmg:16, touchDmg:16, color:"#3a2418", xp:75, ai:"charge", armor:0.15, label:"자잘자"},
   earthworm      :{name:"지렁이", r:12, hp:10, spd:82, dmg:6, color:"#e87a8a", xp:0, ai:"erratic", label:"지렁이"},
   hyechul        :{name:"혜철이", r:52, hp:368, spd:42, dmg:15, color:"#c0392b", xp:150, ai:"hyechul", label:"혜철이"},
-  zergling       :{name:"저글링", r:14, hp:12, spd:132, dmg:7, color:"#c98bff", xp:0, ai:"charge", label:"저글링"},
-  mutalisk       :{name:"뮤탈", r:16, hp:16, spd:130, dmg:8, color:"#b97a4a", xp:0, ai:"chase", label:"뮤탈"},
-  ultra          :{name:"울트라", r:26, hp:95, spd:68, dmg:20, touchDmg:20, color:"#8a6f4a", xp:0, ai:"chase", armor:0.25, label:"울트라"},
+  zergling       :{name:"저글링", r:14, hp:14, spd:132, dmg:7, color:"#c98bff", xp:0, ai:"charge", label:"저글링"},
+  mutalisk       :{name:"뮤탈", r:16, hp:19, spd:130, dmg:8, color:"#b97a4a", xp:0, ai:"chase", label:"뮤탈"},
+  ultra          :{name:"울트라", r:26, hp:78, spd:68, dmg:20, touchDmg:20, color:"#8a6f4a", xp:0, ai:"chase", armor:0.25, label:"울트라"},
   zerg_egg       :{name:"저그 알", r:18, hp:22, spd:0, dmg:0, color:"#b8772a", xp:0, ai:"egg", label:"알"},
   // === 2막: 망자의 폐허 ===
   skeleton_warrior:{name:"스켈레톤 워리어",r:15,hp:30, spd:64,dmg:11,color:"#e8e3d2",xp:9,  ai:"chase"},
