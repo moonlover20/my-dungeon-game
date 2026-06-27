@@ -223,7 +223,7 @@ const FILE_SFX_PATHS={
   act1Knife:'btv/assets/sfx/act1/knife_draw.mp3',
   act1Spin:'btv/assets/sfx/act1/spin_whoosh.mp3',
   act1Electric:'btv/assets/sfx/act1/electric_zap.mp3',
-  hyechulRoar:'btv/assets/sfx/hyechul/deep_roar.mp3',
+  act2Laser:'btv/assets/sfx/act2/laser.mp3',
   hyechulGrowl:'btv/assets/sfx/hyechul/monster_growl.mp3',
   hyechulImpact:'btv/assets/sfx/hyechul/slime_impact.mp3',
   hyechulEgg:'btv/assets/sfx/hyechul/egg_crack.mp3',
@@ -2931,7 +2931,6 @@ function scheduleGoblinBomberDeathExplosion(e){
   hazards.push({x,y,t:0,warnT:delay,liveT:0.55,r,hit:false,dmg,srcName:'블페러 사망 폭발',col:'#ff7a3a'});
   setTimeout(()=>{
     if(!runActive) return;
-    playFileSfx('act1Fuse',{vol:0.72,rate:1.2,cd:0.12,key:'bomberDeathBoom'});
     for(let i=0;i<11;i++){
       const a2=i/11*TAU+rand(-0.08,0.08);
       eBullets.push({x,y,vx:Math.cos(a2)*180,vy:Math.sin(a2)*180,r:9,dmg:8,life:2.7,foodImg:(trashbitReady?TRASHBIT_SPRITE:null),spin:rand(0,TAU),spinV:rand(-7,7),spore:true,srcName:'블페러 파편'});
@@ -2981,13 +2980,13 @@ function aimBulletFrom(o,speed,dmg,r,src){
   const a=Math.atan2(player.y-o.y,player.x-o.x);
   eBullets.push({x:o.x,y:o.y,vx:Math.cos(a)*speed,vy:Math.sin(a)*speed,r:r||8,dmg:intentDamage(o,dmg||9),life:4,srcName:src||o.name||o.label});
 }
-function intentShockwave(x,y,r,dmg,src){
+function intentShockwave(x,y,r,dmg,src,style){
   burst(x,y,'#ffb347',18,260);
   if(dist2(x,y,player.x,player.y)<r*r) hurtPlayer(dmg,src||'충격파');
   const k=16;
   for(let i=0;i<k;i++){
     const a=i/k*TAU;
-    eBullets.push({x,y,vx:Math.cos(a)*185,vy:Math.sin(a)*185,r:7,dmg:Math.max(5,Math.round(dmg*0.35)),life:2.2,srcName:src||'충격파'});
+    eBullets.push({x,y,vx:Math.cos(a)*185,vy:Math.sin(a)*185,r:7,dmg:Math.max(5,Math.round(dmg*0.35)),life:2.2,srcName:src||'충격파',style});
   }
 }
 function countEnemyHazards(kind,srcName){
@@ -3004,8 +3003,8 @@ function kiterRush(e,a,d,dt){
     if((e._turtleT||0)>=4.5 && (e._rushCd||0)<=0){
       e._rush='wind'; e._rushT=0.5; e._turtleT=0; e.faceAng=a;
       banner('⚡ 들이댄다!','거리를 좁힌다',650); burst(e.x,e.y,e.color,12,180);
-      if(e.type==='hoonsangtae') playFileSfx('act1Knife',{vol:0.74,rate:1.08,cd:0.22,key:'rushKnife'});
-      else if(e.type==='jaemin') playFileSfx('act1Spin',{vol:0.78,rate:1.06,cd:0.22,key:'rushSpin'});
+      if(e.type==='hoonsangtae') playFileSfx('act1Knife',{vol:0.42,rate:1.08,maxDur:0.45,cd:0.85,key:'hoonsangKnifeGlobal'});
+      else if(e.type==='jaemin') playFileSfx('act1Spin',{vol:0.48,rate:1.06,maxDur:0.6,cd:0.9,key:'jaeminBoomerangGlobal'});
       else if(typeof beep==='function')beep(200,0.1,'square',0.05);
       return true;
     }
@@ -3026,8 +3025,8 @@ function kiterRush(e,a,d,dt){
       e._rush='sweep'; e._rushT=0.45;
       warnAoE(e.x,e.y,rand(94,106),0.35,0.4,Math.max(10,Math.round((e.dmg||10)*1.4)),(e.name||e.label)+' 근접 스윕',e.color);
       burst(e.x,e.y,'#ffd34d',16,220); screenShake=Math.max(screenShake||0,5);
-      if(e.type==='hoonsangtae') playFileSfx('act1Knife',{vol:0.82,rate:0.92,cd:0.22,key:'sweepKnife'});
-      else if(e.type==='jaemin') playFileSfx('act1Spin',{vol:0.84,rate:0.92,cd:0.22,key:'sweepSpin'});
+      if(e.type==='hoonsangtae') playFileSfx('act1Knife',{vol:0.45,rate:0.92,maxDur:0.45,cd:0.85,key:'hoonsangKnifeGlobal'});
+      else if(e.type==='jaemin') playFileSfx('act1Spin',{vol:0.5,rate:0.92,maxDur:0.6,cd:0.9,key:'jaeminBoomerangGlobal'});
       else if(typeof beep==='function')beep(120,0.14,'sawtooth',0.06);
     }
     return true;
@@ -4542,11 +4541,11 @@ function updateBonusPatterns(e,dt){
   const t=e.type;
   // ── 1막 ──
   if(t==='goblin_archer' && cd('_volleyCd',7)){           // 대파: 다발 사격
-    setIntent(e,'🎯','다발 사격',0.8,()=>{ const a=Math.atan2(player.y-e.y,player.x-e.x); for(let i=-1;i<=1;i++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(a+i*0.2)*300,vy:Math.sin(a+i*0.2)*300,r:7,dmg:intentDamage(e,9),life:4,srcName:e.name,style:'orb',col:e.color}); playFileSfx('act1Laser',{vol:0.58,rate:1.18,cd:0.16,key:'archerVolley'}); e._volleyCd=7.4; });
+    setIntent(e,'🎯','다발 사격',0.8,()=>{ const a=Math.atan2(player.y-e.y,player.x-e.x); for(let i=-1;i<=1;i++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(a+i*0.2)*300,vy:Math.sin(a+i*0.2)*300,r:7,dmg:intentDamage(e,9),life:4,srcName:e.name,style:'bolt',col:e.color}); burst(e.x,e.y,e.color,8,140); banner('대파 다발 사격','',600); playFileSfx('act1Laser',{vol:0.58,rate:1.18,cd:0.16,key:'archerVolley'}); e._volleyCd=7.4; });
   }
   else if(t==='goblin_shaman' && cd('_curseCd',4.6)){      // 까치: 저주 장판
     const tx=player.x, ty=player.y;
-    setIntent(e,'🔮','저주',0.85,()=>{ if(typeof spawnFirePillar==='function') spawnFirePillar(tx,ty,'까치 저주'); else hazards.push({x:clamp(tx,34,W-34),y:clamp(ty,90,H-50),t:0,warnT:0.7,liveT:0.5,r:46,hit:false,dmg:intentDamage(e,11),srcName:'까치 저주'}); e._curseCd=5.2; });
+    setIntent(e,'🔮','저주',0.85,()=>{ hazards.push({x:clamp(tx,34,W-34),y:clamp(ty,90,H-50),t:0,warnT:0.75,liveT:0.55,r:48,hit:false,dmg:intentDamage(e,11),srcName:'까치 저주',col:'#8a6fb0'}); burst(tx,ty,'#8a6fb0',10,150); banner('까치 저주','바닥 조심!',700); e._curseCd=5.2; });
   }
   // ── 2막 ──
   else if(t==='gwangcheon_gim' && cd('_powderCd',7.5)){    // 광천김: 김 가루 살포
@@ -6249,7 +6248,6 @@ function startCombat(kind, fresh){
         showBossIntroLine('hyechul',520,eb);
         banner("\uC911\uAC04\uBCF4\uC2A4 \u00B7 \uD61C\uCCA0\uC774","\uB465\uC9C0\uAC00 \uC6C0\uC9C1\uC778\uB2E4",1800);
         if(typeof sfx!=='undefined') sfx.boss();
-        playFileSfx('hyechulRoar',{vol:0.82,rate:0.9,maxDur:2.4,cd:2.0,key:'hyechulIntro'});
         showEntrance("⚠️ 중간보스 등장","혜철이","해처리 — 저글링 군단");
       }
     }else if(kind==='elite'){
@@ -6466,13 +6464,17 @@ function enemyBulletStyle(e){
   if(/kkot|양갱/.test(s)) return 'jelly';
   if(/ketter|케터/.test(s)) return 'silk';
   if(/killjoy|킬조이/.test(s)) return 'glitch';
-  if(/goblin|고블|대파/.test(s)) return 'orb';
+  if(/goblin_archer|대파/.test(s)) return 'bolt';
+  if(/goblin|고블/.test(s)) return 'orb';
   return 'shard';
+}
+function enemyShotDamage(e,dmg){
+  return intentDamage(e,dmg!=null?dmg:((e&&e.dmg)||9));
 }
 function enemyShootAt(e,tx,ty,speed,size,bdmg){
   let a=Math.atan2(ty-e.y,tx-e.x);
   if(VICIOUS.on) a+=rand(-VICIOUS.jitter,VICIOUS.jitter);
-  const dmg=bdmg!=null?bdmg:(e.dmg||9), r=size||7, st=enemyBulletStyle(e);
+  const dmg=enemyShotDamage(e,bdmg), r=size||7, st=enemyBulletStyle(e);
   eBullets.push({x:e.x,y:e.y,vx:Math.cos(a)*speed,vy:Math.sin(a)*speed,r,dmg,life:4,srcName:e.name||e.label,style:st,col:e.color});
   if(VICIOUS.on && Math.random()<VICIOUS.doubleShot){ const a2=a+rand(-0.28,0.28); eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*speed,vy:Math.sin(a2)*speed,r,dmg,life:4,srcName:e.name||e.label,style:st,col:e.color}); }
 }
@@ -6494,7 +6496,7 @@ function aimPlayerLeadAngle(from,leadSec){
   return Math.atan2(ty-from.y,tx-from.x);
 }
 function fireCleaver(e,ang,opts){
-  playFileSfx('act1Knife',{vol:0.72,rate:1.0+rand(-0.04,0.04),cd:0.14,key:'cleaverThrow'});
+  playFileSfx('act1Knife',{vol:0.42,rate:1.0+rand(-0.04,0.04),maxDur:0.45,cd:0.85,key:'hoonsangKnifeGlobal'});
   opts=opts||{};
   const enr=e.hp<=e.maxhp*0.5;
   const a=aimPlayerLeadAngle(e,enr?0.18:0.14)+(opts.spread||0);
@@ -6502,7 +6504,7 @@ function fireCleaver(e,ang,opts){
   eBullets.push({x:e.x+Math.cos(a)*e.r*0.8,y:e.y+Math.sin(a)*e.r*0.8,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,r:13,dmg:e.dmg,life:3.5,srcName:e.name||e.label,cleaver:true,spin:a,spinV:enr?8:5});
 }
 function fireBoomerang(e,ang,opts){
-  playFileSfx('act1Spin',{vol:0.74,rate:1.0+rand(-0.04,0.05),cd:0.14,key:'boomerangThrow'});
+  playFileSfx('act1Spin',{vol:0.48,rate:1.0+rand(-0.04,0.05),maxDur:0.6,cd:0.9,key:'jaeminBoomerangGlobal'});
   opts=opts||{};
   const enr=!!opts.enraged;
   const sp=enr?275:240;
@@ -6526,6 +6528,7 @@ function fireSniperLaser(beam){
   for(let i=0;i<7;i++) burst(sx+Math.cos(ang)*range*(i+1)/8,sy+Math.sin(ang)*range*(i+1)/8,beam.color||'#ff2a2a',2,160);
   burst(sx,sy,beam.color||'#ff2a2a',8,140);
   screenShake=Math.max(screenShake||0,5);
+  if(act===2||/저격|sniper/i.test(String(beam.srcName||''))) playFileSfx('act2Laser',{vol:0.74,rate:1.0,maxDur:1.2,cd:0.12,key:'act2SniperLaser'});
   if(sfx.enemyLaser) sfx.enemyLaser();
 }
 function spawnMoveLockField(x,y,srcName){
@@ -6876,14 +6879,13 @@ function pickHyechulPattern(e,ph){
 function hyechulFan(e,ph){
   const pa=Math.atan2(player.y-e.y,player.x-e.x);
   const n=ph>=3?7:(ph>=2?5:5), spread=ph>=3?0.17:(ph>=2?0.22:0.18), sp=ph>=3?260:(ph>=2?250:235), dmg=ph>=3?17:(ph>=2?15:13);
-  for(let i=-(n-1)/2;i<=(n-1)/2;i++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa+i*spread)*sp,vy:Math.sin(pa+i*spread)*sp,r:ph>=3?9:8,dmg,life:ph>=2?3.4:3,spore:true,home:0});
+  for(let i=-(n-1)/2;i<=(n-1)/2;i++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa+i*spread)*sp,vy:Math.sin(pa+i*spread)*sp,r:ph>=3?9:8,dmg,life:ph>=2?3.4:3,style:'bio_spine',home:0});
   playFileSfx('hyechulImpact',{vol:0.42,rate:1.25,cd:0.25,key:'hyechulFan'});
   banner('산성 부채꼴','피해라!',650);
 }
 function hyechulRain(e,ph){
   const rainN=ph>=3?28+irand(0,8):(ph>=2?22+irand(0,6):16+irand(0,5));
-  for(let i=0;i<rainN;i++){ const fx=rand(15,W-15); eBullets.push({x:fx,y:-12,vx:rand(ph>=3?-24:-18,ph>=3?24:18),vy:rand(175,ph>=3?238:220),r:ph>=3?9:8,dmg:ph>=3?15:(ph>=2?13:11),life:4.5,spore:true}); }
-  playFileSfx('hyechulAcid',{vol:0.48,rate:1.12,maxDur:1.4,cd:0.45,key:'hyechulRain'});
+  for(let i=0;i<rainN;i++){ const fx=rand(15,W-15); eBullets.push({x:fx,y:-12,vx:rand(ph>=3?-24:-18,ph>=3?24:18),vy:rand(175,ph>=3?238:220),r:ph>=3?9:8,dmg:ph>=3?15:(ph>=2?13:11),life:4.5,style:'acid'}); }
   banner('산성비','위에서 떨어진다!',800);
 }
 function hyechulSlowFieldPattern(e,ph){
@@ -6905,7 +6907,7 @@ function hyechulMixedPattern(e,ph){
 function hyechulRing(e,ph){
   const k=ph>=3?20:(ph>=2?16:14), sp=ph>=3?230:(ph>=2?215:200), dmg=ph>=3?17:(ph>=2?15:13);
   const off=(e.ringN=(e.ringN||0)+1)*0.4;   // 회전하는 전방위 탄막
-  for(let i=0;i<k;i++){ const a2=i/k*TAU+off; eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*sp,vy:Math.sin(a2)*sp,r:8,dmg,life:4,spore:true}); }
+  for(let i=0;i<k;i++){ const a2=i/k*TAU+off; eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*sp,vy:Math.sin(a2)*sp,r:8,dmg,life:4,style:'larva_blob'}); }
   playFileSfx('hyechulImpact',{vol:0.5,rate:0.95,cd:0.35,key:'hyechulRing'});
   banner('산성 폭발','전방위 탄막!',600);
 }
@@ -6924,7 +6926,7 @@ function hyechulHomingSpore(e,ph){
   // [2페+] 유도 포자: 플레이어를 쫓는 유도탄 다발
   const pa=Math.atan2(player.y-e.y,player.x-e.x);
   const n=ph>=3?6:5;
-  for(let i=-(n-1)/2;i<=(n-1)/2;i++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa+i*0.3)*180,vy:Math.sin(pa+i*0.3)*180,r:8,dmg:ph>=3?14:13,life:4.2,spore:true,home:ph>=3?1.6:1.2});
+  for(let i=-(n-1)/2;i<=(n-1)/2;i++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa+i*0.3)*180,vy:Math.sin(pa+i*0.3)*180,r:8,dmg:ph>=3?14:13,life:4.2,style:'bio_spine',home:ph>=3?1.6:1.2});
   playFileSfx('hyechulImpact',{vol:0.38,rate:1.45,cd:0.3,key:'hyechulSpore'});
   banner('🌀 유도 포자','쫓아온다!',700); if(typeof beep==='function')beep(200,0.1,'triangle',0.05);
 }
@@ -6935,9 +6937,8 @@ function hyechulAcidStorm(e,ph){
     if(c===gap) continue;   // 빈 틈(안전 통로)
     const cx=(c+0.5)/cols*W;
     const per=ph>=3?3:2;
-    for(let j=0;j<per;j++) eBullets.push({x:cx+rand(-13,13),y:-12-j*48,vx:rand(-7,7),vy:rand(150,185),r:8,dmg:ph>=3?14:12,life:5,spore:true});
+    for(let j=0;j<per;j++) eBullets.push({x:cx+rand(-13,13),y:-12-j*48,vx:rand(-7,7),vy:rand(150,185),r:8,dmg:ph>=3?14:12,life:5,style:'acid'});
   }
-  playFileSfx('hyechulAcid',{vol:0.62,rate:1.05,maxDur:1.8,cd:0.65,key:'hyechulAcidStorm'});
   banner('🌪 산성 폭풍','빈 틈으로 피하라!',900); if(typeof beep==='function')beep(110,0.25,'sawtooth',0.06); screenShake=Math.max(screenShake||0,5);
 }
 function hyechulCreepTide(e,ph){
@@ -6987,7 +6988,6 @@ function hyechulNextPhase(e){
   screenShake=Math.max(screenShake||0,18);
   burst(e.x,e.y,col,34,440); burst(e.x,e.y,'#ffffff',12,280);
   if(typeof sfx!=='undefined' && sfx.boss) sfx.boss();
-  playFileSfx('hyechulRoar',{vol:0.86,rate:ph===2?1.0:0.82,maxDur:2.4,cd:1.2,key:'hyechulPhase'});
   beep(ph===2?180:90,0.5,'sawtooth',0.07); beep(ph===2?95:60,0.6,'sine',0.06);
   const line=ph===2?'\uAECD\uC9C8\uC774 \uAC08\uB77C\uC9C4\uB2E4...':'\uBC14\uB2E5 \uC544\uB798\uC5D0\uC11C \uB465\uC9C0\uAC00 \uC5F4\uB9B0\uB2E4';
   const name=ph===2?'\uB808\uC5B4 \uBCC0\uC774':'\uD558\uC774\uBE0C \uAC1C\uBC29';
@@ -7205,7 +7205,7 @@ function gainXP(n){
 // ---------- 보스 패턴 ----------
 function pickFood(){ return FOODS.length?FOODS[irand(0,FOODS.length-1)]:null; }
 function throwFood(b,ang,speed,dmg,home){
-  const sp=(b&&b.enraged)?speed*0.78:speed;   // 격노 시 음식탄 속도 완화
+  const sp=(b&&b.enraged)?speed*0.70:speed;   // 격노 시 음식탄 속도 완화
   eBullets.push({x:b.x,y:b.y,vx:Math.cos(ang)*sp,vy:Math.sin(ang)*sp,r:13,dmg,life:3.4,foodImg:pickFood(),spin:rand(0,TAU),spinV:rand(-7,7),home:home||0});
 }
 function nextFromBag(b,key,n){
@@ -7219,15 +7219,15 @@ function kijoFrenzy(b){
   playFileSfx('kijoLaugh',{vol:0.7,rate:0.88,maxDur:1.4,cd:0.9,key:'kijoFrenzyLaugh'});
   const cx=b.x, cy=b.y;
   for(let ring=0;ring<3;ring++){
-    const k=12+ring*3, sp=160+ring*42, off=(b.angle||0)*1.4+ring*0.5;
-    for(let i=0;i<k;i++){ const a=off+i/k*TAU; eBullets.push({x:cx,y:cy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,r:8,dmg:16,life:4,srcName:'키죠'}); }
+    const k=12+ring*3, sp=140+ring*34, off=(b.angle||0)*1.4+ring*0.5;
+    for(let i=0;i<k;i++){ const a=off+i/k*TAU; eBullets.push({x:cx,y:cy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,r:8,dmg:16,life:4,srcName:'키죠 광란의 가면',style:'cursed_mask'}); }
   }
-  for(let i=0;i<5;i++){ const fx=clamp(player.x+rand(-170,170),40,W-40); eBullets.push({x:fx,y:-12,vx:rand(-20,20),vy:rand(200,250),r:9,dmg:16,life:4.2,foodImg:(typeof pickFood==='function'?pickFood():null),spin:rand(0,TAU),spinV:rand(-7,7)}); }
+  for(let i=0;i<5;i++){ const fx=clamp(player.x+rand(-170,170),40,W-40); eBullets.push({x:fx,y:-12,vx:rand(-20,20),vy:rand(165,215),r:9,dmg:16,life:4.2,foodImg:(typeof pickFood==='function'?pickFood():null),spin:rand(0,TAU),spinV:rand(-7,7)}); }
   banner('👹 광란의 가면','사방이 가면이다!',900); screenShake=Math.max(screenShake||0,8); if(typeof beep==='function')beep(80,0.3,'sawtooth',0.07);
 }
 function kijoBarrage(b){
-  const pa=Math.atan2(player.y-b.y,player.x-b.x), k=b.enraged?9:7, spread=0.14;
-  for(let i=-(k-1)/2;i<=(k-1)/2;i++) eBullets.push({x:b.x,y:b.y,vx:Math.cos(pa+i*spread)*245,vy:Math.sin(pa+i*spread)*245,r:8,dmg:15,life:3.4,srcName:'키죠'});
+  const pa=Math.atan2(player.y-b.y,player.x-b.x), k=b.enraged?8:7, spread=0.14, sp=b.enraged?218:245;
+  for(let i=-(k-1)/2;i<=(k-1)/2;i++) eBullets.push({x:b.x,y:b.y,vx:Math.cos(pa+i*spread)*sp,vy:Math.sin(pa+i*spread)*sp,r:8,dmg:15,life:3.4,srcName:'키죠',style:b.enraged?'cursed_mask':undefined});
   playFileSfx('kijoCharge',{vol:0.34,rate:1.28,maxDur:0.55,cd:0.35,key:'kijoBarrage'});
   banner('가면 난사','연사를 피하라',650); if(typeof beep==='function')beep(300,0.05,'square',0.04);
 }
@@ -7254,17 +7254,17 @@ function angleDiff(a,b){
   while(d<-Math.PI)d+=TAU;
   return d;
 }
-function kijoRing(x,y,k,spd,dmg,offset){
+function kijoRing(x,y,k,spd,dmg,offset,style){
   for(let i=0;i<k;i++){
     const a=(offset||0)+i/k*TAU;
-    eBullets.push({x,y,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,r:8,dmg:dmg||15,life:3.7,srcName:'키죠'});
+    eBullets.push({x,y,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,r:8,dmg:dmg||15,life:3.7,srcName:'키죠',style});
   }
 }
-function kijoFan(x,y,ang,k,spread,spd,dmg,food){
+function kijoFan(x,y,ang,k,spread,spd,dmg,food,style){
   for(let i=0;i<k;i++){
     const a=ang+(i-(k-1)/2)*spread;
     if(food) throwFood({x,y,enraged:boss&&boss.enraged},a,spd,dmg||15);
-    else eBullets.push({x,y,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,r:8,dmg:dmg||15,life:3.6,srcName:'키죠'});
+    else eBullets.push({x,y,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,r:8,dmg:dmg||15,life:3.6,srcName:'키죠',style});
   }
 }
 function kijoMaskFlip(b){
@@ -7290,6 +7290,7 @@ function beginKijoEvilEye(b){
     beam.fired=true;
     beam.t=Math.max(beam.t,beam.warn);
     intentLaser(beam.x,beam.y,beam.ang,beam.width,beam.range,24,'키죠 마안',beam.color);
+    kijoRing(b.x,b.y,b.enraged?12:9,205,13,b.angle,'evil_eye');
     b._evilEyeCd=8.5;
   });
   if(ok){
@@ -7325,8 +7326,8 @@ function kijoReflectStance(b){
   banner('가면 난무','가면탄을 피하라',950);
   playFileSfx('kijoMaskFlip',{vol:0.5,rate:1.22,cd:0.28,key:'kijoReflect'});
   const side=b.reflectAng+Math.PI/2;
-  kijoFan(b.x,b.y,side,5,0.16,205,14,false);
-  kijoFan(b.x,b.y,side+Math.PI,5,0.16,205,14,false);
+  kijoFan(b.x,b.y,side,5,0.16,205,14,false,'cursed_mask');
+  kijoFan(b.x,b.y,side+Math.PI,5,0.16,205,14,false,'cursed_mask');
 }
 function kijoDamageWindow(b,t){
   b.restT=0;
@@ -7459,7 +7460,7 @@ function updateBossIntentPatterns(b,dt){
     if(b.enraged&&(b.gazeT||0)<=0&&(b.stageT||0)<=0&&cd('_gazeCd',14)) beginKijoGaze(b);
     else if((b.gazeT||0)<=0&&(b.stageT||0)<=0&&cd('_stageCd',18)) beginKijoStage(b);
     else if(cd('_evilEyeCd',8)) beginKijoEvilEye(b);
-    else if(cd('_maskBombCd',11)) setIntent(b,'🎭','가면 폭발',1.5,()=>{ for(let i=0;i<4;i++){ const x=clamp(player.x+rand(-150,150),50,W-50), y=clamp(player.y+rand(-120,120),90,H-60); setTimeout(()=>intentShockwave(x,y,90,16,'가면 폭발'),5000); burst(x,y,'#c0392b',8,120); } b._maskBombCd=12; });
+    else if(cd('_maskBombCd',11)) setIntent(b,'🎭','가면 폭발',1.5,()=>{ for(let i=0;i<4;i++){ const x=clamp(player.x+rand(-150,150),50,W-50), y=clamp(player.y+rand(-120,120),90,H-60); setTimeout(()=>intentShockwave(x,y,90,16,'가면 폭발','evil_eye'),5000); burst(x,y,'#c0392b',8,120); } b._maskBombCd=12; });
   }else if(b.key==='seungwoo'){
     if(b.hp<=b.maxhp*0.25&&!b._overload){ b._overload=true; setIntent(b,'💀','오버로드',1.5,()=>{ b.intentSpeedMul=1.3; banner('💀 오버로드','패턴 속도 증가',1000); }); }
     else if(cd('_sysErrCd',9)) setIntent(b,'📺','시스템 오류',1.5,()=>{ const x=rand(70,W-70), y=rand(100,H-70); setTimeout(()=>intentShockwave(x,y,105,22,'시스템 오류'),2000); GL.frameDrop=Math.max(GL.frameDrop||0,2); b._sysErrCd=9.5; });
@@ -7486,7 +7487,7 @@ function updateBoss(dt){
   }
   b.phaseT+=dt; b.attackT-=dt; b.angle+=dt*1.2; if(b.hitT>0)b.hitT-=dt;
   if(b.reflectT>0) b.reflectT-=dt;
-  if(!b.enraged && b.hp<b.maxhp*0.4){ b.enraged=true; b.spd*=1.4; banner("격노!","보스가 분노한다",1300); chatSys("🔥 보스 격노 — 채팅 카오스 monkaS");
+  if(!b.enraged && b.hp<b.maxhp*0.4){ b.enraged=true; b.spd*=(b.key==='kijo'?1.18:1.4); banner("격노!","보스가 분노한다",1300); chatSys("🔥 보스 격노 — 채팅 카오스 monkaS");
     if(b.key==='kijo'){ b._kijoBag=null; b._kijoRep=0; banner("👹 가면의 마귀 각성","광란의 가면 해금!",1400); screenShake=Math.max(screenShake||0,16); kijoFrenzy(b); }
   }
   if(stunned) return;
@@ -7495,7 +7496,7 @@ function updateBoss(dt){
   if(b.key==='kijo'){ updateKijoGaze(b,dt); updateKijoStage(b,dt); if((b.gazeT||0)>0||(b.stageT||0)>0) b.attackT=Math.max(b.attackT,0.5); }
   // 플레이어 추적(느슨) — 순서 기억 중엔 추적 정지, 타일 링 위로 물러나 그 자리에서 사격
   const a=Math.atan2(player.y-b.y,player.x-b.x);
-  const sp=b.spd*(b.enraged?1.3:1)*statusMoveMul(b);
+  const sp=b.spd*(b.enraged?(b.key==='kijo'?1.12:1.3):1)*statusMoveMul(b);
   if(b.key==='kijo'&&a3seq){
     b.x+=(W/2-b.x)*Math.min(1,dt*2.4);
     b.y+=(H*0.13-b.y)*Math.min(1,dt*2.4);
@@ -7514,19 +7515,19 @@ function updateBoss(dt){
   // 접촉 — 순서 기억 중엔 몸박 무효 (정지 사격만)
   if(!(b.key==='kijo'&&a3seq) && dist2(b.x,b.y,player.x,player.y)<(b.r+player.r)**2) hurtPlayer(intentDamage(b,b.enraged?38:28), boss?boss.name:'\uC2DC\uCCAD\uC790');
   if(b.attackT<=0){
-    const rate=(b.enraged?1.3:1.6)/(b.intentSpeedMul||1);
+    const rate=(b.key==='kijo'?(b.enraged?1.75:1.65):(b.enraged?1.3:1.6))/(b.intentSpeedMul||1);
     b.attackT=rate;
     if(b.pattern==='split'||b.pattern==='chaos'){
       for(let i=0;i<8;i++) enemyShootAt(b, b.x+Math.cos(i/8*TAU)*100, b.y+Math.sin(i/8*TAU)*100, 200,8);
     }
     if(b.pattern==='summon'){
       let phase;
-      if((b._kijoRep||0)>0){ b._kijoRep--; phase=b._kijoPhase; b.attackT=rate*0.55; }   // 단순 탄막 집중 반복 중
+      if((b._kijoRep||0)>0){ b._kijoRep--; phase=b._kijoPhase; b.attackT=rate*0.72; }   // 단순 탄막 집중 반복 중
       else {
         b.atkN=(b.atkN||0)+1;
         phase=nextFromBag(b,'_kijoBag',b.enraged?10:9);   // 셔플백 (격노 시 10번째=광란의 가면)
         b._kijoPhase=phase;
-        if(phase===2||phase===7||phase===8){ b._kijoRep=2+(Math.random()<0.5?1:0); b.attackT=rate*0.55; }   // 회전나선/음식폭격/가면난사 → 3~4회 집중
+        if(phase===2||phase===7||phase===8){ b._kijoRep=2+(Math.random()<0.5?1:0); b.attackT=rate*0.72; }   // 회전나선/음식폭격/가면난사 → 3~4회 집중
       }
       if(phase===0){
         // ① 가면 뒤집기: 진짜/가짜 가면을 구분하는 속임수 탄막
@@ -7537,8 +7538,8 @@ function updateBoss(dt){
       } else if(phase===2){
         // ③ 2갈래 회전 나선
         playFileSfx('kijoCharge',{vol:0.36,rate:1.05,maxDur:0.8,cd:0.45,key:'kijoFoodSpiral'});
-        const k=b.enraged?14:11, base=b.angle*2.6;
-        for(let i=0;i<k;i++){ throwFood(b, base+i/k*TAU, 185, 15); throwFood(b, -base+i/k*TAU+0.3, 175, 15); }
+        const k=b.enraged?12:11, base=b.angle*2.6, sp1=b.enraged?165:185, sp2=b.enraged?158:175;
+        for(let i=0;i<k;i++){ throwFood(b, base+i/k*TAU, sp1, 15); throwFood(b, -base+i/k*TAU+0.3, sp2, 15); }
       } else if(phase===3){
         // ④ 탈춤 행진: 가면들이 측면에서 지나가며 탄을 뿌림
         kijoParadePattern(b);
@@ -7554,8 +7555,8 @@ function updateBoss(dt){
         kijoMaskBrand(b);
       } else if(phase===7){
         // ⑦ 음식 폭격 (낙하·증가)
-        const n=b.enraged?8:6;
-        const fall=b.enraged?0.8:1;   // 격노 시 낙하 음식 속도 완화
+        const n=b.enraged?7:6;
+        const fall=b.enraged?0.72:1;   // 격노 시 낙하 음식 속도 완화
         for(let i=0;i<n;i++){ const fx=rand(50,W-50); eBullets.push({x:fx,y:-12,vx:rand(-25,25),vy:rand(165,205)*fall,r:13,dmg:15,life:4.2,foodImg:pickFood(),spin:rand(0,TAU),spinV:rand(-7,7)}); }
         playFileSfx('kijoImpact',{vol:0.45,rate:1.08,maxDur:0.8,cd:0.55,key:'kijoFoodRain'});
         banner("음식 폭격!","",600);
@@ -7568,9 +7569,9 @@ function updateBoss(dt){
         kijoFrenzy(b);
       }
       // 격노 보너스: 유도하는 음식탄 (피하기 까다로움)
-      if(b.enraged && Math.random()<0.32){
+      if(b.enraged && Math.random()<0.22){
         const pa=Math.atan2(player.y-b.y,player.x-b.x);
-        for(let i=0;i<5;i++) throwFood(b, pa+i/5*TAU, 175, 15, 1.25);
+        for(let i=0;i<5;i++) throwFood(b, pa+i/5*TAU, 150, 15, 1.05);
       }
     }
     if(b.pattern==='spiral'){
@@ -8227,7 +8228,7 @@ function update(dt){
           e._wingT=rand(2.2,3.4);
         }
       }
-      if(e.type==='goblin_bomber'){ if(d<175){ e._fuseT=(e._fuseT||0)+dt; const brake=d<55?1.45:0.45; e.x-=Math.cos(a)*e.spd*brake*dt; e.y-=Math.sin(a)*e.spd*brake*dt; if(!e._fuse){ e._fuse=true; burst(e.x,e.y,'#ff4d4d',6,150); playFileSfx('act1Fuse',{vol:0.76,rate:1.0,cd:0.6,key:'bomberFuse'}); } } else { e._fuse=false; e._fuseT=0; } }
+      if(e.type==='goblin_bomber'){ e._fuse=false; e._fuseT=0; }
       // 나무 피격 방어력 버프 타이머 감소
       if(e._armorBuff>0){ e._armorBuff-=dt; if(e._armorBuff<=0){ e._armorBuff=0; e.armor=Math.max((e.armor||0)-0.12,0); } }
       if(e._namuBuffT>0) e._namuBuffT-=dt;
@@ -8271,9 +8272,9 @@ function update(dt){
         } else if(e.type==='goblin_archer' && e.shotN%3===0){
           const pa=Math.atan2(player.y-e.y,player.x-e.x);
           // 3연사 + 미세 산개로 정조준 회피를 살짝 압박
-          for(let i=0;i<3;i++) setTimeout(()=>{ if(enemies.includes(e)){ const sa=pa+(i-1)*0.045; eBullets.push({x:e.x,y:e.y,vx:Math.cos(sa)*260,vy:Math.sin(sa)*260,r:7,dmg:e.dmg,life:4,srcName:e.name,style:enemyBulletStyle(e),col:e.color}); } }, i*85);
+          for(let i=0;i<3;i++) setTimeout(()=>{ if(enemies.includes(e)){ const sa=pa+(i-1)*0.045; eBullets.push({x:e.x,y:e.y,vx:Math.cos(sa)*260,vy:Math.sin(sa)*260,r:7,dmg:enemyShotDamage(e,e.dmg),life:4,srcName:e.name,style:enemyBulletStyle(e),col:e.color}); } }, i*85);
           // 가끔 좌우 견제탄으로 옆길을 살짝 막는다
-          if(e.shotN%6===0){ setTimeout(()=>{ if(enemies.includes(e)){ for(const off of [-0.5,0.5]) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa+off)*230,vy:Math.sin(pa+off)*230,r:7,dmg:Math.max(5,Math.round(e.dmg*0.85)),life:3.6,srcName:e.name,style:enemyBulletStyle(e),col:e.color}); playFileSfx('act1Laser',{vol:0.52,rate:1.24,cd:0.12,key:'archerSideShot'}); } }, 300); }
+          if(e.shotN%6===0){ setTimeout(()=>{ if(enemies.includes(e)){ for(const off of [-0.5,0.5]) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa+off)*230,vy:Math.sin(pa+off)*230,r:7,dmg:enemyShotDamage(e,Math.max(5,Math.round(e.dmg*0.85))),life:3.6,srcName:e.name,style:enemyBulletStyle(e),col:e.color}); playFileSfx('act1Laser',{vol:0.52,rate:1.24,cd:0.12,key:'archerSideShot'}); } }, 300); }
         } else if(e.type==='killjoy'){
           // 고기동 난사: 빠른 3연사 + 매 4번째 부채꼴 5연 스프레드
           const pa=Math.atan2(player.y-e.y,player.x-e.x);
@@ -8303,7 +8304,7 @@ function update(dt){
           if(countEnemyHazards('gravitywell','blackstar')<1){ spawnGravityWell(player.x,player.y,rand(130,150),rand(2.4,3.0),210,0,'blackstar'); const k=7; for(let i=0;i<k;i++){ const aa=i/k*TAU+(e.wob||0); eBullets.push({x:e.x,y:e.y,vx:Math.cos(aa)*190,vy:Math.sin(aa)*190,r:7,dmg:Math.max(7,Math.round((e.dmg||14)*0.75)),life:3.1,srcName:e.name||e.label,style:enemyBulletStyle(e),col:e.color}); } }
         } else if(e.shotN%3===0){
           const pa=Math.atan2(player.y-e.y,player.x-e.x); const kw=(e.type==='goblin_shaman'); const lo=kw?-2:-1, hi=kw?2:1;
-          for(let i=lo;i<=hi;i++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa+i*0.24)*210,vy:Math.sin(pa+i*0.24)*210,r:8,dmg:e.dmg,life:3.6,srcName:e.name,style:enemyBulletStyle(e),col:e.color});
+          for(let i=lo;i<=hi;i++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa+i*0.24)*210,vy:Math.sin(pa+i*0.24)*210,r:8,dmg:enemyShotDamage(e,e.dmg),life:3.6,srcName:e.name,style:enemyBulletStyle(e),col:e.color});
         } else enemyShootAt(e,player.x,player.y,200,8,e.dmg);
         e.coolT=e.cool;
       }
@@ -8315,7 +8316,7 @@ function update(dt){
         e._diveT=(e._diveT==null?rand(2.0,3.2):e._diveT)-dt;
         if(e._diveT<=0){
           // 급강하: 빠르게 플레이어를 향해 직진 후 복귀
-          if(!e._diving){ e._diving=true; e._diveAx=Math.cos(a); e._diveAy=Math.sin(a); e._diveLife=0.28; burst(e.x,e.y,'#8a6fb0',10,180); playFileSfx('act1Wing',{vol:0.78,rate:1.34,cd:0.18,key:'shamanDive'}); banner('🐦 급강하!','','500'); }
+          if(!e._diving){ e._diving=true; e._diveAx=Math.cos(a); e._diveAy=Math.sin(a); e._diveLife=0.28; burst(e.x,e.y,'#8a6fb0',10,180); banner('🐦 급강하!','','500'); }
         }
         if(e._diving){
           e._diveLife-=dt;
@@ -8346,7 +8347,7 @@ function update(dt){
       }
     }else if(e.ai==='boomerang_thrower'){
       const enr=e.hp<=e.maxhp*0.5;
-      if(enr && !e._enraged){ e._enraged=true; banner('🪃 재민 격노!','부메랑 3연 투척!',800); burst(e.x,e.y,'#f0a84a',16,220); playFileSfx('act1Spin',{vol:0.9,rate:0.78,cd:0.35,key:'jaeminEnrage'}); }
+      if(enr && !e._enraged){ e._enraged=true; banner('🪃 재민 격노!','부메랑 3연 투척!',800); burst(e.x,e.y,'#f0a84a',16,220); playFileSfx('act1Spin',{vol:0.5,rate:0.78,maxDur:0.65,cd:1.2,key:'jaeminBoomerangGlobal'}); }
       const target=e.range||300;
       const ms=enr?1.15:1;
       if((e._backT||0)>0){ e._backT-=dt; e.x-=Math.cos(a)*e.spd*1.15*dt; e.y-=Math.sin(a)*e.spd*1.15*dt; }   // 던지고 빠지기
@@ -8625,7 +8626,7 @@ function update(dt){
         } else if(e.slamState==='dive'){
           const dx=e.slamTx-e.x, dy=e.slamTy-e.y, dd=Math.hypot(dx,dy);
           if(dd>6){ const step=Math.min(dd,e.spd*9*dt); e.x+=dx/dd*step; e.y+=dy/dd*step; e.faceAng=Math.atan2(dy,dx); burst(e.x,e.y,'#ff5a2a',3,100); }
-          if(dd<=10){ playFileSfx('hyechulImpact',{vol:0.92,rate:0.7,cd:0.35,key:'hyechulSlamImpact'}); intentShockwave(e.x,e.y,170,ph>=3?20:16,'혜철이 강림'); screenShake=Math.max(screenShake||0,15); burst(e.x,e.y,'#ff5a2a',26,340); if(typeof beep==='function')beep(58,0.4,'sawtooth',0.09); e.slamState='recover'; e.slamT=0.7; }
+          if(dd<=10){ playFileSfx('hyechulImpact',{vol:0.92,rate:0.7,cd:0.35,key:'hyechulSlamImpact'}); intentShockwave(e.x,e.y,170,ph>=3?20:16,'혜철이 강림','larva_blob'); screenShake=Math.max(screenShake||0,15); burst(e.x,e.y,'#ff5a2a',26,340); if(typeof beep==='function')beep(58,0.4,'sawtooth',0.09); e.slamState='recover'; e.slamT=0.7; }
         } else {
           e.slamT-=dt;
           const rtx=clamp(player.x,80,W-80), rty=clamp(player.y-210,110,260);
@@ -8640,7 +8641,7 @@ function update(dt){
         e.climaxT-=dt; e.wob+=dt*18;
         if(Math.random()<0.6) burst(e.x+rand(-e.r,e.r),e.y+rand(-e.r,e.r),'#ff5a2a',2,220);
         if(e.climaxT<=0){
-          for(let ring=0;ring<3;ring++){ const k=18+ring*4, sp=150+ring*55; for(let i=0;i<k;i++){ const a2=i/k*TAU+ring*0.22+(e.atkN||0)*0.7; eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*sp,vy:Math.sin(a2)*sp,r:8,dmg:(ph>=3?15:13),life:4.2,spore:true}); } }
+          for(let ring=0;ring<3;ring++){ const k=18+ring*4, sp=150+ring*55; for(let i=0;i<k;i++){ const a2=i/k*TAU+ring*0.22+(e.atkN||0)*0.7; eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*sp,vy:Math.sin(a2)*sp,r:8,dmg:(ph>=3?15:13),life:4.2,style:'larva_blob'}); } }
           spawnCreep(e.x,e.y); screenShake=Math.max(screenShake||0,16);
           playFileSfx('hyechulImpact',{vol:0.95,rate:0.78,cd:0.5,key:'hyechulOverloadBoom'});
           banner('💥 과부하 폭발!','',800); beep(60,0.5,'sawtooth',0.09);
@@ -8677,7 +8678,7 @@ function update(dt){
             e.atkT=0.5;
           } else if((e.atkRep||0)<=0 && ph>=2 && (e._climaxCd=(e._climaxCd||0)-1)<=0 && Math.random()<0.36){
             e.climaxT=ph>=3?1.3:1.1; e._climaxCd=2;
-            banner('🔥 과부하 충전','흩어져라!',1000); playFileSfx('hyechulRoar',{vol:0.66,rate:0.72,maxDur:1.8,cd:0.8,key:'hyechulOverloadCharge'}); if(typeof beep==='function')beep(55,0.5,'sawtooth',0.08); screenShake=Math.max(screenShake||0,7);
+            banner('🔥 과부하 충전','흩어져라!',1000); if(typeof beep==='function')beep(55,0.5,'sawtooth',0.08); screenShake=Math.max(screenShake||0,7);
             e.atkT=1.0;
           } else if((e.atkRep||0)<=0 && (e._rushCd=(e._rushCd||0)-1)<=0 && enemies.filter(o=>o.type==='zergling'||o.type==='mutalisk'||o.type==='ultra').length>=3 && Math.random()<0.45){
             hyechulSummonRush(e); e._rushCd=2;
@@ -8715,7 +8716,7 @@ function update(dt){
         if(e.csT<=0){
           const n=3+(Math.random()<0.5?1:0);
           for(let i=0;i<n;i++){ const wa=rand(0,TAU), dd=e.r+22; spawnEnemy('earthworm', clamp(e.x+Math.cos(wa)*dd,30,W-30), clamp(e.y+Math.sin(wa)*dd,30,H-30), 1); }
-          burst(e.x,e.y,'#e87a8a',14,160); banner('지렁이 소환!','',700); beep(160,0.2,'sawtooth',0.06);
+          burst(e.x,e.y,'#e87a8a',14,160); banner('케터피 소환!','',700); beep(160,0.2,'sawtooth',0.06);
           e.cs='rest'; e.csT=0.5; e.coolT=1.8;
         }
       } else if(e.cs==='spit'){
@@ -14616,7 +14617,7 @@ function hyechulCreepBloom(e,count){
   const k=10;
   for(let i=0;i<k;i++){
     const a=i/k*TAU+rand(-0.08,0.08);
-    eBullets.push({x:e.x,y:e.y,vx:Math.cos(a)*165,vy:Math.sin(a)*165,r:7,dmg:8,life:3.4,spore:true,srcName:'\uC810\uB9C9 \uD655\uC0B0'});
+    eBullets.push({x:e.x,y:e.y,vx:Math.cos(a)*165,vy:Math.sin(a)*165,r:7,dmg:8,life:3.4,style:'creep',srcName:'\uC810\uB9C9 \uD655\uC0B0'});
   }
   playFileSfx('hyechulAcid',{vol:0.42,rate:1.02,maxDur:1.1,cd:0.55,key:'hyechulCreepBloom'});
 }
@@ -14636,7 +14637,7 @@ function hyechulEggBomb(e){
     setIntent(egg,'\uD83D\uDCA3','\uBD80\uD328 \uD3ED\uBC1C',1.4+idx*0.18,()=>{
       if(!enemies.includes(egg)) return;
       playFileSfx('hyechulImpact',{vol:0.72,rate:0.86,cd:0.25,key:'hyechulEggBomb'});
-      intentShockwave(egg.x,egg.y,92,15,'\uBD80\uD328 \uD3ED\uBC1C');
+      intentShockwave(egg.x,egg.y,92,15,'\uBD80\uD328 \uD3ED\uBC1C','acid');
       egg.hp=0; killEnemy(egg);
     });
   });
@@ -15255,6 +15256,8 @@ const BULLET_PATTERNS={
   spore:  ["1.2.1",".121.","21312",".121.","1.2.1"],
   chain:  ["221122","2.11.2","2.11.2","221122"],          // 가로 방향
   mask:   ["2.1.2","13331","11111","21112",".111."],
+  cursed_mask:["2.1.2","13331","21212","12221",".2.2."],
+  evil_eye:["..3..",".121.","13231",".121.","..3.."],
   energy: ["..3..",".131.","31213",".131.","..3.."],
   needle: ["....3","221111","....3"],                       // 가로 방향
   silk:   ["...3..","221111","...3..","..2..."],             // 가로 방향
@@ -15263,9 +15266,13 @@ const BULLET_PATTERNS={
   jelly:  [".111.","13331","11111",".111."],
   breath: [".1.1.","13231","32223","13231",".1.1."],          // 온스터 날숨(거친 숨결 덩어리)
   genesis:["..3..",".323.","31213","32123","..3.."],           // 제네시스 빛 파편
+  acid:   ["..3..",".232.","12221","12221",".111."],
+  bio_spine:["....3","..211","22111","..211","....3"],          // 혜철이 가시/침
+  larva_blob:[".121.","12221","12321","12221",".111."],
+  creep:  ["1.2.1",".222.","22122",".222.","1.2.1"],
 };
-const DIR_KINDS={chain:1,needle:1,silk:1,bolt:1};
-const KIND_COL={ spore:'#7be04a', chain:'#8d72ff', mask:'#ff5a4a', energy:'#ff4dd2', needle:'#cfe0ff', silk:'#7ed957', glitch:'#38e8ff', bolt:'#ffd34d', jelly:'#ff7ad2', orb:'#9b6bff', shard:'#38e8ff', breath:'#a98bff', genesis:'#bfe9ff' };
+const DIR_KINDS={chain:1,needle:1,silk:1,bolt:1,bio_spine:1};
+const KIND_COL={ spore:'#7be04a', chain:'#8d72ff', mask:'#ff5a4a', cursed_mask:'#b84dff', evil_eye:'#ff2d6d', energy:'#ff4dd2', needle:'#cfe0ff', silk:'#7ed957', glitch:'#38e8ff', bolt:'#ffd34d', jelly:'#ff7ad2', orb:'#9b6bff', shard:'#38e8ff', breath:'#a98bff', genesis:'#bfe9ff', acid:'#9dff45', bio_spine:'#d8ff7a', larva_blob:'#b65cff', creep:'#6f2a8f' };
 function pxDraw(rows,pu,pal){
   const h=rows.length; let w=0; for(const r of rows) if(r.length>w) w=r.length;
   const ox=-w*pu/2, oy=-h*pu/2, s=Math.ceil(pu);
@@ -17896,6 +17903,8 @@ window.a3god=function(on){
   if(!window._a3godInt) window._a3godInt=setInterval(()=>{ if(typeof player==='object'&&player) player.hp=player.maxhp; },200);
   banner('🧪 god ON','체력 자동 회복',800); return true;
 };
+window.god=window.a3god;
+window.a2god=window.a3god;
 // 세트3형제 페이즈 강제 전환 (현진1 / 번검2 / 케케로로3)
 window.a3phase=function(p){
   if(!boss||boss.key!=='set3'){ console.warn('[a3phase] 세트3형제가 없음 → debugStartSet3() 먼저'); return null; }
@@ -18018,6 +18027,17 @@ window.debugStartAct3Event=function(id){
 };
 
 
+window.debugGoAct2=function(){
+  if(!runActive){ newGameSkip(); }
+  hideAll(); act=2; currentRow=0; pendingNode=null; roomCleared=true; roomIsBoss=false; roomIsMidboss=false; boss=null;
+  enemies=[]; pBullets=[]; eBullets=[]; pickups=[]; particles=[]; hazards=[]; floatBubbles=[];
+  resetCombatModState(); genMap(); state="map"; syncChrome(); showMap(); updateHUD(); saveRunCheckpoint();
+  banner("2막 · 광천김 소굴","디버그 진입",1400);
+  return {act,currentRow,mapNodes:mapData&&mapData.nodes&&mapData.nodes.length};
+};
+window.debugact2=function(){ return window.debugGoAct2(); };
+window.debugAct2=function(){ return window.debugGoAct2(); };
+window.a2=function(){ return window.debugGoAct2(); };
 window.debugGoAct2Boss=function(){
   if(!runActive){ newGameSkip(); }
   hideAll(); act=2; currentRow=Math.max(currentRow||10,10); pendingNode={type:'boss',row:currentRow,id:'debug-act2-boss'}; roomCleared=false; roomIsBoss=true; roomIsMidboss=false; enemies=[]; boss=null; resetCombatModState(); startCombat('boss'); state='play'; syncChrome(); return boss;
@@ -18025,6 +18045,29 @@ window.debugGoAct2Boss=function(){
 window.debugGoAct2Mid=function(){
   if(!runActive){ newGameSkip(); }
   hideAll(); act=2; currentRow=MIDBOSS_ROW; pendingNode={type:'midboss',row:currentRow,id:'debug-act2-mid'}; roomCleared=false; roomIsBoss=false; roomIsMidboss=true; enemies=[]; boss=null; resetCombatModState(); startCombat('midboss'); state='play'; syncChrome(); return enemies.find(e=>e&&e.midboss);
+};
+window.debugGoAct2Final=function(){ return window.debugGoAct2Boss(); };
+window.debugGoAct2FinalBoss=function(){ return window.debugGoAct2Boss(); };
+window.a2mid=function(god){
+  if(god!==false) window.a2god();
+  return window.debugGoAct2Mid();
+};
+window.a2boss=function(god){
+  if(god!==false) window.a2god();
+  return window.debugGoAct2Boss();
+};
+window.a2final=function(god){ return window.a2boss(god); };
+window.a2help=function(){
+  console.log([
+    '── 2막 보스 테스트 ──',
+    'a2mid() / a2mid(false)   : 무적 켜고 2막 중보 / 무적 없이 2막 중보',
+    'a2boss() / a2boss(false) : 무적 켜고 2막 최종보스 / 무적 없이 2막 최종보스',
+    'a2()                     : 2막 지도 시작으로 이동',
+    'a2final()                : a2boss() 별칭',
+    'a2god() / a2god(false)   : 체력 무적 토글',
+    '기존명: debugGoAct2(), debugGoAct2Mid(), debugGoAct2Boss()',
+  ].join('\n'));
+  return 'see console';
 };
 window.debugGoAct3Mid=function(){
   if(!runActive){ newGameSkip(); }
