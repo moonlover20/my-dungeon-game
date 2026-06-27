@@ -9,7 +9,7 @@ const ENEMY_TYPES={
   sniper_viewer :{name:"\uC800\uACA9\uB7EC", r:26, hp:116, spd:28, dmg:13, touchDmg:10, color:"#d83a3a", xp:320, ai:"sniper_laser", range:1200, cool:1.8, label:"\uC800\uACA9\uB7EC"},
   stream_watcher:{name:"\uBC29\uD50C\uB7EC", r:26, hp:40, spd:44, dmg:10, color:"#4fc0d8", xp:34, ai:"movement_lock", range:360, cool:2.6, label:"\uBC29\uD50C\uB7EC"},
   rhino_beetle   :{name:"자잘자",   r:34, hp:170, spd:78, dmg:16, touchDmg:16, color:"#3a2418", xp:75, ai:"charge", armor:0.15, label:"자잘자"},
-  earthworm      :{name:"지렁이", r:12, hp:10, spd:82, dmg:6, color:"#e87a8a", xp:0, ai:"erratic", label:"지렁이"},
+  earthworm      :{name:"케터피", r:12, hp:10, spd:82, dmg:6, color:"#e87a8a", xp:0, ai:"erratic", label:"케터피"},
   hyechul        :{name:"혜철이", r:52, hp:368, spd:42, dmg:15, color:"#c0392b", xp:150, ai:"hyechul", label:"혜철이"},
   zergling       :{name:"저글링", r:14, hp:14, spd:132, dmg:7, color:"#c98bff", xp:0, ai:"charge", label:"저글링"},
   mutalisk       :{name:"뮤탈", r:16, hp:19, spd:130, dmg:8, color:"#b97a4a", xp:0, ai:"chase", label:"뮤탈"},
