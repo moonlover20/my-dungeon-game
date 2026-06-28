@@ -5570,7 +5570,7 @@ let runStats=normalizeRunStats(null);
 let debugLastGoldDrop=null;
 let pendingScoreData=null, pendingScoreWin=false, pendingScoreKiller='', pendingScoreSaved=false;
 let pendingRunBuildSnapshot=null;
-let roomCleared=false, roomIsBoss=false, boss=null, bossBanner=0, roomHadElite=false, roomEliteKind=null, roomMidbossKind=null;
+let roomCleared=false, roomIsBoss=false, boss=null, bossBanner=0, roomHadElite=false, roomEliteKind=null, roomMidbossKind=null, roomBossKind=null;
 let eliteViewerSpawns=0;   // 자잘자(엘리트 시청자) 런 전체 출몰 횟수 — 최대 1회로 제한
 let roomIsMidboss=false, runActive=false;   // 음악 컨텍스트용 플래그
 let roomPreviewT=0;   // 일반 방 입장 시 적/탄 정지 미리보기 타이머(몬스터 파악용)
@@ -5631,9 +5631,9 @@ function globalFloorOf(a,floor){
   if(a===3) return 30+floor;
   return (a-1)*15+floor;
 }
-const ACT_BOSS=[0,4,3]; // 1막 키죠 / 2막 세트3형제 / 3막 승우(글리치)
-const BOSS_SLOT_BALANCE={2:'seungwoo',3:'set3'};
-const MIDBOSS_SLOT_BALANCE={2:'yanggaeng',3:'onster'};
+const ACT_BOSS=[0,4,3]; // 1막 키죠 / 2막은 온스터 특수 스폰 / 3막 승우(글리치)
+const BOSS_SLOT_BALANCE={2:'onster',3:'set3'};
+const MIDBOSS_SLOT_BALANCE={2:'set3',3:'onster'};
 function bossDataByKey(key){ return (typeof BOSSES!=='undefined'?BOSSES:[]).find(b=>b&&b.key===key)||null; }
 function enemyDataByKey(key){ return (typeof ENEMY_TYPES!=='undefined'?ENEMY_TYPES:null)?.[key]||null; }
 function firstPhaseHpValue(d){ return Math.max(1,Number((d&&d.phaseHp&&d.phaseHp[0])||(d&&d.hp))||1); }
@@ -5644,8 +5644,13 @@ function midbossDamageRatio(currentKey,slotKey){
   return clamp(slotD/curD,0.35,2.75);
 }
 function currentEncounterSlotDamageScale(){
-  if(roomIsBoss&&boss) return Number(boss.slotDamageScale)||1;
+  if(roomIsBoss){
+    if(boss) return Number(boss.slotDamageScale)||1;
+    const fb=(enemies||[]).find(e=>e&&e.finalBoss);
+    if(fb) return Number(fb.slotDamageScale)||1;
+  }
   if(roomIsMidboss){
+    if(boss) return Number(boss.slotDamageScale)||1;
     const mb=(enemies||[]).find(e=>e&&e.midboss);
     return Number(mb&&mb.slotDamageScale)||1;
   }
@@ -6222,7 +6227,7 @@ function startCombat(kind, fresh){
   if(fresh){ roomEntryHp=player.hp; snapshotProgress(); if(player.roomEntryHeal>0) healPlayer(player.roomEntryHeal,player.x,player.y); }
   enemies=[]; pBullets=[]; eBullets=[]; pickups=[]; particles=[]; hazards=[]; floatBubbles=[]; kijoMasks=[]; kijoGazes=[]; kijoParades=[]; kijoLaserWarns=[];
   player.x=W/2; player.y=H-90;
-  roomCleared=false; combatClearGrace=false; roomIsBoss=(kind==='boss'); roomIsMidboss=(kind==='midboss'); kills=0; boss=null; roomHadElite=false; roomEliteKind=null; roomMidbossKind=null; eliteIntro=null; timeScale=1; slowmoT=0; bagjeinRewind=null;
+  roomCleared=false; combatClearGrace=false; roomIsBoss=(kind==='boss'); roomIsMidboss=(kind==='midboss'); kills=0; boss=null; roomHadElite=false; roomEliteKind=null; roomMidbossKind=null; roomBossKind=null; eliteIntro=null; timeScale=1; slowmoT=0; bagjeinRewind=null;
   bossIntroToken++;
   bossIntroSeen={};
   { const biq=$('bossIntroQuote'); if(biq){ biq.className=''; clearTimeout(biq._t); } }
@@ -6238,13 +6243,23 @@ function startCombat(kind, fresh){
   const roomSpawnCounts={};
 
   if(kind==='boss'){
-    const b=BOSSES[ACT_BOSS[Math.min(act-1,ACT_BOSS.length-1)]];
-    boss=spawnBoss(b);
-    logBossEncounterStart(boss,'finalBoss');
-    showBossIntroLine(boss.key,520,boss);
-    bossBanner=2.4; sfx.boss();
-    banner(act+"막 보스 · "+boss.name, boss.title, 2400);
-    showEntrance("👑 "+act+"막 보스 등장", boss.name, boss.quip||boss.title||"");
+    if(act===2){
+      const eb=spawnOnsterFinalBoss(diff);
+      logBossEncounterStart(eb,'finalBoss');
+      showBossIntroLine('onster',520,eb);
+      bossBanner=2.4; sfx.boss();
+      banner("2막 보스 · 온스터", eb.title, 2400);
+      showEntrance("👑 2막 보스 등장", "온스터", eb.quip||eb.title||"");
+    }else{
+      const b=BOSSES[ACT_BOSS[Math.min(act-1,ACT_BOSS.length-1)]];
+      boss=spawnBoss(b);
+      roomBossKind=boss&&boss.key;
+      logBossEncounterStart(boss,'finalBoss');
+      showBossIntroLine(boss.key,520,boss);
+      bossBanner=2.4; sfx.boss();
+      banner(act+"막 보스 · "+boss.name, boss.title, 2400);
+      showEntrance("👑 "+act+"막 보스 등장", boss.name, boss.quip||boss.title||"");
+    }
   }else{
     const P=ACT_POOLS[Math.min(act-1,ACT_POOLS.length-1)];
     const normalPool=normalEnemyPoolFor(act,row);
@@ -6256,17 +6271,15 @@ function startCombat(kind, fresh){
     let count=clamp(Math.round(base*diffSet.cnt), row<mid?2:4, countMax);
     if(kind==='midboss'){
       if(act===2){
-        spawnEnemy('onster', W/2, 145, diff);
-        const eb=enemies[enemies.length-1];
-        eb.elite=true; eb.midboss=true; eb.label='온스터'; roomMidbossKind='onster'; eb.phase=1; eb.atkT=1.4; eb.atkN=0; eb.summonT=4.2; eb.awakened=false;
-        applyMidbossSlotBalance(eb,'onster',diff);
-        eb.title='2막 중간보스 · 온스터'; eb.quip='아직 깨우지 마라.';
-        logBossEncounterStart(eb,'midBoss');
-        eb.x=W/2; eb.y=170; eb.intro=true; eb.introScale=1; eb.stunT=4; eb.tauntedHalf=false;
-        showBossIntroLine('onster',520,eb);
-        banner("중간보스 · 온스터","사슬이 바닥을 긁는다",1800);
+        const sb=BOSSES.find(b=>b&&b.key==='set3');
+        boss=spawnSet3Midboss(sb,diff);
+        roomMidbossKind='set3';
+        logBossEncounterStart(boss,'midBoss');
+        showBossIntroLine('set3',520,boss);
+        bossBanner=1.8;
+        banner("중간보스 · 세트3형제","방송 신호가 세 갈래로 찢어진다",1800);
         if(typeof sfx!=='undefined') sfx.boss();
-        showEntrance("⚠️ 2막 중간보스 등장","온스터","아직 깨우지 마라.");
+        showEntrance("⚠️ 2막 중간보스 등장","세트3형제","형이 나오기 전에 끝내자.");
       } else if(act>=3){
         spawnEnemy('yanggaeng', W/2, 150, diff);
         const eb=enemies[enemies.length-1];
@@ -6423,8 +6436,39 @@ function applyMidbossSlotBalance(e,type,diff){
   debugSlotBalance(e);
   return e;
 }
+function spawnOnsterFinalBoss(diff){
+  spawnEnemy('onster', W/2, 145, diff);
+  const eb=enemies[enemies.length-1];
+  eb.elite=true; eb.midboss=true; eb.finalBoss=true; eb.isBoss=true; eb.label='온스터';
+  eb.phase=1; eb.atkT=1.2; eb.atkN=0; eb.summonT=3.8; eb.awakened=false;
+  eb.title='2막 보스 · 사슬의 각성'; eb.quip='아직 깨우지 마라.';
+  eb.x=W/2; eb.y=170; eb.intro=true; eb.introScale=1; eb.stunT=4; eb.tauntedHalf=false;
+  eb.hp*=1.25; eb.maxhp=eb.hp;
+  eb.dmg=Math.round((eb.dmg||18)*1.08);
+  eb.touchDmg=Math.round((eb.touchDmg||eb.dmg||18)*1.08);
+  eb.xp=Math.max(2600,eb.xp||0);
+  eb.slotRole='boss'; eb.slotAct=act; eb.slotBalanceKey='onster_final'; eb.slotDamageScale=1.05;
+  roomBossKind='onster';
+  markDiscovered('bosses','onster');
+  debugSlotBalance(eb);
+  return eb;
+}
+function spawnSet3Midboss(b,diff){
+  const sb=b||BOSSES.find(x=>x&&x.key==='set3');
+  const spawned=spawnBoss(sb);
+  const base=ENEMY_TYPES.onster&&ENEMY_TYPES.onster.hp?ENEMY_TYPES.onster.hp*diff*diffSet.hp:8200;
+  spawned.phaseHp=[base*0.30,base*0.32,base*0.38];
+  spawned.hp=spawned.phaseHp[0]; spawned.maxhp=spawned.hp;
+  spawned.title='2막 중간보스 · 현진 · 번검 · 케케로로';
+  spawned.quip='형이 나오기 전에 끝내자.';
+  spawned.slotRole='midboss'; spawned.slotAct=act; spawned.slotBalanceKey='set3_midboss'; spawned.slotDamageScale=0.82;
+  spawned.attackT=1.9; spawned.stunT=3.5;
+  debugSlotBalance(spawned);
+  return spawned;
+}
 function bossPlacementTitle(b){
-  if(b&&b.key==='set3') return '2막 최종보스 · 현진 · 번검 · 케케로로';
+  if(b&&b.key==='set3') return '2막 중간보스 · 현진 · 번검 · 케케로로';
+  if(b&&b.key==='onster') return '2막 보스 · 사슬의 각성';
   if(b&&b.key==='seungwoo') return '3막 최종보스 · 시스템 침식';
   return (b&&b.title)||'';
 }
@@ -6742,7 +6786,7 @@ function hurtPlayer(dmg, src){
   }
   updateHUD();
 }
-function isBossLike(e){ return e.midboss||e.eliteViewer||e.type==='hyechul'; }
+function isBossLike(e){ return e.finalBoss||e.isBoss||e.midboss||e.eliteViewer||e.type==='hyechul'; }
 function hasBossStunImmunity(e){ return !!e&&(e===boss||e.boss||e.isBoss||e.midboss||e.type==='hyechul'); }
 function applyShockStun(target){
   if(player.stunChance<=0 || !target) return;
@@ -6886,11 +6930,16 @@ function damageEnemy(e,dmg,crit,fromBullet,bullet){
   if(e.intentInvuln>0){ burst(e.x,e.y,'#bff8ff',3,90); return; }
   if(e.ai==='submerge_charge'&&e.submerged) dmg*=0.25;
   if(e.ai==='stealth_assassin'&&(e.stealthT||0)>0) dmg*=0.5;
+  const finalBossTarget=!!(e.finalBoss||e.isBoss);
   if(fromBullet) dmg*=projectileHitScale(e,bullet);
-  if(fromBullet) dmg*=projectileCloseMul(e,bullet,false);
+  if(fromBullet) dmg*=projectileCloseMul(e,bullet,finalBossTarget);
   if(e.defenseT>0) dmg*=0.2;
   if(player.statusDmgMul>0 && targetHasStatus(e)) dmg*=(1+player.statusDmgMul); // 점화
-  dmg*=executeInstinctMul(e,false);
+  dmg*=executeInstinctMul(e,finalBossTarget);
+  if(finalBossTarget){
+    const bossBonus=statBonusFromMul(player.bossDmgMul)*(bullet&&bullet.minionShot?0.5:1);
+    dmg*=statMulFromBonus(bossBonus,0.1);
+  }
   e.hp-=dmg*(1-(e.armor||0)); e.hitT=0.1; burst(e.x,e.y,crit?'#ffd34d':e.color,crit?8:4,crit?180:120); sfx.hit();
   if(typeof GS!=='undefined'&&GS.dmgNum&&typeof spawnDmgNum==='function') spawnDmgNum(e.x,e.y-(e.r||10),Math.round(dmg*(1-(e.armor||0))),crit);
   if(crit && player.critHeal>0){ healPlayerNoDrop(player.critHeal,player.x,player.y-player.r-18); } // 치명 흡혈
@@ -7181,6 +7230,11 @@ function killEnemy(e){
       }});
       burst(e.x,e.y,corrosive?'#5dff9b':'#9b6bff',corrosive?16:12,corrosive?230:180);
     }
+  }
+  if(e.finalBoss){
+    banner('온스터 처치!','사슬이 끊어진다',1500);
+    markDiscovered('bosses','onster');
+    roomBossKind='onster';
   }
   if(e.eliteViewer && eliteKindOf(e)==='yanggaeng'){
     banner('양갱 처치!','검은 단맛이 흩어진다',1200);
@@ -7643,23 +7697,26 @@ function updateBoss(dt){
 }
 function killBoss(){
   const deadBoss=boss;
+  const asMidboss=!!(pendingNode&&pendingNode.type==='midboss');
   burst(boss.x,boss.y,boss.color,40,320); screenShake=18;
-  banner("보스 처치!","승리!",2000); sfx.coin();
-  const bossGold=actTuning(act).bossGold||[105,170];
-  addGold(irand(bossGold[0],bossGold[1]),'roomReward'); sfx.coin(); burst(boss.x,boss.y,'#ffd34d',20,260);
-  const bossXp=actTuning(act).bossXp||440;
-  gainXP(bossXp);
+  banner(asMidboss?"중간보스 처치!":"보스 처치!","승리!",2000); sfx.coin();
+  if(!asMidboss){
+    const bossGold=actTuning(act).bossGold||[105,170];
+    addGold(irand(bossGold[0],bossGold[1]),'roomReward'); sfx.coin(); burst(boss.x,boss.y,'#ffd34d',20,260);
+    const bossXp=actTuning(act).bossXp||440;
+    gainXP(bossXp);
+    userProgress.stats=normalizeProgressStats(userProgress&&userProgress.stats);
+    userProgress.stats.totalBosses+=1;
+    if(deadBoss&&deadBoss.key==='kijo') unlockAchievement('defeat_kijo');
+    if(deadBoss&&deadBoss.key==='seungwoo') unlockAchievement('defeat_seungwoo');
+    if(deadBoss&&deadBoss.key==='set3') banner('재밌었다','다음 시즌에 보자',1600);
+    saveUserProgress();
+  }
   if(deadBoss&&deadBoss.key) markDiscovered('bosses', deadBoss.key);
-  userProgress.stats=normalizeProgressStats(userProgress&&userProgress.stats);
-  userProgress.stats.totalBosses+=1;
-  if(deadBoss&&deadBoss.key==='kijo') unlockAchievement('defeat_kijo');
-  if(deadBoss&&deadBoss.key==='seungwoo') unlockAchievement('defeat_seungwoo');
-  if(deadBoss&&deadBoss.key==='set3') banner('재밌었다','다음 시즌에 보자',1600);
-  saveUserProgress();
   if(act>=MAX_ACT){ enemies.length=0; eBullets.length=0; }   // 최종보스 처치 시 남은 잡몹·탄막 정리
   updateHUD();
   if(typeof clearSeungwooFx==='function') clearSeungwooFx();
-  boss=null; roomIsBoss=false;
+  boss=null; if(!asMidboss) roomIsBoss=false;
   // 이후 흐름은 onCombatCleared() → finishNode() 에서 처리
 }
 
@@ -9920,6 +9977,11 @@ function onCombatCleared(){
   if(t==='fight'&&!combatTookHit) unlockAchievement('no_hit_room');
   if(t==='fight'&&roomStartedAt&&performance.now()-roomStartedAt<=10000) unlockAchievement('quick_room_clear');
   if(t==='boss'&&!combatTookHit) unlockAchievement('no_hit_boss');
+  if(t==='boss'&&roomBossKind==='onster'){
+    userProgress.stats=normalizeProgressStats(userProgress&&userProgress.stats);
+    userProgress.stats.totalBosses+=1;
+    saveUserProgress();
+  }
   checkLowHpRoomAchievements();
   if(t==='midboss'){
     userProgress.stats=normalizeProgressStats(userProgress&&userProgress.stats);
@@ -9946,7 +10008,7 @@ function onCombatCleared(){
       reward();
       return;
     }
-    if(t==='midboss'){ const bonus=irand(70,105); addGold(bonus,'roomReward'); let potTxt=''; if(act>=3){ const pot=rollPotion(); if(addPotion(pot)) potTxt=' · '+pot.name; } updateHUD(); const mbText=roomMidbossKind==='onster'?'온스터를 쓰러뜨린 보상이다':(roomMidbossKind==='yanggaeng'?'박제인간을 쓰러뜨린 보상이다':'혜철이를 쓰러뜨린 보상이다'); offerRelics(3,'중간보스 보상',mbText+' · 골드 +'+bonus+potTxt, finishNode); }
+    if(t==='midboss'){ const bonus=irand(70,105); addGold(bonus,'roomReward'); let potTxt=''; if(act>=3){ const pot=rollPotion(); if(addPotion(pot)) potTxt=' · '+pot.name; } updateHUD(); const mbText=roomMidbossKind==='set3'?'세트3형제를 쓰러뜨린 보상이다':(roomMidbossKind==='onster'?'온스터를 쓰러뜨린 보상이다':(roomMidbossKind==='yanggaeng'?'박제인간을 쓰러뜨린 보상이다':'혜철이를 쓰러뜨린 보상이다')); offerRelics(3,'중간보스 보상',mbText+' · 골드 +'+bonus+potTxt, finishNode); }
     else if(t==='boss'&&act>=MAX_ACT){ finishNode(); }
     else if(t==='boss') offerRelics(3,'👑 보스 보상','막 보스를 쓰러뜨린 보상이다 · 좋은 유물 확률 증가', finishNode, {weights:BOSS_RELIC_WEIGHTS});
     else if(combatRewardMul>=2){ const bonus=Math.round(irand(36,65)*combatRewardMul); addGold(bonus,'roomReward'); combatRewardMul=1; offerRelics(3,'🎁 합방 보상','보상이 2배로! 골드 +'+bonus, finishNode); }
@@ -15145,7 +15207,7 @@ function drawMidbossBar(e){
   ctx.fillStyle=grad; ctx.fillRect(bx,by,bw*f,bh);
   ctx.strokeStyle='#ffae42'; ctx.lineWidth=2; ctx.strokeRect(bx,by,bw,bh);
   ctx.fillStyle='#fff'; ctx.font='bold 13px sans-serif'; ctx.textAlign='center';
-  ctx.fillText('\u26A0\uFE0F \uC911\uAC04\uBCF4\uC2A4 \u00B7 '+(e.label||'')+(e.type==='onster'&&e.phase>=2?' [각성]':''), W/2, by-8);
+  ctx.fillText((e.finalBoss?'👑 보스':'⚠️ 중간보스')+' · '+(e.label||'')+(e.type==='onster'&&e.phase>=2?' [각성]':''), W/2, by-8);
   if((e.intentInvuln||0)>0){
     const iv=e.intentInvuln, pulse=0.55+0.45*Math.abs(Math.sin(performance.now()/180));
     ctx.globalAlpha=pulse; ctx.fillStyle='rgba(56,232,255,0.30)'; ctx.fillRect(bx,by,bw,bh); ctx.globalAlpha=1;
@@ -18098,7 +18160,7 @@ window.debugGiveAct3Build=function(){
 };
 window.debugKillBoss=function(){
   if(boss){ boss.hp=0; handleBossDefeat(boss); return true; }
-  const mb=enemies.find(e=>e&&e.midboss); if(mb){ mb.hp=0; killEnemy(mb); return true; }
+  const mb=enemies.find(e=>e&&(e.finalBoss||e.midboss)); if(mb){ mb.hp=0; killEnemy(mb); return true; }
   return false;
 };
 window.debugStartAct3Event=function(id){
@@ -18124,7 +18186,7 @@ window.debugAct2=function(){ return window.debugGoAct2(); };
 window.a2=function(){ return window.debugGoAct2(); };
 window.debugGoAct2Boss=function(){
   if(!runActive){ newGameSkip(); }
-  hideAll(); act=2; currentRow=Math.max(currentRow||10,10); pendingNode={type:'boss',row:currentRow,id:'debug-act2-boss'}; roomCleared=false; roomIsBoss=true; roomIsMidboss=false; enemies=[]; boss=null; resetCombatModState(); startCombat('boss'); state='play'; syncChrome(); return boss;
+  hideAll(); act=2; currentRow=Math.max(currentRow||10,10); pendingNode={type:'boss',row:currentRow,id:'debug-act2-boss'}; roomCleared=false; roomIsBoss=true; roomIsMidboss=false; enemies=[]; boss=null; resetCombatModState(); startCombat('boss'); state='play'; syncChrome(); return boss||enemies.find(e=>e&&e.finalBoss);
 };
 window.debugGoAct2Mid=function(){
   if(!runActive){ newGameSkip(); }
