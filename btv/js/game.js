@@ -6446,7 +6446,7 @@ function spawnOnsterFinalBoss(diff){
   eb.hp*=1.25; eb.maxhp=eb.hp;
   eb.dmg=Math.round((eb.dmg||18)*1.08);
   eb.touchDmg=Math.round((eb.touchDmg||eb.dmg||18)*1.08);
-  eb.xp=Math.max(2600,eb.xp||0);
+  eb.xp=Math.max(actTuning(2).bossXp||3100,eb.xp||0);
   eb.slotRole='boss'; eb.slotAct=act; eb.slotBalanceKey='onster_final'; eb.slotDamageScale=1.05;
   roomBossKind='onster';
   markDiscovered('bosses','onster');
@@ -7704,7 +7704,7 @@ function killBoss(){
     const bossGold=actTuning(act).bossGold||[105,170];
     addGold(irand(bossGold[0],bossGold[1]),'roomReward'); sfx.coin(); burst(boss.x,boss.y,'#ffd34d',20,260);
     const bossXp=actTuning(act).bossXp||440;
-    gainXP(bossXp);
+    if(!(act>=MAX_ACT&&deadBoss&&deadBoss.key==='seungwoo')) gainXP(bossXp);
     userProgress.stats=normalizeProgressStats(userProgress&&userProgress.stats);
     userProgress.stats.totalBosses+=1;
     if(deadBoss&&deadBoss.key==='kijo') unlockAchievement('defeat_kijo');
@@ -10008,7 +10008,7 @@ function onCombatCleared(){
       reward();
       return;
     }
-    if(t==='midboss'){ const bonus=irand(70,105); addGold(bonus,'roomReward'); let potTxt=''; if(act>=3){ const pot=rollPotion(); if(addPotion(pot)) potTxt=' · '+pot.name; } updateHUD(); const mbText=roomMidbossKind==='set3'?'세트3형제를 쓰러뜨린 보상이다':(roomMidbossKind==='onster'?'온스터를 쓰러뜨린 보상이다':(roomMidbossKind==='yanggaeng'?'박제인간을 쓰러뜨린 보상이다':'혜철이를 쓰러뜨린 보상이다')); offerRelics(3,'중간보스 보상',mbText+' · 골드 +'+bonus+potTxt, finishNode); }
+    if(t==='midboss'){ const bonus=irand(70,105); addGold(bonus,'roomReward'); const midbossXp=roomMidbossKind==='set3'?2000:0; if(midbossXp>0) gainXP(midbossXp); let potTxt=''; if(act>=3){ const pot=rollPotion(); if(addPotion(pot)) potTxt=' · '+pot.name; } updateHUD(); const mbText=roomMidbossKind==='set3'?'세트3형제를 쓰러뜨린 보상이다':(roomMidbossKind==='onster'?'온스터를 쓰러뜨린 보상이다':(roomMidbossKind==='yanggaeng'?'박제인간을 쓰러뜨린 보상이다':'혜철이를 쓰러뜨린 보상이다')); const xpTxt=midbossXp>0?' · 경험치 +'+midbossXp:''; offerRelics(3,'중간보스 보상',mbText+' · 골드 +'+bonus+xpTxt+potTxt, finishNode); }
     else if(t==='boss'&&act>=MAX_ACT){ finishNode(); }
     else if(t==='boss') offerRelics(3,'👑 보스 보상','막 보스를 쓰러뜨린 보상이다 · 좋은 유물 확률 증가', finishNode, {weights:BOSS_RELIC_WEIGHTS});
     else if(combatRewardMul>=2){ const bonus=Math.round(irand(36,65)*combatRewardMul); addGold(bonus,'roomReward'); combatRewardMul=1; offerRelics(3,'🎁 합방 보상','보상이 2배로! 골드 +'+bonus, finishNode); }
