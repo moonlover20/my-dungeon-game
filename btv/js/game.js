@@ -227,7 +227,6 @@ const FILE_SFX_PATHS={
   act2Pobear:'btv/assets/sfx/act2/pobear_fall_impact.mp3',
   act2Namu:'btv/assets/sfx/act2/namu_wood_hit.mp3',
   act2Reura:'btv/assets/sfx/act2/reura_swhoosh.mp3',
-  set3LaserBasic:'btv/assets/sfx/act2/set3_laser_basic.mp3',
   hyechulGrowl:'btv/assets/sfx/hyechul/monster_growl.mp3',
   hyechulImpact:'btv/assets/sfx/hyechul/slime_impact.mp3',
   hyechulEgg:'btv/assets/sfx/hyechul/egg_crack.mp3',
@@ -6632,13 +6631,9 @@ function fireSniperLaser(beam){
   burst(sx,sy,beam.color||'#ff2a2a',8,140);
   screenShake=Math.max(screenShake||0,5);
   const laserSrc=String(beam.srcName||'');
-  const basicLaserSfx=/세트3 검기|온스터 사슬빔/.test(laserSrc);
-  if(basicLaserSfx){
-    const onsterLaser=/온스터/.test(laserSrc);
-    playFileSfx('set3LaserBasic',{vol:onsterLaser?0.48:0.52,rate:onsterLaser?0.94:1.0,maxDur:0.85,cd:onsterLaser?0.28:0.34,key:onsterLaser?'onsterBasicLaser':'set3BasicLaser'});
-  }
-  else if(act===2||/저격|sniper/i.test(laserSrc)) playFileSfx('act2Laser',{vol:0.74,rate:1.0,maxDur:1.2,cd:0.12,key:'act2SniperLaser'});
-  if(!basicLaserSfx && sfx.enemyLaser) sfx.enemyLaser();
+  const skipFileLaserSfx=/세트3 검기|온스터 사슬빔/.test(laserSrc);
+  if(!skipFileLaserSfx&&(act===2||/저격|sniper/i.test(laserSrc))) playFileSfx('act2Laser',{vol:0.74,rate:1.0,maxDur:1.2,cd:0.12,key:'act2SniperLaser'});
+  if(sfx.enemyLaser) sfx.enemyLaser();
 }
 function spawnMoveLockField(x,y,srcName){
   hazards.push({kind:'movelock',x:clamp(x,44,W-44),y:clamp(y,95,H-55),r:52,t:0,warnT:0.85,liveT:0.34,lockT:0.8,done:false,srcName:srcName||"\uBC29\uD50C\uB7EC",seed:rand(0,TAU)});
