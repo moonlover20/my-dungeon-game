@@ -263,7 +263,15 @@ const FILE_SFX_PATHS={
   act3MirrorShatter:'btv/assets/sfx/custom/act3_mirror_shatter.wav',
   act3BufferGlitch:'btv/assets/sfx/custom/act3_buffer_glitch.wav',
   act3TruckCable:'btv/assets/sfx/custom/act3_truck_cable.wav',
-  act3CloneSplit:'btv/assets/sfx/custom/act3_clone_split.wav'
+  act3TruckSignalBroadcast:'btv/assets/sfx/custom/act3_truck_signal_broadcast.wav',
+  act3TruckNewsWall:'btv/assets/sfx/custom/act3_truck_news_wall.wav',
+  act3TruckMegabeam:'btv/assets/sfx/custom/act3_truck_megabeam.wav',
+  act3CloneSplit:'btv/assets/sfx/custom/act3_clone_split.wav',
+  seungwooDeleteCommand:'btv/assets/sfx/custom/seungwoo_delete_command.wav',
+  seungwooTotalCollapse:'btv/assets/sfx/custom/seungwoo_total_collapse.wav',
+  seungwooFrameDrop:'btv/assets/sfx/custom/seungwoo_frame_drop.wav',
+  set3PhaseShift:'btv/assets/sfx/custom/set3_phase_shift.wav',
+  onsterAwaken:'btv/assets/sfx/custom/onster_awaken.wav'
 };
 const FILE_SFX_CACHE={};
 function playFileSfx(name,opts){
@@ -3158,6 +3166,7 @@ function spawnAct3BeamSweep(e){
 // ── 3막 엘리트 노잭 패턴 풀 (셔플백 + 신호송출 3연속 집중) ──
 const ACT3_TRUCK_PATS=['beam','signal','adRain','cableX','flood','spinbeam','claim','newsWall','megabeam'];
 function act3TruckSignalRing(e){
+  playFileSfx('act3TruckSignalBroadcast',{vol:0.46,rate:1.0,maxDur:0.58,cd:0.7,key:'act3TruckSignalBroadcast'});
   // 신호 송출: 전방위 전파 링 (3연속 집중 시 회전 오프셋으로 빈틈 이동)
   const k=18, sp=215, off=(e._truckRing=(e._truckRing||0)+1)*0.33;
   for(let i=0;i<k;i++){ const a2=off+i/k*TAU; eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*sp,vy:Math.sin(a2)*sp,r:8,dmg:Math.max(12,Math.round((e.dmg||16)*0.85)),life:3.6,srcName:(e.name||e.label||'노잭'),col:e.color,style:'news_signal'}); }
@@ -3187,6 +3196,7 @@ function runAct3TruckPattern(e,pat){
   else spawnAct3BeamSweep(e);
 }
 function onsterAwaken(e){
+  playFileSfx('onsterAwaken',{vol:0.64,rate:1.0,maxDur:1.05,cd:2.0,key:'onsterAwaken'});
   if(sfx.enemyChain) sfx.enemyChain(); playOnsterChainSfx(3,{vol:0.76,maxDur:1.8,cd:0.35,key:'onsterChainHeavy'}); setTimeout(()=>{ if(sfx.enemyGlitch) sfx.enemyGlitch(); },90);
   if(typeof clearA3Systems==='function') clearA3Systems();
   e.awakened=true; e.phase=2; e.sprite='onster_p2'; e.color='#ff4dd2'; e.intentInvuln=10; e.invulnMax=10; e.stunT=1.5; e.spd*=1.28; e.cool=Math.max(0.75,(e.cool||1.35)*0.72);
@@ -3229,6 +3239,7 @@ function set3NextPhase(b){
   b.sprite='set3'; b.color=ph===2?'#38e8ff':'#ff4dd2'; b.spd=(b.baseSpd||62)*(ph===2?1.06:1.14); b.r=ph===2?68:72; b.x=W/2; b.y=135;
   eBullets.length=0; hazards=[]; screenShake=Math.max(screenShake||0,24); hitFlash=Math.max(hitFlash||0,0.55);
   const name=set3PhaseName(b);
+  playFileSfx('set3PhaseShift',{vol:0.62,rate:ph===2?0.96:1.08,maxDur:0.9,cd:1.2,key:'set3PhaseShift'});
   b.name=name; b.title='2막 중간보스 · '+name;
   banner(name, ph===2?'번검이 모습을 드러낸다':'케케로가 신호를 장악한다',1700);
   bossEvolve={phase:ph,t:0,line:ph===2?'번검이 화면을 가른다':'케케로가 신호를 장악한다',name,col:b.color,e:b};
@@ -3871,6 +3882,7 @@ function playerMoveDir(){
 // ── [엘리트 노잭] 긴급속보 탄벽 — 한 방향에서 탄벽이 밀려오고 1~2칸 빈틈 ──
 function act3TruckNewsWall(e){
   if(sfx.enemyCast) sfx.enemyCast();
+  playFileSfx('act3TruckNewsWall',{vol:0.52,rate:1.0,maxDur:0.78,cd:0.85,key:'act3TruckNewsWall'});
   banner('🚨 긴급속보','빈틈을 찾아라',950);
   const side=irand(0,3), n=14, gapW=(Math.random()<0.5?1:2), gap=irand(1,n-3-gapW);
   const sp=rand(180,210), dmg=clamp(Math.round((e.dmg||16)*0.9),13,16);
@@ -4134,6 +4146,7 @@ function set3AdTime(b){
 // ── [노잭] 대형 송출빔 (파풀라투스 대형광선) — 보스 관통 거대 빔이 느리게 휩쓴다 ──
 function act3TruckMegaBeam(e){
   if(sfx.enemyLaser) sfx.enemyLaser();
+  playFileSfx('act3TruckMegabeam',{vol:0.62,rate:1.0,maxDur:1.0,cd:1.05,key:'act3TruckMegabeam'});
   banner('🚨 대형 송출빔','거대 전파 — 빔 반대편으로 비켜라',1300);
   const ang=Math.atan2(player.y-e.y,player.x-e.x)+rand(-0.25,0.25);
   const spin=(Math.random()<0.5?1:-1)*0.34;   // 느린 회전(기요틴)
@@ -7901,7 +7914,7 @@ function gp_slow(b){ gSlow=[]; for(let i=0;i<3;i++) gSlow.push({x:rand(80,W-80),
 function gp_track(b){ gTrack={x:player.x,y:player.y,r:54,t:7,grow:14}; banner('추적 장판','계속 움직여라',800); }
 function gp_mirror(b){ if(sfx.enemyGlitch) sfx.enemyGlitch(); GL.mirror=6; banner('🪞 거울 모드','등 지고 쏴라',1000); gRing(b,10,200,11); }
 function gp_keyrev(b){ banner('글리치 유도탄','',700); gHoming(b); }
-function gp_framedrop(b){ if(sfx.enemyGlitch) sfx.enemyGlitch(); GL.frameDrop=5; banner('▒ 프레임 드랍','',900); gRing(b,13,180,11); }
+function gp_framedrop(b){ if(sfx.enemyGlitch) sfx.enemyGlitch(); playFileSfx('seungwooFrameDrop',{vol:0.54,rate:1.0,maxDur:0.66,cd:0.9,key:'seungwooFrameDrop'}); GL.frameDrop=5; banner('▒ 프레임 드랍','',900); gRing(b,13,180,11); }
 function gp_gravity(b){ gGrav={x:W/2,y:H*0.46,r:240,t:6}; banner('🕳 중력장','빨려간다',800); gRing(b,16,150,12); }
 function gp_walls(b){ gWalls=[{x:-40,y:0,w:130+rand(0,40),h:H,t:5},{x:W-90-rand(0,40),y:0,w:130,h:H,t:5}]; banner('▦ 격벽','가운데로',800); gAimed(b,7,12); }
 function gp_homing(b){ gHoming(b,12); banner('유도탄','',600); }
@@ -7910,9 +7923,10 @@ function gp_clones(b){ gClones=[]; for(let i=0;i<4;i++) gClones.push({x:clamp(b.
 function gp_rotate(b){ if(sfx.enemyGlitch) sfx.enemyGlitch(); const m=irand(0,2); if(m===0)gView.rotT=Math.PI/2*(Math.random()<.5?1:-1); else if(m===1)gView.rotT=Math.PI; else gView.fxT=-1; GL.rotActive=6; banner('↻ 화면 붕괴','',800); gAimed(b,6,11); }
 function gp_crashRain(b){ GL.frameDrop=Math.max(GL.frameDrop||0,3.8); const n=b.enraged?34:26; for(let i=0;i<n;i++) gShot(rand(20,W-20),-14,Math.PI/2+rand(-0.08,0.08),rand(230,315),rand(6,9),13,0,'data_rain'); banner('▒ 데이터 폭우','위에서 쏟아진다',850); }
 function gp_tongueRush(b){ const pa=Math.atan2(player.y-b.y,player.x-b.x); for(let i=-2;i<=2;i++) gShot(b.x,b.y,pa+i*0.12,300,12,15,0.4,'tongue_glitch'); gRing(b,b.enraged?18:14,155,12,'tongue_glitch'); banner('혀 내밀기','정면을 비워라',850); }
-function gp_totalCollapse(b){ if(sfx.enemyGlitch) sfx.enemyGlitch(); GL.blackout=Math.max(GL.blackout||0,0.45); gView.rotT+=rand(-0.45,0.45); gView.fxT=Math.random()<0.5?-1:1; GL.rotActive=4.2; gHoming(b,13,'collapse_bit'); gRing(b,b.enraged?18:14,170,13,'collapse_bit'); banner('TOTAL COLLAPSE','방송이 찢어진다',950); }
+function gp_totalCollapse(b){ if(sfx.enemyGlitch) sfx.enemyGlitch(); playFileSfx('seungwooTotalCollapse',{vol:0.66,rate:b&&b.enraged?1.06:1.0,maxDur:1.08,cd:1.25,key:'seungwooTotalCollapse'}); GL.blackout=Math.max(GL.blackout||0,0.45); gView.rotT+=rand(-0.45,0.45); gView.fxT=Math.random()<0.5?-1:1; GL.rotActive=4.2; gHoming(b,13,'collapse_bit'); gRing(b,b.enraged?18:14,170,13,'collapse_bit'); banner('TOTAL COLLAPSE','방송이 찢어진다',950); }
 function gp_buffering(b){ if(sfx.enemyGlitch) sfx.enemyGlitch(); banner('▣ 버퍼링','로딩 링을 피해라',850); const waves=b.enraged?5:4; for(let w=0;w<waves;w++){ setTimeout(()=>{ if(boss!==b) return; const base=b.angle*2.4+w*1.15, k=22, gap=TAU*0.28; for(let i=0;i<k;i++){ const off=i/k*TAU; if(off>TAU-gap) continue; gShot(b.x,b.y,base+off,185,7,12,0,'loading_bit'); } }, w*330); } }
 function beginSeungwooDeleteCommand(b){
+  playFileSfx('seungwooDeleteCommand',{vol:0.58,rate:1.0,maxDur:0.88,cd:1.0,key:'seungwooDeleteCommand'});
   const warn=1.5;
   const beam={x:b.x,y:b.y,ang:Math.atan2(player.y-b.y,player.x-b.x),width:30,range:900,t:0,warn,color:'#9146ff',fired:false};
   const ok=setIntent(b,'👁','삭제 명령',warn,()=>{
