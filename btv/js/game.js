@@ -243,7 +243,17 @@ const FILE_SFX_PATHS={
   kijoLaugh:'btv/assets/sfx/act1_boss/creepy_laugh.mp3',
   kijoWhisper:'btv/assets/sfx/act1_boss/demonic_whisper.mp3',
   kijoCharge:'btv/assets/sfx/act1_boss/whoosh_charge.mp3',
-  kijoCry:'btv/assets/sfx/act1_boss/sad_ghost.mp3'
+  kijoCry:'btv/assets/sfx/act1_boss/sad_ghost.mp3',
+  onsterChain1:'btv/assets/sfx/custom/onster_chain_1.mp3',
+  onsterChain2:'btv/assets/sfx/custom/onster_chain_2.mp3',
+  onsterChain3:'btv/assets/sfx/custom/onster_chain_3.mp3',
+  set3Laser2:'btv/assets/sfx/custom/set3_laser_2.mp3',
+  set3Laser3:'btv/assets/sfx/custom/set3_laser_3.mp3',
+  seungwooSafezone:'btv/assets/sfx/custom/seungwoo_safezone.mp3',
+  bagjeinBasic1:'btv/assets/sfx/custom/bagjein_basic_1.mp3',
+  bagjeinBasic2:'btv/assets/sfx/custom/bagjein_basic_2.mp3',
+  kkotchungShot1:'btv/assets/sfx/custom/kkotchung_shot_1.mp3',
+  kkotchungShot2:'btv/assets/sfx/custom/kkotchung_shot_2.mp3'
 };
 const FILE_SFX_CACHE={};
 function playFileSfx(name,opts){
@@ -269,6 +279,18 @@ function playFileSfx(name,opts){
       a.play().catch(()=>{});
     }catch(e){}
   },cd);
+}
+const CUSTOM_SFX_GROUPS={
+  onsterChain:['onsterChain1','onsterChain2','onsterChain3'],
+  set3Laser:['set3Laser2','set3Laser3'],
+  bagjeinBasic:['bagjeinBasic1','bagjeinBasic2'],
+  kkotchungShot:['kkotchungShot1','kkotchungShot2']
+};
+function playCustomSfxGroup(group,opts){
+  const arr=CUSTOM_SFX_GROUPS[group];
+  if(!arr||!arr.length) return;
+  const name=arr[Math.floor(Math.random()*arr.length)];
+  playFileSfx(name,opts||{});
 }
 const sfx={
   shoot:()=>beep(680,0.05,'square',0.03),
@@ -3143,7 +3165,7 @@ function runAct3TruckPattern(e,pat){
   else spawnAct3BeamSweep(e);
 }
 function onsterAwaken(e){
-  if(sfx.enemyChain) sfx.enemyChain(); setTimeout(()=>{ if(sfx.enemyGlitch) sfx.enemyGlitch(); },90);
+  if(sfx.enemyChain) sfx.enemyChain(); playCustomSfxGroup('onsterChain',{vol:0.72,maxDur:1.8,cd:0.35,key:'onsterChainAwaken'}); setTimeout(()=>{ if(sfx.enemyGlitch) sfx.enemyGlitch(); },90);
   if(typeof clearA3Systems==='function') clearA3Systems();
   e.awakened=true; e.phase=2; e.sprite='onster_p2'; e.color='#ff4dd2'; e.intentInvuln=10; e.invulnMax=10; e.stunT=1.5; e.spd*=1.28; e.cool=Math.max(0.75,(e.cool||1.35)*0.72);
   eBullets.length=0; hazards=[]; screenShake=Math.max(screenShake||0,22); hitFlash=Math.max(hitFlash||0,0.55);
@@ -3163,7 +3185,7 @@ function spawnOnsterMinion(e){
   s.label='사슬 잔재'; s.color='#8d72ff'; s._summonOwner=e; s.noReward=true; s.noKillScore=true; s.summoned=true; s.xp=0;
 }
 function onsterChainBeam(e){
-  if(sfx.enemyChain) sfx.enemyChain();
+  if(sfx.enemyChain) sfx.enemyChain(); playCustomSfxGroup('onsterChain',{vol:0.72,rate:e.awakened?1.06:0.96,maxDur:1.6,cd:0.24,key:'onsterChain'});
   // 조준 사슬빔(리드 랜덤 + 랜덤 다발 1~3): 예측 거리를 매번 다르게(0~max) 조준 → 고정 리드 학습 차단. 가끔 측면 플랭크까지.
   const d=(typeof playerMoveDir==='function')?playerMoveDir():{x:0,y:0};
   const lead=rand(0, e.awakened?140:115);                // 현위치~한참 앞 사이 랜덤
@@ -3201,7 +3223,7 @@ function set3SlashBeam(b,fan){
   }
 }
 function set3SafeZoneUltimate(b){
-  if(sfx.enemyCore) sfx.enemyCore();
+  if(sfx.enemyCore) sfx.enemyCore(); playFileSfx('seungwooSafezone',{vol:0.82,maxDur:2.2,cd:1.2,key:'safezone'});
   const w=190,h=150,x=clamp(player.x+rand(-130,130),24,W-w-24),y=clamp(player.y+rand(-100,80),90,H-h-24);
   gZones=[{x,y,w,h,real:true,t:0,warn:2.4,kill:2.2,black:true}];
   GL.blackout=Math.max(GL.blackout||0,0.55);
@@ -3508,6 +3530,7 @@ function act3TruckSpinBeam(e){
 const ONSTER_PATS_P1=['grid','anchor','maze','reel','crosslaser','deepbreath'];
 const ONSTER_PATS_P2=['grid','burst','anchor','maze','cage','reel','crosslaser','deepbreath','web'];
 function runOnsterPat(e,p){
+  playCustomSfxGroup('onsterChain',{vol:0.7,rate:e&&e.awakened?1.06:0.96,maxDur:1.6,cd:0.28,key:'onsterChain'});
   if(p==='grid') onsterChainGrid(e);
   else if(p==='tether') onsterTether(e);
   else if(p==='anchor') onsterChainAnchor(e);
@@ -3667,7 +3690,7 @@ function set3QueueLaser(x,y,ang,opts){
   });
 }
 function set3LaserGrid(b){
-  if(sfx.enemyWarn) sfx.enemyWarn();
+  if(sfx.enemyWarn) sfx.enemyWarn(); playCustomSfxGroup('set3Laser',{vol:0.82,maxDur:1.4,cd:0.55,key:'set3Laser'});
   const ph=(b&&b.setPhase)||1, col=set3LaserColor(b), dmg=ph===3?20:18, warn=ph===3?0.72:0.82;
   const xs=[W*0.16,W*0.32,W*0.50,W*0.68,W*0.84], ys=[H*0.26,H*0.42,H*0.58,H*0.74];
   const safeX=irand(0,xs.length-1), safeY=irand(0,ys.length-1);
@@ -3677,7 +3700,7 @@ function set3LaserGrid(b){
   if(typeof beep==='function')beep(520,0.08,'square',0.04);
 }
 function set3BossLaser(b){
-  if(sfx.enemyCore) sfx.enemyCore();
+  if(sfx.enemyCore) sfx.enemyCore(); playCustomSfxGroup('set3Laser',{vol:0.86,maxDur:1.5,cd:0.55,key:'set3Laser'});
   const ph=(b&&b.setPhase)||1, col=set3LaserColor(b), dmg=ph===3?23:20, name=set3LaserName(b);
   banner('보스 레이저','조준선 끝을 비워라',950);
   for(let i=0;i<3;i++) setTimeout(()=>{ if(!a3Alive(b))return;
@@ -3687,7 +3710,7 @@ function set3BossLaser(b){
   }, i*420);
 }
 function set3LaserCross(b){
-  if(sfx.enemyLaser) sfx.enemyLaser();
+  if(sfx.enemyLaser) sfx.enemyLaser(); playCustomSfxGroup('set3Laser',{vol:0.84,maxDur:1.4,cd:0.55,key:'set3Laser'});
   const ph=(b&&b.setPhase)||1, col=set3LaserColor(b), dmg=ph===3?21:19;
   banner('십자 레이저','각도가 바뀌며 연속 발사된다',1050);
   const base=Math.atan2(player.y-b.y,player.x-b.x);
@@ -7768,7 +7791,7 @@ function gHoming(b,dmg,style){ const pa=Math.atan2(player.y-b.y,player.x-b.x); f
 
 // --- 패턴 ---
 function gp_straight(b){ const pa=Math.atan2(player.y-b.y,player.x-b.x),k=b.enraged?9:7; for(let i=0;i<k;i++) gShot(b.x,b.y,pa+(i-(k-1)/2)*0.16,240,7,12); banner('직선 탄막','',600); }
-function gp_blacksafe(b){ const w=190,h=150,x=clamp(player.x+rand(-120,120),20,W-w-20),y=clamp(player.y+rand(-90,90),60,H-h-20); gZones=[{x,y,w,h,real:true,t:0,warn:2.8,kill:3.2,fake:false,black:true}]; banner('검은 구역 밖 즉사','SAFE 안으로',900); }
+function gp_blacksafe(b){ playFileSfx('seungwooSafezone',{vol:0.82,maxDur:2.2,cd:1.2,key:'safezone'}); const w=190,h=150,x=clamp(player.x+rand(-120,120),20,W-w-20),y=clamp(player.y+rand(-90,90),60,H-h-20); gZones=[{x,y,w,h,real:true,t:0,warn:2.8,kill:3.2,fake:false,black:true}]; banner('검은 구역 밖 즉사','SAFE 안으로',900); }
 function gp_slow(b){ gSlow=[]; for(let i=0;i<3;i++) gSlow.push({x:rand(80,W-80),y:rand(140,H-90),r:rand(60,90),t:6}); banner('늪','이동 둔화',600); }
 function gp_track(b){ gTrack={x:player.x,y:player.y,r:54,t:7,grow:14}; banner('추적 장판','계속 움직여라',800); }
 function gp_mirror(b){ if(sfx.enemyGlitch) sfx.enemyGlitch(); GL.mirror=6; banner('🪞 거울 모드','등 지고 쏴라',1000); gRing(b,10,200,11); }
@@ -8867,6 +8890,7 @@ function update(dt){
           if((e._kkRep||0)>0){ e._kkRep--; slot=e._kkSlot; }
           else { slot=nextFromBag(e,'_kkBag',6); e._kkSlot=slot; const _ph=e.phase||1; const _homing=(_ph===2&&slot===1)||(_ph===3&&slot===0); if((slot===0||slot===1)&&!_homing) e._kkRep=2+(Math.random()<0.5?1:0); }
           e.atkN=(e.atkN||0)+1;
+          playCustomSfxGroup('kkotchungShot',{vol:0.66,rate:(e.phase||1)>=3?1.08:1.0,maxDur:1.2,cd:0.26,key:'kkotchungShot'});
           const base=ph===1?1.9:ph===2?1.5:1.2;
 
           if(ph===1){
@@ -9218,6 +9242,7 @@ function update(dt){
       e.atkT=(e.atkT==null?1.6:e.atkT)-dt;
       if(e.atkT<=0){
         e.atkN=(e.atkN||0)+1; const pa=a, en=e.enr, ph=e.atkN%3;
+          playCustomSfxGroup('bagjeinBasic',{vol:0.72,rate:en?1.08:0.96,maxDur:1.5,cd:0.35,key:'bagjeinBasic'});
         if(ph===0){ const k=en?9:7; for(let i=0;i<k;i++){ const a2=pa+(i-(k-1)/2)*0.16; eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*250,vy:Math.sin(a2)*250,r:8,dmg:10,life:3.4,srcName:'박제인간'}); } }
         else if(ph===1){ const k=en?16:12; for(let i=0;i<k;i++){ const a2=i/k*TAU+e.atkN*0.4; eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*200,vy:Math.sin(a2)*200,r:8,dmg:9,life:3.6,srcName:'박제인간'}); } }
         else { const base=pa-0.6; for(let i=0;i<(en?10:7);i++){ const a2=base+i*0.13; eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*230,vy:Math.sin(a2)*230,r:7,dmg:9,life:3.4,srcName:'박제인간'}); } }
