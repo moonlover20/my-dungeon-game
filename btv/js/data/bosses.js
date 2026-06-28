@@ -7,8 +7,8 @@ const BOSSES=[
    quip:"크아아아앙!!",pattern:"split"},
   {key:"seungwoo",sprite:"seungwoo",name:"승우",title:"2막 보스 · 시스템 침식",r:72,hp:3360,phaseHp:[3200,3600,4050],color:"#9146ff",spd:56,
    quip:"…봉식님. 이 게임, 제가 좀 만져도 되겠습니까.",pattern:"glitch"},
-  {key:"set3",sprite:"set3",name:"\uC138\uD2B83\uD615\uC81C",title:"2\uB9C9 \uC911\uAC04\uBCF4\uC2A4 \u00B7 \uD604\uC9C4 \u00B7 \uBC88\uAC80 \u00B7 \uCF00\uCF00\uB85C\uB85C",r:74,hp:4412,phaseHp:[4412,4739,5556],color:"#38e8ff",spd:62,
-   quip:"\uD615\uC774 \uB098\uC624\uAE30 \uC804\uC5D0 \uB05D\uB0B4\uC790.",pattern:"set3"},
+  {key:"set3",sprite:"set3",name:"\uD604\uC9C4",title:"2\uB9C9 \uC911\uAC04\uBCF4\uC2A4 \u00B7 \uD604\uC9C4",r:74,hp:4412,phaseHp:[4412,4739,5556],color:"#38e8ff",spd:62,
+   quip:"\uBA3C\uC800 \uB4E4\uC5B4\uAC04\uB2E4.",pattern:"set3"},
   {key:"onster",sprite:"onster",name:"\uC628\uC2A4\uD130",title:"2\uB9C9 \uBCF4\uC2A4 \u00B7 \uC0AC\uC2AC\uC758 \uAC01\uC131",r:58,hp:4000,color:"#8d72ff",spd:34,
    quip:"\uC544\uC9C1 \uAE68\uC6B0\uC9C0 \uB9C8\uB77C.",pattern:"onster"},
 ];
