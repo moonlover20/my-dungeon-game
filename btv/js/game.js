@@ -253,7 +253,17 @@ const FILE_SFX_PATHS={
   bagjeinBasic1:'btv/assets/sfx/custom/bagjein_basic_1.mp3',
   bagjeinBasic2:'btv/assets/sfx/custom/bagjein_basic_2.mp3',
   kkotchungShot1:'btv/assets/sfx/custom/kkotchung_shot_1.mp3',
-  kkotchungShot2:'btv/assets/sfx/custom/kkotchung_shot_2.mp3'
+  kkotchungShot2:'btv/assets/sfx/custom/kkotchung_shot_2.mp3',
+  ketterThreadShot:'btv/assets/sfx/custom/ketter_thread_shot.wav',
+  ketterWebLock:'btv/assets/sfx/custom/ketter_web_lock.wav',
+  blackstarVoidCast:'btv/assets/sfx/custom/blackstar_void_cast.wav',
+  blackstarOrbPop:'btv/assets/sfx/custom/blackstar_orb_pop.wav',
+  set3SlashBasic:'btv/assets/sfx/custom/set3_slash_basic.wav',
+  act3MagnetPulse:'btv/assets/sfx/custom/act3_magnet_pulse.wav',
+  act3MirrorShatter:'btv/assets/sfx/custom/act3_mirror_shatter.wav',
+  act3BufferGlitch:'btv/assets/sfx/custom/act3_buffer_glitch.wav',
+  act3TruckCable:'btv/assets/sfx/custom/act3_truck_cable.wav',
+  act3CloneSplit:'btv/assets/sfx/custom/act3_clone_split.wav'
 };
 const FILE_SFX_CACHE={};
 function playFileSfx(name,opts){
@@ -298,6 +308,10 @@ function playOnsterChainSfx(slot,opts){
 }
 function playOnsterLaserSfx(opts){
   playFileSfx('onsterLaserBasic',opts||{});
+}
+function playAct3MagnetPulseSfx(opts){
+  opts=opts||{};
+  playFileSfx('act3MagnetPulse',{vol:opts.vol==null?0.24:opts.vol,rate:opts.rate||1,maxDur:opts.maxDur||0.78,cd:opts.cd||1.35,key:opts.key||'act3MagnetPulse'});
 }
 const sfx={
   shoot:()=>beep(680,0.05,'square',0.03),
@@ -3132,6 +3146,7 @@ function spawnAct3GlitchClone(owner){
   c.hp=Math.min(65,Math.max(30,(owner.maxhp||160)*0.22)); c.maxhp=c.hp; c.dmg=Math.max(5,(owner.dmg||12)*0.5); c.touchDmg=Math.max(4,(owner.touchDmg||10)*0.5);
   c.cool=Math.max(1.2,(owner.cool||1.4)*1.25); c.range=280; c._glitchClone=true;
   burst(c.x,c.y,'#b86bff',12,160);
+  playFileSfx('act3CloneSplit',{vol:0.54,rate:1.0,maxDur:0.48,cd:0.22,key:'act3CloneSplit'});
   return c;
 }
 function spawnAct3BeamSweep(e){
@@ -3158,7 +3173,7 @@ function act3TruckCableBeams(e){
   // 송출 케이블: 플레이어 정조준 십자(직각 2줄) 빔 경고 후 발사
   const base=Math.atan2(player.y-e.y,player.x-e.x);
   for(let k=0;k<2;k++){ kijoLaserWarns.push({x:e.x,y:e.y,ang:base+k*Math.PI/2,width:18,range:780,t:0,warn:0.72,color:'#ff4dd2',fired:false,sniper:true,dmg:Math.max(8,Math.round((e.dmg||16)*0.68)),srcName:(e.name||e.label||'노잭')+' 케이블'}); }
-  burst(e.x,e.y,'#ff4dd2',12,150); banner('🔌 송출 케이블','십자 빔!',700); if(typeof beep==='function')beep(300,0.1,'triangle',0.05);
+  burst(e.x,e.y,'#ff4dd2',12,150); playFileSfx('act3TruckCable',{vol:0.52,rate:1.0,maxDur:0.62,cd:0.32,key:'act3TruckCable'}); banner('🔌 송출 케이블','십자 빔!',700); if(typeof beep==='function')beep(300,0.1,'triangle',0.05);
 }
 function runAct3TruckPattern(e,pat){
   if(pat==='signal') act3TruckSignalRing(e);
@@ -4610,13 +4625,13 @@ function updateBonusPatterns(e,dt){
   }
   // ── 3막 ──
   else if(t==='act3_magnet' && cd('_magBurstCd',7.5)){     // 자석러: 자기 폭발 (밀어내며 링)
-    setIntent(e,'💥','자기 폭발',1.1,()=>{ const a=Math.atan2(player.y-e.y,player.x-e.x); player.x=clamp(player.x+Math.cos(a)*90,player.r,W-player.r); player.y=clamp(player.y+Math.sin(a)*90,player.r,H-player.r); const k=12; for(let i=0;i<k;i++){ const aa=i/k*TAU; eBullets.push({x:e.x,y:e.y,vx:Math.cos(aa)*220,vy:Math.sin(aa)*220,r:7,dmg:intentDamage(e,20),life:3.2,srcName:e.name,style:'magnet_pulse',col:e.color}); } burst(e.x,e.y,'#ff4d5a',16,200); screenShake=Math.max(screenShake||0,6); e._magBurstCd=7.8; });
+    setIntent(e,'💥','자기 폭발',1.1,()=>{ const a=Math.atan2(player.y-e.y,player.x-e.x); player.x=clamp(player.x+Math.cos(a)*90,player.r,W-player.r); player.y=clamp(player.y+Math.sin(a)*90,player.r,H-player.r); const k=12; for(let i=0;i<k;i++){ const aa=i/k*TAU; eBullets.push({x:e.x,y:e.y,vx:Math.cos(aa)*220,vy:Math.sin(aa)*220,r:7,dmg:intentDamage(e,20),life:3.2,srcName:e.name,style:'magnet_pulse',col:e.color}); } burst(e.x,e.y,'#ff4d5a',16,200); playAct3MagnetPulseSfx({vol:0.23,maxDur:0.72,cd:1.45,key:'act3MagnetPulse'}); screenShake=Math.max(screenShake||0,6); e._magBurstCd=7.8; });
   }
   else if(t==='act3_domin' && cd('_knifeCd',7)){           // 도민: 단검 3연 투척
     setIntent(e,'🔪','단검 투척',0.7,()=>{ const a=Math.atan2(player.y-e.y,player.x-e.x); for(let i=0;i<3;i++) setTimeout(()=>{ if(enemies.includes(e)){ for(let j=-1;j<=1;j++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(a+j*0.16)*320,vy:Math.sin(a+j*0.16)*320,r:6,dmg:intentDamage(e,20),life:3.4,srcName:e.name,style:'dagger',col:e.color}); } }, i*130); if(typeof beep==='function')beep(420,0.05,'square',0.03); e._knifeCd=7.4; });
   }
   else if(t==='act3_buffering' && cd('_lagBurstCd',8)){    // 버퍼링: 렉 폭발 (둔화장 + 글리치 링)
-    setIntent(e,'▒','렉 폭발',0.9,()=>{ if(typeof spawnSlowField==='function') spawnSlowField(player.x,player.y,80,4); const k=10; for(let i=0;i<k;i++){ const aa=i/k*TAU+(e.wob||0); eBullets.push({x:e.x,y:e.y,vx:Math.cos(aa)*170,vy:Math.sin(aa)*170,r:8,dmg:intentDamage(e,18),life:3.8,srcName:e.name,style:'loading_bit'}); } burst(e.x,e.y,'#38e8ff',12,160); e._lagBurstCd=8.4; });
+    setIntent(e,'▒','렉 폭발',0.9,()=>{ if(typeof spawnSlowField==='function') spawnSlowField(player.x,player.y,80,4); const k=10; for(let i=0;i<k;i++){ const aa=i/k*TAU+(e.wob||0); eBullets.push({x:e.x,y:e.y,vx:Math.cos(aa)*170,vy:Math.sin(aa)*170,r:8,dmg:intentDamage(e,18),life:3.8,srcName:e.name,style:'loading_bit'}); } burst(e.x,e.y,'#38e8ff',12,160); playFileSfx('act3BufferGlitch',{vol:0.48,rate:1.0,maxDur:0.58,cd:0.45,key:'act3BufferGlitch'}); e._lagBurstCd=8.4; });
   }
 }
 
@@ -4659,25 +4674,27 @@ function updateIntentPatterns(e,dt){
     // 케터 — 실뿜기 / 둔화: 무빙을 살짝 꼬는 일반몹 패턴
     setIntent(e,'🕸','실뿜기',0.8,()=>{
       const tx=player.x, ty=player.y;
-      if(countEnemyHazards('slowfield','ketter')<1) spawnWarnedSlowField(tx,ty,68,2.8,0.75,'ketter');
+      if(countEnemyHazards('slowfield','ketter')<1){ spawnWarnedSlowField(tx,ty,68,2.8,0.75,'ketter'); playFileSfx('ketterWebLock',{vol:0.58,rate:0.98,maxDur:0.72,cd:0.35,key:'ketterWebLock'}); }
       const a=Math.atan2(player.y-e.y,player.x-e.x);
       for(let i=-1;i<=1;i++){
         const aa=a+i*0.18;
         eBullets.push({x:e.x,y:e.y,vx:Math.cos(aa)*250,vy:Math.sin(aa)*250,r:7,dmg:intentDamage(e,14),life:3.6,srcName:'케터 실탄',style:'web_thread',col:e.color,stun:true,stunDur:0.85});
       }
+      playFileSfx('ketterThreadShot',{vol:0.62,rate:1.02,maxDur:0.34,cd:0.16,key:'ketterThreadShot'});
       if(typeof beep==='function')beep(200,0.1,'triangle',0.04);
       e._silkCd=7.5;
     });
   }else if(e.type==='blackstar' && cd('_gravityCd',7)){
     // 흑별 — 중력장 / 검은별 탄막: 공간 압박형 어려운 적
     setIntent(e,'🌀','중력장',1.0,()=>{
-      if(countEnemyHazards('gravitywell','blackstar')<1) spawnGravityWell(player.x,player.y,rand(130,150),rand(2.4,3.0),220,0,'blackstar');
+      if(countEnemyHazards('gravitywell','blackstar')<1){ spawnGravityWell(player.x,player.y,rand(130,150),rand(2.4,3.0),220,0,'blackstar'); playFileSfx('blackstarVoidCast',{vol:0.62,rate:0.95,maxDur:0.95,cd:0.45,key:'blackstarVoidCast'}); }
       const k=10;
       for(let i=0;i<k;i++){
         const a=i/k*TAU+(e.wob||0);
         eBullets.push({x:e.x,y:e.y,vx:Math.cos(a)*205,vy:Math.sin(a)*205,r:7,dmg:intentDamage(e,16),life:3.4,srcName:'흑별 파편',style:'void_star'});
       }
       burst(e.x,e.y,'#7b2cff',16,190);
+      playFileSfx('blackstarOrbPop',{vol:0.58,rate:1.0,maxDur:0.42,cd:0.18,key:'blackstarOrbPop'});
       if(typeof beep==='function')beep(120,0.16,'sawtooth',0.05);
       e._gravityCd=7.4;
     });
@@ -6654,8 +6671,10 @@ function fireSniperLaser(beam){
   screenShake=Math.max(screenShake||0,5);
   const laserSrc=String(beam.srcName||'');
   const onsterBasicLaser=/온스터 사슬빔|온스터 사슬채찍/.test(laserSrc);
+  const set3BasicSlash=/세트3 검기/.test(laserSrc);
   const skipFileLaserSfx=/세트3 검기|온스터 사슬빔|온스터 사슬채찍/.test(laserSrc);
   if(onsterBasicLaser) playOnsterLaserSfx({vol:0.58,rate:/채찍/.test(laserSrc)?1.08:0.98,maxDur:0.62,cd:0.1,key:'onsterBasicLaser'});
+  if(set3BasicSlash) playFileSfx('set3SlashBasic',{vol:0.58,rate:1.0,maxDur:0.38,cd:0.12,key:'set3SlashBasic'});
   if(!skipFileLaserSfx&&(act===2||/저격|sniper/i.test(laserSrc))) playFileSfx('act2Laser',{vol:0.74,rate:1.0,maxDur:1.2,cd:0.12,key:'act2SniperLaser'});
   if(sfx.enemyLaser) sfx.enemyLaser();
 }
@@ -8439,10 +8458,11 @@ function update(dt){
       if(e.coolT<=0){
         e.shotN=(e.shotN||0)+1;
         if(e.type==='ketter' && e.shotN%4===0){
-          if(countEnemyHazards('slowfield','ketter')<1) spawnWarnedSlowField(player.x,player.y,rand(65,75),rand(2.5,3.0),0.75,'ketter');
+          if(countEnemyHazards('slowfield','ketter')<1){ spawnWarnedSlowField(player.x,player.y,rand(65,75),rand(2.5,3.0),0.75,'ketter'); playFileSfx('ketterWebLock',{vol:0.5,rate:1.05,maxDur:0.72,cd:0.35,key:'ketterWebLock'}); }
+          playFileSfx('ketterThreadShot',{vol:0.56,rate:1.08,maxDur:0.34,cd:0.14,key:'ketterThreadShot'});
           enemyShootAt(e,player.x,player.y,210,8,e.dmg);
         } else if(e.type==='blackstar' && e.shotN%4===0){
-          if(countEnemyHazards('gravitywell','blackstar')<1){ spawnGravityWell(player.x,player.y,rand(130,150),rand(2.4,3.0),210,0,'blackstar'); const k=7; for(let i=0;i<k;i++){ const aa=i/k*TAU+(e.wob||0); eBullets.push({x:e.x,y:e.y,vx:Math.cos(aa)*190,vy:Math.sin(aa)*190,r:7,dmg:Math.max(7,Math.round((e.dmg||14)*0.75)),life:3.1,srcName:e.name||e.label,style:enemyBulletStyle(e),col:e.color}); } }
+          if(countEnemyHazards('gravitywell','blackstar')<1){ spawnGravityWell(player.x,player.y,rand(130,150),rand(2.4,3.0),210,0,'blackstar'); playFileSfx('blackstarVoidCast',{vol:0.54,rate:1.05,maxDur:0.95,cd:0.45,key:'blackstarVoidCast'}); const k=7; for(let i=0;i<k;i++){ const aa=i/k*TAU+(e.wob||0); eBullets.push({x:e.x,y:e.y,vx:Math.cos(aa)*190,vy:Math.sin(aa)*190,r:7,dmg:Math.max(7,Math.round((e.dmg||14)*0.75)),life:3.1,srcName:e.name||e.label,style:enemyBulletStyle(e),col:e.color}); } playFileSfx('blackstarOrbPop',{vol:0.5,rate:1.08,maxDur:0.42,cd:0.18,key:'blackstarOrbPop'}); }
         } else if(e.shotN%3===0){
           const pa=Math.atan2(player.y-e.y,player.x-e.x); const kw=(e.type==='goblin_shaman'); const lo=kw?-2:-1, hi=kw?2:1;
           for(let i=lo;i<=hi;i++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa+i*0.24)*210,vy:Math.sin(pa+i*0.24)*210,r:8,dmg:enemyShotDamage(e,e.dmg),life:3.6,srcName:e.name,style:enemyBulletStyle(e),col:e.color});
@@ -8579,7 +8599,7 @@ function update(dt){
       if(e.coolT<=0){ e.reflectT=1.9; e.coolT=e.cool||4.2; const pa=Math.atan2(player.y-e.y,player.x-e.x);
         if((e._refN=(e._refN||0)+1)%2===0){ const k=12; for(let i=0;i<k;i++){ const a2=i/k*TAU+(e.wob||0); eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*195,vy:Math.sin(a2)*195,r:7,dmg:Math.max(7,Math.round((e.dmg||14)*0.9)),life:3.4,srcName:e.name||e.label,col:'#8be8ff'}); } banner('🪞 반사 파동','전방위 파동',600); }
         else { for(let j=-1;j<=1;j++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa+j*0.22)*215,vy:Math.sin(pa+j*0.22)*215,r:7,dmg:Math.max(7,Math.round((e.dmg||14)*1.0)),life:3.2,srcName:e.name||e.label}); }
-        burst(e.x,e.y,'#8be8ff',14,130); if(typeof beep==='function')beep(740,0.08,'sine',0.035); }
+        burst(e.x,e.y,'#8be8ff',14,130); playFileSfx('act3MirrorShatter',{vol:0.48,rate:1.0,maxDur:0.55,cd:0.4,key:'act3MirrorShatter'}); if(typeof beep==='function')beep(740,0.08,'sine',0.035); }
     }else if(e.ai==='splitter'){
       const target=e.range||320;
       if(d<target*0.62){ e.x-=Math.cos(a)*e.spd*dt; e.y-=Math.sin(a)*e.spd*dt; }
@@ -8612,7 +8632,7 @@ function update(dt){
       }
     }else if(e.ai==='blink_lagfield'){
       e.x+=Math.cos(a+Math.sin(e.wob*2)*0.9)*e.spd*dt; e.y+=Math.sin(a+Math.cos(e.wob*1.7)*0.9)*e.spd*dt;
-      if(e.coolT<=0){ const ox=e.x, oy=e.y; e.x=clamp(e.x+rand(-140,140),e.r,W-e.r); e.y=clamp(e.y+rand(-110,110),80,H-55); burst(ox,oy,'#38e8ff',8,120); burst(e.x,e.y,'#ff4dd2',8,120); lagAfterimage(ox,oy,e); spawnWarnedSlowField(player.x,player.y,86,4.2,0.75,e.name||e.label); const pa=Math.atan2(player.y-e.y,player.x-e.x);
+      if(e.coolT<=0){ const ox=e.x, oy=e.y; e.x=clamp(e.x+rand(-140,140),e.r,W-e.r); e.y=clamp(e.y+rand(-110,110),80,H-55); burst(ox,oy,'#38e8ff',8,120); burst(e.x,e.y,'#ff4dd2',8,120); playFileSfx('act3BufferGlitch',{vol:0.42,rate:1.08,maxDur:0.42,cd:0.38,key:'act3BufferBlink'}); lagAfterimage(ox,oy,e); spawnWarnedSlowField(player.x,player.y,86,4.2,0.75,e.name||e.label); const pa=Math.atan2(player.y-e.y,player.x-e.x);
         if((e._lagN=(e._lagN||0)+1)%2===0){ const k=10; for(let i=0;i<k;i++){ const a2=i/k*TAU; eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*215,vy:Math.sin(a2)*215,r:7,dmg:Math.max(7,Math.round((e.dmg||15)*0.85)),life:3,srcName:e.name||e.label,col:'#38e8ff'}); } spawnWarnedSlowField(clamp(player.x+rand(-90,90),40,W-40),clamp(player.y+rand(-70,70),110,H-60),74,3.6,0.7,e.name||e.label); banner('📶 패킷 손실','글리치 폭발',600); }
         else { for(let j=-1;j<=1;j++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa+j*0.2)*240,vy:Math.sin(pa+j*0.2)*240,r:7,dmg:Math.max(7,Math.round((e.dmg||15)*1.0)),life:3,srcName:e.name||e.label}); }
         e.coolT=e.cool||2.2; }
@@ -8631,7 +8651,7 @@ function update(dt){
 
       e.summonT=(e.summonT==null?4.2:e.summonT)-dt;
 
-      if(e.summonT<=0){ for(let i=0;i<(ph===2?2:1);i++) spawnOnsterMinion(e); e.summonT=ph===2?5.8:6.5; }
+      if(e.summonT<=0){ for(let i=0;i<(ph===2?2:1);i++) spawnOnsterMinion(e); e.summonT=ph===2?6.4:6.5; }
 
       // ── 3막 중간보스 사슬 패턴 (셔플백 + 연속 버스트) ──
       e.a3T=(e.a3T==null?6:e.a3T)-dt;
@@ -8688,7 +8708,7 @@ function update(dt){
           }
           else onsterChainBeam(e);   // 조준빔 — 돌진강타 삭제분 흡수
 
-          e.atkT=1.10;
+          e.atkT=1.20;
 
         }
 
