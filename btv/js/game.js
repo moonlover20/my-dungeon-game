@@ -3198,7 +3198,7 @@ function onsterChainBeam(e){
   const col=e.awakened?'#ff4dd2':'#8d72ff', w=e.awakened?23:17, warn=e.awakened?0.60:0.64, dmg=e.awakened?22:16;
   for(const a of angs) kijoLaserWarns.push({x:e.x,y:e.y,ang:a,width:w,range:720,t:0,warn,color:col,fired:false,sniper:true,dmg,srcName:'온스터 사슬빔'});
 }
-function set3PhaseName(b){ return (b.setPhase||1)===1?'현진':((b.setPhase||1)===2?'번검':'케케로로'); }
+function set3PhaseName(b){ return (b.setPhase||1)===1?'현진':((b.setPhase||1)===2?'번검':'케케로'); }
 function set3NextPhase(b){
   if(typeof clearA3Systems==='function') clearA3Systems();
   const ph=(b.setPhase||1)+1;
@@ -3207,8 +3207,9 @@ function set3NextPhase(b){
   b.sprite='set3'; b.color=ph===2?'#38e8ff':'#ff4dd2'; b.spd=(b.baseSpd||62)*(ph===2?1.06:1.14); b.r=ph===2?68:72; b.x=W/2; b.y=135;
   eBullets.length=0; hazards=[]; screenShake=Math.max(screenShake||0,24); hitFlash=Math.max(hitFlash||0,0.55);
   const name=set3PhaseName(b);
-  banner('세트3형제 · '+name, ph===2?'거리는 충분히 좁혀졌다':'이제부터가 진짜 방송이다',1700);
-  bossEvolve={phase:ph,t:0,line:ph===2?'번검이 화면을 가른다':'케케로로가 신호를 장악한다',name,col:b.color,e:b};
+  b.name=name; b.title='2막 중간보스 · '+name;
+  banner(name, ph===2?'번검이 모습을 드러낸다':'케케로가 신호를 장악한다',1700);
+  bossEvolve={phase:ph,t:0,line:ph===2?'번검이 화면을 가른다':'케케로가 신호를 장악한다',name,col:b.color,e:b};
   cutsceneT=1.6;
   if(typeof beep==='function'){ beep(ph===2?180:90,0.45,'sawtooth',0.07); beep(ph===2?520:760,0.25,'triangle',0.04); }
   if(sfx.enemyGlitch) sfx.enemyGlitch();
@@ -3227,7 +3228,7 @@ function set3SafeZoneUltimate(b){
   const w=190,h=150,x=clamp(player.x+rand(-130,130),24,W-w-24),y=clamp(player.y+rand(-100,80),90,H-h-24);
   gZones=[{x,y,w,h,real:true,t:0,warn:2.4,kill:2.2,black:true}];
   GL.blackout=Math.max(GL.blackout||0,0.55);
-  banner('케케로로 전체기','SAFE 안으로!',1200);
+  banner('케케로 전체기','SAFE 안으로!',1200);
 }
 function updateSet3(b,dt){
   if(b.setPhase==null){ b.setPhase=1; b.patI=0; b.attackT=1.4; b.tx=b.x; b.ty=b.y; b.safeUlt=false; clearSeungwooFx(); }
@@ -3284,8 +3285,8 @@ function updateSet3(b,dt){
       b.attackT=1.45;
     }else{
       if(b.patI%5===0){ b.x=rand(110,W-110); b.y=rand(90,230); burst(b.x,b.y,'#ff4dd2',20,260); }
-      else if(b.patI%3===0){ const k=18; for(let i=0;i<k;i++){ const aa=b.angle+i/k*TAU; eBullets.push({x:b.x,y:b.y,vx:Math.cos(aa)*205,vy:Math.sin(aa)*205,r:8,dmg:15,life:3.6,srcName:'케케로로 에너지구',style:'broadcast_signal'}); } }
-      else { const pa=Math.atan2(player.y-b.y,player.x-b.x); for(let i=-2;i<=2;i++) eBullets.push({x:b.x,y:b.y,vx:Math.cos(pa+i*0.22)*255,vy:Math.sin(pa+i*0.22)*255,r:8,dmg:16,life:3.4,srcName:'케케로로',style:'broadcast_signal'}); }
+      else if(b.patI%3===0){ const k=18; for(let i=0;i<k;i++){ const aa=b.angle+i/k*TAU; eBullets.push({x:b.x,y:b.y,vx:Math.cos(aa)*205,vy:Math.sin(aa)*205,r:8,dmg:15,life:3.6,srcName:'케케로 에너지구',style:'broadcast_signal'}); } }
+      else { const pa=Math.atan2(player.y-b.y,player.x-b.x); for(let i=-2;i<=2;i++) eBullets.push({x:b.x,y:b.y,vx:Math.cos(pa+i*0.22)*255,vy:Math.sin(pa+i*0.22)*255,r:8,dmg:16,life:3.4,srcName:'케케로',style:'broadcast_signal'}); }
       b.attackT=1.15;
     }
     sfx.shoot();
@@ -3624,7 +3625,7 @@ function runSet3Pat(b,p){
   else if(p==='lasergrid') set3LaserGrid(b);
   else if(p==='bosslaser') set3BossLaser(b);
   else if(p==='lasercross') set3LaserCross(b);
-  // P3 케케로로 (방송 점거)
+  // P3 케케로 (방송 점거)
   else if(p==='objective'){ if(sfx.enemyCore) sfx.enemyCore(); a3Objective(W/2,H*0.34,{hp:210,fuse:7.0,fail:'aoe',failDmg:44,label:'신호 코어',color:'#ff4dd2',r:30,owner:b}); banner('📡 신호 코어','부수지 못하면 전체 피해',1000); }
   else if(p==='bombard') set3KekeBombard(b);
   else if(p==='interference') set3KekeInterference(b);
@@ -3643,6 +3644,7 @@ function runSet3Pat(b,p){
 }
 // 현진(P1) 신규
 function set3GrabCombo(b){
+  if(sfx.enemyDash) sfx.enemyDash();
   // 연속 그랩 콤보: 끌어당김 → 즉시 정면 콘 강타
   a3PullSlam(b,'현진 그랩 콤보',30);
   setTimeout(()=>{ if(!a3Alive(b))return; a3ConeSlam(b,6,22,'#ff4dd2'); }, 1050);
@@ -3663,12 +3665,15 @@ function set3CrossSlash(b){
   for(let i=0;i<8;i++) kijoLaserWarns.push({x:b.x,y:b.y,ang:base+i/8*TAU,width:18,range:820,t:0,warn:0.64,color:'#38e8ff',fired:false,sniper:true,dmg:18,srcName:'십자 검기'});
 }
 function set3CloneSlash(b){
+  if(sfx.enemyGlitch) sfx.enemyGlitch();
   // 분신 동시 검기: 분신 소환 후 본체+분신이 동시에 플레이어 정조준 검기
   a3Decoys(b);
   banner('⚔ 현진 검기','번검과 현진이 동시에 벤다',1000);
   setTimeout(()=>{ if(!a3Alive(b))return; const srcs=[b].concat(enemies.filter(o=>o&&o._glitchClone&&o.ai==='decoy')); srcs.forEach(s=>{ const pa=Math.atan2(player.y-s.y,player.x-s.x); kijoLaserWarns.push({x:s.x,y:s.y,ang:pa,width:18,range:820,t:0,warn:0.58,color:'#38e8ff',fired:false,sniper:true,dmg:18,srcName:'현진 검기'}); }); if(sfx.enemyWarn) sfx.enemyWarn(); }, 880);
 }
 function set3BladeWall(b){
+  if(sfx.enemyLaser) sfx.enemyLaser();
+  if(typeof beep==='function') beep(520,0.12,'triangle',0.04);
   // 회전 검기 벽: 보스 중심 긴 회전 바 (안/밖 선택)
   hazards.push({kind:'spinbar',owner:b,x:b.x,y:b.y,len:340,wid:26,ang:rand(0,TAU),rot:(Math.random()<0.5?1:-1)*1.9,t:0,warnT:0.7,liveT:4.2,dmg:18,hitCd:0,srcName:'검기 벽',col:'#38e8ff'});
   banner('🗡 검기 벽','회전 검벽 — 안/밖 결정',800);
@@ -3679,7 +3684,7 @@ function set3LaserColor(b){
 }
 function set3LaserName(b){
   const ph=(b&&b.setPhase)||1;
-  return ph===1?'현진 압살 레이저':(ph===2?'번검 절단 레이저':'케케로로 송출 레이저');
+  return ph===1?'현진 압살 레이저':(ph===2?'번검 절단 레이저':'케케로 송출 레이저');
 }
 function set3QueueLaser(x,y,ang,opts){
   opts=opts||{};
@@ -3720,7 +3725,7 @@ function set3LaserCross(b){
     if(typeof beep==='function')beep(360+w*110,0.07,'triangle',0.04);
   }, w*360);
 }
-// 케케로로(P3) 신규 (safe·veil·순서기억 대체)
+// 케케로(P3) 신규 (safe·veil·순서기억 대체)
 function set3KekeBombard(b){
   // 송출좌표 폭격: 격자 좌표에 순차 경고 후 폭발
   if(sfx.enemyWarn) sfx.enemyWarn();
@@ -3813,7 +3818,7 @@ function set3Identify(b){
   enemies.forEach(o=>{ if(o&&o.ai==='decoy'&&o._glitchClone){ o._idLife=true; o._fireT=rand(0.6,1.4); } });
   banner('👥 현진 식별','진짜만 데미지가 들어간다 — 가짜는 반격한다',1200);
 }
-// [케케로로 P3] 신호 역송출 — 사격하면 되돌아온다 (+ 파괴목표 코어는 기존 a3Objective)
+// [케케로 P3] 신호 역송출 — 사격하면 되돌아온다 (+ 파괴목표 코어는 기존 a3Objective)
 function set3SignalReflect(b){
   b.reflectT=2.4;
   banner('📡 신호 역송출','쏘면 되돌아온다 — 사격을 멈춰라!',1300);
@@ -3982,7 +3987,7 @@ function set3BeongeomTripleSlash(b){
   }, i*360));   // 순차 예고 → 순차 폭발
 }
 
-// ── [케케로로 P3] 후원 폭격 — 현재위치→이동예측→마지막 대형 장판 (5~7회 경고 폭발) ──
+// ── [케케로 P3] 후원 폭격 — 현재위치→이동예측→마지막 대형 장판 (5~7회 경고 폭발) ──
 function set3KekeDonationBomb(b){
   if(sfx.enemyWarn) sfx.enemyWarn();
   banner('💸 후원 폭격','좌표가 따라온다 — 계속 움직여라',1000);
@@ -4030,7 +4035,7 @@ function set3IaidoAfterimage(b){
     }, i*420);
   }
 }
-// ── [세트3 P3 케케로로] 생방송 투표 — 두 구역 중 채팅이 한 쪽을 골라 그쪽이 폭발 (50/50 리드) ──
+// ── [세트3 P3 케케로] 생방송 투표 — 두 구역 중 채팅이 한 쪽을 골라 그쪽이 폭발 (50/50 리드) ──
 function set3LivePoll(b){
   if(sfx.enemyWarn) sfx.enemyWarn();
   const dangerLeft=Math.random()<0.5;
@@ -4078,7 +4083,7 @@ function set3HiddenBlade(b){
   }
   if(typeof beep==='function'){ beep(300,0.1,'sine',0.04); setTimeout(()=>beep(520,0.1,'sine',0.04),320); setTimeout(()=>beep(820,0.12,'square',0.05),640); }
 }
-// ── [세트3 P3 케케로로 · 기믹] 광고 타임 — 사격 봉쇄. 화면의 SKIP 버튼에 닿아야 해제 ──
+// ── [세트3 P3 케케로 · 기믹] 광고 타임 — 사격 봉쇄. 화면의 SKIP 버튼에 닿아야 해제 ──
 function set3AdTime(b){
   if(sfx.enemyWarn) sfx.enemyWarn();
   const sx=clamp(rand(W*0.16,W*0.84),90,W-90), sy=clamp(rand(H*0.24,H*0.78),130,H-90);
@@ -4155,8 +4160,9 @@ function set3HalfSwap(b){
 }
 
 
-// ── [케케로로 P3] 방송 장악률 — 시선 빔에 잡히면 게이지가 차고, 100%면 사격이 봉인된다 ──
+// ── [케케로 P3] 방송 장악률 — 시선 빔에 잡히면 게이지가 차고, 100%면 사격이 봉인된다 ──
 function set3DominionSurge(b){
+  if(sfx.enemyGlitch) sfx.enemyGlitch();
   if(!set3Dominion) set3Dominion={value:0,t:0,life:0,gazes:[],hitCd:0};
   set3Dominion.life=8.5; set3Dominion.t=0; set3Dominion.hitCd=0; set3Dominion.gazes=[];
   for(let i=0;i<4;i++){
@@ -4195,7 +4201,7 @@ function set3Genesis(b){
   if(typeof beep==='function')beep(540,0.1,'sine',0.05);
 }
 
-// ── [케케로로 P3] 검은 마법 · 미래시 (검은마법사) — 죽음이 예고된 자리, 사격 봉인 ──
+// ── [케케로 P3] 검은 마법 · 미래시 (검은마법사) — 죽음이 예고된 자리, 사격 봉인 ──
 function set3BlackMage(b){
   if(sfx.enemyCast) sfx.enemyCast();
   banner('☠ 검은 마법 · 미래시','표식이 멈추는 순간 그 자리를 떠나라 — 사격 불가',1500);
@@ -4272,7 +4278,7 @@ function updateA3Systems(dt){
     if(!set3Half) set3Half={field:true,splitX:W/2,leftSlow:Math.random()<0.5,owner:boss,t:0};
     else set3Half.t+=dt;
   } else if(set3Half){ set3Half=null; }
-  // ── 케케로로 검은 마법 · 미래시 ──
+  // ── 케케로 검은 마법 · 미래시 ──
   if(set3Reaper){
     const S=set3Reaper; S.t+=dt;
     if(!S.owner||!a3Alive(S.owner)){ if(player) player._adBlockT=0; set3Reaper=null; }
@@ -4468,7 +4474,7 @@ function drawA3World(){
     ctx.fillStyle='#ff9fe0'; ctx.fillText(slowLeft?'⚡ 빠름':'🐌 느림', x+(W-x)*0.5, 42);
     ctx.textAlign='left'; ctx.restore();
   }
-  // ── 케케로로 검은 마법 · 미래시 ──
+  // ── 케케로 검은 마법 · 미래시 ──
   if(set3Reaper){
     const S=set3Reaper;
     const flash=S.phase==='freeze'?(0.5+0.5*Math.abs(Math.sin(performance.now()/60))):(S.phase==='blast'?1:0.4);
@@ -5959,7 +5965,7 @@ const BOSS_INTRO_LINES={
   kkotchung:{name:'양갱',line:'말랑한 줄 알았지?',sub:'꽃잎 사이로 검은 단맛이 번진다.',tone:'dark',glitch:true,ms:2100},
   act3_truck:{name:'노잭',line:'NO JACK.',sub:'송출 신호가 전장을 잠식합니다.',tone:'dark',ms:1900},
   onster:{name:'온스터',line:'아직 깨우지 마라.',sub:'사슬이 바닥을 긁는다.',tone:'dark',ms:2100},
-  set3:{name:'세트3형제',line:'형이 나오기 전에 끝내자.',sub:'방송 신호가 세 갈래로 찢어진다.',tone:'dark',ms:2300},
+  set3:{name:'현진',line:'먼저 들어간다.',sub:'무거운 발소리가 가까워진다.',tone:'dark',ms:2300},
   seungwoo:{name:'승우',line:'(하아...)',sub:'승우가 천천히 눈을 뜹니다.',tone:'dark',ms:2200}
 };
 let bossIntroSeen={};
@@ -6277,9 +6283,9 @@ function startCombat(kind, fresh){
         logBossEncounterStart(boss,'midBoss');
         showBossIntroLine('set3',520,boss);
         bossBanner=1.8;
-        banner("중간보스 · 세트3형제","방송 신호가 세 갈래로 찢어진다",1800);
+        banner("중간보스 · 현진","무거운 발소리가 가까워진다",1800);
         if(typeof sfx!=='undefined') sfx.boss();
-        showEntrance("⚠️ 2막 중간보스 등장","세트3형제","형이 나오기 전에 끝내자.");
+        showEntrance("⚠️ 2막 중간보스 등장","현진","먼저 들어간다.");
       } else if(act>=3){
         spawnEnemy('yanggaeng', W/2, 150, diff);
         const eb=enemies[enemies.length-1];
@@ -6459,15 +6465,16 @@ function spawnSet3Midboss(b,diff){
   const base=ENEMY_TYPES.onster&&ENEMY_TYPES.onster.hp?ENEMY_TYPES.onster.hp*diff*diffSet.hp:8200;
   spawned.phaseHp=[base*0.30,base*0.32,base*0.38];
   spawned.hp=spawned.phaseHp[0]; spawned.maxhp=spawned.hp;
-  spawned.title='2막 중간보스 · 현진 · 번검 · 케케로로';
-  spawned.quip='형이 나오기 전에 끝내자.';
+  spawned.name='현진';
+  spawned.title='2막 중간보스 · 현진';
+  spawned.quip='먼저 들어간다.';
   spawned.slotRole='midboss'; spawned.slotAct=act; spawned.slotBalanceKey='set3_midboss'; spawned.slotDamageScale=0.82;
   spawned.attackT=1.9; spawned.stunT=3.5;
   debugSlotBalance(spawned);
   return spawned;
 }
 function bossPlacementTitle(b){
-  if(b&&b.key==='set3') return '2막 중간보스 · 현진 · 번검 · 케케로로';
+  if(b&&b.key==='set3') return '2막 중간보스 · 현진';
   if(b&&b.key==='onster') return '2막 보스 · 사슬의 각성';
   if(b&&b.key==='seungwoo') return '3막 최종보스 · 시스템 침식';
   return (b&&b.title)||'';
@@ -7735,7 +7742,7 @@ function startAct3FinalClear(deadBoss){
   if(typeof clearSeungwooFx==='function') clearSeungwooFx();
   screenShake=Math.max(screenShake||0,28); hitFlash=Math.max(hitFlash||0,0.8);
   for(let i=0;i<52;i++) burst(bx+rand(-70,70),by+rand(-50,50),pick(['#38e8ff','#ff4dd2','#ffd34d','#ffffff']),8,260);
-  banner('세트3형제 격파','재밌었다. 다음 시즌에 보자.',2200);
+  banner('현진 · 번검 · 케케로 격파','재밌었다. 다음 시즌에 보자.',2200);
   act3FinalClear.timer=setTimeout(()=>{ if(act3FinalClearActive()){ const c=act3FinalClear; act3FinalClear=null; try{ victory(); }catch(e){ console.warn('act3 final clear fallback failed',e); } } },6200);
   return true;
 }
@@ -7751,7 +7758,7 @@ function updateAct3FinalClear(dt){
     particles.push({x:c.x+rand(-180,180),y:c.y+rand(-110,130),vx:rand(-40,40),vy:rand(-160,40),life:rand(.35,.9),max:.9,color:pick(['#38e8ff','#ff4dd2','#ffd34d']),r:rand(2,5)});
     trimArrayHead(particles,PERF_LIMITS.particles);
   }
-  if(c.t>1.15&&!c.after1){ c.after1=true; banner('현진 · 번검 · 케케로로','세 화면이 동시에 꺼진다',1700); screenShake=Math.max(screenShake||0,18); }
+  if(c.t>1.15&&!c.after1){ c.after1=true; banner('현진 · 번검 · 케케로','세 화면이 동시에 꺼진다',1700); screenShake=Math.max(screenShake||0,18); }
   if(c.t>2.75&&!c.after2){ c.after2=true; banner('화이트아웃','방송 신호가 사라진다',1500); hitFlash=Math.max(hitFlash||0,0.7); }
   if(c.t>=5.0&&!c.done){
     c.done=true; if(c.timer) clearTimeout(c.timer); act3FinalClear=null; victory();
@@ -7781,7 +7788,7 @@ function drawAct3FinalClear(){
   ctx.font='bold 30px Courier New';
   ctx.fillStyle=t>2.7?'#0a0814':'#ffffff';
   ctx.strokeStyle=t>2.7?'#ffffff':'#08040f'; ctx.lineWidth=5;
-  const msg=t>2.7?'재밌었다. 다음 시즌에 보자.':'세트3형제 송출 종료';
+  const msg=t>2.7?'재밌었다. 다음 시즌에 보자.':'현진 · 번검 · 케케로 송출 종료';
   ctx.strokeText(msg,W/2,H*0.43); ctx.fillText(msg,W/2,H*0.43);
   ctx.font='14px Courier New';
   ctx.fillStyle=t>2.7?'#24142e':'#b9f8ff';
@@ -8245,7 +8252,7 @@ function update(dt){
         if(b.playerShot && (boss.reflectT||0)>0){
           const ra=Math.atan2(player.y-boss.y,player.x-boss.x)+rand(-0.18,0.18);
           const rd=Math.max(5,Math.round((b.dmg||10)*0.4));
-          eBullets.push({x:boss.x,y:boss.y,vx:Math.cos(ra)*330,vy:Math.sin(ra)*330,r:Math.max(5,Math.min(8,b.r||6)),dmg:rd,life:2.6,srcName:(boss.key==='set3'?'케케로로 역송출':'키죠 반사'),style:(boss.key==='set3'?'broadcast_signal':undefined),reflected:true});
+          eBullets.push({x:boss.x,y:boss.y,vx:Math.cos(ra)*330,vy:Math.sin(ra)*330,r:Math.max(5,Math.min(8,b.r||6)),dmg:rd,life:2.6,srcName:(boss.key==='set3'?'케케로 역송출':'키죠 반사'),style:(boss.key==='set3'?'broadcast_signal':undefined),reflected:true});
           burst(boss.x,boss.y,'#ff6a9a',8,180); dead=true;
         } else {
           const hit=b.playerShot?rollPlayerBulletDamage(boss,b):{dmg:b.dmg,crit:!!b.crit};
@@ -10011,7 +10018,7 @@ function onCombatCleared(){
       reward();
       return;
     }
-    if(t==='midboss'){ const bonus=irand(70,105); addGold(bonus,'roomReward'); const midbossXp=roomMidbossKind==='set3'?2000:0; if(midbossXp>0) gainXP(midbossXp); let potTxt=''; if(act>=3){ const pot=rollPotion(); if(addPotion(pot)) potTxt=' · '+pot.name; } updateHUD(); const mbText=roomMidbossKind==='set3'?'세트3형제를 쓰러뜨린 보상이다':(roomMidbossKind==='onster'?'온스터를 쓰러뜨린 보상이다':(roomMidbossKind==='yanggaeng'?'박제인간을 쓰러뜨린 보상이다':'혜철이를 쓰러뜨린 보상이다')); const xpTxt=midbossXp>0?' · 경험치 +'+midbossXp:''; offerRelics(3,'중간보스 보상',mbText+' · 골드 +'+bonus+xpTxt+potTxt, finishNode); }
+    if(t==='midboss'){ const bonus=irand(70,105); addGold(bonus,'roomReward'); const midbossXp=roomMidbossKind==='set3'?2000:0; if(midbossXp>0) gainXP(midbossXp); let potTxt=''; if(act>=3){ const pot=rollPotion(); if(addPotion(pot)) potTxt=' · '+pot.name; } updateHUD(); const mbText=roomMidbossKind==='set3'?'현진 · 번검 · 케케로를 쓰러뜨린 보상이다':(roomMidbossKind==='onster'?'온스터를 쓰러뜨린 보상이다':(roomMidbossKind==='yanggaeng'?'박제인간을 쓰러뜨린 보상이다':'혜철이를 쓰러뜨린 보상이다')); const xpTxt=midbossXp>0?' · 경험치 +'+midbossXp:''; offerRelics(3,'중간보스 보상',mbText+' · 골드 +'+bonus+xpTxt+potTxt, finishNode); }
     else if(t==='boss'&&act>=MAX_ACT){ finishNode(); }
     else if(t==='boss') offerRelics(3,'👑 보스 보상','막 보스를 쓰러뜨린 보상이다 · 좋은 유물 확률 증가', finishNode, {weights:BOSS_RELIC_WEIGHTS});
     else if(combatRewardMul>=2){ const bonus=Math.round(irand(36,65)*combatRewardMul); addGold(bonus,'roomReward'); combatRewardMul=1; offerRelics(3,'🎁 합방 보상','보상이 2배로! 골드 +'+bonus, finishNode); }
@@ -14451,7 +14458,8 @@ function drawBoss(b){
   ctx.fillStyle='#2a1530'; ctx.fillRect(bx,16,bw,12);
   ctx.fillStyle=b.color; ctx.fillRect(bx,16,bw*clamp(b.hp/b.maxhp,0,1),12);
   ctx.fillStyle='#fff'; ctx.font='bold 13px Courier New'; ctx.textAlign='center';
-  ctx.fillText(b.name+(b.key==='set3'?' · '+set3PhaseName(b):(b.enraged?' 〔격노〕':'')), W/2, 27);
+  const bossNameText=b.key==='set3'?set3PhaseName(b):(b.name+(b.enraged?' 〔격노〕':''));
+  ctx.fillText(bossNameText, W/2, 27);
   ctx.textAlign='left';
 }
 function drawPlayer(){
@@ -15397,7 +15405,7 @@ const BULLET_PATTERNS={
   gold_slash:["....3","..211",".2111","2111.","11..."],           // 러라 금빛 베기
   red_crush:[".232.","23332","33233","23332",".232."],             // 현진 충격 덩어리
   blue_blade:["....3","..211",".2111","2111.","11..."],            // 번검 푸른 검기
-  broadcast_signal:["2.3.2",".212.","32123",".212.","2.3.2"],      // 케케로로 방송 신호
+  broadcast_signal:["2.3.2",".212.","32123",".212.","2.3.2"],      // 케케로 방송 신호
   wood_chip:[".121.","1222.","22112",".2221","..1.."],
   web_thread:["1...1","21112","..3..","21112","1...1"],          // 케터 실줄기
   void_star:["..3..",".212.","32123",".212.","..3.."],
@@ -15447,7 +15455,7 @@ function bulletKind(b){
       else if(/버퍼링|렉|로딩/.test(n)) k='loading_bit';
       else if(/번검|검기|분신|삼연참|거합|시간 베기|보이지 않는 검/.test(n)) k='blue_blade';
       else if(/현진|들이받기|지면강타/.test(n)) k='red_crush';
-      else if(/케케로로|에너지구|신호 간섭|채널 점거|송출|후원|생방송 투표|역송출/.test(n)) k='broadcast_signal';
+      else if(/케케로|에너지구|신호 간섭|채널 점거|송출|후원|생방송 투표|역송출/.test(n)) k='broadcast_signal';
       else if(/세트3|형제 협공/.test(n)) k='shard';
       else if(/박제인간/.test(n)) k='needle';
       else if(/양갱/.test(n)) k='jelly';
@@ -18054,7 +18062,7 @@ window.a3god=function(on){
 };
 window.god=window.a3god;
 window.a2god=window.a3god;
-// 세트3형제 페이즈 강제 전환 (현진1 / 번검2 / 케케로로3)
+// 세트3형제 페이즈 강제 전환 (현진1 / 번검2 / 케케로3)
 window.a3phase=function(p){
   if(!boss||boss.key!=='set3'){ console.warn('[a3phase] 세트3형제가 없음 → debugStartSet3() 먼저'); return null; }
   p=clamp(Math.round(p||1),1,3);
@@ -18083,7 +18091,7 @@ window.a3help=function(){
     'a3god() / a3god(false): 무적 토글',
     'a3test()            : 패턴 이름 목록',
     'a3test("cone")      : 해당 패턴 즉시 발사',
-    'a3phase(1|2|3)      : 세트3 페이즈 고정(현진/번검/케케로로)',
+    'a3phase(1|2|3)      : 세트3 페이즈 고정(현진/번검/케케로)',
     'a3onster(true?)     : 온스터 소환(true=각성)',
     '패턴: bind poison brand cone cross spinbar sweep safezone core anchor buds veil seq shadows stones decoy push vine',
     '신규(v3): claim newswall chainanchor chainmaze broken wallslam tripleslash lasergrid bosslaser lasercross donbomb',
