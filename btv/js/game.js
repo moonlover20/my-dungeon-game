@@ -3180,6 +3180,7 @@ function spawnOnsterMinion(e){
   if(onsterSummons(e).length>=5) return;
   const s=spawnAct3SandSoldier(e);
   if(!s) return;
+  if(sfx.enemySummon) sfx.enemySummon();
   const _hp=clamp(Math.round((e.maxhp||600)*0.04),65,210); s.hp=_hp; s.maxhp=_hp;
   s.label='사슬 잔재'; s.color='#8d72ff'; s._summonOwner=e; s.noReward=true; s.noKillScore=true; s.summoned=true; s.xp=0;
 }
@@ -3569,6 +3570,7 @@ function onsterWhipSpin(e){
   banner('⛓ 사슬 채찍','회전 사슬을 피해라',750);
 }
 function onsterChainBurst(e){
+  if(sfx.enemyCore) sfx.enemyCore();
   // [각성] 사슬 파편 폭발(버프): 빠른 바깥 링 + 느린 안쪽 링, 회전 오프셋으로 빈틈 이동
   const off=(e._cbN=(e._cbN||0)+1)*0.3, dmg=18;
   const ko=18; for(let i=0;i<ko;i++){ const a=off+i/ko*TAU; eBullets.push({x:e.x,y:e.y,vx:Math.cos(a)*245,vy:Math.sin(a)*245,r:8,dmg,life:3.6,srcName:'사슬 파편',col:'#ff4dd2'}); }
