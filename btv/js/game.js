@@ -1,4 +1,4 @@
-﻿"use strict";
+"use strict";
 /* =========================================================
    JS MAINTENANCE MAP
    This file intentionally stays single-file for fast vibe coding.
@@ -5084,6 +5084,19 @@ function sanitizeStoredLevelPerkIds(ids,keepTreeOnly=false){
     return !!perkByStoredId(id);
   }):[];
 }
+function makePlayerMinion(p){
+  p=p||player;
+  return {ang:0,fireT:0,x:Number.isFinite(p&&p.x)?p.x:W/2,y:Number.isFinite(p&&p.y)?p.y:H/2};
+}
+function hasPermanentMinionPerk(p){
+  const ids=sanitizeStoredLevelPerkIds(p&&p.perkIds);
+  return ids.some(id=>{ const pk=perkByStoredId(id); return pk&&pk.name==='구독자 소환'; });
+}
+function restorePermanentMinion(p){
+  if(!hasPermanentMinionPerk(p)) return false;
+  p.minion=makePlayerMinion(p);
+  return true;
+}
 function passiveNodeById(id){
   return (TREE_NODES||[]).find(n=>n&&n.id===id);
 }
@@ -6005,6 +6018,7 @@ function restoreProgress(){
   migrateTreeOnlyPerksToTree();
   recalcPotionBuffs(player);
   if((player.relics||[]).some(r=>r&&r.id==='one_shot') && !player.fixedMaxHp) setFixedMaxHp(player,100);
+  restorePermanentMinion(player);
   enforceFixedMaxHp(player);
 }
 
@@ -6080,7 +6094,7 @@ function restorePlayerFromSave(data){
   player.potions=potionIds.map(id=>POTIONS.find(pt=>pt.id===potionCanonicalId(id))).filter(Boolean);
   player.buffs=Object.assign({rage:0,haste:0,shield:0},player.buffs||{});
   player.potionBuffs=(player.potionBuffs||[]).map(b=>Object.assign({},b));
-  player.minion=hasMinion?{ang:0,fireT:0,x:player.x,y:player.y}:null;
+  player.minion=(hasMinion||hasPermanentMinionPerk(player))?makePlayerMinion(player):null;
   recalcPotionBuffs(player);
   enforceFixedMaxHp(player);
 }
@@ -6864,7 +6878,7 @@ function damageEnemy(e,dmg,crit,fromBullet,bullet){
   if(e.type==='namu' && e.hp>0){
     const now=performance.now(); if(!(e._namuBuffT>0)||now-(e._namuBuffLast||0)>1000){
       e._namuBuffLast=now; e._namuBuffT=3.0;
-      enemies.forEach(o=>{ if(o!==e && dist2(o.x,o.y,e.x,e.y)<62500){ o.armor=Math.min((o.armor||0)+0.12,0.5); o._armorBuff=3.0; burst(o.x,o.y,'#5fa84a',6,120); } });
+      enemies.forEach(o=>{ if(o!==e && dist2(o.x,o.y,e.x,e.y)<62500){ if(!(o._namuArmorBonus>0)){ const before=Number(o.armor)||0; const after=Math.min(before+0.12,0.5); o._namuArmorBonus=Math.max(0,after-before); o.armor=after; } o._armorBuff=3.0; burst(o.x,o.y,'#5fa84a',6,120); } });
       burst(e.x,e.y,'#5fa84a',12,160); playFileSfx('act2Namu',{vol:0.42,rate:1.08,maxDur:0.45,cd:0.45,key:'namuArmorBuff'});
     }
   }
@@ -8248,7 +8262,7 @@ function update(dt){
       }
       if(e.type==='goblin_bomber'){ e._fuse=false; e._fuseT=0; }
       // 나무 피격 방어력 버프 타이머 감소
-      if(e._armorBuff>0){ e._armorBuff-=dt; if(e._armorBuff<=0){ e._armorBuff=0; e.armor=Math.max((e.armor||0)-0.12,0); } }
+      if(e._armorBuff>0){ e._armorBuff-=dt; if(e._armorBuff<=0){ const bonus=Number(e._namuArmorBonus)||0; e._armorBuff=0; if(bonus>0) e.armor=Math.max((e.armor||0)-bonus,0); e._namuArmorBonus=0; } }
       if(e._namuBuffT>0) e._namuBuffT-=dt;
       if(e.type==='namu'){ e.poundT=(e.poundT==null?rand(3.2,4.8):e.poundT)-dt; if(e.poundT<=0){ const tx=e.x, ty=e.y; warnAoE(tx,ty,rand(90,105),0.65,0.45,Math.max(10,Math.round((e.dmg||17)*0.85)),e.name||e.label,e.color); burst(tx,ty,e.color,10,170); playFileSfx('act2Namu',{vol:0.58,rate:0.94,maxDur:0.6,cd:0.45,key:'namuPound'}); e.poundT=rand(4.0,5.2); } }
       // 러라 잔상 폭발 처리
@@ -11925,71 +11939,71 @@ const TREE_ONLY_PERK_IDS=new Set([
 ]);
 LEVEL_PERKS.forEach(pk=>{ if(TREE_ONLY_PERK_IDS.has(perkId(pk))) pk.skip=()=>true; });
 const PERK_META_BY_NAME={
-  '공격 특화':{minLevel:1,maxLevel:15,tags:['combat','starter','damage'],build:'damage'},
-  '속사 특화':{minLevel:1,maxLevel:15,tags:['combat','starter','rate'],build:'rate'},
-  '민첩 특화':{minLevel:1,maxLevel:15,tags:['combat','starter','mobility'],build:'mobility'},
-  '활력':{minLevel:1,maxLevel:15,tags:['combat','starter','defense','sustain'],build:'defense'},
-  '방어 특화':{minLevel:1,maxLevel:15,tags:['combat','starter','defense'],build:'defense'},
-  '광부':{minLevel:4,maxLevel:15,tags:['growth','economy','utility'],build:'economy'},
-  '대구경':{minLevel:1,maxLevel:15,tags:['combat','starter','projectile'],build:'projectile'},
-  '재생':{minLevel:1,maxLevel:15,tags:['combat','starter','sustain'],build:'sustain'},
-  '경험치 부스트':{g:'rare',minLevel:6,maxLevel:15,tags:['growth','utility'],build:'growth'},
-  '도네 알림':{minLevel:5,maxLevel:15,tags:['growth','economy','utility'],build:'economy'},
-  '정밀 조준':{minLevel:6,maxLevel:15,tags:['combat','crit'],build:'crit'},
-  '급소 연마':{minLevel:6,maxLevel:15,tags:['combat','crit'],build:'crit'},
-  '상점 눈썰미':{minLevel:6,maxLevel:15,tags:['growth','economy','shop'],build:'economy'},
-  '전술 재정비':{minLevel:6,maxLevel:15,tags:['combat','sustain'],build:'sustain'},
-  '흡혈':{minLevel:6,maxLevel:15,tags:['combat','sustain'],build:'sustain'},
-  '충격파':{minLevel:6,maxLevel:15,tags:['combat','control'],build:'control'},
-  '관통':{minLevel:6,maxLevel:15,tags:['combat','projectile'],build:'projectile'},
-  '반사':{minLevel:1,maxLevel:15,tags:['combat','starter','projectile'],build:'projectile'},
-  '연사':{minLevel:6,maxLevel:15,tags:['combat','rate'],build:'rate'},
-  '강철 체력':{minLevel:6,maxLevel:15,tags:['combat','defense','sustain'],build:'defense'},
-  '거인 사냥':{minLevel:6,maxLevel:15,tags:['combat','boss'],build:'boss'},
-  '고속탄':{minLevel:1,maxLevel:15,tags:['combat','starter','projectile'],build:'projectile'},
-  '화염탄':{minLevel:4,maxLevel:15,tags:['combat','status'],build:'status'},
-  '빙결탄':{minLevel:5,maxLevel:15,tags:['combat','status','control'],build:'status'},
-  '독침':{minLevel:4,maxLevel:15,tags:['combat','status'],build:'status'},
-  '가시 갑옷':{minLevel:6,maxLevel:15,tags:['combat','defense'],build:'defense'},
-  '추진력':{minLevel:8,maxLevel:14,tags:['combat','mobility','rate'],build:'mobility',isMiniKeystone:true},
-  '잔상':{minLevel:8,maxLevel:14,tags:['combat','mobility','defense'],build:'mobility',isMiniKeystone:true},
-  '점화':{minLevel:8,maxLevel:14,tags:['combat','status'],build:'status',isMiniKeystone:true},
-  '부식 표식':{minLevel:8,maxLevel:14,tags:['combat','status','damage'],build:'status'},
-  '현질의 힘':{minLevel:8,maxLevel:15,tags:['growth','economy','utility'],build:'economy',isMiniKeystone:true},
-  '맹공':{minLevel:16,maxLevel:25,tags:['combat','damage','keystone'],build:'damage',isKeystone:true},
-  '연쇄 폭발':{minLevel:16,maxLevel:25,tags:['combat','aoe','keystone'],build:'aoe',isKeystone:true},
-  '흡혈귀':{minLevel:16,maxLevel:25,tags:['combat','sustain','keystone'],build:'sustain',isKeystone:true},
-  '그림자 보법':{minLevel:16,maxLevel:25,tags:['combat','mobility','keystone'],build:'mobility',isKeystone:true},
-  '쌍방향 사격':{minLevel:6,maxLevel:15,tags:['combat','projectile'],build:'projectile'},
-  '더블탭':{minLevel:16,maxLevel:25,tags:['combat','rate','projectile','keystone'],build:'rate',isKeystone:true},
-  '근접 난사':{minLevel:8,maxLevel:14,tags:['combat','projectile','damage'],build:'projectile',isMiniKeystone:true},
-  '맹독 가열':{minLevel:8,maxLevel:14,tags:['combat','status','risk'],build:'status',isMiniKeystone:true},
-  '막판 정신력':{minLevel:16,maxLevel:25,tags:['combat','defense','keystone'],build:'defense',isKeystone:true},
-  '저체력 폭주':{minLevel:16,maxLevel:25,tags:['combat','damage','keystone'],build:'damage',isKeystone:true},
-  '처단':{minLevel:16,maxLevel:25,tags:['combat','mobility','aoe','keystone'],build:'mobility',isKeystone:true},
-  '분노':{minLevel:16,maxLevel:25,tags:['combat','damage','keystone'],build:'damage',isKeystone:true},
-  '치명 흡혈':{minLevel:16,maxLevel:25,tags:['combat','crit','sustain','keystone'],build:'crit',isKeystone:true},
-  '감전 연쇄':{minLevel:16,maxLevel:25,tags:['combat','aoe','keystone'],build:'aoe',isKeystone:true},
-  '클립 박제':{minLevel:16,maxLevel:25,tags:['combat','execute','keystone'],build:'execute',isKeystone:true},
-  '치명 일격':{minLevel:16,maxLevel:25,tags:['combat','crit','keystone'],build:'crit',isKeystone:true},
-  '폭주':{minLevel:16,maxLevel:25,tags:['combat','damage','keystone'],build:'damage',isKeystone:true},
-  '작렬탄':{minLevel:16,maxLevel:25,tags:['combat','aoe','projectile','keystone'],build:'projectile',isKeystone:true},
-  '이중 도약':{minLevel:16,maxLevel:25,tags:['combat','mobility','keystone'],build:'mobility',isKeystone:true},
-  '재충전 보호막':{minLevel:16,maxLevel:25,tags:['combat','defense','keystone'],build:'defense',isKeystone:true},
-  '사형 선고':{minLevel:16,maxLevel:25,tags:['combat','execute','keystone'],build:'execute',isKeystone:true},
-  '확산':{minLevel:16,maxLevel:25,tags:['combat','status','keystone'],build:'status',isKeystone:true},
-  '처형 본능':{minLevel:16,maxLevel:25,tags:['combat','execute','keystone'],build:'execute',isKeystone:true},
-  '다중 사격':{minLevel:16,maxLevel:25,tags:['combat','projectile','keystone'],build:'projectile',isKeystone:true},
-  '유리 대포':{minLevel:16,maxLevel:25,tags:['combat','damage','keystone'],build:'damage',isKeystone:true},
-  '방송 폭주':{minLevel:16,maxLevel:25,tags:['combat','damage','rate','risk','keystone'],build:'damage',isKeystone:true},
-  '구독자 소환':{minLevel:16,maxLevel:25,tags:['combat','summon','keystone'],build:'summon',isKeystone:true},
-  '불길한 적응':{minLevel:6,maxLevel:15,tags:['combat','curse','damage'],build:'curse'},
-  '저주 친화':{minLevel:8,maxLevel:14,tags:['combat','curse','defense'],build:'curse',isMiniKeystone:true},
-  '타락한 계약':{minLevel:16,maxLevel:25,tags:['combat','curse','crit','mobility','keystone'],build:'curse',isKeystone:true},
-  '파멸 숭배':{minLevel:16,maxLevel:25,tags:['combat','curse','damage','risk','keystone'],build:'curse',isKeystone:true},
-  '약효 증폭':{minLevel:6,maxLevel:15,tags:['potion','sustain','utility'],build:'potion'},
-  '연금 폭주':{minLevel:16,maxLevel:25,tags:['potion','combat','damage','keystone'],build:'potion',isKeystone:true},
-  '무한 리필':{minLevel:16,maxLevel:25,tags:['potion','growth','keystone'],build:'potion',isKeystone:true},
+  '공격 특화':{minLevel:1,tags:['combat','starter','damage'],build:'damage'},
+  '속사 특화':{minLevel:1,tags:['combat','starter','rate'],build:'rate'},
+  '민첩 특화':{minLevel:1,tags:['combat','starter','mobility'],build:'mobility'},
+  '활력':{minLevel:1,tags:['combat','starter','defense','sustain'],build:'defense'},
+  '방어 특화':{minLevel:1,tags:['combat','starter','defense'],build:'defense'},
+  '광부':{minLevel:3,tags:['growth','economy','utility'],build:'economy'},
+  '대구경':{minLevel:1,tags:['combat','starter','projectile'],build:'projectile'},
+  '재생':{minLevel:1,tags:['combat','starter','sustain'],build:'sustain'},
+  '경험치 부스트':{g:'rare',minLevel:4,tags:['growth','utility'],build:'growth'},
+  '도네 알림':{minLevel:3,tags:['growth','economy','utility'],build:'economy'},
+  '정밀 조준':{minLevel:4,tags:['combat','crit'],build:'crit'},
+  '급소 연마':{minLevel:4,tags:['combat','crit'],build:'crit'},
+  '상점 눈썰미':{minLevel:4,tags:['growth','economy','shop'],build:'economy'},
+  '전술 재정비':{minLevel:4,tags:['combat','sustain'],build:'sustain'},
+  '흡혈':{minLevel:4,tags:['combat','sustain'],build:'sustain'},
+  '충격파':{minLevel:4,tags:['combat','control'],build:'control'},
+  '관통':{minLevel:4,tags:['combat','projectile'],build:'projectile'},
+  '반사':{minLevel:1,tags:['combat','starter','projectile'],build:'projectile'},
+  '연사':{minLevel:4,tags:['combat','rate'],build:'rate'},
+  '강철 체력':{minLevel:4,tags:['combat','defense','sustain'],build:'defense'},
+  '거인 사냥':{minLevel:4,tags:['combat','boss'],build:'boss'},
+  '고속탄':{minLevel:1,tags:['combat','starter','projectile'],build:'projectile'},
+  '화염탄':{minLevel:3,tags:['combat','status'],build:'status'},
+  '빙결탄':{minLevel:3,tags:['combat','status','control'],build:'status'},
+  '독침':{minLevel:3,tags:['combat','status'],build:'status'},
+  '가시 갑옷':{minLevel:4,tags:['combat','defense'],build:'defense'},
+  '추진력':{minLevel:6,tags:['combat','mobility','rate'],build:'mobility',isMiniKeystone:true},
+  '잔상':{minLevel:6,tags:['combat','mobility','defense'],build:'mobility',isMiniKeystone:true},
+  '점화':{minLevel:6,tags:['combat','status'],build:'status',isMiniKeystone:true},
+  '부식 표식':{minLevel:6,tags:['combat','status','damage'],build:'status'},
+  '현질의 힘':{minLevel:6,tags:['growth','economy','utility'],build:'economy',isMiniKeystone:true},
+  '맹공':{minLevel:10,tags:['combat','damage','keystone'],build:'damage',isKeystone:true},
+  '연쇄 폭발':{minLevel:10,tags:['combat','aoe','keystone'],build:'aoe',isKeystone:true},
+  '흡혈귀':{minLevel:10,tags:['combat','sustain','keystone'],build:'sustain',isKeystone:true},
+  '그림자 보법':{minLevel:10,tags:['combat','mobility','keystone'],build:'mobility',isKeystone:true},
+  '쌍방향 사격':{minLevel:4,tags:['combat','projectile'],build:'projectile'},
+  '더블탭':{minLevel:10,tags:['combat','rate','projectile','keystone'],build:'rate',isKeystone:true},
+  '근접 난사':{minLevel:6,tags:['combat','projectile','damage'],build:'projectile',isMiniKeystone:true},
+  '맹독 가열':{minLevel:6,tags:['combat','status','risk'],build:'status',isMiniKeystone:true},
+  '막판 정신력':{minLevel:10,tags:['combat','defense','keystone'],build:'defense',isKeystone:true},
+  '저체력 폭주':{minLevel:10,tags:['combat','damage','keystone'],build:'damage',isKeystone:true},
+  '처단':{minLevel:10,tags:['combat','mobility','aoe','keystone'],build:'mobility',isKeystone:true},
+  '분노':{minLevel:10,tags:['combat','damage','keystone'],build:'damage',isKeystone:true},
+  '치명 흡혈':{minLevel:10,tags:['combat','crit','sustain','keystone'],build:'crit',isKeystone:true},
+  '감전 연쇄':{minLevel:10,tags:['combat','aoe','keystone'],build:'aoe',isKeystone:true},
+  '클립 박제':{minLevel:10,tags:['combat','execute','keystone'],build:'execute',isKeystone:true},
+  '치명 일격':{minLevel:10,tags:['combat','crit','keystone'],build:'crit',isKeystone:true},
+  '폭주':{minLevel:10,tags:['combat','damage','keystone'],build:'damage',isKeystone:true},
+  '작렬탄':{minLevel:10,tags:['combat','aoe','projectile','keystone'],build:'projectile',isKeystone:true},
+  '이중 도약':{minLevel:10,tags:['combat','mobility','keystone'],build:'mobility',isKeystone:true},
+  '재충전 보호막':{minLevel:10,tags:['combat','defense','keystone'],build:'defense',isKeystone:true},
+  '사형 선고':{minLevel:10,tags:['combat','execute','keystone'],build:'execute',isKeystone:true},
+  '확산':{minLevel:10,tags:['combat','status','keystone'],build:'status',isKeystone:true},
+  '처형 본능':{minLevel:10,tags:['combat','execute','keystone'],build:'execute',isKeystone:true},
+  '다중 사격':{minLevel:10,tags:['combat','projectile','keystone'],build:'projectile',isKeystone:true},
+  '유리 대포':{minLevel:10,tags:['combat','damage','keystone'],build:'damage',isKeystone:true},
+  '방송 폭주':{minLevel:10,tags:['combat','damage','rate','risk','keystone'],build:'damage',isKeystone:true},
+  '구독자 소환':{minLevel:10,tags:['combat','summon','keystone'],build:'summon',isKeystone:true},
+  '불길한 적응':{minLevel:4,tags:['combat','curse','damage'],build:'curse'},
+  '저주 친화':{minLevel:6,tags:['combat','curse','defense'],build:'curse',isMiniKeystone:true},
+  '타락한 계약':{minLevel:10,tags:['combat','curse','crit','mobility','keystone'],build:'curse',isKeystone:true},
+  '파멸 숭배':{minLevel:10,tags:['combat','curse','damage','risk','keystone'],build:'curse',isKeystone:true},
+  '약효 증폭':{minLevel:4,tags:['potion','sustain','utility'],build:'potion'},
+  '연금 폭주':{minLevel:10,tags:['potion','combat','damage','keystone'],build:'potion',isKeystone:true},
+  '무한 리필':{minLevel:10,tags:['potion','growth','keystone'],build:'potion',isKeystone:true},
 };
 function normalizePerkMeta(pk){
   const meta=Object.assign({
@@ -16550,7 +16564,7 @@ function retryRoom(){
   player.hp=Math.max(1, roomEntryHp||player.maxhp);
   player.buffs={rage:0,haste:0,shield:0};
   player.potionBuffs=[]; player.deathWard=0; recalcPotionBuffs(player);
-  player.minion=null;
+  if(!restorePermanentMinion(player)) player.minion=null;
   pendingLevels=0;                   // 재도전 시 미처리 레벨업 초기화 (사망 직전 레벨업 중복 방지)
   state='play'; syncChrome();
   startCombat(lastRoomKind||'fight', false);   // fresh=false → 스냅샷 새로 찍지 않음
