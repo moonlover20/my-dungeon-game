@@ -6626,7 +6626,10 @@ function fireSniperLaser(beam){
   screenShake=Math.max(screenShake||0,5);
   const laserSrc=String(beam.srcName||'');
   const basicLaserSfx=/세트3 검기|온스터 사슬빔/.test(laserSrc);
-  if(basicLaserSfx) playFileSfx('set3LaserBasic',{vol:0.76,rate:/온스터/.test(laserSrc)?0.94:1.0,maxDur:1.6,cd:0.08,key:/온스터/.test(laserSrc)?'onsterBasicLaser':'set3BasicLaser'});
+  if(basicLaserSfx){
+    const onsterLaser=/온스터/.test(laserSrc);
+    playFileSfx('set3LaserBasic',{vol:onsterLaser?0.48:0.52,rate:onsterLaser?0.94:1.0,maxDur:0.85,cd:onsterLaser?0.28:0.34,key:onsterLaser?'onsterBasicLaser':'set3BasicLaser'});
+  }
   else if(act===2||/저격|sniper/i.test(laserSrc)) playFileSfx('act2Laser',{vol:0.74,rate:1.0,maxDur:1.2,cd:0.12,key:'act2SniperLaser'});
   if(!basicLaserSfx && sfx.enemyLaser) sfx.enemyLaser();
 }
