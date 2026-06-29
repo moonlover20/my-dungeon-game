@@ -7679,8 +7679,8 @@ function updateBoss(dt){
   }
   b.x=clamp(b.x,b.r,W-b.r); b.y=clamp(b.y,b.r,H*0.6);
   if(b.key==='kijo'){
-    b.a3T=(b.a3T==null?9:b.a3T)-dt;
-    if(b.a3T<=0){ if(a3seq||a3veil){ b.a3T=1.0; } else { a3Veil(4.5,'가면의 장막'); b.a3T=b.enraged?12:16; } }
+    b.a3T=(b.a3T==null?11:b.a3T)-dt;
+    if(b.a3T<=0){ if(a3seq||a3veil){ b.a3T=1.0; } else { a3Veil(4.5,'가면의 장막'); b.a3T=b.enraged?17:21; } }
   }
   // 접촉 — 순서 기억 중엔 몸박 무효 (정지 사격만)
   if(!(b.key==='kijo'&&a3seq) && dist2(b.x,b.y,player.x,player.y)<(b.r+player.r)**2) hurtPlayer(intentDamage(b,b.enraged?38:28), boss?boss.name:'\uC2DC\uCCAD\uC790');
