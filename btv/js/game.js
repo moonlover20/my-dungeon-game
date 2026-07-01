@@ -227,6 +227,9 @@ const FILE_SFX_PATHS={
   act2Pobear:'btv/assets/sfx/act2/pobear_fall_impact.mp3',
   act2Namu:'btv/assets/sfx/act2/namu_wood_hit.mp3',
   act2Reura:'btv/assets/sfx/act2/reura_swhoosh.mp3',
+  act2PobearJumpLand:'btv/assets/sfx/act2/pobear_jump_land.mp3',
+  act2NamuGuard:'btv/assets/sfx/act2/namu_guard_stance.mp3',
+  act2ReuraDash:'btv/assets/sfx/act2/reura_dash.mp3',
   hyechulGrowl:'btv/assets/sfx/hyechul/monster_growl.mp3',
   hyechulImpact:'btv/assets/sfx/hyechul/slime_impact.mp3',
   hyechulEgg:'btv/assets/sfx/hyechul/egg_crack.mp3',
@@ -4690,9 +4693,9 @@ function updateIntentPatterns(e,dt){
   }else if(e.type==='gwangcheon_gim'&&cd('_pierceCd',6)){
     setIntent(e,'👁','조준',1,()=>{ aimBulletFrom(e,430,16,8,'광천김 관통탄','seaweed_flake'); e._pierceCd=6.5; });
   }else if(e.type==='reura'&&cd('_dashIntentCd',5.6)){
-    setIntent(e,'?','??',0.45,()=>{ const a=Math.atan2(player.y-e.y,player.x-e.x); e._diving=true; e._diveAx=Math.cos(a); e._diveAy=Math.sin(a); e._diveLife=0.39; playFileSfx('act2Reura',{vol:0.54,rate:1.16,maxDur:0.45,cd:0.16,key:'reuraDash'}); e._dashIntentCd=5.9; });
+    setIntent(e,'?','??',0.45,()=>{ const a=Math.atan2(player.y-e.y,player.x-e.x); e._diving=true; e._diveAx=Math.cos(a); e._diveAy=Math.sin(a); e._diveLife=0.39; playFileSfx('act2ReuraDash',{vol:0.54,rate:1.0,maxDur:2.4,cd:0.16,key:'reuraDash'}); e._dashIntentCd=5.9; });
   }else if(e.type==='namu'&&cd('_guardCd',7)){
-    setIntent(e,'🛡','방어 태세',0.8,()=>{ e.defenseT=3; e._guardCd=7.5; burst(e.x,e.y,'#5fa84a',12,150); playFileSfx('act2Namu',{vol:0.52,rate:0.86,maxDur:0.65,cd:0.5,key:'namuGuard'}); });
+    setIntent(e,'🛡','방어 태세',0.8,()=>{ e.defenseT=3; e._guardCd=7.5; burst(e.x,e.y,'#5fa84a',12,150); playFileSfx('act2NamuGuard',{vol:0.52,rate:1.0,maxDur:2.7,cd:0.5,key:'namuGuard'}); });
   }else if(e.type==='pobear'&&cd('_jumpCd',7)){
     setIntent(e,'⚔','점프 강타',1,()=>{ const tx=clamp(player.x+rand(-35,35),e.r,W-e.r), ty=clamp(player.y+rand(-35,35),e.r,H-e.r); e._jumpTx=tx; e._jumpTy=ty; e._jumpMax=Math.max(0.28,Math.min(0.72,Math.hypot(tx-e.x,ty-e.y)/520)); e.cs='jump'; e.csT=e._jumpMax; e._jumpCd=7.5; if(typeof beep==='function')beep(150,0.14,'sawtooth',0.06); });
   }else if(e.type==='ketter' && cd('_silkCd',7.5)){
@@ -8943,7 +8946,7 @@ function update(dt){
         if(dist<=4||e.csT<=0){
           e.x=clamp(e.x,e.r,W-e.r); e.y=clamp(e.y,e.r,H-e.r);
           warnAoE(e.x,e.y,rand(120,135),0.8,0.45,Math.max(12,Math.round((e.dmg||22)*0.8)),e.name||e.label,e.color);
-          playFileSfx('act2Pobear',{vol:0.74,rate:0.95,maxDur:0.8,cd:0.28,key:'pobearJumpImpact'});
+          playFileSfx('act2PobearJumpLand',{vol:0.74,rate:1.0,maxDur:2.6,cd:0.28,key:'pobearJumpImpact'});
           screenShake=Math.max(screenShake,7);
           e.cs='rest'; e.csT=0.6; e.coolT=1.7;
           e._jumpTx=null; e._jumpTy=null; e._jumpMax=null;
