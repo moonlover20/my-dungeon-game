@@ -52,8 +52,8 @@ const ENEMY_TYPES={
   act3_sand_soldier:{name:"\uBAA8\uB798\uBCD1\uC0AC", r:13, hp:34, spd:112, dmg:10, touchDmg:10, color:"#e0b85a", xp:0, ai:"chase", summoned:true, noReward:true, noKillScore:true, label:"\uBAA8\uB798\uBCD1\uC0AC"},
   onster      :{name:"\uC628\uC2A4\uD130", r:58, hp:4000, spd:34, dmg:18, touchDmg:18, color:"#8d72ff", xp:1800, ai:"onster", range:360, cool:1.35, label:"\uC628\uC2A4\uD130"},
   yanggaeng     :{name:"박제인간", r:58, hp:3400, spd:48, dmg:17, touchDmg:17, color:"#111111", xp:3400, ai:"bagjein", cool:1.7, label:"박제인간"},
-  // === 2막 엘리트: 양갱 (3페이즈) ===
-  kkotchung     :{name:"양갱", r:37, hp:330, spd:50, dmg:16, touchDmg:21, color:"#f7a8d0", xp:900,  ai:"kkotchung", cool:1.32, label:"미주"},
+  // === 2막 엘리트: 미주 (3페이즈) ===
+  kkotchung     :{name:"미주", r:37, hp:330, spd:50, dmg:16, touchDmg:21, color:"#f7a8d0", xp:900,  ai:"kkotchung", cool:1.32, label:"미주"},
 };
 const ACT_POOLS=[
   { normal:["goblin_warrior","goblin_archer","goblin_shaman","goblin_bomber"], elite:["rhino_beetle"] },
