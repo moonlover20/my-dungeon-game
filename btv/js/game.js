@@ -4688,8 +4688,8 @@ function updateIntentPatterns(e,dt){
     if(e.clone) e._cloneMade=true;
     if(e.hp<=e.maxhp*0.5&&!e._cloneMade){ e._cloneMade=true; setIntent(e,'💀','분신',1.2,()=>{ for(let i=0;i<2;i++){ spawnEnemy('kkotchung',clamp(e.x+rand(-70,70),40,W-40),clamp(e.y+rand(-40,80),80,H-60),0.45); const c=enemies[enemies.length-1]; c.label='분신'; c.clone=true; c.summoned=true; c.noKillScore=true; c.hp=70; c.maxhp=70; c.xp=0; } }); }
     else if(cd('_kkBuffCd',8.5)) setIntent(e,'🔮','광역 버프',1.2,()=>{ enemies.forEach(o=>{ if(o!==e&&dist2(o.x,o.y,e.x,e.y)<210*210){ o.atkBuffT=5; o.coolT*=0.7; } }); e._kkBuffCd=9; });
-    else if(cd('_kkLockCd',6.5)) setIntent(e,'👁','고정',1,()=>{ for(let j=0;j<3;j++) setTimeout(()=>{ if(enemies.includes(e)) aimBulletFrom(e,310,18,8,'양갱 고정탄'); },j*120); e._kkLockCd=7; });
-    else if(!e.clone && cd('_kkImplodeCd',11)) setIntent(e,'❀','역류 개화',1.0,()=>{ const N=(e.phase||1)>=3?20:14; for(let i=0;i<N;i++){ const a2=i/N*TAU; const sx=player.x+Math.cos(a2)*340, sy=player.y+Math.sin(a2)*340; const ia=Math.atan2(player.y-sy,player.x-sx); eBullets.push({x:sx,y:sy,vx:Math.cos(ia)*195,vy:Math.sin(ia)*195,r:8,dmg:14,life:3.2,srcName:'양갱 역류',kkot:true}); } burst(player.x,player.y,'#f7a8d0',16,200); if(typeof beep==='function')beep(240,0.1,'triangle',0.05); e._kkImplodeCd=11; });
+    else if(cd('_kkLockCd',6.5)) setIntent(e,'👁','고정',1,()=>{ for(let j=0;j<3;j++) setTimeout(()=>{ if(enemies.includes(e)) aimBulletFrom(e,310,18,8,'미주 고정탄'); },j*120); e._kkLockCd=7; });
+    else if(!e.clone && cd('_kkImplodeCd',11)) setIntent(e,'❀','역류 개화',1.0,()=>{ const N=(e.phase||1)>=3?20:14; for(let i=0;i<N;i++){ const a2=i/N*TAU; const sx=player.x+Math.cos(a2)*340, sy=player.y+Math.sin(a2)*340; const ia=Math.atan2(player.y-sy,player.x-sx); eBullets.push({x:sx,y:sy,vx:Math.cos(ia)*195,vy:Math.sin(ia)*195,r:8,dmg:14,life:3.2,srcName:'미주 역류',kkot:true}); } burst(player.x,player.y,'#f7a8d0',16,200); if(typeof beep==='function')beep(240,0.1,'triangle',0.05); e._kkImplodeCd=11; });
   }else if(e.type==='gwangcheon_gim'&&cd('_pierceCd',6)){
     setIntent(e,'👁','조준',1,()=>{ aimBulletFrom(e,430,16,8,'광천김 관통탄','seaweed_flake'); e._pierceCd=6.5; });
   }else if(e.type==='reura'&&cd('_dashIntentCd',5.6)){
@@ -6028,7 +6028,7 @@ const BOSS_INTRO_LINES={
   hyechul:{name:'혜철이',line:'에그는... 곧 깨어나.',tone:'dark',ms:2100},
   kijo:{name:'키죠',line:'보지 마.',sub:'키죠의 마안이 열렸다.',tone:'purple',glitch:true,ms:2100},
   rhino_beetle:{name:'자잘자',line:'oof.',sub:'자잘자가 돌진 준비를 합니다.',ms:1800},
-  kkotchung:{name:'양갱',line:'말랑한 줄 알았지?',sub:'꽃잎 사이로 검은 단맛이 번진다.',tone:'dark',glitch:true,ms:2100},
+  kkotchung:{name:'미주',line:'말랑한 줄 알았지?',sub:'꽃잎 사이로 검은 단맛이 번진다.',tone:'dark',glitch:true,ms:2100},
   act3_truck:{name:'노잭',line:'NO JACK.',sub:'송출 신호가 전장을 잠식합니다.',tone:'dark',ms:1900},
   onster:{name:'온스터',line:'아직 깨우지 마라.',sub:'사슬이 바닥을 긁는다.',tone:'dark',ms:2100},
   set3:{name:'현진',line:'먼저 들어간다.',sub:'무거운 발소리가 가까워진다.',tone:'dark',ms:2300},
@@ -6392,11 +6392,11 @@ function startCombat(kind, fresh){
         eliteIntro={t:0, ze:ze, warn:null, landed:false, banner:0, tensionDone:false};
         beep(420,0.3,"sine",0.05); beep(280,0.5,"sine",0.035);
       } else if(act===2){
-        // 2막 엘리트: 양갱
+        // 2막 엘리트: 미주
         spawnEnemy('kkotchung', W/2, 140, diff);
         showBossIntroLine('kkotchung',680);
         const ze=enemies[enemies.length-1]; roomHadElite=true; roomEliteKind='yanggaeng';
-        ze.elite=true; ze.eliteViewer=true; ze.eliteKind='yanggaeng'; ze.label='양갱';
+        ze.elite=true; ze.eliteViewer=true; ze.eliteKind='yanggaeng'; ze.label='미주';
         ze.hp*=1.75; ze.maxhp*=1.75; ze.dmg=Math.round(ze.dmg*1.4); ze.r+=5; ze.xp=900; ze.coolT=1.0;
         ze.x=W/2; ze.y=190; ze.intro=true; ze.introScale=0; ze.stunT=4; ze.tauntedHalf=false;
         ze.atkT=1.8; ze.atkN=0; ze.enr=false; ze.enrShown=false;
@@ -6631,7 +6631,7 @@ function enemyBulletStyle(e){
   if(/ketter|케터/.test(s)) return 'web_thread';
   if(/blackstar|흑별/.test(s)) return 'void_star';
   if(/apple|사과/.test(s)) return 'apple_seed';
-  if(/kkot|양갱/.test(s)) return 'jelly';
+  if(/kkot|미주/.test(s)) return 'jelly';
   if(/killjoy|킬조이/.test(s)) return 'glitch';
   if(/goblin_archer|대파/.test(s)) return 'bolt';
   if(/goblin|고블/.test(s)) return 'orb';
@@ -7263,7 +7263,7 @@ function currentEliteKind(){
   return roomEliteKind||eliteKindOf(eliteIntro&&eliteIntro.ze);
 }
 function eliteDisplayName(kind){
-  if(kind==='yanggaeng') return '양갱';
+  if(kind==='yanggaeng') return '미주';
   if(kind==='act3_truck') return '노잭';
   return '자잘자';
 }
@@ -7313,7 +7313,7 @@ function killEnemy(e){
     roomBossKind='onster';
   }
   if(e.eliteViewer && eliteKindOf(e)==='yanggaeng'){
-    banner('양갱 처치!','검은 단맛이 흩어진다',1200);
+    banner('미주 처치!','검은 단맛이 흩어진다',1200);
     spawnDeathBubble(e.x, e.y-e.r-12, eliteDefeatBubble('yanggaeng'), 3.4);
     e.eliteViewer=false;
   }
@@ -8991,7 +8991,7 @@ function update(dt){
       } else { e.csT-=dt; if(e.csT<=0) e.cs='approach'; }
     }
     else if(e.ai==='kkotchung'){
-      // === 양갱: 3페이즈 엘리트 ===
+      // === 미주: 3페이즈 엘리트 ===
       const ph=e.phase||1;
       e.wob+=dt*2.2;
 
@@ -9010,7 +9010,7 @@ function update(dt){
           // 전방위 꽃잎 폭발 3중 링
           for(let ring=0;ring<3;ring++){
             const k=16+ring*6, sp=160+ring*50;
-            for(let i=0;i<k;i++){ const a2=i/k*TAU+ring*0.28+(e.atkN||0)*0.7; eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*sp,vy:Math.sin(a2)*sp,r:9,dmg:18,life:4.2,srcName:'양갱',kkot:true}); }
+            for(let i=0;i<k;i++){ const a2=i/k*TAU+ring*0.28+(e.atkN||0)*0.7; eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*sp,vy:Math.sin(a2)*sp,r:9,dmg:18,life:4.2,srcName:'미주',kkot:true}); }
           }
           spawnSlowField(e.x,e.y,110,5);
           screenShake=Math.max(screenShake||0,14);
@@ -9032,12 +9032,12 @@ function update(dt){
           if(ph===1){
             if(slot===0){
               // 꽃잎 소용돌이 8발 (회전 오프셋)
-              const k=8; for(let i=0;i<k;i++){ const a2=i/k*TAU+e.atkN*0.35; eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*215,vy:Math.sin(a2)*215,r:8,dmg:11,life:3.2,srcName:'양갱',kkot:true}); }
+              const k=8; for(let i=0;i<k;i++){ const a2=i/k*TAU+e.atkN*0.35; eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*215,vy:Math.sin(a2)*215,r:8,dmg:11,life:3.2,srcName:'미주',kkot:true}); }
               banner('🍯 꽃잎 사격','',500); beep(880,0.05,'sine',0.04);
               e.atkT=base;
             } else if(slot===1){
               // 조준 3연사
-              for(let i=0;i<3;i++) setTimeout(()=>{ if(enemies.includes(e)){ const a2=Math.atan2(player.y-e.y,player.x-e.x); eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*265,vy:Math.sin(a2)*265,r:8,dmg:12,life:3.0,srcName:'양갱',kkot:true}); } },i*130);
+              for(let i=0;i<3;i++) setTimeout(()=>{ if(enemies.includes(e)){ const a2=Math.atan2(player.y-e.y,player.x-e.x); eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*265,vy:Math.sin(a2)*265,r:8,dmg:12,life:3.0,srcName:'미주',kkot:true}); } },i*130);
               e.atkT=base;
             } else if(slot===2){
               // 바닥 가시 (플레이어 위치 + 랜덤 8곳)
@@ -9047,7 +9047,7 @@ function update(dt){
               e.atkT=base+0.4;
             } else if(slot===3){
               // 3발 부채꼴
-              for(let i=-1;i<=1;i++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa+i*0.28)*240,vy:Math.sin(pa+i*0.28)*240,r:9,dmg:12,life:3.5,srcName:'양갱',kkot:true});
+              for(let i=-1;i<=1;i++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa+i*0.28)*240,vy:Math.sin(pa+i*0.28)*240,r:9,dmg:12,life:3.5,srcName:'미주',kkot:true});
               e.atkT=base;
             } else if(slot===4){
               // 덩굴 슬로우장
@@ -9058,19 +9058,19 @@ function update(dt){
             } else {
               // 위에서 꽃잎 낙하
               const rainN=14+irand(0,4);
-              for(let i=0;i<rainN;i++){ const fx=rand(20,W-20); eBullets.push({x:fx,y:-12,vx:rand(-15,15),vy:rand(170,210),r:8,dmg:11,life:4.5,srcName:'양갱',kkot:true}); }
+              for(let i=0;i<rainN;i++){ const fx=rand(20,W-20); eBullets.push({x:fx,y:-12,vx:rand(-15,15),vy:rand(170,210),r:8,dmg:11,life:4.5,srcName:'미주',kkot:true}); }
               banner('🍯 꽃잎 비','위에서 쏟아진다!',700);
               e.atkT=base+0.2;
             }
           } else if(ph===2){
             if(slot===0){
               // 소용돌이 12발 (격노 링)
-              const k=12; for(let i=0;i<k;i++){ const a2=i/k*TAU+e.atkN*0.4; eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*220,vy:Math.sin(a2)*220,r:8,dmg:13,life:3.6,srcName:'양갱',kkot:true}); }
+              const k=12; for(let i=0;i<k;i++){ const a2=i/k*TAU+e.atkN*0.4; eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*220,vy:Math.sin(a2)*220,r:8,dmg:13,life:3.6,srcName:'미주',kkot:true}); }
               banner('🍯 꽃잎 링','전방위 사격!',600);
               e.atkT=base;
             } else if(slot===1){
               // 눈알 추적탄 4발
-              const k=4; for(let i=0;i<k;i++){ const a2=pa+(i-(k-1)/2)*0.22; eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*240,vy:Math.sin(a2)*240,r:9,dmg:14,life:3.4,srcName:'양갱',kkot:true,home:1.6}); }
+              const k=4; for(let i=0;i<k;i++){ const a2=pa+(i-(k-1)/2)*0.22; eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*240,vy:Math.sin(a2)*240,r:9,dmg:14,life:3.4,srcName:'미주',kkot:true,home:1.6}); }
               banner('👁 눈알 추적탄','피해라!',650);
               e.atkT=base;
             } else if(slot===2){
@@ -9083,14 +9083,14 @@ function update(dt){
             } else if(slot===3){
               // 더블 링 (혜철이 포자링 스타일)
               const k=12;
-              for(let i=0;i<k;i++){ const a2=i/k*TAU+(e.atkN||0)*0.7; eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*195,vy:Math.sin(a2)*195,r:8,dmg:13,life:3.8,srcName:'양갱',kkot:true}); }
-              for(let i=0;i<k;i++){ const a2=i/k*TAU+Math.PI/k+(e.atkN||0)*0.7; eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*235,vy:Math.sin(a2)*235,r:7,dmg:12,life:3.4,srcName:'양갱',kkot:true}); }
+              for(let i=0;i<k;i++){ const a2=i/k*TAU+(e.atkN||0)*0.7; eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*195,vy:Math.sin(a2)*195,r:8,dmg:13,life:3.8,srcName:'미주',kkot:true}); }
+              for(let i=0;i<k;i++){ const a2=i/k*TAU+Math.PI/k+(e.atkN||0)*0.7; eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*235,vy:Math.sin(a2)*235,r:7,dmg:12,life:3.4,srcName:'미주',kkot:true}); }
               e.atkT=base;
             } else if(slot===4){
               // 꽃잎 비 (측면도 추가)
               const rainN=22+irand(0,6);
-              for(let i=0;i<rainN;i++){ const fx=rand(15,W-15); eBullets.push({x:fx,y:-12,vx:rand(-18,18),vy:rand(178,218),r:8,dmg:13,life:4.5,srcName:'양갱',kkot:true}); }
-              for(let i=0;i<4;i++){ eBullets.push({x:-10,y:rand(100,H-100),vx:rand(135,175),vy:rand(-18,18),r:7,dmg:12,life:4,srcName:'양갱',kkot:true}); eBullets.push({x:W+10,y:rand(100,H-100),vx:-rand(135,175),vy:rand(-18,18),r:7,dmg:12,life:4,srcName:'양갱',kkot:true}); }
+              for(let i=0;i<rainN;i++){ const fx=rand(15,W-15); eBullets.push({x:fx,y:-12,vx:rand(-18,18),vy:rand(178,218),r:8,dmg:13,life:4.5,srcName:'미주',kkot:true}); }
+              for(let i=0;i<4;i++){ eBullets.push({x:-10,y:rand(100,H-100),vx:rand(135,175),vy:rand(-18,18),r:7,dmg:12,life:4,srcName:'미주',kkot:true}); eBullets.push({x:W+10,y:rand(100,H-100),vx:-rand(135,175),vy:rand(-18,18),r:7,dmg:12,life:4,srcName:'미주',kkot:true}); }
               banner('🍯 꽃잎 폭풍','사방에서 쏟아진다!',800);
               e.atkT=base+0.3;
             } else {
@@ -9104,8 +9104,8 @@ function update(dt){
             // 페이즈3: 최흉
             if(slot===0){
               // 눈알 추적 5발 + 소용돌이
-              const k=5; for(let i=0;i<k;i++){ const a2=pa+(i-(k-1)/2)*0.2; eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*255,vy:Math.sin(a2)*255,r:9,dmg:16,life:3.2,srcName:'양갱',kkot:true,home:2.0}); }
-              const k2=10; for(let i=0;i<k2;i++){ const a2=i/k2*TAU+e.atkN*0.5; eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*195,vy:Math.sin(a2)*195,r:7,dmg:13,life:3.8,srcName:'양갱',kkot:true}); }
+              const k=5; for(let i=0;i<k;i++){ const a2=pa+(i-(k-1)/2)*0.2; eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*255,vy:Math.sin(a2)*255,r:9,dmg:16,life:3.2,srcName:'미주',kkot:true,home:2.0}); }
+              const k2=10; for(let i=0;i<k2;i++){ const a2=i/k2*TAU+e.atkN*0.5; eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*195,vy:Math.sin(a2)*195,r:7,dmg:13,life:3.8,srcName:'미주',kkot:true}); }
               banner('👁 눈알+링 동시','최강 공격!',700);
               e.atkT=base;
             } else if(slot===1){
@@ -9118,14 +9118,14 @@ function update(dt){
             } else if(slot===2){
               // 트리플 링
               const k=14;
-              for(let ring=0;ring<3;ring++){ for(let i=0;i<k;i++){ const a2=i/k*TAU+ring*(Math.PI/k)+(e.atkN||0)*0.7; eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*(185+ring*38),vy:Math.sin(a2)*(185+ring*38),r:8,dmg:15,life:4.0,srcName:'양갱',kkot:true}); } }
+              for(let ring=0;ring<3;ring++){ for(let i=0;i<k;i++){ const a2=i/k*TAU+ring*(Math.PI/k)+(e.atkN||0)*0.7; eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*(185+ring*38),vy:Math.sin(a2)*(185+ring*38),r:8,dmg:15,life:4.0,srcName:'미주',kkot:true}); } }
               banner('🍯 트리플 링','전방위 최강!',750);
               e.atkT=base;
             } else if(slot===3){
               // 꽃잎 비 최강 + 사방
               const rainN=32+irand(0,8);
-              for(let i=0;i<rainN;i++){ const fx=rand(10,W-10); eBullets.push({x:fx,y:-12,vx:rand(-22,22),vy:rand(182,235),r:9,dmg:15,life:4.8,srcName:'양갱',kkot:true}); }
-              for(let i=0;i<7;i++){ eBullets.push({x:-10,y:rand(70,H-70),vx:rand(148,195),vy:rand(-22,22),r:7,dmg:14,life:4,srcName:'양갱',kkot:true}); eBullets.push({x:W+10,y:rand(70,H-70),vx:-rand(148,195),vy:rand(-22,22),r:7,dmg:14,life:4,srcName:'양갱',kkot:true}); }
+              for(let i=0;i<rainN;i++){ const fx=rand(10,W-10); eBullets.push({x:fx,y:-12,vx:rand(-22,22),vy:rand(182,235),r:9,dmg:15,life:4.8,srcName:'미주',kkot:true}); }
+              for(let i=0;i<7;i++){ eBullets.push({x:-10,y:rand(70,H-70),vx:rand(148,195),vy:rand(-22,22),r:7,dmg:14,life:4,srcName:'미주',kkot:true}); eBullets.push({x:W+10,y:rand(70,H-70),vx:-rand(148,195),vy:rand(-22,22),r:7,dmg:14,life:4,srcName:'미주',kkot:true}); }
               banner('🍯 심연의 꽃비','하늘과 사방이 무너진다!',900);
               e.atkT=base+0.2;
             } else if(slot===4){
@@ -10575,7 +10575,7 @@ const EVENT_THEMES = {
   '💪 훈상태 단련': {scene:'gladiator',accent:'#ff8840', bg:'radial-gradient(ellipse at 50% 70%,#1a0c04 0%,#0a0814 60%)', tags:[{t:'단련',c:'#ff8840',bg:'rgba(60,20,0,.55)'},{t:'성장',c:'#5dff9b',bg:'rgba(0,55,25,.55)'}]},
 
   // ── 팬 카메오 2차 ─────────────────────────────────────────
-  '🍮 양갱 디저트':   {scene:'potion',   accent:'#40ee80', bg:'radial-gradient(ellipse at 50% 55%,#08200f 0%,#0a0814 60%)', tags:[{t:'회복',c:'#40ee80',bg:'rgba(0,50,20,.55)'}]},
+  '🍮 미주 디저트':   {scene:'potion',   accent:'#40ee80', bg:'radial-gradient(ellipse at 50% 55%,#08200f 0%,#0a0814 60%)', tags:[{t:'회복',c:'#40ee80',bg:'rgba(0,50,20,.55)'}]},
   '🪲 자잘자 채집':   {scene:'chest',    accent:'#88aa40', bg:'radial-gradient(ellipse at 45% 60%,#101808 0%,#0a0814 60%)', tags:[{t:'채집',c:'#88aa40',bg:'rgba(40,55,0,.55)'},{t:'도박',c:'#ffaa00',bg:'rgba(55,35,0,.55)'}]},
   '😴 졸고 있는 승우': {scene:'well',     accent:'#7aa8ff', bg:'radial-gradient(ellipse at 50% 60%,#08122a 0%,#0a0814 60%)', tags:[{t:'휴식',c:'#7aa8ff',bg:'rgba(0,30,70,.55)'}]},
   '🐤 대파와 아기새': {scene:'well',     accent:'#ffd24d', bg:'radial-gradient(ellipse at 50% 58%,#1a1600 0%,#0a0814 60%)', tags:[{t:'회복',c:'#40ee80',bg:'rgba(0,50,20,.55)'}]},
@@ -11594,9 +11594,9 @@ const EVENTS=[
   // ====================================================
   //  팬 카메오 2차 — 막별 배치는 EVENT_ACT_MAP 참조
   // ===== 1막 (가볍게/회복) =====
-  {id:'fan_yanggaeng',tag:'🍮 양갱 디저트',title:'달달한 양갱',body:'양갱이 "당 떨어졌죠?" 하며 디저트를 잔뜩 후원했다. 달달한 게 기운을 북돋운다.',
+  {id:'fan_yanggaeng',tag:'🍮 미주 디저트',title:'미주의 디저트',body:'미주가 "당 떨어졌죠?" 하며 디저트를 잔뜩 후원했다. 달달한 게 기운을 북돋운다.',
    choices:[
-     {t:'양갱을 먹는다 — 체력 30% 회복, 최대 체력 +3',f:()=>{eventMaxHpDelta(3);healPlayer(Math.max(20,Math.round(player.maxhp*0.30)),player.x,player.y);banner('🍮 달달구리','체력 회복 / 최대 체력 +3',1400);finishNode();}},
+     {t:'미주가 준 디저트를 먹는다 — 체력 30% 회복, 최대 체력 +3',f:()=>{eventMaxHpDelta(3);healPlayer(Math.max(20,Math.round(player.maxhp*0.30)),player.x,player.y);banner('🍮 달달구리','체력 회복 / 최대 체력 +3',1400);finishNode();}},
      {t:'포션에 곁들인다 — 골드 30 지불, 포션 1개',disabled:()=>gold<30,f:()=>{spendGold(30,'event');updateHUD();eventAddPotionOrGold(rollPotion(),35);banner('🍮 디저트 세트','포션 획득',1300);finishNode();}},
      {t:'사양한다',f:()=>finishNode()},
    ]},
@@ -11752,7 +11752,7 @@ const EVENT_ACT_MAP={
   '👑 왕의 보관함':[3],'⚰ 봉인된 관':[3],'💎 탐욕의 신전':[3],'🕶 검은 시장':[3],
   // ── 팬 카메오 2차 ──
   // 1막
-  '🍮 양갱 디저트':[1],'🪲 자잘자 채집':[1],'😴 졸고 있는 승우':[1],'🐤 대파와 아기새':[1],'🎤 광천김 노래':[1],
+  '🍮 미주 디저트':[1],'🪲 자잘자 채집':[1],'😴 졸고 있는 승우':[1],'🐤 대파와 아기새':[1],'🎤 광천김 노래':[1],
   '⛷️ 르블이 스키':[1],'🌳 나무 그늘':[1],'✨ 파이리 텐션':[1],'🗣️ 말대모 잔소리':[1],'🕊️ 비둘기 떼':[1],
   // 2막
   '💰 러라 투자':[2],'💔 킬조이의 부탁':[2],'💕 한쥐 썸':[2],'😤 미주의 매도':[2],'🦈 도민 사냥':[2],
@@ -15273,7 +15273,7 @@ function drawEliteBar(e){
     ctx.fillStyle=grad; ctx.fillRect(bx,by,bw*f,bh);
     ctx.strokeStyle=phase>=3?'#ff2060':'#ffb0d0'; ctx.lineWidth=2; ctx.strokeRect(bx,by,bw,bh);
     ctx.fillStyle='#fff'; ctx.font='bold 12px sans-serif'; ctx.textAlign='center';
-    ctx.fillText('🍯 양갱', W/2, by-8);
+    ctx.fillText('🍯 미주', W/2, by-8);
     ctx.textAlign='left'; ctx.restore();
     return;
   }
@@ -15538,7 +15538,7 @@ function bulletKind(b){
       else if(/케케로|에너지구|신호 간섭|채널 점거|송출|후원|생방송 투표|역송출/.test(n)) k='broadcast_signal';
       else if(/세트3|형제 협공/.test(n)) k='shard';
       else if(/박제인간/.test(n)) k='needle';
-      else if(/양갱/.test(n)) k='jelly';
+      else if(/미주/.test(n)) k='jelly';
       else if(/승우/.test(n)) k='glitch';
       else if(/저격|관통|조준/.test(n)) k='bolt';
       else if(/포자|산성|혜철|저글링|뮤탈|울트라/.test(n)) k='spore';
@@ -16013,7 +16013,7 @@ function introFxReset(options){
   const st=$('storyText'); if(st){ st.classList.remove('show','urgent'); st.textContent=''; }
 }
 function introEsc(v){ return String(v==null?'':v).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
-const INTRO_CHAT_NAMES=['노잭','양파양갱','러라','zlwy','L0ry','장수풍뎅이2','강쪼이','까1치','나까무라김춘식','전미닝','우디엘런','박제인간','광천김','혜철이','흑별','이끼낀바나나','훈상태','러부엉','소실아','메구몬','고로고로무','아기새자야','미주1013','Catthe'];
+const INTRO_CHAT_NAMES=['노잭','양파미주','러라','zlwy','L0ry','장수풍뎅이2','강쪼이','까1치','나까무라김춘식','전미닝','우디엘런','박제인간','광천김','혜철이','흑별','이끼낀바나나','훈상태','러부엉','소실아','메구몬','고로고로무','아기새자야','미주1013','Catthe'];
 const INTRO_CHAT_COLORS=['#91ffb6','#ff7ad9','#8be8ff','#ffd86b','#bfa2ff','#ff9f6e','#a5ffef','#f0f3ff','#9fd66b','#ff8fa7'];
 const INTRO_CHAT_BADGES=['1st','♥','25','구독','팬','★'];
 const NORMAL_CHAT=[
@@ -16750,7 +16750,7 @@ function retryRoom(){
 }
 const DEATH_LINES={
   '승우':{title:'승우가 게임을 닫았다', q:['승우: "버그가 아니라 실력입니다."','채팅: 화면 돌 때 죽음 KEKW','승우: "한 번 더 하시죠, 봉식님."']},
-  '양갱':{title:'양갱에게 짓눌렸다', q:['채팅: 양갱한테 짐 ㅋㅋ Sadge','양갱: 말랑말랑~','채팅: 흑임자 맛 ㄷㄷ']},
+  '미주':{title:'미주에게 짓눌렸다', q:['채팅: 미주한테 짐 ㅋㅋ Sadge','미주: 말랑말랑~','채팅: 흑임자 맛 ㄷㄷ']},
   '자잘자':{title:'자잘자에게 긁혔다', q:['자잘자: 봉식님 그것밖에 안 되시네요 KEKW','채팅: 자잘자한테 짐ㅋㅋ Sadge','자잘자: 로블록스나 하러 가세요']},
   '혜철이':{title:'혜철이에게 잡아먹혔다', q:['혜철이: 크아아앙!','채팅: 보스도 아닌데… monkaS','혜철이: 한 입 거리였네']},
   '키죠':{title:'키죠의 가면에 짓밟혔다', q:['키죠: 가소롭군.','채팅: 1막 보스한테 ㅠㅠ','키죠: 이 정도였나?']},
@@ -16932,7 +16932,7 @@ const EndingCredits=(function(){
       {n:'흑별 (불명)',d:'2020년 12월 24일',p:'2구역 광천김 소굴',r:'별이 검게 물든 뒤 실종',t:'mob',tint:'#9146ff',f:{hair:'spike',brow:1,eye:'void',mouth:'thin',skin:2}},
       {n:'저격러 (불명)',d:'2021년 2월 14일',p:'2구역 망루',r:'도네 저격 직후 연결이 끊김',t:'mob',f:{hair:'cap',brow:2,eye:'slit',mouth:'flat',skin:0}},
       {n:'사과 (불명)',d:'2021년 10월 31일',p:'2구역 광천김 소굴',r:'한 입 베어 문 채 발견 안 됨',t:'mob',tint:'#ff4d6d',f:{hair:'curl',brow:1,eye:'dot',mouth:'open',skin:1}},
-      {n:'양갱 / 미주 (불명)',d:'2015년 9월 13일',p:'2구역 — 화원',r:'말랑해지다 형체가 사라짐',t:'elite',tint:'#f7a8d0',f:{hair:'long',brow:0,eye:'void',mouth:'fang',skin:4}},
+      {n:'미주 (불명)',d:'2015년 9월 13일',p:'2구역 — 화원',r:'말랑해지다 형체가 사라짐',t:'elite',tint:'#f7a8d0',f:{hair:'long',brow:0,eye:'void',mouth:'fang',skin:4}},
       {n:'박제인간 (불명)',d:'████년 ██월',p:'2구역 — 전시실',r:'박제된 채 전시되어 있었다는 제보',t:'boss',tint:'#9146ff',redact:1,f:{hair:'none',brow:2,eye:'glitch',mouth:'glitch',skin:4}},
       {n:'승우 (???)',d:'████년 ██월 ██일',p:'화면 너머',r:'게임을 닫은 뒤 화면 밖으로 사라짐',t:'boss',tint:'#9146ff',redact:1,f:{hair:'glitch',brow:2,eye:'glitch',mouth:'glitch',skin:4}},
     ],
@@ -17191,7 +17191,7 @@ const EndingCredits=(function(){
     return '<h2>STAFF</h2>'+
       '<div class="ec-cr"><span class="ec-lab">기획 · 개발</span><br><b>달좋아해요</b></div>'+
       '<div class="ec-cr"><span class="ec-lab">음악</span><br><b>케터</b></div>'+
-      '<div class="ec-cr"><span class="ec-lab">베타 테스터</span><br><b>자잘자 · 케터 · 키죠 · 노잭 · 러라 · 킬조이 · 양갱 · 타포</b></div>'+
+      '<div class="ec-cr"><span class="ec-lab">베타 테스터</span><br><b>자잘자 · 케터 · 키죠 · 노잭 · 러라 · 킬조이 · 미주 · 타포</b></div>'+
       '<div class="ec-cr" style="margin-top:6vmin"><span class="ec-lab">집계된 실종 시청자</span><br><b>'+SEQ.length+'명</b></div>'+
       extra+
       '<div class="ec-cr" style="margin-top:8vmin;color:#ff4d6d"><b>화면을 끄지 마십시오.</b></div>'+
@@ -17992,7 +17992,7 @@ window.vicious=function(o){
 };
 
 
-// ===== 양갱 패턴 테스트 콘솔 =====
+// ===== 미주 패턴 테스트 콘솔 =====
 function _kkotTarget(){
   return enemies.find(e=>e&&e.type==='kkotchung'&&!e.clone) || enemies.find(e=>e&&e.type==='kkotchung') || null;
 }
@@ -18003,7 +18003,7 @@ function _kkotPrepareRoom(){
 }
 function _kkotTune(e,phase){
   if(!e) return e;
-  e.elite=true; e.eliteViewer=true; e.eliteKind='yanggaeng'; e.label=e.clone?'분신':'양갱';
+  e.elite=true; e.eliteViewer=true; e.eliteKind='yanggaeng'; e.label=e.clone?'분신':'미주';
   e.phase=clamp(Math.round(phase||e.phase||1),1,3);
   e.x=clamp(e.x||W/2,60,W-60); e.y=clamp(e.y||190,90,H-80);
   e.atkT=0.25; e.atkN=e.atkN||0; e.climaxT=0; e.eyeOrbs=e.eyeOrbs||[];
@@ -18020,14 +18020,14 @@ window.kkotspawn=function(phase){
   e.hp=Math.max(e.hp||1, 1600); e.maxhp=e.hp; e.dmg=Math.round((e.dmg||10)*1.4);
   e.xp=0; e.tauntedHalf=false; e._cloneMade=false; e._kkBag=[]; e._kkRep=0;
   if(typeof showBossIntroLine==='function') showBossIntroLine('kkotchung',480,e);
-  if(typeof banner==='function') banner('🧪 양갱 소환','kkottest()로 패턴 확인',1000);
+  if(typeof banner==='function') banner('🧪 미주 소환','kkottest()로 패턴 확인',1000);
   return e;
 };
 window.kkotphase=function(phase){
   const e=_kkotTarget() || window.kkotspawn(phase);
   _kkotTune(e, phase||1);
   e._kkBag=[]; e._kkRep=0; e.atkT=0.2;
-  if(typeof banner==='function') banner('🧪 양갱 P'+e.phase,'',800);
+  if(typeof banner==='function') banner('🧪 미주 P'+e.phase,'',800);
   return e;
 };
 window.kkottest=function(name,phase){
@@ -18040,12 +18040,12 @@ window.kkottest=function(name,phase){
   if(slotMap[key]!=null){
     e._kkRep=0; e._kkSlot=slotMap[key]; e._kkBag=[slotMap[key]]; e.atkT=0;
     if(key==='boom'||key==='burst'||key==='climax'){ e.phase=Math.max(e.phase||1,2); e._kkBag=[5]; }
-    if(typeof banner==='function') banner('🧪 양갱 패턴 · '+key,'다음 틱에 발사',800);
+    if(typeof banner==='function') banner('🧪 미주 패턴 · '+key,'다음 틱에 발사',800);
     return {phase:e.phase, pattern:key, slot:e._kkSlot, target:e};
   }
   if(key==='clone'){
     e._cloneMade=false; e.hp=Math.min(e.hp,e.maxhp*0.49); e._kkBuffCd=99; e._kkLockCd=99; e._kkImplodeCd=99;
-    if(typeof banner==='function') banner('🧪 양갱 패턴 · clone','분신 조건 강제',800);
+    if(typeof banner==='function') banner('🧪 미주 패턴 · clone','분신 조건 강제',800);
     return e;
   }
   if(key==='buff'){ e._kkBuffCd=0; e._kkLockCd=99; e._kkImplodeCd=99; return e; }
@@ -18063,9 +18063,9 @@ window.kkotlab=function(phase,pat){
 };
 window.kkothelp=function(){
   console.log([
-    '── 양갱 패턴 테스트 ──',
-    'kkotlab(phase?,pat?) : 무적+양갱 소환+옵션 패턴. 예: kkotlab(3,"rain")',
-    'kkotspawn(phase?)    : 양갱 소환',
+    '── 미주 패턴 테스트 ──',
+    'kkotlab(phase?,pat?) : 무적+미주 소환+옵션 패턴. 예: kkotlab(3,"rain")',
+    'kkotspawn(phase?)    : 미주 소환',
     'kkotphase(1|2|3)     : 페이즈 강제',
     'kkottest()           : 패턴 이름 목록',
     'kkottest("swirl")    : 다음 틱에 해당 패턴 발사',
