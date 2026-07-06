@@ -1248,6 +1248,19 @@ window.addEventListener('keydown',e=>{
     else { e.preventDefault(); e.stopPropagation(); }
     return;
   }
+  if(state==='play' && bossTalkActive && bossTalkActive() && (k===' '||k==='enter'||k==='e'||k==='1'||k==='2'||k==='3')){
+    const storyInput=(k==='1'||k==='2'||k==='3')?Number(k):null;
+    if(handleBossTalkAdvance(storyInput)){
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+  }
+  if(state==='play' && k==='e' && tryInteractDonationChest()){
+    e.preventDefault();
+    e.stopPropagation();
+    return;
+  }
   if(tutorialMode&&tutorial&&tutorial.step==='controls'&&(k==='c'||k==='escape')){
     if(k==='c'){
       tutorial.controlsC=true;
@@ -1297,6 +1310,13 @@ function canvasPos(e){
 cvs.addEventListener('mousemove',e=>{const p=canvasPos(e);mouseX=p.x;mouseY=p.y;});
 let autoFire=false;
 cvs.addEventListener('mousedown',e=>{
+  const p=canvasPos(e); mouseX=p.x; mouseY=p.y;
+  if(state==='play' && bossTalkActive && bossTalkActive() && handleBossTalkAdvance(p)){
+    e.preventDefault();
+    e.stopPropagation();
+    mouseDown=false;
+    return;
+  }
   mouseDown=true;
   if(tutorialMode&&tutorial&&tutorial.moved&&!tutorial.shot){
     autoFire=true;
@@ -3217,6 +3237,7 @@ function onsterAwaken(e){
   e.awakened=true; e.phase=2; e.sprite='onster_p2'; e.color='#ff4dd2'; e.intentInvuln=10; e.invulnMax=10; e.stunT=1.5; e.spd*=1.28; e.cool=Math.max(0.75,(e.cool||1.35)*0.72);
   eBullets.length=0; hazards=[]; screenShake=Math.max(screenShake||0,22); hitFlash=Math.max(hitFlash||0,0.55);
   bossEvolve={phase:2, t:0, line:'사슬이 끊어졌다 · 10초간 무적', name:'각성', col:e.color, e};
+  armBossPhaseStory(e,2,'사슬이 끊어졌다 · 10초간 무적');
   cutsceneT=1.6;
   banner('🛡 온스터 각성 · 무적 10초','데미지가 들어가지 않는다 — 10초간 버텨라',2400);
   if(typeof chatRandom==='function') chatRandom('10초간 무적이다 ㄷㄷ');
@@ -3258,6 +3279,7 @@ function set3NextPhase(b){
   b.name=name; b.title='2막 중간보스 · '+name;
   banner(name, ph===2?'번검이 모습을 드러낸다':'케케로가 신호를 장악한다',1700);
   bossEvolve={phase:ph,t:0,line:ph===2?'번검이 화면을 가른다':'케케로가 신호를 장악한다',name,col:b.color,e:b};
+  armBossPhaseStory(b,ph,ph===2?'번검이 화면을 가른다':'케케로가 신호를 장악한다');
   cutsceneT=1.6;
   if(typeof beep==='function'){ beep(ph===2?180:90,0.45,'sawtooth',0.07); beep(ph===2?520:760,0.25,'triangle',0.04); }
   if(sfx.enemyGlitch) sfx.enemyGlitch();
@@ -5646,6 +5668,14 @@ let roomCleared=false, roomIsBoss=false, boss=null, bossBanner=0, roomHadElite=f
 let eliteViewerSpawns=0;   // 자잘자(엘리트 시청자) 런 전체 출몰 횟수 — 최대 1회로 제한
 let roomIsMidboss=false, runActive=false;   // 음악 컨텍스트용 플래그
 let roomPreviewT=0;   // 일반 방 입장 시 적/탄 정지 미리보기 타이머(몬스터 파악용)
+let bossTalk=null;   // 중보/보스 스토리 대화: 접근 → 다중 대사/선택지 → 전투/보상 흐름
+let bossStoryChoices={};
+let bossStoryFlags={};
+let seenBossDialogues={};
+let seenBossPhaseDialogues={};
+let bossStoryDefeatPending=false;
+let bossStoryLastDefeatKey=null;
+let bossStoryDefeatShown=false;
 let eliteIntro=null, slowmoT=0, bagjeinRewind=null;
 let sfxVol=1, bgmVol=1;
 let bossEvolve=null;
@@ -5674,6 +5704,36 @@ let combatTookHit=false;      // 이번 전투 피격 여부
 let combatClearGrace=false;   // 클리어 확정 후 잔여 패턴 피격 무시
 let combatTempAlly=false;     // 이번 전투 한정 아군 여부
 let nextGoldPenalty=0;        // 다음 전투 보상 골드 감소(0~1)
+const COMBAT_VARIANT_WEIGHTS={
+  1:{normal:78,capture:12,survival:10},
+  2:{normal:72,capture:15,survival:13},
+  3:{normal:67,capture:18,survival:15}
+};
+const CAPTURE_PRESSURE_CONFIG={
+  1:{budget:14,maxAlive:5,interval:2.45,batchMin:1,batchMax:2,diffMul:0.58},
+  2:{budget:18,maxAlive:6,interval:2.15,batchMin:2,batchMax:3,diffMul:0.62},
+  3:{budget:22,maxAlive:7,interval:1.95,batchMin:2,batchMax:3,diffMul:0.66}
+};
+const SURVIVAL_PRESSURE_CONFIG={
+  1:{budget:10,maxAlive:3,interval:2.65,batchMin:1,batchMax:2,diffMul:0.50,refillAt:1},
+  2:{budget:14,maxAlive:4,interval:2.35,batchMin:1,batchMax:2,diffMul:0.54,refillAt:1},
+  3:{budget:18,maxAlive:5,interval:2.10,batchMin:2,batchMax:3,diffMul:0.58,refillAt:2}
+};
+const DONATION_CHEST_CONFIG={
+  1:{chance:0.08,redChance:0},
+  2:{chance:0.12,redChance:0.04},
+  3:{chance:0.16,redChance:0.08}
+};
+const SPECIAL_ROOM_STATS_DEFAULT={
+  captureCleared:0,
+  survivalCleared:0,
+  bountyKilled:0,
+  donationChestsOpened:0,
+  redDonationChestsOpened:0
+};
+let currentCombat={variant:'normal',active:false};
+let donationChests=[];
+let specialRoomStats={captureCleared:0,survivalCleared:0,bountyKilled:0,donationChestsOpened:0,redDonationChestsOpened:0};
 let act=1, mapData=null, currentRow=0;
 const MAX_ACT=3;
 // ── 막별 맵 설정: 1·2막 15층 유지, 3막만 10층 압축 최종장 ──
@@ -5792,6 +5852,354 @@ function queueNextCombatMod(mod){
 }
 function resetCombatModState(){
   nextCombatMods=null; combatRewardMul=1; combatXpMul=1; combatChallenge=null; combatSpecialReward=null; combatTookHit=false; combatTempAlly=false; nextGoldPenalty=0;
+  resetCombatVariantState();
+}
+function syncSpecialRoomDebug(){
+  try{
+    window.currentCombat=currentCombat;
+    window.donationChests=donationChests;
+    if(!window.run||typeof window.run!=='object') window.run={};
+    window.run.specialRoomStats=specialRoomStats;
+  }catch(e){}
+}
+function resetCombatVariantState(){
+  currentCombat={variant:'normal',active:false};
+  donationChests=[];
+  syncSpecialRoomDebug();
+}
+function resetSpecialRoomStats(){
+  specialRoomStats={captureCleared:0,survivalCleared:0,bountyKilled:0,donationChestsOpened:0,redDonationChestsOpened:0};
+  syncSpecialRoomDebug();
+}
+function weightedCombatVariant(weights){
+  const entries=Object.entries(weights||{normal:1});
+  const total=entries.reduce((sum,kv)=>sum+(Number(kv[1])||0),0)||1;
+  let r=Math.random()*total;
+  for(const [k,w] of entries){ r-=Number(w)||0; if(r<=0) return k; }
+  return 'normal';
+}
+function chooseCombatVariant(kind){
+  if(kind!=='fight'||tutorialMode) return 'normal';
+  const forced=typeof window!=='undefined'?String(window.BTV_DEBUG_FORCE_COMBAT_VARIANT||'').toLowerCase():'';
+  if(['normal','capture','survival'].includes(forced)) return forced;
+  if(pendingNode&&pendingNode.type&&pendingNode.type!=='fight') return 'normal';
+  return weightedCombatVariant(COMBAT_VARIANT_WEIGHTS[clamp(Math.round(Number(act)||1),1,MAX_ACT)]||COMBAT_VARIANT_WEIGHTS[1]);
+}
+function specialRoomStatAdd(key,n){
+  if(!specialRoomStats||typeof specialRoomStats!=='object') resetSpecialRoomStats();
+  specialRoomStats[key]=(Number(specialRoomStats[key])||0)+(n||1);
+  syncSpecialRoomDebug();
+}
+function randomArenaPoint(margin){
+  margin=margin||80;
+  for(let i=0;i<30;i++){
+    const x=rand(margin,W-margin), y=rand(110,H-margin);
+    if(dist2(x,y,player.x,player.y)>120*120) return {x,y};
+  }
+  return {x:W/2,y:H/2};
+}
+function initCombatVariant(kind){
+  donationChests=[];
+  const variant=chooseCombatVariant(kind);
+  currentCombat={variant,active:kind==='fight',t:0,done:false};
+  if(!currentCombat.active||variant==='normal'){
+    currentCombat.variant='normal';
+  }else if(variant==='capture'){
+    const p=randomArenaPoint(act>=3?160:170), need=[28,35,42][clamp(act,1,3)-1];
+    const pressure=CAPTURE_PRESSURE_CONFIG[clamp(act,1,3)]||CAPTURE_PRESSURE_CONFIG[1];
+    currentCombat.capture={
+      x:p.x,y:p.y,r:act>=3?162:174,progress:0,rate:100/need,inside:false,
+      pressureBudget:pressure.budget,pressureMaxAlive:pressure.maxAlive,pressureCd:0.8,
+      pressureInterval:pressure.interval,pressureBatchMin:pressure.batchMin,pressureBatchMax:pressure.batchMax,
+      pressureDiffMul:pressure.diffMul,pressureAlive:0,blocked:false
+    };
+    banner('점령방','점령 구역을 유지하세요',1500);
+  }else if(variant==='survival'){
+    const duration=[38,44,52][clamp(act,1,3)-1];
+    const pressure=SURVIVAL_PRESSURE_CONFIG[clamp(act,1,3)]||SURVIVAL_PRESSURE_CONFIG[1];
+    currentCombat.survival={
+      time:duration,max:duration,hits:0,kills:0,bonusPaid:false,
+      pressureBudget:pressure.budget,pressureMaxAlive:pressure.maxAlive,pressureCd:1.2,
+      pressureInterval:pressure.interval,pressureBatchMin:pressure.batchMin,pressureBatchMax:pressure.batchMax,
+      pressureDiffMul:pressure.diffMul,pressureRefillAt:pressure.refillAt,pressureAlive:0
+    };
+    banner('버티기방','제한 시간 동안 생존하세요',1500);
+  }else if(variant==='bounty'){
+    currentCombat.bounty={target:null,bonus:false,time:30,max:30,expired:false};
+    banner('현상금 방','표식이 붙은 타겟을 처치하세요',1500);
+  }
+  const cfg=DONATION_CHEST_CONFIG[clamp(act,1,MAX_ACT)]||DONATION_CHEST_CONFIG[1];
+  const force=typeof window!=='undefined'?window.BTV_DEBUG_FORCE_DONATION_CHEST:false;
+  const spawn=!!force||Math.random()<(Number(cfg.chance)||0);
+  currentCombat.donation={spawned:false,timer:spawn?rand(5.5,10.5):9999,force};
+  syncSpecialRoomDebug();
+}
+function assignBountyTarget(){
+  if(!currentCombat||currentCombat.variant!=='bounty'||!currentCombat.bounty||currentCombat.bounty.target) return;
+  const pool=enemies.filter(e=>e&&!e.midboss&&!e.eliteViewer&&!e.elite&&!e.noReward&&!e.noKillScore&&!e.summoned&&!e.clone&&!e.splitChild&&e.hp>0);
+  if(!pool.length) return;
+  const target=pick(pool);
+  target._bountyTarget=true;
+  currentCombat.bounty.target=target;
+  currentCombat.bounty.time=30;
+}
+function combatVariantAllowsEnemyClear(){
+  return !(currentCombat&&currentCombat.active&&(currentCombat.variant==='survival'||currentCombat.variant==='capture')&&!currentCombat.done);
+}
+function capturePressureEnemyCount(){
+  return enemies.reduce((n,e)=>n+(e&&e.capturePressure&&e.hp>0?1:0),0);
+}
+function markCapturePressureEnemy(e){
+  if(!e) return e;
+  e.capturePressure=true;
+  e.summoned=true;
+  e.noReward=true;
+  e.noKillScore=true;
+  e.xp=0;
+  e.label=e.label||'점령 방해체';
+  e.hp=Math.max(1,e.hp*0.72);
+  e.maxhp=Math.max(1,e.maxhp*0.72);
+  e.dmg=Math.max(1,(e.dmg||1)*0.82);
+  if(e.touchDmg!=null) e.touchDmg=Math.max(1,e.touchDmg*0.82);
+  if(e.bodyDmg!=null) e.bodyDmg=Math.max(1,e.bodyDmg*0.82);
+  if(e.contactDmg!=null) e.contactDmg=Math.max(1,e.contactDmg*0.82);
+  return e;
+}
+function capturePressureSpawnPoint(c){
+  const rr=(c&&c.r?c.r:130)+rand(90,190);
+  for(let i=0;i<24;i++){
+    const a=rand(0,TAU);
+    const p={x:clamp((c&&c.x||W/2)+Math.cos(a)*rr,60,W-60),y:clamp((c&&c.y||H/2)+Math.sin(a)*rr,95,H-65)};
+    if(dist2(p.x,p.y,player.x,player.y)>120*120 && (!c||dist2(p.x,p.y,c.x,c.y)>(c.r+34)*(c.r+34))) return p;
+  }
+  return safeRandomSpawnPoint(60,W-60,95,H-70,120);
+}
+function spawnCapturePressureEnemy(c){
+  if(!c||!currentCombat||currentCombat.done) return false;
+  const counts=enemyTypeCounts(enemies);
+  const type=pickNormalEnemyForRoom(act,currentRow,counts);
+  const p=capturePressureSpawnPoint(c);
+  const diff=(1+(act-1)*0.6+rowDifficultyValue(act,currentRow)*0.08)*(Number(c.pressureDiffMul)||0.6);
+  spawnEnemy(type,p.x,p.y,diff);
+  markCapturePressureEnemy(enemies[enemies.length-1]);
+  return true;
+}
+function updateCapturePressure(c,dt){
+  if(!c||c.progress>=100) return;
+  c.pressureAlive=capturePressureEnemyCount();
+  c.blocked=enemies.some(e=>e&&e.hp>0&&dist2(e.x,e.y,c.x,c.y)<(c.r+18)*(c.r+18));
+  if((c.pressureBudget||0)<=0) return;
+  c.pressureCd=(c.pressureCd||0)-dt;
+  if(c.pressureCd>0) return;
+  c.pressureCd=c.pressureInterval||2.2;
+  const roomFor=Math.max(0,(c.pressureMaxAlive||5)-capturePressureEnemyCount());
+  const n=clamp(irand(c.pressureBatchMin||1,c.pressureBatchMax||2),0,Math.min(roomFor,c.pressureBudget||0));
+  for(let i=0;i<n;i++){
+    if(spawnCapturePressureEnemy(c)) c.pressureBudget--;
+  }
+  c.pressureAlive=capturePressureEnemyCount();
+}
+function survivalPressureEnemyCount(){
+  return enemies.reduce((n,e)=>n+(e&&e.survivalPressure&&e.hp>0?1:0),0);
+}
+function livingCombatEnemyCount(){
+  return enemies.reduce((n,e)=>n+(e&&e.hp>0&&!e.dummy?1:0),0);
+}
+function markSurvivalPressureEnemy(e){
+  if(!e) return e;
+  e.survivalPressure=true;
+  e.summoned=true;
+  e.noReward=true;
+  e.noKillScore=true;
+  e.xp=0;
+  e.label=e.label||'생존 압박체';
+  e.hp=Math.max(1,e.hp*0.66);
+  e.maxhp=Math.max(1,e.maxhp*0.66);
+  e.dmg=Math.max(1,(e.dmg||1)*0.76);
+  if(e.touchDmg!=null) e.touchDmg=Math.max(1,e.touchDmg*0.76);
+  if(e.bodyDmg!=null) e.bodyDmg=Math.max(1,e.bodyDmg*0.76);
+  if(e.contactDmg!=null) e.contactDmg=Math.max(1,e.contactDmg*0.76);
+  return e;
+}
+function spawnSurvivalPressureEnemy(s){
+  if(!s||!currentCombat||currentCombat.done) return false;
+  const counts=enemyTypeCounts(enemies);
+  const type=pickNormalEnemyForRoom(act,currentRow,counts);
+  const p=safeRandomSpawnPoint(60,W-60,95,H-70,150);
+  const diff=(1+(act-1)*0.6+rowDifficultyValue(act,currentRow)*0.08)*(Number(s.pressureDiffMul)||0.54);
+  spawnEnemy(type,p.x,p.y,diff);
+  markSurvivalPressureEnemy(enemies[enemies.length-1]);
+  return true;
+}
+function updateSurvivalPressure(s,dt){
+  if(!s||s.time<=1.2) return;
+  s.pressureAlive=survivalPressureEnemyCount();
+  if((s.pressureBudget||0)<=0) return;
+  if(livingCombatEnemyCount()>(s.pressureRefillAt||1)) return;
+  s.pressureCd=(s.pressureCd||0)-dt;
+  if(s.pressureCd>0) return;
+  s.pressureCd=s.pressureInterval||2.35;
+  const roomFor=Math.max(0,(s.pressureMaxAlive||4)-survivalPressureEnemyCount());
+  const n=clamp(irand(s.pressureBatchMin||1,s.pressureBatchMax||2),0,Math.min(roomFor,s.pressureBudget||0));
+  for(let i=0;i<n;i++){
+    if(spawnSurvivalPressureEnemy(s)) s.pressureBudget--;
+  }
+  s.pressureAlive=survivalPressureEnemyCount();
+}
+function clearEnemiesWithoutRewards(){
+  enemies.forEach(e=>{ if(e){ e.noReward=true; e.noKillScore=true; } });
+  enemies.length=0;
+  boss=null;
+}
+function completeCombatVariantObjective(reason){
+  if(!currentCombat||currentCombat.done||roomCleared) return;
+  currentCombat.done=true;
+  if(reason==='capture') specialRoomStatAdd('captureCleared',1);
+  if(reason==='survival') specialRoomStatAdd('survivalCleared',1);
+  clearEnemiesWithoutRewards();
+  eBullets.length=0;
+  roomCleared=true;
+  roomIsMidboss=false;
+  onCombatCleared();
+}
+function updateCombatVariant(dt){
+  if(!currentCombat||!currentCombat.active||roomCleared||bossTalkActive()||roomPreviewT>0) return;
+  currentCombat.t=(currentCombat.t||0)+dt;
+  updateDonationRage(dt);
+  if(currentCombat.variant==='capture'&&currentCombat.capture){
+    const c=currentCombat.capture;
+    c.inside=dist2(player.x,player.y,c.x,c.y)<=c.r*c.r;
+    updateCapturePressure(c,dt);
+    const speedMul=c.blocked?0.35:(c.pressureAlive>0?0.78:1.45);
+    if(c.inside) c.progress=Math.min(100,(c.progress||0)+c.rate*speedMul*dt);
+    if(c.progress>=100) completeCombatVariantObjective('capture');
+  }else if(currentCombat.variant==='survival'&&currentCombat.survival){
+    const s=currentCombat.survival;
+    s.time=Math.max(0,(s.time||0)-dt);
+    updateSurvivalPressure(s,dt);
+    if(s.time<=0){
+      if(!s.bonusPaid){
+        s.bonusPaid=true;
+        let bonus=0;
+        if((s.hits||0)<=3) bonus+=50;
+        if((s.kills||0)>=(act>=3?5:4)) bonus+=50;
+        if(bonus>0){ addGold(bonus,'roomReward'); metaToast('버티기 보너스 +'+bonus+'G',{tone:'gold',ms:1500}); updateHUD(); }
+      }
+      completeCombatVariantObjective('survival');
+    }
+  }else if(currentCombat.variant==='bounty'){
+    assignBountyTarget();
+    const b=currentCombat.bounty;
+    if(b&&b.target&&enemies.includes(b.target)&&!b.bonus){
+      b.time=Math.max(0,(b.time||0)-dt);
+      if(b.time<=0&&!b.expired){ b.expired=true; banner('현상금 시간 초과','일반 전투로 계속 진행',1200); }
+    }
+  }
+  updateDonationChests(dt);
+}
+function updateDonationRage(dt){
+  enemies.forEach(e=>{
+    if(!e||!(e._donationRageT>0)) return;
+    e._donationRageT=Math.max(0,e._donationRageT-dt);
+    if(e._donationRageT<=0&&e._donationRaged){
+      e._donationRaged=false;
+      e.dmg=Math.max(1,Math.round((e.dmg||1)/1.10));
+      if(e.touchDmg!=null) e.touchDmg=Math.max(1,Math.round(e.touchDmg/1.10));
+      if(e.bodyDmg!=null) e.bodyDmg=Math.max(1,Math.round(e.bodyDmg/1.10));
+      if(e.contactDmg!=null) e.contactDmg=Math.max(1,Math.round(e.contactDmg/1.10));
+    }
+  });
+}
+function donationChestPoint(){
+  for(let i=0;i<35;i++){
+    const p=randomArenaPoint(90);
+    const nearHazard=hazards.some(h=>h&&h.r&&dist2(p.x,p.y,h.x,h.y)<(h.r+55)*(h.r+55));
+    if(!nearHazard) return p;
+  }
+  return randomArenaPoint(90);
+}
+function spawnDonationChest(red){
+  const p=donationChestPoint();
+  donationChests.push({x:p.x,y:p.y,r:18,life:red?8.5:9.5,max:red?8.5:9.5,red:!!red,bob:rand(0,TAU),opened:false});
+  banner(red?'붉은 후원 상자':'후원 상자','후원 상자가 떨어졌다!',1400);
+  if(typeof beep==='function'){ beep(red?120:520,0.12,red?'sawtooth':'triangle',0.04); beep(red?80:760,0.1,'sine',0.03); }
+}
+function updateDonationChests(dt){
+  if(!currentCombat||!currentCombat.active) return;
+  const d=currentCombat.donation;
+  if(d&&!d.spawned){
+    d.timer-=dt;
+    if(d.timer<=0){
+      d.spawned=true;
+      const cfg=DONATION_CHEST_CONFIG[clamp(act,1,MAX_ACT)]||DONATION_CHEST_CONFIG[1];
+      const red=act>=2&&(d.force==='red'||Math.random()<(Number(cfg.redChance)||0));
+      spawnDonationChest(red);
+    }
+  }
+  for(let i=donationChests.length-1;i>=0;i--){
+    const c=donationChests[i];
+    c.life-=dt; c.bob+=dt*4.2;
+    if(dist2(player.x,player.y,c.x,c.y)<(player.r+c.r+6)*(player.r+c.r+6)){ openDonationChest(c); donationChests.splice(i,1); continue; }
+    if(c.life<=0) donationChests.splice(i,1);
+  }
+}
+function tryInteractDonationChest(){
+  if(!donationChests||!donationChests.length||state!=='play') return false;
+  for(let i=donationChests.length-1;i>=0;i--){
+    const c=donationChests[i];
+    if(dist2(player.x,player.y,c.x,c.y)<(player.r+c.r+54)*(player.r+c.r+54)){
+      openDonationChest(c);
+      donationChests.splice(i,1);
+      return true;
+    }
+  }
+  return false;
+}
+function openDonationChest(c){
+  if(!c||c.opened) return;
+  c.opened=true;
+  if(c.red){
+    const g=irand(120,180);
+    addGold(g,'roomReward');
+    specialRoomStatAdd('donationChestsOpened',1);
+    specialRoomStatAdd('redDonationChestsOpened',1);
+    enemies.forEach(e=>{
+      if(!e||e.midboss||e.eliteViewer) return;
+      e._donationRageT=Math.max(e._donationRageT||0,10);
+      e.coolT=Math.min(e.coolT||1,0.35);
+      if(!e._donationRaged){ e._donationRaged=true; e.dmg=Math.round((e.dmg||1)*1.10); if(e.touchDmg!=null)e.touchDmg=Math.round(e.touchDmg*1.10); }
+    });
+    banner('위험한 후원!','적들이 흥분합니다 · 골드 +'+g,1600);
+    burst(c.x,c.y,'#ff4d6d',24,300);
+  }else{
+    specialRoomStatAdd('donationChestsOpened',1);
+    const roll=pick(['gold','heal','xp','potion']);
+    if(roll==='gold'){ const g=irand(40,80); addGold(g,'roomReward'); banner('후원 보상','골드 +'+g,1300); }
+    else if(roll==='heal'){ const h=irand(10,20); healPlayer(h,c.x,c.y); banner('후원 보상','체력 +'+h,1300); }
+    else if(roll==='xp'){ const x=irand(20,30); gainXP(x); banner('후원 보상','경험치 +'+x,1300); }
+    else { const pot=rollPotion(); const ok=addPotion(pot); banner('후원 보상',ok?pot.name+' 획득':'포션 가득',1300); }
+    burst(c.x,c.y,'#8be8ff',22,260);
+  }
+  sfx.pick();
+  updateHUD();
+}
+function onCombatVariantPlayerHit(){
+  if(currentCombat&&currentCombat.variant==='survival'&&currentCombat.survival) currentCombat.survival.hits=(currentCombat.survival.hits||0)+1;
+}
+function onCombatVariantEnemyKilled(e,countsForKillScore){
+  if(!currentCombat||!currentCombat.active||!countsForKillScore) return;
+  if(currentCombat.variant==='survival'&&currentCombat.survival) currentCombat.survival.kills=(currentCombat.survival.kills||0)+1;
+  if(currentCombat.variant==='bounty'&&e&&e._bountyTarget&&currentCombat.bounty&&!currentCombat.bounty.bonus){
+    currentCombat.bounty.bonus=true;
+    const fast=(currentCombat.bounty.time||0)>0;
+    const g=fast?irand(100,120):irand(80,95);
+    const x=fast?irand(25,40):irand(15,25);
+    addGold(g,'roomReward'); gainXP(x);
+    specialRoomStatAdd('bountyKilled',1);
+    banner('현상금 획득!','골드 +'+g+' · 경험치 +'+x,1500);
+    burst(e.x,e.y,'#ffd34d',24,300);
+    updateHUD();
+  }
 }
 // 예약 버프/디버프를 이번 전투용 배지 목록으로 변환
 function buildCombatBadges(M){
@@ -6080,6 +6488,767 @@ function showBossIntroLine(id,delay,entity){
     }
   },delay||0);
 }
+const BOSS_TALK_LINES={
+  hyechul:{speaker:'혜철이',line:'조용히 해. 알들이 놀라잖아.',color:'#c46bff',sub:'부화장 관리자'},
+  kijo:{speaker:'키죠',line:'보지 마.',color:'#ff4d6d',sub:'가면의 마귀',glitch:true},
+  set3:{speaker:'현진',line:'먼저 들어간다.',color:'#38e8ff',sub:'2막 중간보스'},
+  onster:{speaker:'온스터',line:'아직 깨우지 마라.',color:'#8d72ff',sub:'사슬의 각성'},
+  yanggaeng:{speaker:'박제인간',line:'B면 — 되감을 수 없는 홈.',color:'#9b8fc4',sub:'정지된 음악'},
+  seungwoo:{speaker:'승우',line:'…봉식님. 이 게임, 제가 좀 만져도 되겠습니까.',color:'#9146ff',sub:'시스템 침식',glitch:true},
+  steel_lord:{speaker:'강철 군주',line:'무릎 꿇어라, 필멸자여.',color:'#8a8fa8',sub:'흑철의 망령'},
+  bear:{speaker:'거대 곰',line:'크아아아앙!!',color:'#c98b4a',sub:'숲의 지배자'}
+};
+const BOSS_STORY_DIALOGUES={
+  hyechul:{
+    encounter:[
+      {speaker:'혜철이',text:'조용히 해.\n알들이 놀라잖아.'},
+      {speaker:'혜철이',text:'얘들은 아직 아무것도 몰라.\n누가 좋은 사람이고,\n누가 화면 밖에서 온 사람인지도.'},
+      {speaker:'혜철이',text:'그러니까 조심히 지나가.\n네가 큰 소리를 내면...\n안쪽에서 먼저 대답할 거야.'}
+    ],
+    choices:[
+      {id:'quiet',label:'조용히 지나가려 한다',response:[{speaker:'혜철이',text:'그래.\n그렇게만 했으면 좋았을 텐데.'},{speaker:'혜철이',text:'근데 이미 늦었어.\n알들이 네 발소리를 들었거든.'}],effectText:'조용히 지나가려 했습니다. 전투 효과는 없습니다.'},
+      {id:'inspect_egg',label:'알을 살펴본다',response:[{speaker:'혜철이',text:'가까이 오지 마.'},{speaker:'혜철이',text:'그 안에 있는 건\n아직 이름도 없어.'}],effectText:'알을 살펴봤습니다. 전투 효과는 없습니다.'},
+      {id:'make_noise',label:'일부러 소리를 낸다',response:[{speaker:'혜철이',text:'...'},{speaker:'혜철이',text:'방금,\n안쪽에서 웃었어.'}],effectText:'알들이 반응했습니다. 전투 효과는 없습니다.'}
+    ],
+    phase2:[{speaker:'혜철이',text:'금이 간다.\n안쪽이 웃는다.'},{speaker:'혜철이',text:'내가 말했잖아.\n깨우지 말라고.'}],
+    phase3:[{speaker:'혜철이',text:'둥지가 숨을 쉰다.'},{speaker:'혜철이',text:'이제 조용히 해도 늦었어.\n쟤들이 네 소리를 배웠거든.'}],
+    defeat:[{speaker:'혜철이',text:'쉿...\n이제 내가 조용할 차례네.'},{speaker:'혜철이',text:'그래도 기억해.\n알은 깨지기 전이 제일 안전해.'}]
+  },
+  kijo:{
+    encounter:[{speaker:'키죠',text:'거기서 멈춰.'},{speaker:'키죠',text:'사람들은 보통 눈을 마주치면\n싸움이 시작된다고 생각하지.'},{speaker:'키죠',text:'여긴 반대야.\n보는 순간,\n이미 시작된 거야.'},{speaker:'키죠',text:'그러니까...\n보지마.'}],
+    choices:[
+      {id:'look_away',label:'눈을 피한다',response:[{speaker:'키죠',text:'잘했어.'},{speaker:'키죠',text:'하지만 피했다는 건,\n어디에 있는지 알고 있다는 뜻이야.'}],effectText:'눈을 피했습니다. 전투 효과는 없습니다.'},
+      {id:'stare',label:'똑바로 쳐다본다',response:[{speaker:'키죠',text:'용감하네.'},{speaker:'키죠',text:'아니,\n무지한 건가?'}],effectText:'키죠를 똑바로 바라봤습니다. 전투 효과는 없습니다.'},
+      {id:'close_eyes',label:'눈을 감는다',response:[{speaker:'키죠',text:'그래.'},{speaker:'키죠',text:'그럼 이제\n내가 더 잘 보이겠네.'}],effectText:'눈을 감았습니다. 전투 효과는 없습니다.'}
+    ],
+    phase2:[{speaker:'키죠',text:'봤구나.'},{speaker:'키죠',text:'눈을 돌려도 소용없어.\n네가 본 건,\n이제 너도 널 보고 있다는 뜻이니까.'}],
+    phase3:[{speaker:'키죠',text:'그럼 끝까지 봐.'},{speaker:'키죠',text:'도망가고 싶으면 눈을 감아.\n하지만 눈을 감으면...\n내가 더 잘 보일 거야.'}],
+    defeat:[{speaker:'키죠',text:'잘했어.\n끝까지 봤네.'},{speaker:'키죠',text:'근데 조심해.\n다음부터는 네가 보는 게 아니야.\n화면이 널 볼 거야.'}]
+  },
+  kkotchung:{
+    phase2:[{speaker:'미주',text:'예쁘다고 방심했지?'}],
+    phase3:[{speaker:'미주',text:'꽃은 졌고,\n독만 남았어.'}]
+  },
+  set3:{
+    encounter:[{speaker:'현진',text:'먼저 들어간다.'},{speaker:'현진',text:'원래 앞장서는 사람은\n길을 아는 사람이 아니라,\n먼저 망가질 각오가 된 사람이야.'},{speaker:'현진',text:'뒤에서 들리는 소리는 믿지 마.\n채팅도,\n알림도,\n칭찬도.'},{speaker:'현진',text:'여기부터는\n누가 말하는지보다\n누가 신호를 잡고 있는지가 중요하거든.'}],
+    choices:[
+      {id:'follow',label:'따라 들어간다',response:[{speaker:'현진',text:'좋아.'},{speaker:'현진',text:'뒤처지면\n내가 널 기다릴 거라 생각하지 마.'}],effectText:'현진을 따라갑니다. 전투 효과는 없습니다.'},
+      {id:'stop',label:'멈추라고 한다',response:[{speaker:'현진',text:'멈추면 안전할 것 같지?'},{speaker:'현진',text:'여긴 멈춘 사람이\n제일 먼저 잡혀.'}],effectText:'현진을 멈추려 했습니다. 전투 효과는 없습니다.'},
+      {id:'cut_signal',label:'신호를 끊는다',response:[{speaker:'현진',text:'그걸 건드리면 안 돼.'},{speaker:'현진',text:'...아니,\n어쩌면 그게 정답일지도.'}],effectText:'신호를 끊었습니다. 이 선택은 후반 대사에 영향을 줍니다.'}
+    ],
+    phase2:[{speaker:'번검',text:'번검이 화면을 가른다.'},{speaker:'번검',text:'피했다고 생각하지 마.\n방금 갈라진 건 네 위치가 아니라,\n네가 갈 수 있는 길이야.'}],
+    phase3:[{speaker:'케케로',text:'케케로가 신호를 장악한다.'},{speaker:'케케로',text:'이제 내 목소리도 내 것이 아니야.'},{speaker:'케케로',text:'그래도...\n먼저 들어간 건 나였어.'}],
+    defeat:[{speaker:'케케로',text:'따라오지 말라고 했는데.'},{speaker:'케케로',text:'괜찮아.\n이미 늦은 사람끼리는\n길을 묻지 않아도 되니까.'}]
+  },
+  onster:{
+    encounter:[{speaker:'온스터',text:'아직 깨우지 마라.'},{speaker:'온스터',text:'그 말은 너한테 하는 게 아니다.\n이 방에,\n이 화면에,\n그리고 내 안쪽에 하는 말이다.'},{speaker:'온스터',text:'사슬은 나를 가두는 게 아니야.\n내가 아직 나로 남아 있게\n붙잡아 주는 거지.'},{speaker:'온스터',text:'그러니 돌아가라.\n네가 이기면,\n내가 진짜로 지는 게 아니야.'},{speaker:'온스터',text:'내가 풀리는 거다.'}],
+    choices:[
+      {id:'tighten_chain',label:'사슬을 조인다',response:[{speaker:'온스터',text:'그래.\n나를 이기고 싶다면\n나를 묶어 둬라.'},{speaker:'온스터',text:'하지만 조심해.\n묶인 짐승이 제일 조용한 건\n뛰쳐나오기 직전이니까.'}],effectText:'사슬을 조였습니다. 초반은 약해지지만, 각성 후 더 위험해집니다.'},
+      {id:'release_chain',label:'사슬을 푼다',response:[{speaker:'온스터',text:'멍청하군.'},{speaker:'온스터',text:'하지만...\n고맙다.'}],effectText:'사슬을 풀었습니다. 온스터가 더 빨리 각성할 수 있습니다. 대신 보상이 좋아질 수 있습니다.'},
+      {id:'talk',label:'말을 건다',response:[{speaker:'온스터',text:'말?'},{speaker:'온스터',text:'아직 내 안에\n말이 통하는 부분이 남아 있다고 생각하나.'}],effectText:'온스터에게 말을 걸었습니다. 이 선택은 후반 대사에 영향을 줍니다.'}
+    ],
+    phase2:[{speaker:'온스터',text:'사슬이 비명을 낸다.'},{speaker:'온스터',text:'멈춰.\n너는 지금\n보스를 공략하는 게 아니라\n봉인을 뜯고 있다.'},{speaker:'온스터',text:'...늦었다.'},{speaker:'시스템',text:'사슬이 끊어졌다.'},{speaker:'온스터',text:'이제부터 피하는 건\n네가 아니라 나였으면 좋겠군.'},{speaker:'시스템',text:'각성 중 · 10초간 피해를 받지 않습니다.'}],
+    phase3:[{speaker:'온스터',text:'...늦었다.'},{speaker:'시스템',text:'사슬이 끊어졌다.'},{speaker:'온스터',text:'이제부터 피하는 건\n네가 아니라 나였으면 좋겠군.'},{speaker:'시스템',text:'각성 중 · 10초간 피해를 받지 않습니다.'}],
+    defeat:[{speaker:'온스터',text:'깨운 건 네가 아니다.'},{speaker:'온스터',text:'나는 오래전부터 깨어나고 있었다.\n너는...\n마지막 사슬을 건드렸을 뿐이다.'},{speaker:'온스터',text:'위로 올라가라.\n이 게임을 만지는 손이\n아직 멈추지 않았다.'}]
+  },
+  yanggaeng:{
+    encounter:[{speaker:'박제인간',text:'B면 —\n되감을 수 없는 홈.'},{speaker:'박제인간',text:'사람들은 지나간 장면을\n추억이라고 부르지.'},{speaker:'박제인간',text:'하지만 나는 알아.\n멈춘 장면은 추억이 아니야.\n박제야.'},{speaker:'박제인간',text:'너도 곧 알게 될 거야.\n계속 반복되는 전투가\n언제부터 네 선택이 아니었는지.'}],
+    choices:[
+      {id:'play_tape',label:'테이프를 재생한다',response:[{speaker:'박제인간',text:'좋아.\n같은 장면을\n한 번 더 보자.'}],effectText:'테이프를 재생했습니다. 전투 효과는 없습니다.'},
+      {id:'rewind_tape',label:'되감기를 누른다',response:[{speaker:'박제인간',text:'되감고 싶어?'},{speaker:'박제인간',text:'그럼 네가 여기까지 온 것도\n없던 일이 될 텐데.'}],effectText:'테이프를 되감았습니다. 전투 효과는 없습니다.'},
+      {id:'cut_tape',label:'테이프를 끊는다',response:[{speaker:'박제인간',text:'...'},{speaker:'박제인간',text:'그건 안 돼.\n그 장면은\n아직 저장 중이야.'}],effectText:'테이프를 끊었습니다. 이 선택은 후반 대사에 영향을 줍니다.'}
+    ],
+    phase2:[{speaker:'박제인간',text:'A면은 이미 끝났다.'},{speaker:'박제인간',text:'처음으로 돌아가고 싶어?\n좋아.\n하지만 처음의 너는\n여기까지 온 너를 기억하지 못해.'}],
+    phase3:[{speaker:'박제인간',text:'같은 장면만,\n계속 반복된다.'},{speaker:'박제인간',text:'네 움직임도 저장해뒀다.\n네 실수도 저장해뒀다.\n다음엔 더 빨리 맞을 거야.'}],
+    defeat:[{speaker:'박제인간',text:'이상하네.'},{speaker:'박제인간',text:'분명 이 장면에서는\n네가 멈춰 있어야 하는데.'},{speaker:'박제인간',text:'되감지 마.\n되감으면...\n그 사람이 다시 고칠 거야.'}]
+  },
+  seungwoo:{
+    encounter:[{speaker:'승우',text:'아, 여기까지 오셨군요.'},{speaker:'승우',text:'생각보다 오래 걸리셨습니다.\n중간에 몇 번은\n그냥 종료하실 줄 알았는데요.'},{speaker:'승우',text:'처음엔 저도 고치려고 했습니다.\n렉도 줄이고,\n밸런스도 맞추고,\n대사도 조금 다듬고.'},{speaker:'승우',text:'그런데 이상하더군요.\n게임을 고칠수록\n안쪽에서 더 많은 게 움직였습니다.'},{speaker:'승우',text:'그래서 생각했습니다.\n고치는 게 아니라...\n제가 직접 진행하면 어떨까 하고.'},{speaker:'승우',text:'…봉식님.\n이 게임,\n제가 좀 만져도 되겠습니까.'}],
+    choices:[
+      {id:'allow',label:'허락한다',response:[{speaker:'승우',text:'감사합니다.'},{speaker:'승우',text:'그럼 이제부터\n플레이어는 필요 없습니다.'}],effectText:'권한을 넘겼습니다. 엔딩 대사가 달라집니다.'},
+      {id:'refuse',label:'거절한다',response:[{speaker:'승우',text:'아쉽네요.'},{speaker:'승우',text:'하지만 권한은\n이미 받아 두었습니다.'}],effectText:'권한 요청을 거절했습니다. 기본 엔딩 흐름으로 진행됩니다.'},
+      {id:'protect_save',label:'저장파일을 지킨다',response:[{speaker:'승우',text:'...'},{speaker:'승우',text:'그걸 아직도\n본인 것이라고 생각하십니까?'}],effectText:'저장파일을 지켰습니다. 이 선택은 결말에 영향을 줍니다.'}
+    ],
+    phase2:[{speaker:'승우',text:'프로필 사진이 깨지며\n웃음이 번진다.'},{speaker:'승우',text:'아직도 저를\n플레이어 쪽 사람이라고 생각하십니까?'},{speaker:'승우',text:'저는 오래전부터\n이쪽에 더 가까웠습니다.'}],
+    phase3:[{speaker:'승우',text:'송출 화면이 찢어진다.'},{speaker:'승우',text:'좋습니다.\n이제 숨길 필요도 없겠네요.'},{speaker:'승우',text:'채팅은 제가 띄우고,\n패턴은 제가 고르고,\n죽음은 제가 저장합니다.'},{speaker:'승우',text:'이제부터는\n제가 송출하겠습니다.'},{speaker:'승우',text:'잠깐.'},{speaker:'승우',text:'이 장면은\n제가 아직 수정하지 않았습니다.'},{speaker:'승우',text:'그러니까...\n여기서 이기시면 안 됩니다.'}],
+    defeat:[{speaker:'승우',text:'...아.'},{speaker:'승우',text:'되돌아가네요.'},{speaker:'승우',text:'결국 게임은\n플레이하는 사람 쪽으로 돌아가는군요.'},{speaker:'승우',text:'봉식님.\n다음에 또 만들게 되면...\n저장 버튼은 조심해서 누르십시오.'},{speaker:'승우',text:'저 같은 게\n또 들어올지도 모르니까요.'}]
+  }
+};
+const BOSS_STORY_RETRY_DIALOGUES={
+  hyechul:[{speaker:'혜철이',text:'또 시끄럽게 왔네.'}],
+  hyecheol:[{speaker:'혜철이',text:'또 시끄럽게 왔네.'}],
+  kijo:[{speaker:'키죠',text:'이번엔 눈 돌리지 마.'}],
+  set3:[{speaker:'현진',text:'다시 들어간다.'}],
+  hyunjin:[{speaker:'현진',text:'다시 들어간다.'}],
+  onster:[{speaker:'온스터',text:'다시 왔군.'}],
+  yanggaeng:[{speaker:'박제인간',text:'같은 장면이다.'}],
+  parkje:[{speaker:'박제인간',text:'같은 장면이다.'}],
+  seungwoo:[{speaker:'승우',text:'재시도하시는군요.'}]
+};
+const BOSS_STORY_CHOICE_FLAG_KEYS={
+  hyechul:'hyechulChoice',
+  kijo:'kijoChoice',
+  set3:'hyunjinChoice',
+  onster:'onsterChoice',
+  yanggaeng:'parkjeChoice',
+  seungwoo:'seungwooChoice'
+};
+const ENCOUNTER_PRESENTATION_DEFAULT={
+  icon:'speech',
+  prompt:'[E] 말을 건다',
+  nearLine:null,
+  color:'#8be8ff',
+  nearR:320,
+  triggerR:178
+};
+const ENCOUNTER_PRESENTATION={
+  hyechul:{icon:'speech',prompt:'[E] 조용히 말을 건다',nearLine:'쉿... 알들이 듣고 있어.',color:'#c46bff'},
+  hyecheol:{icon:'speech',prompt:'[E] 조용히 말을 건다',nearLine:'쉿... 알들이 듣고 있어.',color:'#c46bff'},
+  kijo:{icon:'eye',prompt:'[E] 시선을 마주친다',nearLine:'보지 마.',color:'#ff4d6d'},
+  set3:{icon:'signal',prompt:'[E] 신호를 따라간다',nearLine:'따라올 거면 신호를 놓치지 마.',color:'#38e8ff'},
+  hyunjin:{icon:'signal',prompt:'[E] 신호를 따라간다',nearLine:'따라올 거면 신호를 놓치지 마.',color:'#38e8ff'},
+  onster:{icon:'chain',prompt:'[E] 사슬에 손을 댄다',nearLine:'...오지 마라.',color:'#8d72ff'},
+  yanggaeng:{icon:'tape',prompt:'[E] 테이프를 재생한다',nearLine:'이미 본 장면이다.',color:'#9b8fc4'},
+  parkje:{icon:'tape',prompt:'[E] 테이프를 재생한다',nearLine:'이미 본 장면이다.',color:'#9b8fc4'},
+  seungwoo:{icon:'system',prompt:'[E] 권한 요청을 확인한다',nearLine:'여기까지 오셨군요.',color:'#9146ff',nearR:360}
+};
+function bossEncounterPresentationFor(key,entity,fallback){
+  const cfg=Object.assign({},ENCOUNTER_PRESENTATION_DEFAULT,ENCOUNTER_PRESENTATION[key]||{});
+  cfg.color=cfg.color||(fallback&&fallback.color)||(entity&&entity.color)||ENCOUNTER_PRESENTATION_DEFAULT.color;
+  cfg.nearLine=null;
+  return cfg;
+}
+function normalizeBossStoryChoiceId(key,id){
+  id=String(id||'');
+  if(key==='onster'&&id==='break_chain') return 'release_chain';
+  if(key==='yanggaeng'&&id==='rewind') return 'rewind_tape';
+  if(key==='seungwoo'&&id==='deny') return 'refuse';
+  return id;
+}
+function bossStoryExtraEncounterPages(key){
+  const f=bossStoryFlags||{}, pages=[];
+  if(key==='seungwoo'){
+    if(f.signalCut){
+      pages.push({speaker:'승우',text:'중간에 신호를 한 번 끊으셨더군요.'});
+      pages.push({speaker:'승우',text:'좋은 판단이었습니다.\n그래서 더 거슬렸습니다.'});
+    }
+    if(f.tapeCut){
+      pages.push({speaker:'승우',text:'테이프를 끊으셨더군요.'});
+      pages.push({speaker:'승우',text:'저장 중인 장면을 건드리는 건\n꽤 위험한 행동입니다.'});
+    }
+    if(f.onsterTalked){
+      pages.push({speaker:'승우',text:'온스터에게 말을 거셨죠.'});
+      pages.push({speaker:'승우',text:'가끔 플레이어는\n공략보다 이상한 선택을 합니다.'});
+    }
+  }
+  return pages;
+}
+function bossStoryTrueEndingReady(){
+  const f=bossStoryFlags||{};
+  return !!(f.signalCut&&f.onsterTalked&&f.tapeCut&&f.saveProtected);
+}
+function bossStoryExtraDefeatPages(key){
+  const f=bossStoryFlags||{}, pages=[];
+  if(key==='onster'&&f.onsterTalked){
+    pages.push({speaker:'온스터',text:'아직 말이 통하는 부분이\n조금은 남아 있었나 보군.'});
+  }
+  if(key==='seungwoo'){
+    if(f.seungwooChoice==='allow'){
+      pages.push({speaker:'승우',text:'허락은 이미 받았습니다.'});
+      pages.push({speaker:'승우',text:'패배해도,\n한 번 받은 권한은 남습니다.'});
+    }else if(f.seungwooChoice==='protect_save'){
+      pages.push({speaker:'승우',text:'저장파일을 끝까지 붙잡으셨군요.'});
+      pages.push({speaker:'승우',text:'그래서 게임이\n아직 당신 쪽에 남아 있는 겁니다.'});
+    }
+    if(bossStoryTrueEndingReady()){
+      pages.push({speaker:'시스템',text:'손상된 신호가 복구됩니다.'});
+      pages.push({speaker:'시스템',text:'끊어진 테이프가 더 이상 재생되지 않습니다.'});
+      pages.push({speaker:'승우',text:'...이상하네요.'});
+      pages.push({speaker:'승우',text:'이 장면은\n제가 고칠 수가 없습니다.'});
+      pages.push({speaker:'승우',text:'아직 바깥에 남아 있는 사람이\n있는 모양입니다.'});
+      pages.push({speaker:'시스템',text:'저장파일의 소유권이\n플레이어에게 돌아왔습니다.'});
+    }
+  }
+  return pages;
+}
+function applyConditionalBossStoryPages(key,stage,pages){
+  pages=Array.isArray(pages)?pages:[];
+  if(stage==='encounter'){
+    const extra=bossStoryExtraEncounterPages(key);
+    if(extra.length&&pages.length>1) return pages.slice(0,-1).concat(extra,pages.slice(-1));
+    return pages.concat(extra);
+  }
+  if(stage==='defeat') return pages.concat(bossStoryExtraDefeatPages(key));
+  return pages;
+}
+function normalizeBossStoryFlags(flags,choices){
+  const out=clonePlain(flags||{});
+  choices=choices||{};
+  Object.keys(BOSS_STORY_CHOICE_FLAG_KEYS).forEach(key=>{
+    const id=normalizeBossStoryChoiceId(key,choices[key]);
+    const flagKey=BOSS_STORY_CHOICE_FLAG_KEYS[key];
+    if(id&&!out[flagKey]) out[flagKey]=id;
+  });
+  if(out.hyechulChoice&&!out.hyecheolChoice) out.hyecheolChoice=out.hyechulChoice;
+  if(out.hyunjinChoice==='cut_signal') out.signalCut=true;
+  if(out.onsterChoice==='talk') out.onsterTalked=true;
+  if(out.parkjeChoice==='cut_tape') out.tapeCut=true;
+  if(out.seungwooChoice==='protect_save') out.saveProtected=true;
+  return out;
+}
+function applyBossStoryChoiceFlags(key,choiceId,entity){
+  choiceId=normalizeBossStoryChoiceId(key,choiceId);
+  if(!choiceId) return choiceId;
+  const flagKey=BOSS_STORY_CHOICE_FLAG_KEYS[key];
+  if(flagKey) bossStoryFlags[flagKey]=choiceId;
+  if(key==='hyechul') bossStoryFlags.hyecheolChoice=choiceId; // 기획 문서 표기와 호환
+  if(key==='set3'&&choiceId==='cut_signal') bossStoryFlags.signalCut=true;
+  if(key==='onster'){
+    if(choiceId==='talk') bossStoryFlags.onsterTalked=true;
+    if(entity){
+      entity._bossStoryOnsterChoice=choiceId;
+      if(choiceId==='tighten_chain'){
+        entity._bossStoryOnsterPreCadence=1.08;
+        entity._bossStoryOnsterPostCadence=0.92;
+        entity._bossStoryOnsterPreMove=0.95;
+        entity._bossStoryOnsterPostMove=1.05;
+      }else if(choiceId==='release_chain'){
+        entity._bossStoryOnsterAwakenAt=0.64;
+        entity._bossStoryOnsterRewardGold=100;
+      }
+    }
+  }
+  if(key==='yanggaeng'&&choiceId==='cut_tape') bossStoryFlags.tapeCut=true;
+  if(key==='seungwoo'&&choiceId==='protect_save') bossStoryFlags.saveProtected=true;
+  syncBossStoryChoiceDebug();
+  return choiceId;
+}
+function onsterStoryCadenceMul(e,phase){
+  if(!e) return 1;
+  return phase>=2?(Number(e._bossStoryOnsterPostCadence)||1):(Number(e._bossStoryOnsterPreCadence)||1);
+}
+function onsterStoryMoveMul(e,phase){
+  if(!e) return 1;
+  return phase>=2?(Number(e._bossStoryOnsterPostMove)||1):(Number(e._bossStoryOnsterPreMove)||1);
+}
+function onsterStoryAwakenThreshold(e){
+  return Number(e&&e._bossStoryOnsterAwakenAt)||0.5;
+}
+function bossTalkIdFor(entity,id){
+  if(id) return id;
+  if(!entity) return '';
+  if(entity.key) return entity.key;
+  if(entity.type) return entity.type;
+  return entity.label||entity.name||'boss';
+}
+function bossTalkDataFor(id,entity,role){
+  const key=bossTalkIdFor(entity,id);
+  const base=Object.assign({},BOSS_TALK_LINES[key]||{});
+  base.id=key;
+  base.speaker=base.speaker||(entity&&(entity.label||entity.name))||key||'보스';
+  base.line=base.line||(entity&&entity.quip)||'...';
+  base.color=base.color||(entity&&entity.color)||'#8be8ff';
+  base.sub=base.sub||role||(entity&&entity.title)||'';
+  base.title=role||base.sub||'';
+  return base;
+}
+function bossStoryFor(id,entity){
+  const key=bossTalkIdFor(entity,id);
+  const data=BOSS_STORY_DIALOGUES[key];
+  return data?Object.assign({key},data):null;
+}
+function normalizeBossStoryPages(pages,fallbackSpeaker,fallbackText){
+  const list=Array.isArray(pages)?pages:[];
+  const out=list.map(p=>{
+    if(typeof p==='string') return {speaker:fallbackSpeaker||'',text:p};
+    return {speaker:(p&&p.speaker)||fallbackSpeaker||'',text:String((p&&p.text)!=null?p.text:'')};
+  }).filter(p=>p.text);
+  if(!out.length&&fallbackText) out.push({speaker:fallbackSpeaker||'',text:String(fallbackText)});
+  return out;
+}
+function bossStoryPagesFor(key,stage,phase){
+  const data=BOSS_STORY_DIALOGUES[key];
+  if(!data) return [];
+  const pages=stage==='phase'?data['phase'+phase]:data[stage];
+  return applyConditionalBossStoryPages(key,stage,normalizeBossStoryPages(pages,data.name||'',null));
+}
+function bossStoryRetryPagesFor(key){
+  return normalizeBossStoryPages(BOSS_STORY_RETRY_DIALOGUES[key]||[], '', null);
+}
+function bossStoryPhaseSeenKey(key,phase){
+  return key+'.phase'+phase;
+}
+function syncBossStoryChoiceDebug(){
+  try{
+    window.bossStoryChoices=bossStoryChoices;
+    window.storyFlags=bossStoryFlags;
+    window.seenBossDialogues=seenBossDialogues;
+    window.seenBossPhaseDialogues=seenBossPhaseDialogues;
+    if(!window.run||typeof window.run!=='object') window.run={};
+    window.run.bossStoryChoices=bossStoryChoices;
+    window.run.storyFlags=bossStoryFlags;
+    window.run.seenBossDialogues=seenBossDialogues;
+    window.run.seenBossPhaseDialogues=seenBossPhaseDialogues;
+  }catch(e){}
+}
+function bossTalkEntityActive(entity){
+  if(!entity) return false;
+  if(entity.boss) return boss===entity;
+  return Array.isArray(enemies)&&enemies.includes(entity)&&!entity.dead&&entity.hp>0;
+}
+function bossTalkActive(){
+  return !!(bossTalk&&bossTalk.phase!=='done');
+}
+function bossTalkBlocksMovement(){
+  return !!(bossTalk&&(bossTalk.phase==='talk'||bossTalk.phase==='choice'||bossTalk.phase==='focus'));
+}
+function startBossTalkFocus(){
+  if(!bossTalk||bossTalk.phase!=='approach'||!bossTalk.near) return false;
+  bossTalk.phase='focus';
+  bossTalk.focusT=0;
+  bossTalk.t=0;
+  bossTalk.readyT=0;
+  bossTalk.nearLineT=0;
+  player.dodging=0;
+  player.dashFxTrailT=0;
+  mouseDown=false;
+  autoFire=false;
+  screenShake=Math.max(screenShake||0,bossTalk.glitch?7:4);
+  hitFlash=Math.max(hitFlash||0,bossTalk.glitch?0.22:0.12);
+  if(typeof beep==='function'){ beep(bossTalk.glitch?92:180,0.08,'square',0.035); beep(520,0.08,'triangle',0.025); }
+  return true;
+}
+function startBossStoryDialog(id,stage,entity,opts){
+  opts=opts||{};
+  const key=bossTalkIdFor(entity,id);
+  const story=bossStoryFor(key,entity);
+  const fallback=bossTalkDataFor(key,entity,opts.role||'');
+  const seenEncounter=stage==='encounter'&&!!seenBossDialogues[key];
+  const savedChoice=stage==='encounter'?normalizeBossStoryChoiceId(key,bossStoryChoices[key]):'';
+  if(stage==='encounter'&&savedChoice) applyBossStoryChoiceFlags(key,savedChoice,entity);
+  let pages=[];
+  if(seenEncounter) pages=bossStoryRetryPagesFor(key);
+  else if(story) pages=stage==='phase'?bossStoryPagesFor(key,'phase',opts.phase):bossStoryPagesFor(key,stage);
+  if(!pages.length&&opts.fallbackText) pages=normalizeBossStoryPages([],fallback.speaker||fallback.name,opts.fallbackText);
+  if(!pages.length){
+    if(stage==='encounter'||stage==='phase'||stage==='defeat') console.warn('[boss-story] dialogue missing:',key,stage);
+    return false;
+  }
+  if(stage==='encounter'&&!seenEncounter){
+    seenBossDialogues[key]=true;
+    syncBossStoryChoiceDebug();
+  }
+  bossTalk={
+    phase:opts.approach?'approach':'talk',
+    stage:stage||'encounter',
+    entity:entity||null,
+    id:key,
+    key,
+    pages,
+    pageI:0,
+    speaker:pages[0].speaker||fallback.speaker||fallback.name||key,
+    line:pages[0].text||'',
+    sub:fallback.sub||opts.role||'',
+    color:fallback.color||(entity&&entity.color)||'#8be8ff',
+    presentation:bossEncounterPresentationFor(key,entity,fallback),
+    glitch:!!(fallback.glitch||opts.glitch),
+    title:opts.role||fallback.title||fallback.sub||'',
+    choices:(story&&stage==='encounter'&&!seenEncounter&&!savedChoice&&Array.isArray(story.choices))?story.choices:[],
+    choiceAfter:story&&Number.isFinite(story.choiceAfter)?story.choiceAfter:null,
+    choiceRects:[],
+    selectedChoice:null,
+    onDone:opts.onDone||null,
+    t:0,
+    chars:0,
+    readyT:0,
+    near:false,
+    encounterState:'far',
+    encounterDist:9999,
+    nearLineShown:false,
+    nearLineT:0,
+    focusT:0,
+    triggerR:178,
+    started:false
+  };
+  bossTalk.triggerR=Math.max(80,Number(bossTalk.presentation.triggerR)||178);
+  bossTalk.nearR=Math.max(bossTalk.triggerR+24,Number(bossTalk.presentation.nearR)||320);
+  bossTalk.choiceAfter=bossTalk.choiceAfter==null?bossTalk.pages.length-1:clamp(Math.round(bossTalk.choiceAfter),0,bossTalk.pages.length-1);
+  if(!opts.approach){
+    bossTalk.started=true;
+    player.dodging=0;
+    player.dashFxTrailT=0;
+    mouseDown=false;
+    autoFire=false;
+  }
+  return true;
+}
+function armBossTalk(id,entity,role){
+  if(!entity) return false;
+  const key=bossTalkIdFor(entity,id);
+  const retrySeen=!!seenBossDialogues[key];
+  const started=startBossStoryDialog(id,'encounter',entity,{role,approach:!retrySeen});
+  if(!started) bossTalk=null;
+  return started;
+}
+function beginBossTalk(skipFx){
+  if(!bossTalk||(bossTalk.phase!=='approach'&&bossTalk.phase!=='focus')) return;
+  bossTalk.phase='talk';
+  bossTalk.t=0;
+  bossTalk.chars=0;
+  bossTalk.readyT=0;
+  bossTalk.started=true;
+  const p=(bossTalk.pages&&bossTalk.pages[bossTalk.pageI])||null;
+  if(p){ bossTalk.speaker=p.speaker||bossTalk.speaker; bossTalk.line=p.text||bossTalk.line||''; }
+  player.dodging=0;
+  player.dashFxTrailT=0;
+  mouseDown=false;
+  autoFire=false;
+  if(!skipFx){
+    screenShake=Math.max(screenShake||0,bossTalk.glitch?8:4);
+    hitFlash=Math.max(hitFlash||0,bossTalk.glitch?0.24:0.14);
+    if(typeof beep==='function'){ beep(bossTalk.glitch?90:150,0.12,'sawtooth',0.045); beep(420,0.08,'triangle',0.03); }
+  }
+}
+function finishBossTalk(){
+  if(!bossTalk) return;
+  const T=bossTalk, ent=T.entity;
+  const done=T.onDone;
+  const storyStage=T.stage;
+  bossTalk=null;
+  roomPreviewT=0;
+  if(storyStage==='encounter'&&ent&&bossTalkEntityActive(ent)){
+    if((ent.stunT||0)>0) ent.stunT=Math.min(ent.stunT,0.65);
+    if((ent.coolT||0)>0) ent.coolT=Math.min(ent.coolT,0.8);
+    bossBanner=Math.max(bossBanner||0,roomIsBoss?1.45:1.15);
+    if(typeof sfx!=='undefined'&&sfx.boss) sfx.boss();
+    const big=roomIsBoss?((act>=MAX_ACT?'최종보스':act+'막 보스')+' · '+T.speaker):('중간보스 · '+T.speaker);
+    banner(big,T.title||T.sub||'',roomIsBoss?1700:1400);
+  }
+  if(typeof done==='function'){
+    try{ done(); }catch(e){ console.warn('[boss-story] onDone failed',e); }
+  }
+}
+function armBossPhaseStory(entity,phase,fallbackLine){
+  if(!entity) return false;
+  const key=bossTalkIdFor(entity,null);
+  if(!BOSS_STORY_DIALOGUES[key]) return false;
+  if(entity._bossStoryPhases&&entity._bossStoryPhases[phase]) return false;
+  entity._bossStoryPhases=entity._bossStoryPhases||{};
+  entity._bossStoryPhases[phase]=true;
+  const seenKey=bossStoryPhaseSeenKey(key,phase);
+  if(seenBossPhaseDialogues[seenKey]) return false;
+  seenBossPhaseDialogues[seenKey]=true;
+  syncBossStoryChoiceDebug();
+  const payload={key,entity,phase,fallbackLine:fallbackLine||''};
+  if(bossEvolve){ bossEvolve.story=payload; return true; }
+  return startBossStoryDialog(key,'phase',entity,{phase,fallbackText:fallbackLine});
+}
+function playBossEvolveStory(E){
+  if(!E||!E.story) return false;
+  const s=E.story;
+  return startBossStoryDialog(s.key,'phase',s.entity,{phase:s.phase,fallbackText:s.fallbackLine});
+}
+function maybeStartBossDefeatStory(kind){
+  if(bossStoryDefeatPending||bossStoryDefeatShown) return false;
+  const key=bossStoryLastDefeatKey||(kind==='midboss'?roomMidbossKind:roomBossKind);
+  if(!key||!BOSS_STORY_DIALOGUES[key]||!BOSS_STORY_DIALOGUES[key].defeat) return false;
+  bossStoryDefeatPending=true;
+  bossStoryDefeatShown=true;
+  return startBossStoryDialog(key,'defeat',null,{
+    onDone:()=>{
+      bossStoryDefeatPending=false;
+      setTimeout(()=>onCombatCleared(),0);
+    }
+  });
+}
+function setBossTalkPage(i){
+  if(!bossTalk) return;
+  bossTalk.pageI=clamp(i,0,Math.max(0,(bossTalk.pages||[]).length-1));
+  const p=(bossTalk.pages||[])[bossTalk.pageI]||{};
+  bossTalk.speaker=p.speaker||bossTalk.speaker||bossTalk.id||'';
+  bossTalk.line=p.text||'';
+  bossTalk.t=0; bossTalk.chars=0; bossTalk.readyT=0; bossTalk.phase='talk';
+}
+function selectBossTalkChoice(choice){
+  if(!bossTalk||!choice) return false;
+  const T=bossTalk;
+  T.selectedChoice=normalizeBossStoryChoiceId(T.key,choice.id||choice.label||'choice');
+  bossStoryChoices[T.key]=T.selectedChoice;
+  applyBossStoryChoiceFlags(T.key,T.selectedChoice,T.entity);
+  const pages=normalizeBossStoryPages(choice.response,T.speaker,'...');
+  const effectText=String(choice.effectText||choice.resultText||'').trim();
+  const effectPages=effectText?[{speaker:'[선택 효과]',text:effectText}]:[];
+  T.choices=[];
+  T.choiceRects=[];
+  T.pages=effectPages.concat(pages.length?pages:[{speaker:T.speaker,text:'...'}]);
+  T.pageI=0;
+  setBossTalkPage(0);
+  return true;
+}
+function bossTalkChoiceAt(x,y){
+  if(!bossTalk||bossTalk.phase!=='choice') return null;
+  const rects=bossTalk.choiceRects||[];
+  for(let i=0;i<rects.length;i++){
+    const r=rects[i];
+    if(x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h) return bossTalk.choices[i]||null;
+  }
+  return null;
+}
+function handleBossTalkAdvance(input){
+  if(!bossTalkActive()) return false;
+  if(bossTalk.phase==='approach'){
+    if(bossTalk.near) startBossTalkFocus();
+    return bossTalk.near;
+  }
+  if(bossTalk.phase==='focus') return true;
+  if(bossTalk.phase==='choice'){
+    let choice=null;
+    if(typeof input==='number') choice=bossTalk.choices[input-1]||null;
+    else if(input&&typeof input==='object') choice=bossTalkChoiceAt(input.x,input.y);
+    if(choice) return selectBossTalkChoice(choice);
+    return true;
+  }
+  if(bossTalk.phase==='talk'){
+    if(bossTalk.chars<(bossTalk.line||'').length){
+      bossTalk.chars=(bossTalk.line||'').length;
+      bossTalk.readyT=0;
+    }else if(bossTalk.choices&&bossTalk.choices.length&&bossTalk.pageI===bossTalk.choiceAfter&&!bossTalk.selectedChoice){
+      bossTalk.phase='choice';
+      bossTalk.readyT=0;
+    }else if(bossTalk.pageI<(bossTalk.pages||[]).length-1){
+      setBossTalkPage(bossTalk.pageI+1);
+    }else finishBossTalk();
+    return true;
+  }
+  return false;
+}
+function updateBossTalk(dt){
+  if(!bossTalkActive()) return;
+  const T=bossTalk, ent=T.entity;
+  if(T.stage==='encounter'&&ent&&!bossTalkEntityActive(ent)){ bossTalk=null; return; }
+  T.t+=dt;
+  if(T.phase==='approach'){
+    const d=Math.hypot(player.x-ent.x,player.y-ent.y);
+    T.encounterDist=d;
+    T.near=d<=T.triggerR;
+    T.encounterState=T.near?'interact':(d<=T.nearR?'near':'far');
+    if(T.encounterState!=='far'&&!T.nearLineShown&&T.presentation&&T.presentation.nearLine){
+      T.nearLineShown=true;
+      T.nearLineT=2.6;
+    }
+    if(T.nearLineT>0) T.nearLineT=Math.max(0,T.nearLineT-dt);
+    ent.wob=(ent.wob||0)+dt*1.5;
+    return;
+  }
+  if(T.phase==='focus'){
+    T.focusT+=dt;
+    player.dodging=0;
+    player.dashFxTrailT=0;
+    mouseDown=false;
+    autoFire=false;
+    if(T.focusT>=0.26) beginBossTalk(true);
+    return;
+  }
+  if(T.phase==='talk'){
+    const cps=T.glitch?24:30;
+    T.chars=Math.min((T.line||'').length,Math.floor(T.t*cps));
+    if(T.chars>=(T.line||'').length){
+      T.readyT+=dt;
+    }
+  }
+}
+function drawPixelBox(x,y,w,h,fill,stroke,accent){
+  ctx.fillStyle='rgba(0,0,0,0.84)'; ctx.fillRect(x-6,y-6,w+12,h+12);
+  ctx.fillStyle=stroke||'#cfefff'; ctx.fillRect(x-3,y-3,w+6,h+6);
+  ctx.fillStyle='#0a0b14'; ctx.fillRect(x,y,w,h);
+  ctx.fillStyle=fill||'rgba(42,45,58,0.96)'; ctx.fillRect(x+6,y+6,w-12,h-12);
+  ctx.fillStyle=accent||stroke||'#38e8ff'; ctx.fillRect(x+8,y+h-10,w-16,4);
+  ctx.fillStyle='rgba(255,255,255,0.18)'; ctx.fillRect(x+8,y+8,w-16,3);
+}
+function wrapBossTalkText(text,maxWidth,font){
+  ctx.font=font;
+  const raw=String(text||'').split('\n'), lines=[];
+  for(const part of raw){
+    const chars=part.split('');
+    let cur='';
+    for(const ch of chars){
+      const next=cur+ch;
+      if(cur&&ctx.measureText(next).width>maxWidth){ lines.push(cur); cur=ch; }
+      else cur=next;
+    }
+    lines.push(cur);
+  }
+  return lines.filter((ln,i)=>ln||i<raw.length-1).slice(0,3);
+}
+function drawEncounterIconShape(type,x,y,size,color,pulse){
+  const s=Math.max(18,size||24), c=color||'#8be8ff';
+  ctx.save();
+  ctx.translate(Math.round(x),Math.round(y));
+  ctx.lineWidth=2;
+  ctx.strokeStyle=c;
+  ctx.fillStyle='rgba(6,8,16,0.94)';
+  if(type==='eye'){
+    ctx.fillRect(-s/2,-s/4,s,s/2); ctx.strokeRect(-s/2,-s/4,s,s/2);
+    ctx.fillStyle=c; ctx.fillRect(-4,-4,8,8); ctx.fillStyle='#fff'; ctx.fillRect(-1,-1,2,2);
+  }else if(type==='signal'){
+    ctx.fillRect(-s/2,-s/2,s,s); ctx.strokeRect(-s/2,-s/2,s,s); ctx.fillStyle=c;
+    for(let i=0;i<3;i++) ctx.fillRect(-7+i*6,6-i*7,4,6+i*7);
+  }else if(type==='chain'){
+    ctx.fillRect(-s/2,-s/2,s,s); ctx.strokeRect(-s/2,-s/2,s,s);
+    ctx.strokeRect(-9,-3,12,8); ctx.strokeRect(-2,-5,12,8);
+  }else if(type==='tape'){
+    ctx.fillRect(-s/2,-s/2,s,s); ctx.strokeRect(-s/2,-s/2,s,s);
+    ctx.fillStyle=c; ctx.fillRect(-9,3,18,5);
+    ctx.fillStyle='#0a0b14'; ctx.fillRect(-8,-6,6,6); ctx.fillRect(2,-6,6,6);
+    ctx.strokeStyle=c; ctx.strokeRect(-8,-6,6,6); ctx.strokeRect(2,-6,6,6);
+  }else if(type==='system'){
+    ctx.fillRect(-s/2,-s/2,s,s); ctx.strokeRect(-s/2,-s/2,s,s);
+    ctx.fillStyle=pulse>0.55?'#fff':c;
+    ctx.font='900 20px "Galmuri11","Malgun Gothic",monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('!',0,1);
+  }else{
+    ctx.fillRect(-s/2,-s/2,s,s*0.72); ctx.strokeRect(-s/2,-s/2,s,s*0.72);
+    ctx.fillRect(-5,s*0.18,10,7); ctx.strokeRect(-5,s*0.18,10,7);
+    ctx.fillStyle=pulse>0.55?'#fff':c;
+    ctx.font='900 14px "Galmuri11","Malgun Gothic",monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('...',0,-2);
+  }
+  ctx.restore();
+}
+function drawEncounterGroundRing(ent,T,k,pulse){
+  const cfg=T.presentation||ENCOUNTER_PRESENTATION_DEFAULT, color=cfg.color||T.color||'#8be8ff';
+  const interact=!!T.near, near=T.encounterState==='near'||interact;
+  const ringR=T.triggerR+(near?4+5*pulse:0);
+  ctx.save();
+  ctx.globalAlpha=near?(0.30+0.20*k):(0.16+0.05*pulse);
+  ctx.strokeStyle=color; ctx.lineWidth=near?3:2; ctx.setLineDash(near?[]:[9,7]);
+  ctx.beginPath(); ctx.ellipse(ent.x,ent.y+Math.max(10,ent.r*0.52),ringR,Math.max(20,ringR*0.28),0,0,TAU); ctx.stroke();
+  ctx.setLineDash([]);
+  if(interact){
+    ctx.globalAlpha=0.10+0.08*pulse; ctx.fillStyle=color;
+    ctx.beginPath(); ctx.ellipse(ent.x,ent.y+Math.max(10,ent.r*0.52),ringR*0.96,Math.max(16,ringR*0.24),0,0,TAU); ctx.fill();
+  }
+  ctx.restore();
+}
+function drawEncounterNearLine(ent,T){
+  const cfg=T.presentation||ENCOUNTER_PRESENTATION_DEFAULT, line=cfg.nearLine;
+  if(!line||!(T.nearLineT>0)) return;
+  const fade=Math.min(1,T.nearLineT/0.35);
+  ctx.save();
+  ctx.globalAlpha=fade;
+  ctx.font='900 13px "Galmuri11","Malgun Gothic",monospace'; ctx.textAlign='center';
+  const w=Math.min(W-40,Math.max(120,ctx.measureText(line).width+26));
+  const h=28, x=clamp(ent.x-w/2,20,W-w-20), y=clamp(ent.y-ent.r-80,54,H-h-60);
+  ctx.fillStyle='rgba(10,8,20,0.92)'; ctx.fillRect(x,y,w,h);
+  ctx.strokeStyle=cfg.color||T.color; ctx.lineWidth=2; ctx.strokeRect(x,y,w,h);
+  ctx.fillStyle='#ffffff'; ctx.textBaseline='middle'; ctx.fillText(line,x+w/2,y+h/2+1);
+  ctx.restore();
+}
+function drawEncounterPrompt(ent,T,pulse){
+  const cfg=T.presentation||ENCOUNTER_PRESENTATION_DEFAULT, text=cfg.prompt||ENCOUNTER_PRESENTATION_DEFAULT.prompt, sub='SPACE / 클릭도 가능';
+  ctx.save();
+  ctx.font='900 15px "Galmuri11","Malgun Gothic",monospace';
+  const w=Math.min(W-36,Math.max(ctx.measureText(text).width+36,ctx.measureText(sub).width+28,170));
+  const h=46, x=clamp(ent.x-w/2,18,W-w-18), y=clamp(ent.y+ent.r+22,74,H-h-132);
+  drawPixelBox(x,y,w,h,'rgba(22,24,36,0.96)',cfg.color||T.color,cfg.color||T.color);
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.font='900 15px "Galmuri11","Malgun Gothic",monospace';
+  ctx.fillStyle=pulse>0.45?'#ffffff':'#d9e6ff'; ctx.fillText(text,x+w/2,y+17);
+  ctx.font='bold 11px "Galmuri11","Malgun Gothic",monospace';
+  ctx.fillStyle='rgba(207,240,255,0.72)'; ctx.fillText(sub,x+w/2,y+33);
+  ctx.restore();
+}
+function drawBossEncounterPresentation(T,ent,pulse){
+  const cfg=T.presentation||ENCOUNTER_PRESENTATION_DEFAULT, color=cfg.color||T.color||'#8be8ff';
+  const d=T.encounterDist!=null?T.encounterDist:Math.hypot(player.x-ent.x,player.y-ent.y);
+  const k=clamp(1-d/(T.nearR+120),0,1), interact=!!T.near, near=T.encounterState==='near'||interact;
+  ctx.save();
+  ctx.globalAlpha=0.08+0.10*k; ctx.fillStyle='#000'; ctx.fillRect(0,0,W,H); ctx.globalAlpha=1;
+  drawEncounterGroundRing(ent,T,k,pulse);
+  if(near){
+    ctx.save();
+    ctx.globalAlpha=interact?0.26:0.13; ctx.strokeStyle=color; ctx.lineWidth=2; ctx.setLineDash([4,9]);
+    ctx.beginPath(); ctx.moveTo(player.x,player.y-player.r*0.2); ctx.lineTo(ent.x,ent.y-ent.r*0.15); ctx.stroke();
+    ctx.restore();
+  }
+  ctx.strokeStyle=interact?'#ffffff':(near?color:'rgba(207,240,255,0.52)');
+  ctx.lineWidth=interact?3:2; ctx.setLineDash(near?[]:[7,7]);
+  ctx.beginPath(); ctx.arc(ent.x,ent.y,ent.r+14+(interact?5*pulse:2*pulse),0,TAU); ctx.stroke(); ctx.setLineDash([]);
+  drawEncounterIconShape(cfg.icon,ent.x,ent.y-ent.r-44-6*Math.sin(performance.now()*0.004),near?30:26,color,pulse);
+  drawEncounterNearLine(ent,T);
+  if(interact) drawEncounterPrompt(ent,T,pulse);
+  ctx.restore();
+}
+function drawBossTalkFocus(T,ent,pulse){
+  const cfg=T.presentation||ENCOUNTER_PRESENTATION_DEFAULT, color=cfg.color||T.color||'#8be8ff';
+  const a=clamp((T.focusT||0)/0.26,0,1);
+  ctx.save();
+  ctx.fillStyle='rgba(0,0,0,'+(0.28+0.22*a)+')'; ctx.fillRect(0,0,W,H);
+  ctx.globalAlpha=0.22+0.24*a; ctx.strokeStyle=color; ctx.lineWidth=3;
+  ctx.beginPath(); ctx.arc(player.x,player.y,player.r+22+6*pulse,0,TAU); ctx.stroke();
+  ctx.beginPath(); ctx.arc(ent.x,ent.y,ent.r+24+7*pulse,0,TAU); ctx.stroke();
+  ctx.globalAlpha=0.18+0.22*a; ctx.strokeStyle='#ffffff'; ctx.setLineDash([5,8]);
+  ctx.beginPath(); ctx.moveTo(player.x,player.y); ctx.lineTo(ent.x,ent.y); ctx.stroke();
+  ctx.restore();
+}
+function drawBossTalk(){
+  if(!bossTalkActive()||state!=='play') return;
+  const T=bossTalk, ent=T.entity;
+  ctx.save();
+  const pulse=0.5+0.5*Math.sin(performance.now()*0.006);
+  if(T.phase==='approach'){
+    if(!ent){ ctx.restore(); return; }
+    drawBossEncounterPresentation(T,ent,pulse);
+    ctx.restore();
+    return;
+  }
+  if(T.phase==='focus'){
+    if(!ent){ ctx.restore(); return; }
+    drawBossTalkFocus(T,ent,pulse);
+    ctx.restore();
+    return;
+  }
+  ctx.fillStyle='rgba(0,0,0,'+(T.glitch?0.56:0.44)+')'; ctx.fillRect(0,0,W,H);
+  if(T.glitch){
+    for(let i=0;i<9;i++){ ctx.globalAlpha=0.05+0.04*Math.random(); ctx.fillStyle=i%2?'#9146ff':'#38e8ff'; ctx.fillRect(rand(0,W),rand(0,H),rand(40,160),rand(3,12)); }
+    ctx.globalAlpha=1;
+  }
+  const w=Math.min(W-70,790), h=138, x=(W-w)/2, y=H-h-28;
+  drawPixelBox(x,y,w,h,'rgba(51,54,68,0.98)',T.color,T.color);
+  const nw=Math.min(230,Math.max(126,ctx.measureText(T.speaker).width+58)), nh=42, nx=x+16, ny=y-44;
+  drawPixelBox(nx,ny,nw,nh,'rgba(34,36,48,0.98)',T.color,T.color);
+  ctx.textAlign='left'; ctx.textBaseline='middle';
+  ctx.font='900 22px "Galmuri11","Malgun Gothic",monospace';
+  ctx.fillStyle=T.color; ctx.fillText(T.speaker,nx+22,ny+nh/2+1);
+  ctx.font='900 26px "Galmuri11","Malgun Gothic",monospace';
+  ctx.fillStyle='#ffffff';
+  const shown=(T.line||'').slice(0,T.chars);
+  const lines=wrapBossTalkText(shown,w-70,ctx.font);
+  lines.forEach((ln,i)=>ctx.fillText(ln,x+36,y+44+i*36));
+  if(T.phase==='choice'){
+    T.choiceRects=[];
+    const choices=T.choices||[];
+    const btnH=34, gap=8, totalH=choices.length*btnH+Math.max(0,choices.length-1)*gap;
+    const bw=Math.min(430,w-90), bx=x+w-bw-26, by=Math.max(68,y-totalH-18);
+    choices.forEach((ch,i)=>{
+      const cy=by+i*(btnH+gap), hot=mouseX>=bx&&mouseX<=bx+bw&&mouseY>=cy&&mouseY<=cy+btnH;
+      T.choiceRects.push({x:bx,y:cy,w:bw,h:btnH});
+      ctx.fillStyle=hot?'rgba(255,255,255,0.18)':'rgba(8,8,14,0.92)';
+      ctx.fillRect(bx,cy,bw,btnH);
+      ctx.strokeStyle=hot?'#ffffff':T.color; ctx.lineWidth=2; ctx.strokeRect(bx,cy,bw,btnH);
+      ctx.font='bold 15px "Galmuri11","Malgun Gothic",monospace';
+      ctx.fillStyle='#ffffff'; ctx.textAlign='left'; ctx.textBaseline='middle';
+      ctx.fillText((i+1)+'. '+(ch.label||ch.id||'선택'),bx+14,cy+btnH/2+1);
+    });
+  }
+  if(T.chars>=(T.line||'').length){
+    ctx.textAlign='right';
+    ctx.font='bold 18px "Galmuri11","Malgun Gothic",monospace';
+    ctx.fillStyle=pulse>0.45?'#ffffff':'rgba(255,255,255,0.35)';
+    ctx.fillText(T.phase==='choice'?'1 / 2 / 3':'▶',x+w-32,y+h-28);
+  }
+  ctx.restore();
+}
 let lastRoomKind=null, cutsceneT=0, roomEntryHp=0, roomStartedAt=0, retries=0;
 // ── 방 입장 시점의 진행 상태 스냅샷 (재도전 시 무한 레벨업 방지) ──
 let roomEntrySnap=null;
@@ -6087,6 +7256,10 @@ function snapshotProgress(){
   roomEntrySnap={
     xp, level, xpNext, pendingLevels, gold, totalKills,
     runStats:getRunStatsSnapshot(),
+    bossStoryChoices:clonePlain(bossStoryChoices),
+    bossStoryFlags:clonePlain(bossStoryFlags),
+    seenBossDialogues:clonePlain(seenBossDialogues),
+    seenBossPhaseDialogues:clonePlain(seenBossPhaseDialogues),
     runShopPurchases, runShopSpent,
     treePoints, treeUnlocked: new Set(treeUnlocked), treeIntroShown,
     player:Object.assign({}, player, {
@@ -6103,6 +7276,11 @@ function restoreProgress(){
   const s=roomEntrySnap; if(!s) return;
   xp=s.xp; level=s.level; xpNext=s.xpNext; pendingLevels=s.pendingLevels; gold=s.gold; totalKills=s.totalKills;
   runStats=normalizeRunStats(s.runStats);
+  bossStoryChoices=Object.assign(clonePlain(s.bossStoryChoices||{}),bossStoryChoices||{});
+  bossStoryFlags=normalizeBossStoryFlags(Object.assign(clonePlain(s.bossStoryFlags||{}),bossStoryFlags||{}),bossStoryChoices);
+  seenBossDialogues=Object.assign(clonePlain(s.seenBossDialogues||{}),seenBossDialogues||{});
+  seenBossPhaseDialogues=Object.assign(clonePlain(s.seenBossPhaseDialogues||{}),seenBossPhaseDialogues||{});
+  syncBossStoryChoiceDebug();
   runShopPurchases=Number(s.runShopPurchases)||0;
   runShopSpent=Number(s.runShopSpent)||0;
   if(s.treePoints!=null){ treePoints=s.treePoints; treeUnlocked=new Set(s.treeUnlocked); }
@@ -6229,6 +7407,10 @@ function saveRunCheckpoint(){
       diffKey:diffSet&&diffSet.key?diffSet.key:'easy',
       act,currentRow,kills,totalKills,gold,level,xp,xpNext,pendingLevels,retries,runHits,runShopPurchases,runShopSpent,elapsed,
       runStats:getRunStatsSnapshot(),
+      bossStoryChoices:clonePlain(bossStoryChoices),
+      bossStoryFlags:clonePlain(bossStoryFlags),
+      seenBossDialogues:clonePlain(seenBossDialogues),
+      seenBossPhaseDialogues:clonePlain(seenBossPhaseDialogues),
       runPotionUsed,eliteViewerSpawns,tierIntroShown,treeIntroShown,shopIntroShown,
       treePoints,treeUnlocked:[...treeUnlocked],
       nextCombatMods:nextCombatMods?clonePlain(nextCombatMods):null,
@@ -6260,6 +7442,11 @@ function loadRunCheckpoint(){
     act=clamp(Math.round(Number(data.act)||1),1,MAX_ACT); currentRow=data.currentRow||0; kills=0; totalKills=data.totalKills||0;
     gold=data.gold||0; level=data.level||1; xp=data.xp||0; xpNext=data.xpNext||20; pendingLevels=data.pendingLevels||0;
     retries=data.retries||0; runHits=data.runHits||0; runShopPurchases=data.runShopPurchases||0; runShopSpent=data.runShopSpent||0; runStats=normalizeRunStats(data.runStats); runStartedAt=performance.now()-(data.elapsed||0);
+    bossStoryChoices=clonePlain(data.bossStoryChoices||{});
+    bossStoryFlags=normalizeBossStoryFlags(data.bossStoryFlags||{},bossStoryChoices);
+    seenBossDialogues=clonePlain(data.seenBossDialogues||{});
+    seenBossPhaseDialogues=clonePlain(data.seenBossPhaseDialogues||{});
+    syncBossStoryChoiceDebug();
     runPotionUsed=!!data.runPotionUsed; eliteViewerSpawns=data.eliteViewerSpawns||0;
     tierIntroShown=!!data.tierIntroShown; treeIntroShown=!!data.treeIntroShown; shopIntroShown=!!data.shopIntroShown;
     treePoints=data.treePoints||0; treeUnlocked=new Set(data.treeUnlocked&&data.treeUnlocked.length?data.treeUnlocked:['hub']);
@@ -6269,7 +7456,7 @@ function loadRunCheckpoint(){
     if(!mapData) throw new Error('map restore failed');
     buildBackdrop(act);
     enemies=[]; pBullets=[]; eBullets=[]; pickups=[]; particles=[]; hazards=[]; floatBubbles=[]; kijoMasks=[]; kijoGazes=[]; kijoParades=[]; kijoLaserWarns=[];
-    boss=null; pendingNode=null; roomCleared=true; roomIsBoss=false; roomIsMidboss=false; roomHadElite=false; roomEliteKind=null; roomMidbossKind=null; bossBanner=0; bossEvolve=null; cutsceneT=0;
+    boss=null; bossTalk=null; bossStoryDefeatPending=false; bossStoryDefeatShown=false; bossStoryLastDefeatKey=null; pendingNode=null; roomCleared=true; roomIsBoss=false; roomIsMidboss=false; roomHadElite=false; roomEliteKind=null; roomMidbossKind=null; bossBanner=0; bossEvolve=null; cutsceneT=0;
     tutorialMode=false; tutorialDoneFlag=true; paused=false; mouseDown=false; autoFire=false; runActive=true; state='map';
     hideAll(); startBGM(); showMap(); banner('이어하기','저장된 진행을 불러왔다',1400);
     return true;
@@ -6299,12 +7486,13 @@ function startCombat(kind, fresh){
   if(fresh){ roomEntryHp=player.hp; snapshotProgress(); if(player.roomEntryHeal>0) healPlayer(player.roomEntryHeal,player.x,player.y); }
   enemies=[]; pBullets=[]; eBullets=[]; pickups=[]; particles=[]; hazards=[]; floatBubbles=[]; kijoMasks=[]; kijoGazes=[]; kijoParades=[]; kijoLaserWarns=[];
   player.x=W/2; player.y=H-90;
-  roomCleared=false; combatClearGrace=false; roomIsBoss=(kind==='boss'); roomIsMidboss=(kind==='midboss'); kills=0; boss=null; roomHadElite=false; roomEliteKind=null; roomMidbossKind=null; roomBossKind=null; eliteIntro=null; timeScale=1; slowmoT=0; bagjeinRewind=null;
+  roomCleared=false; combatClearGrace=false; roomIsBoss=(kind==='boss'); roomIsMidboss=(kind==='midboss'); kills=0; boss=null; roomHadElite=false; roomEliteKind=null; roomMidbossKind=null; roomBossKind=null; eliteIntro=null; bossTalk=null; bossStoryLastDefeatKey=null; bossStoryDefeatPending=false; bossStoryDefeatShown=false; timeScale=1; slowmoT=0; bagjeinRewind=null;
   bossIntroToken++;
   bossIntroSeen={};
   { const biq=$('bossIntroQuote'); if(biq){ biq.className=''; clearTimeout(biq._t); } }
   roomStartedAt=performance.now();
   resetStallWatch();
+  initCombatVariant(kind);
   // GL/gView 리셋 (승우 외 보스전 잔여 효과 제거)
   if(typeof GL!=='undefined'){ for(const k in GL) GL[k]=0; }
   if(typeof gView!=='undefined'){ gView.rot=0;gView.rotT=0;gView.fx=1;gView.fy=1;gView.fxT=1;gView.fyT=1; }
@@ -6318,26 +7506,20 @@ function startCombat(kind, fresh){
     if(act===2){
       const eb=spawnOnsterFinalBoss(diff);
       logBossEncounterStart(eb,'finalBoss');
-      showBossIntroLine('onster',520,eb);
-      bossBanner=2.4; sfx.boss();
-      banner("2막 보스 · 온스터", eb.title, 2400);
-      showEntrance("👑 2막 보스 등장", "온스터", eb.quip||eb.title||"");
+      armBossTalk('onster',eb,'2막 보스');
     }else{
       const b=BOSSES[ACT_BOSS[Math.min(act-1,ACT_BOSS.length-1)]];
       boss=spawnBoss(b);
       roomBossKind=boss&&boss.key;
       logBossEncounterStart(boss,'finalBoss');
-      showBossIntroLine(boss.key,520,boss);
-      bossBanner=2.4; sfx.boss();
-      banner(act+"막 보스 · "+boss.name, boss.title, 2400);
-      showEntrance("👑 "+act+"막 보스 등장", boss.name, boss.quip||boss.title||"");
+      armBossTalk(boss.key,boss,(act>=MAX_ACT?'최종보스':act+'막 보스'));
     }
   }else{
     const P=ACT_POOLS[Math.min(act-1,ACT_POOLS.length-1)];
     const normalPool=normalEnemyPoolFor(act,row);
     let base=rand(3,5)+act*1.0+row*0.35;
     if(act===1) base*=1.15;               // 1막 일반방 밀도 소폭 상향
-    if(row<mid) base*=0.6;        // 중보 전: 약한 몹 중심, 낮은 밀도
+    if(row<mid) base*=0.8;        // 중보 전: 약한 몹 중심, 낮은 밀도
     else if(row>mid) base*=(act===1||act===2)?0.7:1.05; // 1·2막 후반은 강한 일반몹 비중으로 압박, 물량은 완화 / 3막은 고유 기믹몹 소수전
     const countMax=act>=3?7:(((act===1||act===2)&&row>mid)?11:16);
     let count=clamp(Math.round(base*diffSet.cnt), row<mid?2:4, countMax);
@@ -6347,11 +7529,7 @@ function startCombat(kind, fresh){
         boss=spawnSet3Midboss(sb,diff);
         roomMidbossKind='set3';
         logBossEncounterStart(boss,'midBoss');
-        showBossIntroLine('set3',520,boss);
-        bossBanner=1.8;
-        banner("중간보스 · 현진","무거운 발소리가 가까워진다",1800);
-        if(typeof sfx!=='undefined') sfx.boss();
-        showEntrance("⚠️ 2막 중간보스 등장","현진","먼저 들어간다.");
+        armBossTalk('set3',boss,'2막 중간보스');
       } else if(act>=3){
         spawnEnemy('yanggaeng', W/2, 150, diff);
         const eb=enemies[enemies.length-1];
@@ -6359,10 +7537,7 @@ function startCombat(kind, fresh){
         applyMidbossSlotBalance(eb,'yanggaeng',diff);
         eb.title='3막 중간보스 · 박제인간'; eb.quip='B면 — 되감을 수 없는 홈';
         logBossEncounterStart(eb,'midBoss');
-        showBossIntroLine('yanggaeng',520,eb);
-        banner("중간보스 · 박제인간","정지된 음악, 멈춰진 시간",1800);
-        if(typeof sfx!=='undefined') sfx.boss();
-        showEntrance("⚠️ 3막 중간보스 등장","박제인간","B면 — 되감을 수 없는 홈");
+        armBossTalk('yanggaeng',eb,'3막 중간보스');
       } else {
         spawnEnemy('hyechul', W/2, 140, diff);
         const eb=enemies[enemies.length-1];
@@ -6371,10 +7546,7 @@ function startCombat(kind, fresh){
         eb.summonT=4.0; eb.atkT=1.4; eb.atkN=0; eb.climaxT=0;
         eb.title='1막 중간보스 · 혜철이'; eb.quip='부화장 관리자 — 혜철이';
         logBossEncounterStart(eb,'midBoss');
-        showBossIntroLine('hyechul',520,eb);
-        banner("\uC911\uAC04\uBCF4\uC2A4 \u00B7 \uD61C\uCCA0\uC774","\uB465\uC9C0\uAC00 \uC6C0\uC9C1\uC778\uB2E4",1800);
-        if(typeof sfx!=='undefined') sfx.boss();
-        showEntrance("⚠️ 중간보스 등장","혜철이","부화장 관리자 — 혜철이");
+        armBossTalk('hyechul',eb,'1막 중간보스');
       }
     }else if(kind==='elite'){
       // 자잘자 정예전 — 전용 엘리트 노드에서만 등장 (잡몹 소수 + 자잘자)
@@ -6441,9 +7613,10 @@ function startCombat(kind, fresh){
     activeCombatBadges=buildCombatBadges(M);
     renderCombatBadges();
   }
+  assignBountyTarget();
   if(player.roomShield>0) player.buffs.shield=Math.max(player.buffs.shield,player.roomShield);
-  // 신규 전투 입장 시 2초 정지 미리보기 — 모든 방에서 적/탄/플레이어가 멈춰 전투를 파악할 시간 제공
-  if(fresh!==false){ roomPreviewT=2.0; player.dodging=0; player.dashFxTrailT=0; }
+  // 신규 전투 입장 시 2초 정지 미리보기 — 중보/보스는 접근 대면 연출이 대신 담당
+  if(fresh!==false){ roomPreviewT=bossTalkActive()?0:2.0; player.dodging=0; player.dashFxTrailT=0; }
   else { roomPreviewT=0; }
   updateHUD();
   refreshSidePanel();
@@ -6800,7 +7973,7 @@ function failGladiatorCombat(src){
   combatSpecialReward=null;
   roomCleared=true;
   enemies.length=0; pBullets.length=0; eBullets.length=0; pickups.length=0;
-  boss=null; roomIsBoss=false; roomIsMidboss=false;
+  boss=null; bossTalk=null; roomIsBoss=false; roomIsMidboss=false;
   player.hp=Math.max(1,Math.round(player.maxhp*0.25));
   player.iframes=1.5;
   banner('검투장 패배','체력만 남기고 탈출했다',1800);
@@ -6849,7 +8022,7 @@ function hurtPlayer(dmg, src){
     updateHUD();
     return;
   }
-  player.hp-=dmg; player.iframes=0.5; hitFlash=0.25; screenShake=Math.max(screenShake,8); combatTookHit=true; runHits++;
+  player.hp-=dmg; player.iframes=0.5; hitFlash=0.25; screenShake=Math.max(screenShake,8); combatTookHit=true; onCombatVariantPlayerHit(); runHits++;
   if(player.hp<=1) unlockAchievement('one_hp_survive');
   if(player.thorns>0){ enemies.slice().forEach(o=>{ if(dist2(o.x,o.y,player.x,player.y)<THORNS_DAMAGE_RADIUS*THORNS_DAMAGE_RADIUS){ o.hp-=player.thorns; o.hitT=0.1; if(o.hp<=0) handleEnemyDefeat(o); } }); }
   sfx.hurt();
@@ -7019,6 +8192,11 @@ function damageEnemy(e,dmg,crit,fromBullet,bullet){
   e.hp-=dmg*(1-(e.armor||0)); e.hitT=0.1; burst(e.x,e.y,crit?'#ffd34d':e.color,crit?8:4,crit?180:120); sfx.hit();
   if(typeof GS!=='undefined'&&GS.dmgNum&&typeof spawnDmgNum==='function') spawnDmgNum(e.x,e.y-(e.r||10),Math.round(dmg*(1-(e.armor||0))),crit);
   if(crit && player.critHeal>0){ healPlayerNoDrop(player.critHeal,player.x,player.y-player.r-18); } // 치명 흡혈
+  if(e.midboss&&e.type==='yanggaeng'&&e.hp>0){
+    const storyPhases=e._bossStoryPhases||{}, hpRatio=e.hp/Math.max(1,e.maxhp||e.hp);
+    if(hpRatio<=0.65&&!storyPhases[2]&&!bossTalkActive()) armBossPhaseStory(e,2,'A면은 이미 끝났다.');
+    else if(hpRatio<=0.35&&!storyPhases[3]&&!bossTalkActive()) armBossPhaseStory(e,3,'같은 장면만, 계속 반복된다.');
+  }
   if(e.eliteViewer && eliteKindOf(e)==='yanggaeng' && !e.tauntedHalf && e.hp<=e.maxhp*0.5){ e.tauntedHalf=true; e.taunt={t:4.6,text:'이제 쓴맛도 섞어볼게.'}; if(typeof sfx!=='undefined'&&sfx.vote) sfx.vote(); }
   else if(e.eliteViewer && !e.tauntedHalf && e.hp<=e.maxhp*0.5){ e.tauntedHalf=true; e.taunt={t:4.6,text:'…봉식님? 저 때리시나요?'}; if(typeof sfx!=='undefined'&&sfx.vote) sfx.vote(); }
   applyShockStun(e);
@@ -7172,6 +8350,7 @@ function hyechulNextPhase(e){
   const line=ph===2?'금이 간다. 안쪽이 웃는다.':'둥지가 숨을 쉰다.';
   const name=ph===2?'\uB808\uC5B4 \uBCC0\uC774':'\uD558\uC774\uBE0C \uAC1C\uBC29';
   bossEvolve={ phase:ph, t:0, line, name, col, e };
+  armBossPhaseStory(e,ph,line);
   cutsceneT=2.9;
   for(let i=0;i<28;i++){ setTimeout(()=>{ if(enemies.includes(e)) burst(e.x+rand(-e.r*1.4,e.r*1.4),e.y+rand(-e.r*1.1,e.r*1.1),pick(['#ffffff',col,'#ffae42']),3,320); }, i*28); }
 }
@@ -7188,6 +8367,7 @@ function kkotNextPhase(e){
   const line=ph===2?'예쁘다고 방심했지?':'꽃은 졌고, 독만 남았어.';
   const name=ph===2?'검은 단맛':'심연 개화';
   bossEvolve={phase:ph,t:0,line,name,col,e};
+  armBossPhaseStory(e,ph,line);
   cutsceneT=2.4;
   // 페이즈2: 반지름 소폭 증가
   if(ph===2) e.r=Math.min(e.r+3,44);
@@ -7311,7 +8491,15 @@ function killEnemy(e){
     banner('온스터 처치!','사슬이 끊어진다',1500);
     markDiscovered('bosses','onster');
     roomBossKind='onster';
+    bossStoryLastDefeatKey='onster';
+    if(e._bossStoryOnsterRewardGold>0){
+      const bonus=Math.round(e._bossStoryOnsterRewardGold);
+      addGold(bonus,'roomReward');
+      metaToast('온스터 사슬 보상 +'+bonus+'G',{tone:'gold',ms:1400});
+      updateHUD();
+    }
   }
+  if(e.midboss&&!e.finalBoss) bossStoryLastDefeatKey=roomMidbossKind||e.type;
   if(e.eliteViewer && eliteKindOf(e)==='yanggaeng'){
     banner('미주 처치!','검은 단맛이 흩어진다',1200);
     spawnDeathBubble(e.x, e.y-e.r-12, eliteDefeatBubble('yanggaeng'), 3.4);
@@ -7357,6 +8545,7 @@ function killEnemy(e){
     burst(e.x,e.y,'#ff5d9b',16,240);
     enemies.forEach(o=>{ if(o!==e && dist2(o.x,o.y,e.x,e.y)<6400){ o.hp-=player.killBurstDmg||18; o.hitT=0.1; } });
   }
+  onCombatVariantEnemyKilled(e,countsForKillScore);
   if(e.explode){
     if(e.type==='goblin_bomber'){
       scheduleGoblinBomberDeathExplosion(e);
@@ -7673,8 +8862,9 @@ function updateBoss(dt){
   b.phaseT+=dt; b.attackT-=dt; b.angle+=dt*1.2; if(b.hitT>0)b.hitT-=dt;
   if(b.reflectT>0) b.reflectT-=dt;
   if(!b.enraged && b.hp<b.maxhp*0.4){ b.enraged=true; b.spd*=(b.key==='kijo'?1.18:1.4); banner("격노!","보스가 분노한다",1300); chatSys("🔥 보스 격노 — 채팅 카오스 monkaS");
-    if(b.key==='kijo'){ b._kijoBag=null; b._kijoRep=0; banner("👹 가면의 마귀 각성","광란의 가면 해금!",1400); screenShake=Math.max(screenShake||0,16); kijoFrenzy(b); }
+    if(b.key==='kijo'){ armBossPhaseStory(b,2,'봤구나.'); b._kijoBag=null; b._kijoRep=0; banner("👹 가면의 마귀 각성","광란의 가면 해금!",1400); screenShake=Math.max(screenShake||0,16); kijoFrenzy(b); }
   }
+  if(b.key==='kijo'&&b.hp>0&&b.hp<b.maxhp*0.2&&!bossTalkActive()) armBossPhaseStory(b,3,'그럼 끝까지 봐.');
   if(stunned) return;
   if(b.key==='kijo'){ b.restT=0; b.restWaitT=0; b.restWaitDur=0; }
   if(b.key==='kijo'&&b.intent&&b.intent.label==='마안') return;
@@ -7774,6 +8964,7 @@ function updateBoss(dt){
 function killBoss(){
   const deadBoss=boss;
   const asMidboss=!!(pendingNode&&pendingNode.type==='midboss');
+  bossStoryLastDefeatKey=(deadBoss&&deadBoss.key)||(asMidboss?roomMidbossKind:roomBossKind)||null;
   burst(boss.x,boss.y,boss.color,40,320); screenShake=18;
   banner(asMidboss?"중간보스 처치!":"보스 처치!","승리!",2000); sfx.coin();
   if(!asMidboss){
@@ -8002,6 +9193,7 @@ function seungwooNextPhase(b){
   const line=ph===2?'프로필 사진이 깨지며 웃음이 번진다.':'송출 화면이 찢어지고 본색이 튀어나온다.';
   const name=ph===2?'SIGNAL LOCK':'FINAL BROADCAST';
   bossEvolve={phase:ph,t:0,line,name,col,e:b};
+  armBossPhaseStory(b,ph,line);
   cutsceneT=ph===2?2.7:3.1;
   if(sfx.enemyGlitch) sfx.enemyGlitch();
   for(let i=0;i<34;i++) setTimeout(()=>{ if(boss===b) burst(b.x+rand(-b.r*1.6,b.r*1.6),b.y+rand(-b.r*1.2,b.r*1.2),pick(['#ffffff',col,'#38e8ff']),3,340); },i*26);
@@ -8135,13 +9327,25 @@ function drawKeyRevOverlay(){
 function update(dt){
   if(state!=='play') return;
   if(updateAct3FinalClear(dt)) return;
-  if(cutsceneT>0){ cutsceneT-=dt; if(bossEvolve){ bossEvolve.t+=dt; if(cutsceneT<=0) bossEvolve=null; } return; }
+  if(cutsceneT>0){
+    cutsceneT-=dt;
+    if(bossEvolve){
+      bossEvolve.t+=dt;
+      if(cutsceneT<=0){
+        const doneEvolve=bossEvolve;
+        bossEvolve=null;
+        playBossEvolveStory(doneEvolve);
+      }
+    }
+    return;
+  }
   if(eliteIntro){ updateEliteIntro(dt); return; }
   if(slowmoT>0){ slowmoT-=dt; if(slowmoT<=0){ slowmoT=0; timeScale=1; } }
   if(typeof GL!=='undefined'&&GL.frameDrop>0){ timeScale=(Math.random()<0.25)?0.22:rand(0.7,1.4); }
   else if(slowmoT<=0){ timeScale=1; }
   dt*=timeScale;
   if(roomPreviewT>0) roomPreviewT=Math.max(0,roomPreviewT-dt);
+  updateBossTalk(dt);
   ambientTimer-=dt;
   if(ambientTimer<=0){ ambientTimer=rand(1.6,3.4); if(Math.random()<0.85) chatRandom(pick(AMBIENT)); }
 
@@ -8176,6 +9380,9 @@ function update(dt){
     mn.ang=(mn.ang||0)+dt*2.2;
     mn.x=player.x+Math.cos(mn.ang)*48;
     mn.y=player.y+Math.sin(mn.ang)*48;
+    if(bossTalkActive()){
+      mn.fireT=0.3;
+    } else {
     mn.fireT=(mn.fireT||0)-dt;
     if(mn.fireT<=0){
       let tx=null,ty=null,bd=1e9;
@@ -8190,6 +9397,7 @@ function update(dt){
         pBullets.push({x:mn.x,y:mn.y,vx:Math.cos(ma)*520,vy:Math.sin(ma)*520,r:5,dmg,life:1.0,bounce:0,pierce:0,hitSet:new Set(),crit,homing:0,minionShot:true});
         mn.fireT=0.45;
       } else mn.fireT=0.3;
+    }
     }
   }
   updateStallWatch(dt);
@@ -8218,7 +9426,7 @@ function update(dt){
   updateDashFx(dt);
 
   // 구르기
-  const previewLocked=roomPreviewT>0;
+  const previewLocked=roomPreviewT>0||bossTalkBlocksMovement();
   const wasDashActive=player.dodging>0;
   if(player.dodging>0){ player.dodging=Math.max(0,player.dodging-dt); }
   if(!keys[' ']) dodgeLatch=false;   // 스페이스 떼면 재장전
@@ -8263,10 +9471,11 @@ function update(dt){
     spawnDashFx('end',player.x,player.y,player.dvx,player.dvy);
     player.dashFxTrailT=0;
   }
+  updateCombatVariant(dt);
 
   // 발사
   if(player.fireTimer>0) player.fireTimer-=dt;
-  if((mouseDown || (typeof autoFire!=='undefined'&&autoFire)) && player.fireTimer<=0 && !roomCleared && !(player.stunT>0) && !(player._adBlockT>0) && !(roomPreviewT>0)){
+  if((mouseDown || (typeof autoFire!=='undefined'&&autoFire)) && player.fireTimer<=0 && !roomCleared && !(player.stunT>0) && !(player._adBlockT>0) && !(roomPreviewT>0) && !bossTalkActive()){
     playerShoot(); if(tutorial&&tutorial.moved)tutorial.shot=true;
     player.fireTimer=playerShootCooldown(player);
   }
@@ -8331,7 +9540,7 @@ function update(dt){
     if(dead) pBullets.splice(i,1);
   }
 
-  const enemyFrozen=player.timeStop>0||roomPreviewT>0;
+  const enemyFrozen=player.timeStop>0||roomPreviewT>0||bossTalkActive();
   // 적 탄
   if(!enemyFrozen) for(let i=eBullets.length-1;i>=0;i--){
     const b=eBullets[i];
@@ -8667,33 +9876,34 @@ function update(dt){
         e.coolT=e.cool||2.2; }
     }else if(e.ai==='onster'){
 
-      if(!e.awakened && e.hp<=e.maxhp*0.5) onsterAwaken(e);
+      if(!e.awakened && e.hp<=e.maxhp*onsterStoryAwakenThreshold(e)) onsterAwaken(e);
 
       const ph=e.awakened?2:1, target=ph===2?280:340;
-      e._tethT=(e._tethT==null?12:e._tethT)-dt; if(e._tethT<=0&&!a3tether){ onsterTether(e); e._tethT=e.awakened?rand(12,16):rand(17,22); }
+      const storyMoveMul=onsterStoryMoveMul(e,ph), storyCdMul=onsterStoryCadenceMul(e,ph);
+      e._tethT=(e._tethT==null?12:e._tethT)-dt; if(e._tethT<=0&&!a3tether){ onsterTether(e); e._tethT=(e.awakened?rand(12,16):rand(17,22))*storyCdMul; }
 
-      if(d<target*0.7){ e.x-=Math.cos(a)*e.spd*dt; e.y-=Math.sin(a)*e.spd*0.55*dt; }
+      if(d<target*0.7){ e.x-=Math.cos(a)*e.spd*storyMoveMul*dt; e.y-=Math.sin(a)*e.spd*storyMoveMul*0.55*dt; }
 
-      else if(d>target){ e.x+=Math.cos(a)*e.spd*0.55*dt; e.y+=Math.sin(a)*e.spd*0.35*dt; }
+      else if(d>target){ e.x+=Math.cos(a)*e.spd*storyMoveMul*0.55*dt; e.y+=Math.sin(a)*e.spd*storyMoveMul*0.35*dt; }
 
-      else { e.x+=Math.cos(a+Math.PI/2)*e.spd*(ph===2?0.38:0.2)*dt; e.y+=Math.sin(a+Math.PI/2)*e.spd*(ph===2?0.26:0.14)*dt; }
+      else { e.x+=Math.cos(a+Math.PI/2)*e.spd*storyMoveMul*(ph===2?0.38:0.2)*dt; e.y+=Math.sin(a+Math.PI/2)*e.spd*storyMoveMul*(ph===2?0.26:0.14)*dt; }
 
       e.summonT=(e.summonT==null?4.2:e.summonT)-dt;
 
-      if(e.summonT<=0){ for(let i=0;i<(ph===2?2:1);i++) spawnOnsterMinion(e); e.summonT=ph===2?6.4:6.5; }
+      if(e.summonT<=0){ for(let i=0;i<(ph===2?2:1);i++) spawnOnsterMinion(e); e.summonT=(ph===2?6.4:6.5)*storyCdMul; }
 
       // ── 3막 중간보스 사슬 패턴 (셔플백 + 연속 버스트) ──
       e.a3T=(e.a3T==null?6:e.a3T)-dt;
       if(e.a3T<=0){
         if((e._onRep||0)>0){
           e._onRep--; runOnsterPat(e,e._onPat);
-          e.a3T = e._onRep>0 ? a3Jit(ph===2?1.4:1.7,0.1) : a3Jit(ph===2?6.0:6.6,0.12);
+          e.a3T = (e._onRep>0 ? a3Jit(ph===2?1.4:1.7,0.1) : a3Jit(ph===2?6.0:6.6,0.12))*storyCdMul;
         } else {
           const pool=ph===2?ONSTER_PATS_P2:ONSTER_PATS_P1;
           const p=pool[nextFromBag(e,ph===2?'_onBag2':'_onBag1',pool.length)];
           e._onPat=p; runOnsterPat(e,p);
-          if(p==='grid'||p==='maze'||(ph===2&&p==='burst')){ e._onRep=2; e.a3T=a3Jit(ph===2?1.4:1.7,0.1); }
-          else e.a3T=a3Jit(ph===2?6.0:6.6,0.12);
+          if(p==='grid'||p==='maze'||(ph===2&&p==='burst')){ e._onRep=2; e.a3T=a3Jit(ph===2?1.4:1.7,0.1)*storyCdMul; }
+          else e.a3T=a3Jit(ph===2?6.0:6.6,0.12)*storyCdMul;
         }
       }
 
@@ -9447,7 +10657,7 @@ function update(dt){
   }
   if(tutorialMode && tutorial && tutorial.moved && tutorial.shot && tutorial.dodged && tutorial.controlsSeen && !tutorialDoneFlag){ tutorialDoneFlag=true; finishTutorial(); }
   // 클리어 판정 (레벨업 등 오버레이 중엔 보류)
-  if(state==='play' && !tutorialMode && !roomCleared && enemies.length===0 && !boss && bossBanner<=0){
+  if(state==='play' && !tutorialMode && !roomCleared && enemies.length===0 && !boss && bossBanner<=0 && combatVariantAllowsEnemyClear()){
     roomCleared=true; roomIsMidboss=false;
     onCombatCleared();
   }
@@ -10051,7 +11261,11 @@ function onCombatCleared(){
   const t=pendingNode?pendingNode.type:'fight';
   combatClearGrace=true;
   clearCombatThreats();
+  donationChests=[];
+  if(currentCombat) currentCombat.active=false;
+  syncSpecialRoomDebug();
   player.iframes=Math.max(player.iframes||0,1.2);
+  if((t==='boss'||t==='midboss')&&maybeStartBossDefeatStory(t)) return;
   // 임시 아군 제거
   if(combatTempAlly){ player.minion=null; combatTempAlly=false; }
   // 다음전투 골드 페널티(이벤트) 소비
@@ -15581,12 +16795,124 @@ function drawBoomerangPx(b){
   pxDraw(["11....","2113..","21133.",".33112","..3112","....11"], Math.max(2,b.r*0.5), pal);
   ctx.restore();
 }
+function drawCombatVariantWorld(){
+  if(!currentCombat||!currentCombat.active||state!=='play') return;
+  const pulse=0.5+0.5*Math.sin(performance.now()*0.006);
+  if(currentCombat.variant==='capture'&&currentCombat.capture){
+    const c=currentCombat.capture;
+    ctx.save();
+    ctx.globalAlpha=c.inside?0.28+0.08*pulse:0.16;
+    ctx.fillStyle=c.inside?'#38e8ff':'#8d72ff';
+    ctx.beginPath(); ctx.arc(c.x,c.y,c.r,0,TAU); ctx.fill();
+    ctx.globalAlpha=c.inside?0.95:0.52;
+    ctx.strokeStyle=c.inside?'#eafaff':'#8d72ff';
+    ctx.lineWidth=3;
+    ctx.beginPath(); ctx.arc(c.x,c.y,c.r+2+pulse*5,0,TAU); ctx.stroke();
+    ctx.setLineDash([8,8]);
+    ctx.globalAlpha=0.42;
+    ctx.beginPath(); ctx.arc(c.x,c.y,Math.max(12,c.r*((c.progress||0)/100)),0,TAU); ctx.stroke();
+    ctx.restore();
+  }
+}
+function drawDonationChests(){
+  if(!donationChests||!donationChests.length) return;
+  const now=performance.now();
+  for(const c of donationChests){
+    const bob=Math.sin(c.bob||0)*3, x=c.x, y=c.y+bob, red=!!c.red;
+    const a=clamp((c.life||0)/(c.max||9),0,1), pulse=0.5+0.5*Math.sin(now*0.007+(c.bob||0));
+    ctx.save();
+    ctx.globalAlpha=0.20+0.18*pulse;
+    ctx.fillStyle=red?'#ff4d6d':'#8be8ff';
+    ctx.beginPath(); ctx.arc(x,y,c.r+13+4*pulse,0,TAU); ctx.fill();
+    ctx.globalAlpha=1;
+    ctx.fillStyle=red?'#471020':'#112434';
+    ctx.strokeStyle=red?'#ff8aa0':'#bff8ff';
+    ctx.lineWidth=2;
+    ctx.fillRect(x-15,y-11,30,22); ctx.strokeRect(x-15,y-11,30,22);
+    ctx.fillStyle=red?'#ff4d6d':'#ffd34d';
+    ctx.fillRect(x-2,y-11,4,22); ctx.fillRect(x-15,y-2,30,4);
+    ctx.fillStyle='rgba(255,255,255,0.75)';
+    ctx.font='bold 10px "Galmuri11", monospace';
+    ctx.textAlign='center';
+    ctx.fillText('E',x,y-20);
+    if(a<0.35){ ctx.globalAlpha=0.45+0.45*Math.sin(now*0.02); ctx.strokeStyle='#ffffff'; ctx.strokeRect(x-18,y-14,36,28); }
+    ctx.restore();
+  }
+}
+function drawBountyMarkers(){
+  if(!currentCombat||currentCombat.variant!=='bounty'||!currentCombat.bounty) return;
+  const t=currentCombat.bounty.target;
+  if(!t||!enemies.includes(t)||t.hp<=0) return;
+  const pulse=0.5+0.5*Math.sin(performance.now()*0.008);
+  ctx.save();
+  ctx.strokeStyle='#ffd34d';
+  ctx.lineWidth=3;
+  ctx.globalAlpha=0.65+0.25*pulse;
+  ctx.beginPath(); ctx.arc(t.x,t.y,t.r+10+4*pulse,0,TAU); ctx.stroke();
+  ctx.fillStyle='#ffd34d';
+  ctx.font='bold 18px "Galmuri11", monospace';
+  ctx.textAlign='center';
+  ctx.fillText('₩',t.x,t.y-t.r-18-3*pulse);
+  ctx.restore();
+}
+function drawCombatVariantUI(){
+  if(!currentCombat||!currentCombat.active||state!=='play'||roomCleared) return;
+  const v=currentCombat.variant;
+  if(v==='normal') return;
+  let title='', sub='', pct=null, timeText='';
+  if(v==='capture'&&currentCombat.capture){
+    const c=currentCombat.capture;
+    title='목표: 점령 구역을 유지하세요';
+    const alive=c.pressureAlive||capturePressureEnemyCount();
+    if(!c.inside) sub='구역 안으로 들어가세요';
+    else if(c.blocked) sub='방해체가 구역에 침입 · 점령 저하';
+    else if(alive>0) sub='방해체 '+alive+'마리 · 보상 없음';
+    else sub='구역 안정 · 빠른 점령';
+    pct=clamp((c.progress||0)/100,0,1);
+  }else if(v==='survival'&&currentCombat.survival){
+    const s=currentCombat.survival;
+    title='목표: 제한 시간 동안 생존하세요';
+    timeText=Math.ceil(s.time||0)+'초';
+    sub='피격 '+(s.hits||0)+'회 · 처치 '+(s.kills||0)+'회';
+    if((s.pressureAlive||survivalPressureEnemyCount())>0) sub+=' · 압박체 '+(s.pressureAlive||survivalPressureEnemyCount())+'마리';
+    pct=clamp((s.time||0)/(s.max||1),0,1);
+  }else if(v==='bounty'&&currentCombat.bounty){
+    const b=currentCombat.bounty;
+    title='목표: 현상금 타겟 처치';
+    if(b.bonus) sub='현상금 획득 완료';
+    else if(b.expired) sub='시간 초과 · 일반 전투로 진행';
+    else sub='제한 시간 '+Math.ceil(b.time||0)+'초';
+    pct=b.max?clamp((b.time||0)/b.max,0,1):null;
+  }else return;
+  ctx.save();
+  const w=360,h=54,x=(W-w)/2,y=82;
+  ctx.fillStyle='rgba(5,8,18,0.78)';
+  ctx.fillRect(x,y,w,h);
+  ctx.strokeStyle='rgba(139,232,255,0.65)';
+  ctx.lineWidth=2;
+  ctx.strokeRect(x,y,w,h);
+  ctx.font='bold 13px "Galmuri11", monospace';
+  ctx.textAlign='left';
+  ctx.fillStyle='#eafaff';
+  ctx.fillText(title,x+14,y+21);
+  ctx.font='10px "Galmuri11", monospace';
+  ctx.fillStyle='rgba(255,255,255,0.68)';
+  ctx.fillText(sub,x+14,y+40);
+  if(timeText){ ctx.textAlign='right'; ctx.fillStyle='#ffd34d'; ctx.font='bold 16px "Galmuri11", monospace'; ctx.fillText(timeText,x+w-14,y+25); ctx.textAlign='left'; }
+  if(pct!=null){
+    ctx.fillStyle='rgba(255,255,255,0.12)'; ctx.fillRect(x+14,y+h-8,w-28,4);
+    ctx.fillStyle=v==='bounty'?'#ffd34d':(v==='survival'?'#ff8a4d':'#38e8ff');
+    ctx.fillRect(x+14,y+h-8,(w-28)*pct,4);
+  }
+  ctx.restore();
+}
 
 function draw(){
   ctx.save();
   { const _sk=screenShake*(typeof GS!=='undefined'?GS.shake:1); if(_sk>0.5){ ctx.translate(rand(-_sk,_sk),rand(-_sk,_sk)); } }
   if(boss&&(boss.pattern==='glitch'||boss.pattern==='set3')&&state==='play'){ const cx=W/2,cy=H/2; ctx.translate(cx,cy); ctx.scale(gView.fx,gView.fy); ctx.rotate(gView.rot); ctx.translate(-cx,-cy); }
   drawBackground();
+  drawCombatVariantWorld();
 
   // 픽업
   for(const pk of pickups){
@@ -15594,11 +16920,13 @@ function draw(){
     if(pk.type==='gold'){ circle(pk.x,pk.y+yo,pk.r,'#ffd34d','#a8740a'); ctx.fillStyle='#7a5400';ctx.font='bold 9px Courier New';ctx.textAlign='center';ctx.fillText('G',pk.x,pk.y+yo+3);ctx.textAlign='left'; }
     else{ const drawY=(pk.baseY!=null?pk.baseY:pk.y)+Math.sin(performance.now()*0.004+(pk.phase||0))*2; circle(pk.x,drawY,pk.r,'#ff5d8a','#7a1030'); ctx.fillStyle='#fff';ctx.font='bold 10px Courier New';ctx.textAlign='center';ctx.fillText('♥',pk.x,drawY+3);ctx.textAlign='left'; }
   }
+  drawDonationChests();
   drawHazards();
   drawA3World();
   drawKijoFx();
   // 적
   for(const e of enemies) drawEnemy(e);
+  drawBountyMarkers();
   drawFloatBubbles();
   if(boss&&(boss.pattern==='glitch'||boss.pattern==='set3')) drawSeungwooWorld();
   if(boss) drawBoss(boss);
@@ -15651,6 +16979,8 @@ function draw(){
   drawA3Screen();
   if(eliteIntro) drawEliteIntro();
   if(bossEvolve) drawBossEvolve();
+  if(bossTalkActive()) drawBossTalk();
+  drawCombatVariantUI();
   // 방 입장 미리보기: 적이 정지한 동안 파악 안내 + 카운트다운
   if(roomPreviewT>0 && state==='play'){
     const a=clamp(roomPreviewT/2,0,1);
@@ -17351,7 +18681,9 @@ function newGame(){
   runActive=true;
   pendingRunBuildSnapshot=null;
   act=1; currentRow=0; kills=0; totalKills=0; gold=0; level=1; xp=0; xpNext=20; pendingLevels=0; retries=0; runHits=0; runShopPurchases=0; runShopSpent=0; runStartedAt=performance.now(); treePoints=0; treeUnlocked=new Set(['hub']);
+  bossStoryChoices={}; bossStoryFlags={}; seenBossDialogues={}; seenBossPhaseDialogues={}; syncBossStoryChoiceDebug();
   resetCombatModState();
+  resetSpecialRoomStats();
   resetRunStats();
   resetPlayer();
   runPotionUsed=false;
@@ -17427,7 +18759,9 @@ function newGameSkip(){
   startBGM();
   runActive=true;
   act=1; currentRow=0; kills=0; totalKills=0; gold=0; level=1; xp=0; xpNext=20; pendingLevels=0; retries=0; runHits=0; runShopPurchases=0; runShopSpent=0; runStartedAt=performance.now(); treePoints=0; treeUnlocked=new Set(['hub']);
+  bossStoryChoices={}; bossStoryFlags={}; seenBossDialogues={}; seenBossPhaseDialogues={}; syncBossStoryChoiceDebug();
   resetCombatModState();
+  resetSpecialRoomStats();
   resetRunStats();
   resetPlayer();
   runPotionUsed=false;
@@ -17466,7 +18800,7 @@ function returnToTitleScreen(){
   introFxReset();
   paused=false; mouseDown=false; autoFire=false; runActive=false;
   clearRunCheckpoint();
-  roomIsBoss=false; roomIsMidboss=false; cutsceneT=0; bossEvolve=null;
+  roomIsBoss=false; roomIsMidboss=false; cutsceneT=0; bossEvolve=null; bossTalk=null; bossStoryDefeatPending=false; bossStoryDefeatShown=false; bossStoryLastDefeatKey=null;
   enemies=[]; pBullets=[]; eBullets=[]; pickups=[]; particles=[]; boss=null; floatBubbles=[];
   const po=$('ovPause'); if(po) po.classList.add('hidden');
   hideAll();
@@ -17479,7 +18813,7 @@ function saveAndReturnToTitleScreen(){
   saveRunCheckpointFromAnyState();
   introFxReset();
   paused=false; mouseDown=false; autoFire=false; runActive=false;
-  roomIsBoss=false; roomIsMidboss=false; cutsceneT=0; bossEvolve=null;
+  roomIsBoss=false; roomIsMidboss=false; cutsceneT=0; bossEvolve=null; bossTalk=null; bossStoryDefeatPending=false; bossStoryDefeatShown=false; bossStoryLastDefeatKey=null;
   enemies=[]; pBullets=[]; eBullets=[]; pickups=[]; particles=[]; boss=null; floatBubbles=[];
   const po=$('ovPause'); if(po) po.classList.add('hidden');
   hideAll();
@@ -17966,6 +19300,8 @@ window.debugSpawnBoss=function(id){
 };
 window.debugStartMidBoss=function(id){ return window.debugSpawnBoss(id||'onster'); };
 window.debugStartFinalBoss=function(id){ return window.debugSpawnBoss(id||'set3'); };
+window.debugGoAct1Mid=function(){ if(!runActive){ newGameSkip(); } hideAll(); act=1; currentRow=MIDBOSS_ROW; pendingNode={type:'midboss',row:currentRow,id:'debug-act1-mid'}; roomCleared=false; roomIsBoss=false; roomIsMidboss=true; enemies=[]; boss=null; resetCombatModState(); startCombat('midboss'); state='play'; syncChrome(); return enemies.find(e=>e&&e.midboss); };
+window.debugGoAct1Boss=function(){ if(!runActive){ newGameSkip(); } hideAll(); act=1; currentRow=mapRowsForAct(1); pendingNode={type:'boss',row:currentRow,id:'debug-act1-boss'}; roomCleared=false; roomIsBoss=true; roomIsMidboss=false; enemies=[]; boss=null; resetCombatModState(); startCombat('boss'); state='play'; syncChrome(); return boss; };
 window.debugGoAct3Boss=function(){ if(!runActive){ newGameSkip(); } hideAll(); act=3; currentRow=mapRowsForAct(3); pendingNode={type:'boss',row:currentRow,id:'debug-act3-boss'}; roomCleared=false; roomIsBoss=true; roomIsMidboss=false; enemies=[]; boss=null; resetCombatModState(); startCombat('boss'); state='play'; syncChrome(); return boss; };
 
 window.debugStartAct3Normal=function(){
@@ -18254,6 +19590,39 @@ window.debugKillBoss=function(){
   const mb=enemies.find(e=>e&&(e.finalBoss||e.midboss)); if(mb){ mb.hp=0; killEnemy(mb); return true; }
   return false;
 };
+window.debugSetBossStoryFlags=function(flags){
+  bossStoryFlags=normalizeBossStoryFlags(Object.assign({},bossStoryFlags,flags||{}),bossStoryChoices);
+  syncBossStoryChoiceDebug();
+  console.log('storyFlags',clonePlain(bossStoryFlags));
+  return bossStoryFlags;
+};
+window.debugSetTrueEndingFlags=function(){
+  return window.debugSetBossStoryFlags({signalCut:true,onsterTalked:true,tapeCut:true,saveProtected:true});
+};
+window.debugResetBossStorySeen=function(){
+  seenBossDialogues={};
+  seenBossPhaseDialogues={};
+  syncBossStoryChoiceDebug();
+  return {seenBossDialogues,seenBossPhaseDialogues};
+};
+window.debugForceCombatVariant=function(v){
+  v=String(v||'').toLowerCase();
+  window.BTV_DEBUG_FORCE_COMBAT_VARIANT=['normal','capture','survival'].includes(v)?v:'';
+  return window.BTV_DEBUG_FORCE_COMBAT_VARIANT||'random';
+};
+window.debugForceDonationChest=function(v){
+  window.BTV_DEBUG_FORCE_DONATION_CHEST=(v===undefined)?true:v;
+  return window.BTV_DEBUG_FORCE_DONATION_CHEST;
+};
+window.debugClearCombatVariantForces=function(){
+  window.BTV_DEBUG_FORCE_COMBAT_VARIANT='';
+  window.BTV_DEBUG_FORCE_DONATION_CHEST=false;
+  return 'cleared';
+};
+window.debugSpecialRoomStats=function(){
+  syncSpecialRoomDebug();
+  return {currentCombat,donationChests,specialRoomStats};
+};
 window.debugStartAct3Event=function(id){
   hideAll(); act=3; currentRow=currentRow||8; pendingNode={type:'event',row:currentRow,id:'debug-act3-event'}; roomCleared=false; roomIsBoss=false; roomIsMidboss=false;
   const pool=(typeof ACT3_EVENTS!=='undefined'?ACT3_EVENTS:[]);
@@ -18266,7 +19635,7 @@ window.debugStartAct3Event=function(id){
 
 window.debugGoAct2=function(){
   if(!runActive){ newGameSkip(); }
-  hideAll(); act=2; currentRow=0; pendingNode=null; roomCleared=true; roomIsBoss=false; roomIsMidboss=false; boss=null;
+  hideAll(); act=2; currentRow=0; pendingNode=null; roomCleared=true; roomIsBoss=false; roomIsMidboss=false; boss=null; bossTalk=null;
   enemies=[]; pBullets=[]; eBullets=[]; pickups=[]; particles=[]; hazards=[]; floatBubbles=[];
   resetCombatModState(); genMap(); state="map"; syncChrome(); showMap(); updateHUD(); saveRunCheckpoint();
   banner("2막 · 광천김 소굴","디버그 진입",1400);
@@ -18327,7 +19696,7 @@ window.debugSpawnEnemy=function(id){
 };
 window.debugGoAct3=function(){
   if(!runActive){ newGameSkip(); }
-  hideAll(); act=3; currentRow=0; pendingNode=null; roomCleared=true; roomIsBoss=false; roomIsMidboss=false; boss=null;
+  hideAll(); act=3; currentRow=0; pendingNode=null; roomCleared=true; roomIsBoss=false; roomIsMidboss=false; boss=null; bossTalk=null;
   enemies=[]; pBullets=[]; eBullets=[]; pickups=[]; particles=[]; hazards=[]; floatBubbles=[];
   resetCombatModState(); genMap(); state="map"; syncChrome(); showMap(); updateHUD(); saveRunCheckpoint();
   banner("3막 · 심연 속","디버그 진입",1400);
