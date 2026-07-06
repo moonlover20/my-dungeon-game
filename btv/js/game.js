@@ -5715,9 +5715,9 @@ const CAPTURE_PRESSURE_CONFIG={
   3:{budget:22,maxAlive:7,interval:1.95,batchMin:2,batchMax:3,diffMul:0.66}
 };
 const SURVIVAL_PRESSURE_CONFIG={
-  1:{budget:10,maxAlive:3,interval:2.65,batchMin:1,batchMax:2,diffMul:0.50,refillAt:1},
-  2:{budget:14,maxAlive:4,interval:2.35,batchMin:1,batchMax:2,diffMul:0.54,refillAt:1},
-  3:{budget:18,maxAlive:5,interval:2.10,batchMin:2,batchMax:3,diffMul:0.58,refillAt:2}
+  1:{budget:10,maxAlive:4,interval:2.65,batchMin:1,batchMax:2,diffMul:0.50,refillAt:1},
+  2:{budget:14,maxAlive:5,interval:2.35,batchMin:1,batchMax:2,diffMul:0.54,refillAt:1},
+  3:{budget:18,maxAlive:6,interval:2.10,batchMin:2,batchMax:3,diffMul:0.58,refillAt:2}
 };
 const DONATION_CHEST_CONFIG={
   1:{chance:0.08,redChance:0},
@@ -5911,9 +5911,9 @@ function initCombatVariant(kind){
       x:p.x,y:p.y,r:act>=3?162:174,progress:0,rate:100/need,inside:false,
       pressureBudget:pressure.budget,pressureMaxAlive:pressure.maxAlive,pressureCd:0.8,
       pressureInterval:pressure.interval,pressureBatchMin:pressure.batchMin,pressureBatchMax:pressure.batchMax,
-      pressureDiffMul:pressure.diffMul,pressureAlive:0,blocked:false
+      pressureDiffMul:pressure.diffMul,pressureAlive:0,blocked:false,speedMul:1
     };
-    banner('점령방','점령 구역을 유지하세요',1500);
+    banner('점령방','점령 코어를 방어하세요',1500);
   }else if(variant==='survival'){
     const duration=[38,44,52][clamp(act,1,3)-1];
     const pressure=SURVIVAL_PRESSURE_CONFIG[clamp(act,1,3)]||SURVIVAL_PRESSURE_CONFIG[1];
@@ -5957,6 +5957,7 @@ function markCapturePressureEnemy(e){
   e.noKillScore=true;
   e.xp=0;
   e.label=e.label||'점령 방해체';
+  e.explode=false;
   e.hp=Math.max(1,e.hp*0.72);
   e.maxhp=Math.max(1,e.maxhp*0.72);
   e.dmg=Math.max(1,(e.dmg||1)*0.82);
@@ -6070,8 +6071,9 @@ function updateCombatVariant(dt){
     const c=currentCombat.capture;
     c.inside=dist2(player.x,player.y,c.x,c.y)<=c.r*c.r;
     updateCapturePressure(c,dt);
-    const speedMul=c.blocked?0.35:(c.pressureAlive>0?0.78:1.45);
-    if(c.inside) c.progress=Math.min(100,(c.progress||0)+c.rate*speedMul*dt);
+    const speedMul=c.blocked?0.45:(c.inside?1.25:1);
+    c.speedMul=speedMul;
+    c.progress=Math.min(100,(c.progress||0)+c.rate*speedMul*dt);
     if(c.progress>=100) completeCombatVariantObjective('capture');
   }else if(currentCombat.variant==='survival'&&currentCombat.survival){
     const s=currentCombat.survival;
@@ -16801,16 +16803,27 @@ function drawCombatVariantWorld(){
   if(currentCombat.variant==='capture'&&currentCombat.capture){
     const c=currentCombat.capture;
     ctx.save();
-    ctx.globalAlpha=c.inside?0.28+0.08*pulse:0.16;
-    ctx.fillStyle=c.inside?'#38e8ff':'#8d72ff';
+    ctx.globalAlpha=c.blocked?0.24:(c.inside?0.28+0.08*pulse:0.16);
+    ctx.fillStyle=c.blocked?'#ff4d6d':(c.inside?'#38e8ff':'#8d72ff');
     ctx.beginPath(); ctx.arc(c.x,c.y,c.r,0,TAU); ctx.fill();
-    ctx.globalAlpha=c.inside?0.95:0.52;
-    ctx.strokeStyle=c.inside?'#eafaff':'#8d72ff';
+    ctx.globalAlpha=c.blocked?0.95:(c.inside?0.95:0.52);
+    ctx.strokeStyle=c.blocked?'#ff9ab0':(c.inside?'#eafaff':'#8d72ff');
     ctx.lineWidth=3;
     ctx.beginPath(); ctx.arc(c.x,c.y,c.r+2+pulse*5,0,TAU); ctx.stroke();
     ctx.setLineDash([8,8]);
     ctx.globalAlpha=0.42;
     ctx.beginPath(); ctx.arc(c.x,c.y,Math.max(12,c.r*((c.progress||0)/100)),0,TAU); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.globalAlpha=0.95;
+    ctx.fillStyle=c.blocked?'#ff4d6d':'#38e8ff';
+    ctx.strokeStyle='#eafaff';
+    ctx.lineWidth=2;
+    ctx.beginPath(); ctx.arc(c.x,c.y,14+3*pulse,0,TAU); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#071018';
+    ctx.font='bold 13px "Galmuri11", monospace';
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    ctx.fillText('C',c.x,c.y+0.5);
     ctx.restore();
   }
 }
@@ -16862,12 +16875,12 @@ function drawCombatVariantUI(){
   let title='', sub='', pct=null, timeText='';
   if(v==='capture'&&currentCombat.capture){
     const c=currentCombat.capture;
-    title='목표: 점령 구역을 유지하세요';
+    title='목표: 점령 코어를 방어하세요';
     const alive=c.pressureAlive||capturePressureEnemyCount();
-    if(!c.inside) sub='구역 안으로 들어가세요';
-    else if(c.blocked) sub='방해체가 구역에 침입 · 점령 저하';
-    else if(alive>0) sub='방해체 '+alive+'마리 · 보상 없음';
-    else sub='구역 안정 · 빠른 점령';
+    if(c.blocked) sub='방해체가 코어에 침입 · 점령 저하';
+    else if(c.inside) sub='코어 근처 방어 중 · 점령 가속';
+    else if(alive>0) sub='방해체 '+alive+'마리 접근 중 · 보상 없음';
+    else sub='코어 점령 중 · 이동 자유';
     pct=clamp((c.progress||0)/100,0,1);
   }else if(v==='survival'&&currentCombat.survival){
     const s=currentCombat.survival;
