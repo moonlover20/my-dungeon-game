@@ -6025,10 +6025,10 @@ try{ window.metaToast=metaToast; }catch(e){}
 // ---------- 전투 구역 시작 ----------
 const BOSS_INTRO_LINES={
   yanggaeng:{name:'박제인간',line:'저희... 친해요?',tone:'slow',ms:2300},
-  hyechul:{name:'혜철이',line:'에그는... 곧 깨어나.',tone:'dark',ms:2100},
+  hyechul:{name:'혜철이',line:'조용히 해. 알들이 놀라잖아.',tone:'dark',ms:2100},
   kijo:{name:'키죠',line:'보지 마.',sub:'키죠의 마안이 열렸다.',tone:'purple',glitch:true,ms:2100},
   rhino_beetle:{name:'자잘자',line:'oof.',sub:'자잘자가 돌진 준비를 합니다.',ms:1800},
-  kkotchung:{name:'미주',line:'말랑한 줄 알았지?',sub:'꽃잎 사이로 검은 단맛이 번진다.',tone:'dark',glitch:true,ms:2100},
+  kkotchung:{name:'미주',line:'꽃잎 밑을 본 적 있어?',sub:'꽃잎 사이로 검은 단맛이 번진다.',tone:'dark',glitch:true,ms:2100},
   act3_truck:{name:'노잭',line:'NO JACK.',sub:'송출 신호가 전장을 잠식합니다.',tone:'dark',ms:1900},
   onster:{name:'온스터',line:'아직 깨우지 마라.',sub:'사슬이 바닥을 긁는다.',tone:'dark',ms:2100},
   set3:{name:'현진',line:'먼저 들어간다.',sub:'무거운 발소리가 가까워진다.',tone:'dark',ms:2300},
@@ -6369,12 +6369,12 @@ function startCombat(kind, fresh){
         eb.elite=true; eb.midboss=true; eb.label='혜철이'; roomMidbossKind='hyechul'; eb.phase=1;
         applyMidbossSlotBalance(eb,'hyechul',diff);
         eb.summonT=4.0; eb.atkT=1.4; eb.atkN=0; eb.climaxT=0;
-        eb.title='1막 중간보스 · 혜철이'; eb.quip='해처리 — 저글링 군단';
+        eb.title='1막 중간보스 · 혜철이'; eb.quip='부화장 관리자 — 혜철이';
         logBossEncounterStart(eb,'midBoss');
         showBossIntroLine('hyechul',520,eb);
         banner("\uC911\uAC04\uBCF4\uC2A4 \u00B7 \uD61C\uCCA0\uC774","\uB465\uC9C0\uAC00 \uC6C0\uC9C1\uC778\uB2E4",1800);
         if(typeof sfx!=='undefined') sfx.boss();
-        showEntrance("⚠️ 중간보스 등장","혜철이","해처리 — 저글링 군단");
+        showEntrance("⚠️ 중간보스 등장","혜철이","부화장 관리자 — 혜철이");
       }
     }else if(kind==='elite'){
       // 자잘자 정예전 — 전용 엘리트 노드에서만 등장 (잡몹 소수 + 자잘자)
@@ -7169,7 +7169,7 @@ function hyechulNextPhase(e){
   burst(e.x,e.y,col,34,440); burst(e.x,e.y,'#ffffff',12,280);
   if(typeof sfx!=='undefined' && sfx.boss) sfx.boss();
   beep(ph===2?180:90,0.5,'sawtooth',0.07); beep(ph===2?95:60,0.6,'sine',0.06);
-  const line=ph===2?'\uAECD\uC9C8\uC774 \uAC08\uB77C\uC9C4\uB2E4...':'\uBC14\uB2E5 \uC544\uB798\uC5D0\uC11C \uB465\uC9C0\uAC00 \uC5F4\uB9B0\uB2E4';
+  const line=ph===2?'금이 간다. 안쪽이 웃는다.':'둥지가 숨을 쉰다.';
   const name=ph===2?'\uB808\uC5B4 \uBCC0\uC774':'\uD558\uC774\uBE0C \uAC1C\uBC29';
   bossEvolve={ phase:ph, t:0, line, name, col, e };
   cutsceneT=2.9;
@@ -7185,7 +7185,7 @@ function kkotNextPhase(e){
   burst(e.x,e.y,col,28,400); burst(e.x,e.y,'#ffb0d0',10,240);
   if(typeof sfx!=='undefined'&&sfx.boss) sfx.boss();
   beep(ph===2?160:80,0.5,'sawtooth',0.07);
-  const line=ph===2?'껍질 벗기면, 안쪽은 더 진해.':'꽃은 졌고, 단맛만 남았어.';
+  const line=ph===2?'예쁘다고 방심했지?':'꽃은 졌고, 독만 남았어.';
   const name=ph===2?'검은 단맛':'심연 개화';
   bossEvolve={phase:ph,t:0,line,name,col,e};
   cutsceneT=2.4;
@@ -14767,7 +14767,7 @@ function drawEliteIntro(){
   const vig=clamp((E.t-0.35)/0.5,0,1)*0.55;
   if(vig>0){ const g=ctx.createRadialGradient(W/2,H/2,H*0.22,W/2,H/2,H*0.72); g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(1,'rgba(12,0,4,'+vig+')'); ctx.fillStyle=g; ctx.fillRect(0,0,W,H); }
   if(E.warn!=null){ const r=18+E.warn*80; ctx.save(); ctx.lineWidth=4; ctx.strokeStyle='rgba(255,60,60,'+(0.85*(1-E.warn))+')'; ctx.beginPath(); ctx.arc(ze.x,ze.y+ze.r+4,r,0,TAU); ctx.stroke(); ctx.fillStyle='rgba(255,40,40,'+(0.16*(1-E.warn))+')'; ctx.beginPath(); ctx.arc(ze.x,ze.y+ze.r+4,r,0,TAU); ctx.fill(); ctx.restore(); }
-  if(E.banner>0){
+  if(E.banner>0 && eliteKindOf(ze)!=='yanggaeng'){
     const kind=eliteKindOf(ze), isKkot=kind==='yanggaeng', isTruck=kind==='act3_truck';
     const col=isKkot?'#ff7ab0':(isTruck?'#58d8ff':'#c46bff'), bw=470,bh=74,bx=(W-bw)/2, by=62-(1-E.banner)*72;
     ctx.save(); ctx.globalAlpha=Math.min(1,E.banner*1.25);
