@@ -61,7 +61,8 @@ function playerBulletSpeed(p){
 function playerMoveSpeed(p){
   p=p||player;
   const base=(Number(p&&p.spd)||BASE_PLAYER_MOVE_SPEED)+curseContractSpeedFlat(p);
-  const bonus=moveSpeedFlatBonus(p&&p.moveSpeedAdd)+trainingSpeedFlatBonus(p&&p.trainingSpeedBonus);
+  const haste=(p&&p.closeKillHasteT>0)?BASE_PLAYER_MOVE_SPEED*0.10:0;
+  const bonus=moveSpeedFlatBonus(p&&p.moveSpeedAdd)+trainingSpeedFlatBonus(p&&p.trainingSpeedBonus)+haste;
   return Math.max(1,base+bonus);
 }
 function moveSpeedFlatBonus(value){
@@ -80,6 +81,7 @@ function playerShootCooldown(p){
   let totalFireAdd=(Number(p.fireAdd)||0)+(Number(p.potionFireAdd)||0);
   if(p.buffs&&p.buffs.haste>0) totalFireAdd+=DODGE_HASTE_FIRE_ADD;
   if(p&&p.perfectDodgeFireT>0) totalFireAdd+=0.20;
+  if(p&&p.basicReloadT>0) totalFireAdd+=0.55;
   const fireHandicap=Number(p._fireHandicap)||1;
   if(fireHandicap!==1) totalFireAdd+=(1/fireHandicap)-1;
   const fireRateMul=Math.max(0.1,1+totalFireAdd);
@@ -93,6 +95,190 @@ const $=id=>_elc[id]||(_elc[id]=document.getElementById(id));
 
 const BONGSIK_AVATAR="btv/assets/asset-001-77d22694fc.png";
 const BROADCAST_SCREEN="btv/assets/intro-broadcast-bg.png";
+
+const PLAYER_CLASSES=[
+  {id:'basic_streamer',name:'베이직 방송인',iconMark:'pistol',iconBg:'#202844',iconFg:'#8be8ff',weapon:'기본 총',weaponType:'basic',role:'균형형',difficulty:'쉬움',color:'#38e8ff',
+   hpMul:1,dmgMul:1,fireMul:1,rangeMul:1,bulletSpeedMul:1,bulletSizeMul:1,
+   desc:'안정적인 단발형. 강화탄으로 꾸준히 압박한다.',
+   skill:'클릭: 집중. 기본탄 즉시 강화.',
+   passive:'4번째 탄 관통. 방 클리어 골드 +10.'},
+  {id:'rush_streamer',name:'돌격 방송인',iconMark:'shotgun',iconBg:'#33253b',iconFg:'#ffb347',weapon:'산탄총',weaponType:'shotgun',role:'근접 산탄형',difficulty:'보통',color:'#ffb347',
+   hpMul:1.15,dmgMul:0.85,fireMul:0.80,rangeMul:0.70,bulletSpeedMul:0.94,bulletSizeMul:0.92,
+   desc:'짧은 사거리 4연 산탄. 가까울수록 강하다.',
+   skill:'클릭: 돌파. 대시와 산탄 발사.',
+   passive:'근거리 처치 시 2초 이속 +10%.'},
+  {id:'sniper_streamer',name:'저격 방송인',iconMark:'rifle',iconBg:'#203348',iconFg:'#8be8ff',weapon:'저격총',weaponType:'sniper',role:'레이저 / 관통형',difficulty:'어려움',color:'#8be8ff',
+   hpMul:0.85,dmgMul:1.40,fireMul:0.70,rangeMul:1.50,bulletSpeedMul:1.10,bulletSizeMul:1,
+   desc:'느리지만 강한 관통탄. 원거리 안정형.',
+   skill:'홀드: 레이저. 차징량만큼 폭/피해 증가.',
+   passive:'3초 무피격 시 다음 공격 치명 +20%.'},
+  {id:'alchemy_streamer',name:'연금 방송인',iconMark:'toxicgun',iconBg:'#203626',iconFg:'#76d36a',weapon:'독성 총',weaponType:'toxic',role:'독 / 장판 / 지속딜형',difficulty:'보통',color:'#76d36a',
+   hpMul:0.90,dmgMul:0.82,fireMul:1,rangeMul:1,bulletSpeedMul:0.92,bulletSizeMul:0.95,
+   desc:'직접 피해는 낮지만 상태이상 누적으로 강해진다.',
+   skill:'홀드: 독장판. 차징량만큼 범위 증가.',
+   passive:'상태이상 피해 +20%, 독 최대 스택 +3.'},
+  {id:'curse_contractor',name:'저주 계약자',iconMark:'cursedgun',iconBg:'#2d2440',iconFg:'#c98bff',weapon:'저주받은 총',weaponType:'cursed',role:'고위험 고보상',difficulty:'어려움',color:'#c98bff',
+   hpMul:0.68,dmgMul:1.02,fireMul:0.95,rangeMul:1,bulletSpeedMul:1.02,bulletSizeMul:1.08,
+   desc:'저주로 시작하는 고위험 성장형.',
+   skill:'클릭: 계약. 체력 소모 후 공격 강화.',
+   passive:'랜덤 저주 유물 1개 시작. 저주당 공격/골드 증가.'},
+  {id:'tank_streamer',name:'탱커 방송인',iconMark:'bazooka',iconBg:'#3b2432',iconFg:'#ff7f94',weapon:'묵직한 바주카포',weaponType:'bazooka',role:'생존 / 반격형',difficulty:'보통',color:'#ff7f94',
+   hpMul:1.55,dmgMul:0.82,fireMul:0.80,rangeMul:0.80,bulletSpeedMul:0.88,bulletSizeMul:1.34,
+   desc:'묵직한 폭발탄과 높은 체력의 생존형.',
+   skill:'클릭: 응급 회복. 즉시 체력 회복.',
+   passive:'최대 체력 30당 공격력 +1.'}
+];
+let selectedPlayerClassId='basic_streamer';
+let pendingClassStartFn=null;
+function playerClassById(id){ return PLAYER_CLASSES.find(c=>c.id===id)||PLAYER_CLASSES[0]; }
+function classPct(v){ return Math.round((Number(v)||1)*100)+'%'; }
+function classStatHTML(label,value){ return '<div class="class-stat">'+label+'<b>'+value+'</b></div>'; }
+function classIconHTML(c){
+  const src=miniPixelIconSrc(c.iconBg||'#252840',c.iconFg||c.color||'#38e8ff',c.iconMark||'bullet');
+  return '<img class="class-pix" src="'+src+'" alt="">';
+}
+function classNameHTML(name){
+  const parts=String(name||'').split(/\s+/).filter(Boolean);
+  return parts.length>1?parts.join('<br>'):String(name||'');
+}
+function classRoleHTML(role){
+  return String(role||'').split('/').map(part=>part.trim()).filter(Boolean).map(part=>'<span>'+part+'</span>').join('<i>/</i>');
+}
+function classChoiceHTML(c){
+  return '<div class="class-card-head"><div class="class-icon">'+classIconHTML(c)+'</div><div><div class="class-name">'+classNameHTML(c.name)+'</div><div class="class-role">'+classRoleHTML(c.role)+'</div></div></div>'+
+    '<div class="class-desc">'+c.desc+'</div>'+
+    '<div class="class-stats">'+
+      classStatHTML('무기',c.weapon)+
+      classStatHTML('체력',classPct(c.hpMul))+
+      classStatHTML('공격력',classPct(c.dmgMul))+
+      classStatHTML('발사속도',classPct(c.fireMul))+
+      classStatHTML('사거리',classPct(c.rangeMul))+
+    '</div>'+
+    '<div class="class-skill"><span>우클릭 스킬</span>'+c.skill+'</div>'+
+    '<div class="class-passive"><span>고유 패시브</span>'+c.passive+'</div>';
+}
+function renderClassChoices(){
+  const cont=$('classChoices'); if(!cont) return;
+  cont.innerHTML='';
+  PLAYER_CLASSES.forEach(c=>{
+    const b=document.createElement('button');
+    b.className='class-card';
+    b.style.setProperty('--class-col',c.color);
+    b.innerHTML=classChoiceHTML(c);
+    b.onclick=()=>startRunWithClass(c.id);
+    cont.appendChild(b);
+  });
+}
+function showClassSelect(diff,startFn){
+  diffSet=diff||diffSet;
+  pendingClassStartFn=startFn||newGame;
+  renderClassChoices();
+  show('class');
+}
+function startRunWithClass(id){
+  selectedPlayerClassId=playerClassById(id).id;
+  const fn=pendingClassStartFn||newGame;
+  pendingClassStartFn=null;
+  stopIntroDrone();
+  fn();
+}
+function applyPlayerClass(p){
+  const c=playerClassById(selectedPlayerClassId);
+  p.classId=c.id; p.className=c.name; p.weaponType=c.weaponType; p.weaponName=c.weapon;
+  p.weaponRangeMul=c.rangeMul||1; p.weaponUpgrades=[];
+  p.bulletSpeedMul*=c.bulletSpeedMul||1;
+  p.bulletSize*=c.bulletSizeMul||1;
+  p.maxhp=Math.max(1,Math.round(p.maxhp*(c.hpMul||1))); p.hp=p.maxhp;
+  p.dmg*=c.dmgMul||1;
+  p.fireAdd+=(c.fireMul||1)-1;
+  if(c.weaponType==='basic'){ p.basicStreamerClass=true; p.basicShotCounter=0; }
+  if(c.weaponType==='shotgun'){ p.weaponPellets=4; p.weaponSpreadMul=1; p.closeProjectileDmgMul+=0.08; }
+  if(c.weaponType==='sniper'){ p.pierce+=1; p.weaponChargeT=0; p.sniperLaserCd=0; p.sniperLaserChargeT=0; p.sniperLaserChargeFxT=0; }
+  if(c.weaponType==='toxic'){ p.poison+=2; p.statusDotDmgMul+=0.20; p.poisonMaxStacks=(Number(p.poisonMaxStacks)||6)+3; }
+  if(c.weaponType==='cursed'){
+    const owned=new Set((p.relics||[]).map(r=>r&&r.id));
+    const pool=RELICS.filter(r=>r&&r.cls==='curse'&&!owned.has(r.id)&&!REMOVED_RELIC_IDS.has(r.id)&&isRelicUnlockedByAchievement(r.id));
+    const curse=pool.length?weightedTake(pool.slice()):RELICS.find(r=>r&&r.cls==='curse');
+    if(curse){ p.relics.push(curse); applyRelicToPlayer(curse,p); }
+    p.curseContractClass=true; p.curseContractAtkFlat=1.4; p.goldMul+=0.10;
+  }
+  if(c.weaponType==='bazooka'){ p.bulletExplode+=18; p.weaponExplode=18; p.weaponExplosionRadius=86; p.armor+=0.08; p.tankHpAttackDiv=30; }
+}
+const WEAPON_EVOLUTIONS={
+  basic:[
+    {id:'basic_precise',icon:'🎯',name:'정밀 탄환',desc:'공격력 +3, 관통 +1',apply:p=>{p.dmg+=3;p.pierce+=1;}},
+    {id:'basic_rapid',icon:'⚡',name:'연사 장전',desc:'발사속도 +16%',apply:p=>{p.fireAdd+=0.16;}},
+    {id:'basic_boom',icon:'💥',name:'폭발 탄환',desc:'명중 폭발 피해 +10',apply:p=>{p.bulletExplode+=10;}},
+    {id:'basic_vamp',icon:'🩸',name:'흡혈 탄환',desc:'처치 시 체력 2 회복',apply:p=>{p.healOnKill+=2;}}
+  ],
+  shotgun:[
+    {id:'shotgun_compact',icon:'🎯',name:'압축 산탄',desc:'발사각 감소, 근거리 투사체 피해 +12%',apply:p=>{p.weaponSpreadMul*=0.65;p.closeProjectileDmgMul+=0.12;}},
+    {id:'shotgun_wide',icon:'💥',name:'넓은 산탄',desc:'산탄 +2, 발사각 증가',apply:p=>{p.weaponPellets+=2;p.weaponSpreadMul*=1.22;}},
+    {id:'shotgun_boom',icon:'🧨',name:'폭발 산탄',desc:'명중 폭발 피해 +8',apply:p=>{p.bulletExplode+=8;}},
+    {id:'shotgun_vamp',icon:'🩸',name:'흡혈 산탄',desc:'처치 시 체력 3 회복',apply:p=>{p.healOnKill+=3;}}
+  ],
+  sniper:[
+    {id:'sniper_pierce',icon:'🍢',name:'관통 강화',desc:'관통 +2, 공격력 +1',apply:p=>{p.pierce+=2;p.dmg+=1;}},
+    {id:'sniper_headshot',icon:'🎯',name:'헤드샷',desc:'치명타 확률 +8%, 치명타 피해 +20%',apply:p=>{p.critChance+=0.08;p.critMult+=0.20;}},
+    {id:'sniper_charge',icon:'⚡',name:'차징 샷',desc:'공격력 +5, 발사속도 -5%',apply:p=>{p.dmg+=5;p.fireAdd-=0.05;}},
+    {id:'sniper_execute',icon:'☠',name:'처형탄',desc:'체력 25% 이하 적 피해 +20% (보스 절반)',apply:p=>{p.executeInstinctDmgMul+=0.20;}}
+  ],
+  toxic:[
+    {id:'toxic_corrosion',icon:'☣',name:'부식병',desc:'독 최대 스택 +3',apply:p=>{p.poisonMaxStacks=(Number(p.poisonMaxStacks)||6)+3;}},
+    {id:'toxic_double',icon:'🟢',name:'농축 독침',desc:'독 피해 +2/초',apply:p=>{p.poison+=2;}},
+    {id:'toxic_spread',icon:'🌬️',name:'전염 확산',desc:'상태이상 처치 시 주변 전파',apply:p=>{p.statusSpread=true;}},
+    {id:'toxic_blast',icon:'🧪',name:'연금 폭발',desc:'상태 대상 피해 +12%, 명중 폭발 +6',apply:p=>{p.statusDmgMul+=0.12;p.bulletExplode+=6;}}
+  ],
+  cursed:[
+    {id:'curse_amplify',icon:'📜',name:'저주 증폭',desc:'저주 1개당 추가 공격력 +0.8',apply:p=>{p.curseContractAtkFlat+=0.8;}},
+    {id:'curse_blood',icon:'🩸',name:'피의 계약',desc:'공격력 +5, 받는 피해 +10%',apply:p=>{p.dmg+=5;p.damageTakenMul+=0.10;}},
+    {id:'curse_omen',icon:'👁️',name:'불길한 탄환',desc:'치명타 +8%, 골드 획득 +12%',apply:p=>{p.critChance+=0.08;p.goldMul+=0.12;}},
+    {id:'curse_doom',icon:'☠',name:'파멸탄',desc:'처형 피해 +18%, 관통 +1',apply:p=>{p.executeInstinctDmgMul+=0.18;p.pierce+=1;}}
+  ],
+  bazooka:[
+    {id:'bazooka_bigger',icon:'💥',name:'대형 탄두',desc:'명중 폭발 피해 +12, 탄 크기 +10%',apply:p=>{p.bulletExplode+=12;p.bulletSize+=0.10;}},
+    {id:'bazooka_counter',icon:'🛡️',name:'반격 장갑',desc:'받는 피해 -8%, 가시 피해 +10',apply:p=>{p.armor+=0.08;p.thorns+=10;}},
+    {id:'bazooka_loader',icon:'⚡',name:'자동 장전기',desc:'발사속도 +14%',apply:p=>{p.fireAdd+=0.14;}},
+    {id:'bazooka_short',icon:'🔥',name:'근접 포격',desc:'근거리 투사체 피해 +16%',apply:p=>{p.closeProjectileDmgMul+=0.16;}}
+  ]
+};
+function weaponEvolutionPool(){
+  const owned=new Set(player.weaponUpgrades||[]);
+  return (WEAPON_EVOLUTIONS[player.weaponType]||WEAPON_EVOLUTIONS.basic).filter(e=>!owned.has(e.id));
+}
+function weaponEvolutionIconHTML(up){
+  const id=String(up&&up.id||'');
+  let mark='bullet', bg='#2b2942', fg='#ffd34d';
+  if(/vamp|blood/.test(id)){ mark='fang'; bg='#3b1e32'; fg='#ff6b88'; }
+  else if(/boom|blast|bigger|bazooka/.test(id)){ mark='flame'; bg='#3a2430'; fg='#ffb45f'; }
+  else if(/pierce|precise|headshot|sniper/.test(id)){ mark='eye'; bg='#203348'; fg='#8be8ff'; }
+  else if(/rapid|loader|charge/.test(id)){ mark='bolt'; bg='#263249'; fg='#ffd34d'; }
+  else if(/toxic|corrosion|double|spread/.test(id)){ mark='poison'; bg='#203626'; fg='#76d36a'; }
+  else if(/curse|doom|omen/.test(id)){ mark='contract'; bg='#2d2440'; fg='#c98bff'; }
+  else if(/counter|armor/.test(id)){ mark='shield'; bg='#263246'; fg='#8ed6ff'; }
+  const src=miniPixelIconSrc(bg,fg,mark);
+  return '<img class="pk-img" src="'+src+'" alt="">';
+}
+function playerWeaponShotColor(type){
+  switch(type){
+    case 'shotgun': return '#ffbf4d';
+    case 'sniper': return '#8be8ff';
+    case 'toxic': return '#76d36a';
+    case 'cursed': return '#c98bff';
+    case 'bazooka': return '#ff6f87';
+    default: return '#bff8ff';
+  }
+}
+function playerWeaponShotAccent(type){
+  switch(type){
+    case 'shotgun': return '#fff0a6';
+    case 'sniper': return '#eafaff';
+    case 'toxic': return '#d4ff8f';
+    case 'cursed': return '#ff6bff';
+    case 'bazooka': return '#ffd34d';
+    default: return '#38e8ff';
+  }
+}
 
 // ===== JS: Embedded assets and canvas setup =====
 const cvs=$('game');
@@ -357,7 +543,7 @@ const sfx={
     if(muted) return;
     try{ if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)(); if(audioCtx.state==='suspended') audioCtx.resume(); }catch(e){}
     if(el.classList.contains('ghost') || el.classList.contains('set-btn') && el.classList.contains('ghost')) sfx.clickSoft();
-    else if(el.id==='diffBack' || el.classList.contains('backToTitle') || el.id==='setClose' || el.id==='setReset' || el.id==='helpClose' || el.id==='invClose') sfx.clickBack();
+    else if(el.id==='diffBack' || el.id==='classBack' || el.classList.contains('backToTitle') || el.id==='setClose' || el.id==='setReset' || el.id==='helpClose' || el.id==='invClose') sfx.clickBack();
     else sfx.click();
   }
   // 위임 방식: document 레벨에서 버튼류 클릭 감지
@@ -432,7 +618,7 @@ function stopIntroDrone(){
 function armIntroAudio(){
   if(introAudioArmed) return; introAudioArmed=true;
   unlockMusic();                       // mp3 음악 잠금 해제
-  if(state==='title'||state==='start') startIntroDrone();
+  if(state==='title'||state==='start'||state==='class') startIntroDrone();
 }
 window.addEventListener('pointerdown', armIntroAudio);
 window.addEventListener('keydown', armIntroAudio);
@@ -512,7 +698,7 @@ function resolveBgmKey(key){ let k=key, g=0; while(k && MUSIC.failed[k] && BGM_F
 })();
 // 현재 상황에 맞는 음악 키
 function desiredMusicKey(){
-  if(state==='title'||state==='start') return 'main'; // 시작화면·난이도 선택 화면 → main.mp3
+  if(state==='title'||state==='start'||state==='class') return 'main'; // 시작/선택 화면 → main.mp3
   if((typeof act3FinalClearActive==='function'&&act3FinalClearActive())||(act>=MAX_ACT&&state==='end')) return 'bgm_final_clear';
   if(!runActive) return 'intro';   // 스토리·엔드 등 기타 비전투 화면
   // 특수 보스 전용 트랙(막 무관, 매핑보다 우선)
@@ -629,7 +815,7 @@ let tutorialMode=false, tutorialDoneFlag=false;
 const TUTORIAL_MOVE_RADIUS=42;
 let floatBubbles=[]; // 적이 사라진 자리에 잠시 떠 있는 말풍선
 let lastKiller=null; // 마지막으로 플레이어를 죽인 대상 이름
-let pendingLevels=0;
+let pendingLevels=0, pendingWeaponEvolutions=0;
 
 const DB_DISCOVERY_KEY = "btv_database_discovered";
 const DB_DISCOVERY_TYPES = ['enemies','bosses','relics','potions','perks'];
@@ -691,6 +877,243 @@ const DIFFS={
   hard:  {key:'hard',  label:'어려움', hp:2.9, dmg:2.7, cnt:1.7, spd:1.22, eliteCount:5, col:'#ff4d6d', desc:'모든 패턴을 숙지한 플레이어에게만 추천드립니다. 매우 어렵습니다.<br>200% 배율 · 재도전 3회', maxRetries:3},
 };
 let diffSet=DIFFS.easy;
+let runBroadcastSchedule=null;
+let runStartChoiceOptions=[];
+let runStartChoicePick=null;
+let runStartChoiceApplied=false;
+let runStartChoiceMods={};
+let runFlags=null;
+let runHistory=[];
+function defaultRunFlags(){
+  return {
+    suspiciousMark:false,sponsorDebt:0,suspiciousContractDone:false,suspiciousAftermath:false,
+    helpedHacker:false,hackerGlitchDebt:false,hackerFollowDone:false,hackerMapHint:0,
+    cursedBoxOpened:false,cursedBoxLevel:0,cursedBoxDone:false,
+    shopkeeperTrust:0,shopkeeperAngry:false,blackMarketUnlocked:false,
+    savedFan:false,ignoredFan:false,fanBossGift:false,forcedRoomModifier:null,
+    mysteryBoostNextAct:false,chainSeen:{},forcedChainEvent:null
+  };
+}
+function normalizeRunFlags(raw){
+  const base=defaultRunFlags(), src=(raw&&typeof raw==='object')?raw:{};
+  Object.keys(base).forEach(k=>{
+    if(k==='chainSeen') base.chainSeen=Object.assign({},base.chainSeen,src.chainSeen||{});
+    else if(typeof base[k]==='number') base[k]=Math.max(0,Number(src[k])||0);
+    else base[k]=src[k]!=null?src[k]:base[k];
+  });
+  return base;
+}
+function ensureRunFlags(){ runFlags=normalizeRunFlags(runFlags); return runFlags; }
+function runFlagCount(id){ const f=ensureRunFlags(); return Math.max(0,Number(f.chainSeen&&f.chainSeen[id])||0); }
+function noteChainSeen(id){
+  const f=ensureRunFlags();
+  f.chainSeen[id]=(Number(f.chainSeen&&f.chainSeen[id])||0)+1;
+}
+function addRunHistory(entry){
+  if(!Array.isArray(runHistory)) runHistory=[];
+  runHistory.push(Object.assign({act,floor:currentRow+1,time:Date.now()},entry||{}));
+  runHistory=runHistory.slice(-24);
+}
+const BROADCAST_RULES=[
+  {id:'viewer_rush',name:'시청자 폭주',actOnly:true,desc:'일반 전투방 적 수가 조금 늘고 골드 보상이 증가합니다.',mods:{fightCountMul:1.10,goldMul:1.08}},
+  {id:'mystery_night',name:'미지의 밤',actOnly:true,desc:'미지의 방이 더 자주 나오고 방 변형 확률이 증가합니다.',mods:{eventWeightAdd:12,modifierChanceAdd:0.03}},
+  {id:'sponsor_hour',name:'협찬 시간',actOnly:true,desc:'상점 가격이 내려가지만 전투 보상 골드는 조금 감소합니다.',mods:{shopMul:0.92,goldMul:0.96}},
+  {id:'elite_clip',name:'정예 클립각',actOnly:true,desc:'정예전 보상이 늘고 일반 전투 경험치가 증가합니다.',mods:{xpMul:1.08,eliteGoldMul:1.12}},
+  {id:'glitch_wave',name:'글리치 전파',actOnly:true,desc:'변형 전투방 확률이 증가하고 적 체력이 조금 증가합니다.',mods:{modifierChanceAdd:0.04,enemyHpMul:1.05}},
+  {id:'late_night',name:'심야 방송',actOnly:true,desc:'전투방이 어두워질 수 있고 경험치 보상이 증가합니다.',mods:{modifierChanceAdd:0.02,xpMul:1.06}},
+  {id:'hardcore_chat',name:'하드코어 채팅',global:true,desc:'모든 적 체력과 골드/경험치 보상이 증가합니다.',mods:{enemyHpMul:1.08,goldMul:1.10,xpMul:1.08,modifierChanceAdd:0.03}},
+  {id:'sale_day',name:'오늘만 할인',global:true,desc:'상점 가격이 내려가고 미지의 방이 조금 늘어납니다.',mods:{shopMul:0.88,eventWeightAdd:8}},
+  {id:'unstable_feed',name:'불안정 송출',global:true,desc:'변형 전투방 확률이 크게 오르고 전투 보상이 증가합니다.',mods:{modifierChanceAdd:0.06,goldMul:1.06,xpMul:1.06}}
+];
+const START_CHOICE_POOL=[
+  {id:'safe',name:'안전한 출발',tone:'safe',desc:'최대 체력 +18, 랜덤 포션 1개를 받고 시작합니다.'},
+  {id:'growth',name:'초반 성장',tone:'growth',desc:'경험치 +35를 받고 시작합니다.'},
+  {id:'shop',name:'쇼핑 준비',tone:'shop',desc:'골드 +80, 다음 상점 가격 -15%.'},
+  {id:'sponsor',name:'첫 협찬',tone:'sponsor',desc:'저주 없는 랜덤 유물 1개를 받습니다.'},
+  {id:'fast',name:'빠른 방송',tone:'fast',desc:'이동속도 +18, 받는 피해 +8%.'},
+  {id:'potion',name:'비상 물약',tone:'potion',desc:'랜덤 포션 2개를 챙깁니다.'},
+  {id:'mystery',name:'미지 선호',tone:'mystery',desc:'이번 런의 미지의 방 출현 비중이 증가합니다.'},
+  {id:'spicy',name:'매운 계약',tone:'spicy',desc:'저주 1개와 희귀 이상 유물 1개를 함께 받습니다.'},
+  {id:'hard',name:'빡센 오프닝',tone:'hard',desc:'다음 전투 적 강화, 보상 골드/경험치 증가.'},
+  {id:'greed',name:'탐욕 스타트',tone:'greed',desc:'골드 +140, 골드 획득 +18%, 최대 체력 -12.'}
+];
+function resetRunBroadcastSystems(){
+  runBroadcastSchedule=null;
+  runStartChoiceOptions=[];
+  runStartChoicePick=null;
+  runStartChoiceApplied=false;
+  runStartChoiceMods={};
+  runFlags=defaultRunFlags();
+  runHistory=[];
+}
+function ruleById(id){ return BROADCAST_RULES.find(r=>r.id===id)||null; }
+function choiceById(id){ return START_CHOICE_POOL.find(c=>c.id===id)||null; }
+function broadcastRulesForAct(a){
+  if(!runBroadcastSchedule) return [];
+  const ids=[];
+  const actRule=runBroadcastSchedule.acts&&runBroadcastSchedule.acts[String(clamp(Math.round(Number(a)||1),1,MAX_ACT))];
+  if(actRule) ids.push(actRule);
+  if(runBroadcastSchedule.global) ids.push(runBroadcastSchedule.global);
+  return ids.map(ruleById).filter(Boolean);
+}
+function broadcastModValue(key,a,base){
+  let v=base==null?1:base;
+  broadcastRulesForAct(a).forEach(r=>{
+    const m=r.mods||{};
+    if(m[key]!=null) v*=Number(m[key])||1;
+  });
+  return v;
+}
+function broadcastModAdd(key,a){
+  let v=0;
+  broadcastRulesForAct(a).forEach(r=>{ const m=r.mods||{}; v+=Number(m[key])||0; });
+  return v;
+}
+function generateBroadcastSchedule(){
+  const actRules=BROADCAST_RULES.filter(r=>r.actOnly);
+  const globalRules=BROADCAST_RULES.filter(r=>r.global);
+  const used=new Set();
+  const acts={};
+  for(let a=1;a<=MAX_ACT;a++){
+    const pool=actRules.filter(r=>!used.has(r.id));
+    const rule=pick(pool.length?pool:actRules);
+    acts[String(a)]=rule.id;
+    used.add(rule.id);
+  }
+  return {date:new Date().toISOString().slice(0,10),acts,global:(diffSet&&diffSet.key==='hard')?pick(globalRules).id:null};
+}
+function generateStartChoiceOptions(){
+  const pool=START_CHOICE_POOL.slice();
+  const out=[];
+  for(let i=0;i<3&&pool.length;i++) out.push(weightedTake(pool,()=>1).id);
+  return out;
+}
+function initRunOpeningSystems(){
+  resetRunBroadcastSystems();
+  runBroadcastSchedule=generateBroadcastSchedule();
+  runStartChoiceOptions=generateStartChoiceOptions();
+}
+function escapeRunText(s){
+  return String(s==null?'':s).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+function ensureRunOpeningOverlay(id,cls){
+  let ov=document.getElementById(id);
+  if(ov) return ov;
+  ov=document.createElement('div');
+  ov.id=id;
+  ov.className='overlay hidden '+cls;
+  document.body.appendChild(ov);
+  return ov;
+}
+function runScheduleSummary(){
+  if(!runBroadcastSchedule) return [];
+  const rows=[];
+  for(let a=1;a<=MAX_ACT;a++){
+    const r=ruleById(runBroadcastSchedule.acts&&runBroadcastSchedule.acts[String(a)]);
+    if(r) rows.push({label:a+'막',name:r.name,desc:r.desc});
+  }
+  const g=ruleById(runBroadcastSchedule.global);
+  if(g) rows.push({label:'하드 전역',name:g.name,desc:g.desc});
+  return rows;
+}
+function showBroadcastScheduleOverlay(next){
+  const ov=ensureRunOpeningOverlay('ovBroadcastSchedule','run-opening schedule');
+  const rows=runScheduleSummary();
+  ov.innerHTML='<div class="run-opening-box">'+
+    '<div class="tag">TODAY BROADCAST</div>'+
+    '<h2>오늘의 방송 편성표</h2>'+
+    '<p class="run-opening-sub">이번 런에 적용될 막별 규칙입니다.</p>'+
+    '<div class="broadcast-rule-list">'+rows.map(r=>
+      '<div class="broadcast-rule-card"><b>'+escapeRunText(r.label)+'</b><span>'+escapeRunText(r.name)+'</span><em>'+escapeRunText(r.desc)+'</em></div>'
+    ).join('')+'</div>'+
+    '<button class="btn" id="broadcastScheduleNext">시작 선택지 보기 ▶</button>'+
+  '</div>';
+  hideAll();
+  ov.classList.remove('hidden');
+  state='startChoice'; syncChrome();
+  const btn=document.getElementById('broadcastScheduleNext');
+  if(btn) btn.onclick=()=>{ ov.classList.add('hidden'); if(next) next(); };
+}
+function showStartChoiceOverlay(next){
+  const ov=ensureRunOpeningOverlay('ovStartChoice','run-opening choices');
+  const opts=(runStartChoiceOptions&&runStartChoiceOptions.length?runStartChoiceOptions:generateStartChoiceOptions()).map(choiceById).filter(Boolean);
+  ov.innerHTML='<div class="run-opening-box choice-box">'+
+    '<div class="tag">STARTING SETUP</div>'+
+    '<h2>방송 시작 선택지</h2>'+
+    '<p class="run-opening-sub">이번 런에서 한 번만 적용됩니다.</p>'+
+    '<div class="start-choice-grid">'+opts.map(c=>
+      '<button class="start-choice-card '+escapeRunText(c.tone||'')+'" data-choice="'+escapeRunText(c.id)+'">'+
+        '<span class="choice-pixel" aria-hidden="true"></span><b>'+escapeRunText(c.name)+'</b><em>'+escapeRunText(c.desc)+'</em>'+
+      '</button>'
+    ).join('')+'</div>'+
+  '</div>';
+  hideAll();
+  ov.classList.remove('hidden');
+  state='startChoice'; syncChrome();
+  ov.querySelectorAll('[data-choice]').forEach(btn=>{
+    btn.onclick=()=>{
+      const c=choiceById(btn.dataset.choice);
+      applyStartChoice(c);
+      ov.classList.add('hidden');
+      if(next) next();
+    };
+  });
+}
+function grantDirectRelic(r){
+  if(!r||!player||player.relics.some(o=>o&&o.id===r.id)) return false;
+  player.relics.push(r);
+  markDiscovered('relics',r.id);
+  applyRelicToPlayer(r,player);
+  syncDoomWorshipHp(player);
+  checkRunRelicAchievements();
+  return true;
+}
+function grantRandomStartRelic(opts){
+  const r=opts&&opts.curseOnly?eventRollRelic({curseOnly:true}):eventRollCleanRelic(opts||{});
+  if(grantDirectRelic(r)) return r;
+  return null;
+}
+function applyStartChoice(choice){
+  if(runStartChoiceApplied||!choice) return;
+  runStartChoiceApplied=true;
+  runStartChoicePick={id:choice.id,name:choice.name,desc:choice.desc};
+  if(choice.id==='safe'){
+    player.maxhp+=18; player.hp+=18; addPotion(rollPotion());
+  }else if(choice.id==='growth'){
+    gainXP(35);
+  }else if(choice.id==='shop'){
+    addGold(80,'other'); nextShopDiscount=Math.max(nextShopDiscount,0.15);
+  }else if(choice.id==='sponsor'){
+    grantRandomStartRelic({noCurse:true});
+  }else if(choice.id==='fast'){
+    player.moveSpeedAdd+=18; player.damageTakenMul+=0.08;
+  }else if(choice.id==='potion'){
+    addPotion(rollPotion()); addPotion(rollPotion());
+  }else if(choice.id==='mystery'){
+    runStartChoiceMods.eventWeightAdd=18;
+  }else if(choice.id==='spicy'){
+    grantRandomStartRelic({curseOnly:true});
+    grantRandomStartRelic({tiers:['rare','epic','legend'],noCurse:true});
+  }else if(choice.id==='hard'){
+    queueNextCombatMod({hpMul:1.20,spdMul:1.08,rewardMul:1.35,xpMul:1.25,banner:{big:'빡센 오프닝',small:'첫 전투 강화 · 보상 증가'}});
+  }else if(choice.id==='greed'){
+    addGold(140,'other'); player.goldMul+=0.18; player.maxhp=Math.max(1,player.maxhp-12); player.hp=Math.min(player.hp,player.maxhp);
+  }
+  updateHUD();
+  banner(choice.name,'시작 선택 적용',1400);
+}
+function startActOneMap(){
+  genMap();
+  hideAll();
+  { const _sb=$('skipTutBtn'); if(_sb) _sb.style.display='none'; }
+  showMap();
+  banner("1막 시작","지도에서 길을 골라라",1700);
+}
+function showRunOpeningThenMap(){
+  if(!runBroadcastSchedule) runBroadcastSchedule=generateBroadcastSchedule();
+  if(!runStartChoiceOptions||!runStartChoiceOptions.length) runStartChoiceOptions=generateStartChoiceOptions();
+  showBroadcastScheduleOverlay(()=>showStartChoiceOverlay(startActOneMap));
+}
 function grantRetryCharge(amount = 1, sourceLabel = '재도전권'){
   if(diffSet.maxRetries === Infinity) return false;
   diffSet=Object.assign({},diffSet,{maxRetries:diffSet.maxRetries+amount});
@@ -893,6 +1316,11 @@ function miniPixelIconData(name,c,c2,mark){
     case 'shield': rect(5,4,6,5,'h'); rect(6,9,4,2,'h'); set(7,11,'h'); set(8,11,'h'); line(8,4,8,11,'w'); break;
     case 'ring': rect(5,5,6,2,'y'); rect(4,7,2,4,'y'); rect(10,7,2,4,'y'); rect(6,11,4,1,'y'); rect(7,7,2,3,'k'); break;
     case 'bullet': rect(5,6,7,4,'y'); rect(4,7,1,2,'w'); set(12,7,'r'); set(12,8,'r'); break;
+    case 'pistol': rect(4,6,7,3,'h'); rect(10,5,2,2,'w'); rect(6,9,3,3,'d'); rect(8,8,2,1,'y'); set(12,6,'r'); break;
+    case 'rifle': rect(3,7,10,2,'h'); rect(11,6,3,1,'w'); rect(4,9,3,2,'d'); rect(8,5,3,1,'y'); set(14,6,'r'); break;
+    case 'toxicgun': rect(4,7,8,2,'g'); rect(10,6,2,1,'w'); rect(5,9,3,2,'d'); set(12,7,'h'); set(13,7,'g'); set(7,5,'g'); set(8,4,'h'); break;
+    case 'cursedgun': rect(4,7,8,2,'p'); rect(10,6,2,1,'w'); rect(5,9,3,2,'d'); set(12,7,'r'); set(6,5,'p'); set(9,5,'p'); line(7,4,8,6,'h'); break;
+    case 'bazooka': rect(3,6,10,4,'h'); rect(11,5,3,2,'r'); rect(5,10,4,2,'d'); rect(4,7,2,2,'w'); set(14,6,'y'); break;
     case 'clock': rect(5,4,6,1,'y'); rect(4,5,8,6,'y'); rect(5,11,6,1,'y'); line(8,7,8,5,'w'); line(8,7,10,9,'w'); break;
     case 'boot': rect(5,4,4,7,'d'); rect(5,10,7,2,'d'); rect(9,8,2,2,'h'); break;
     case 'mushroom': rect(4,5,8,3,'r'); rect(5,4,6,1,'r'); rect(7,8,3,4,'w'); set(5,6,'w'); set(10,6,'w'); break;
@@ -1173,10 +1601,11 @@ function initRelicTooltipEvents(){
 
 // ===== JS: Input handling and runtime state =====
 const keys={};
-let mouseX=W/2, mouseY=H/2, mouseDown=false;
+let mouseX=W/2, mouseY=H/2, mouseDown=false, mouseRightDown=false;
 function clearInputState(){
   Object.keys(keys).forEach(k=>{ delete keys[k]; });
   mouseDown=false;
+  mouseRightDown=false;
   autoFire=false;
 }
 function isOpen(id){
@@ -1307,10 +1736,300 @@ function canvasPos(e){
   const r=cvs.getBoundingClientRect();
   return {x:(e.clientX-r.left)*(W/r.width), y:(e.clientY-r.top)*(H/r.height)};
 }
+
+function triggerPlayerDodge(previewLocked){
+  if(previewLocked||dodgeLatch||player.dodgeCharges<=0||player.dodging>0||(player.moveLockT>0)) return false;
+  dodgeLatch=true;
+  player.dodging=0.22+(player.dodgeIframeBonus||0);
+  if(player.dodgeCd<=0) player.dodgeCd=10*playerDodgeCooldownMul(player);
+  player.dodgeCharges--;
+  updateHUD();
+  sfx.dodge();
+  if(tutorial&&tutorial.shot) tutorial.dodged=true;
+  if(player.dodgeReload) player.dodgeReloadT=2;
+  if(player.perfectDodge){ player.perfectDodgeArmed=true; player.perfectDodgeCheckT=1; }
+  if(player.shadowBarrage&&player.shadowBarrageCd<=0){ player.shadowBarrageT=1; player.shadowBarrageCd=6; }
+  if(player.dodgeHaste) player.buffs.haste=Math.max(player.buffs.haste,2.5);
+  if(player.dodgeBlast>0){
+    enemies.slice().forEach(o=>{
+      if(dist2(o.x,o.y,player.x,player.y)<38025){
+        o.hp-=player.dodgeBlast; o.hitT=0.1;
+        const ka=Math.atan2(o.y-player.y,o.x-player.x);
+        o.x+=Math.cos(ka)*69; o.y+=Math.sin(ka)*69;
+        if(o.hp<=0) handleEnemyDefeat(o);
+      }
+    });
+    burst(player.x,player.y,'#38e8ff',22,280);
+    screenShake=Math.max(screenShake,8);
+  }
+  let mvx=(keys['d']||keys['arrowright']?1:0)-(keys['a']||keys['arrowleft']?1:0);
+  let mvy=(keys['s']||keys['arrowdown']?1:0)-(keys['w']||keys['arrowup']?1:0);
+  if(typeof GL!=='undefined'&&GL.keyRev>0){ mvx=-mvx; mvy=-mvy; }
+  if(mvx===0&&mvy===0){ mvx=Math.cos(player.facing); mvy=Math.sin(player.facing); }
+  const m=Math.hypot(mvx,mvy)||1;
+  player.dvx=mvx/m; player.dvy=mvy/m;
+  player.dashFxTrailT=0;
+  spawnDashFx('start',player.x,player.y,player.dvx,player.dvy);
+  burst(player.x,player.y,'#38e8ff',8,120);
+  return true;
+}
+
+function firePlayerSniperLaser(chargeRatio){
+  if(!player||player.classId!=='sniper_streamer'||player.sniperLaserCd>0||roomCleared||bossTalkActive()) return false;
+  const charge=clamp(Number(chargeRatio)||0,0.12,1);
+  const ang=Math.atan2(mouseY-player.y,mouseX-player.x);
+  player.facing=ang;
+  const range=(760+220*charge)*Math.max(0.35,Number(player.weaponRangeMul)||1);
+  const width=(9+9*charge)*Math.max(0.7,Number(player.bulletSize)||1);
+  const srcX=player.x+Math.cos(ang)*18, srcY=player.y+Math.sin(ang)*18;
+  const dmg=Math.max(2,totalAttackPower(player)*(1.05+2.10*charge));
+  const beamBullet={
+    playerShot:true,sniperLaser:true,dmg,crit:false,pierce:999,hitSet:new Set(),
+    weaponType:'sniper',shotColor:'#8be8ff',shotAccent:'#eafaff',classCritBonus:0.04+0.12*charge
+  };
+  const hitTarget=(o,isBoss)=>{
+    if(!o||o.dead||o.hp<=0) return;
+    const dx=o.x-srcX, dy=o.y-srcY;
+    const along=dx*Math.cos(ang)+dy*Math.sin(ang);
+    if(along<0||along>range) return;
+    const side=Math.abs(-Math.sin(ang)*dx+Math.cos(ang)*dy);
+    if(side>(width+(o.r||12))) return;
+    const hit=rollPlayerBulletDamage(o,beamBullet);
+    if(isBoss) damageBoss(o,hit.dmg,hit.crit,true,beamBullet);
+    else damageEnemy(o,hit.dmg,hit.crit,true,beamBullet);
+  };
+  enemies.slice().forEach(e=>hitTarget(e,false));
+  if(boss) hitTarget(boss,true);
+  playerLaserFx.push({x:srcX,y:srcY,ang,range,width,t:0,life:0.16+0.08*charge,col:charge>=0.98?'#eafaff':'#8be8ff'});
+  player.sniperLaserCd=3.5+1.7*charge;
+  player.fireTimer=Math.max(player.fireTimer||0,playerShootCooldown(player)*1.4);
+  burst(srcX,srcY,'#8be8ff',16,220);
+  screenShake=Math.max(screenShake,5+5*charge);
+  if(typeof beep==='function'){ beep(1320,0.08,'square',0.045); setTimeout(()=>beep(1760,0.10,'triangle',0.035),35); }
+  return true;
+}
+
+function classSkillMaxCooldown(){
+  switch(player&&player.classId){
+    case 'basic_streamer': return 7.0;
+    case 'rush_streamer': return 6.2;
+    case 'sniper_streamer': return 5.2;
+    case 'alchemy_streamer': return 7.4;
+    case 'curse_contractor': return 8.2;
+    case 'tank_streamer': return 8.8;
+    default: return 7.0;
+  }
+}
+function classSkillName(){
+  switch(player&&player.classId){
+    case 'basic_streamer': return '빠른 재장전';
+    case 'rush_streamer': return '돌파 산탄';
+    case 'sniper_streamer': return '차지 레이저';
+    case 'alchemy_streamer': return '독 장판';
+    case 'curse_contractor': return '저주 폭주';
+    case 'tank_streamer': return '응급 회복';
+    default: return '직업 스킬';
+  }
+}
+function classSkillReady(){
+  if(!(state==='play'&&!paused&&!roomCleared&&!bossTalkActive()&&!(roomPreviewT>0)&&!(player.stunT>0))) return false;
+  if(player&&player.classId==='sniper_streamer') return (Number(player.sniperLaserCd)||0)<=0;
+  return (Number(player.classSkillCd)||0)<=0;
+}
+function classSkillHoldSpec(id){
+  switch(id){
+    case 'basic_streamer': return {max:1.00,min:0.12,color:'#ffd34d',accent:'#fff1a8',label:'FOCUS'};
+    case 'rush_streamer': return {max:0.85,min:0.10,color:'#ffb347',accent:'#fff1a8',label:'DASH'};
+    case 'sniper_streamer': return {max:1.35,min:0.12,color:'#8be8ff',accent:'#eafaff',label:'LASER'};
+    case 'alchemy_streamer': return {max:1.20,min:0.12,color:'#76d36a',accent:'#d9ffd0',label:'TOXIC'};
+    case 'curse_contractor': return {max:1.55,min:0.16,color:'#c98bff',accent:'#fff1ff',label:'PACT'};
+    case 'tank_streamer': return {max:0.01,min:0,color:'#5dff9b',accent:'#eafff1',label:'HEAL'};
+    default: return {max:1,min:0.12,color:'#8be8ff',accent:'#eafaff',label:'SKILL'};
+  }
+}
+function classSkillHoldRatio(hold){
+  const h=hold||(player&&player.classSkillHold);
+  if(!h) return 0;
+  return clamp((Number(h.t)||0)/Math.max(0.01,Number(h.max)||1),0,1);
+}
+function alchemyModeStyle(){
+  return {kind:'toxic',color:'#76d36a',accent:'#d9ffd0',label:'TOXIC',dmgMul:0.34,life:4.8,rAdd:0};
+}
+function damagePlayerSkillCircle(x,y,r,dmg,color){
+  const r2=r*r;
+  enemies.slice().forEach(e=>{
+    if(e&&e.hp>0&&dist2(x,y,e.x,e.y)<r2) applyEnemyDirectDamage(e,dmg,color||'#7ad7ff');
+  });
+  if(boss&&dist2(x,y,boss.x,boss.y)<r2) damageBoss(boss,dmg,false,false);
+}
+function castBasicSkill(chargeRatio){
+  const c=clamp(Number(chargeRatio)||0,0.12,1);
+  player.basicReloadT=2.0+1.15*c;
+  player.basicFocusT=1.8+2.4*c;
+  player.classSkillCd=classSkillMaxCooldown();
+  burst(player.x,player.y,'#ffd34d',14+Math.round(12*c),190+120*c);
+  banner('빠른 재장전','발사속도 증가',900);
+  return true;
+}
+function castRushSkill(chargeRatio){
+  const c=clamp(Number(chargeRatio)||0,0.10,1);
+  const a=Math.atan2(mouseY-player.y,mouseX-player.x);
+  player.facing=a;
+  const step=46+82*c;
+  player.x=clamp(player.x+Math.cos(a)*step,player.r,W-player.r);
+  player.y=clamp(player.y+Math.sin(a)*step,player.r,H-player.r);
+  const dmg=Math.max(2,totalAttackPower(player)*(0.46+0.46*c));
+  const speed=playerBulletSpeed(player)*(0.84+0.16*c);
+  const attackId='rushSkill:'+Date.now()+':'+(++playerAttackSeq);
+  const pellets=3+Math.round(3*c);
+  for(let i=0;i<pellets;i++){
+    const off=(i-(pellets-1)/2)*(0.17-0.055*c);
+    pBullets.push({
+      x:player.x+Math.cos(a+off)*16,y:player.y+Math.sin(a+off)*16,
+      sx:player.x,sy:player.y,
+      vx:Math.cos(a+off)*speed,vy:Math.sin(a+off)*speed,
+      r:(4.2+1.0*c)*player.bulletSize,dmg,life:(0.54+0.34*c)*Math.max(0.35,Number(player.weaponRangeMul)||1),
+      bounce:player.bounce,pierce:player.pierce,hitSet:new Set(),crit:false,homing:player.homing,
+      attackId,playerShot:true,extraProjectile:i!==Math.floor((pellets-1)/2),weaponType:'shotgun',shotColor:'#ffb347',shotAccent:'#fff1a8'
+    });
+  }
+  player.classSkillCd=classSkillMaxCooldown();
+  spawnDashFx('start',player.x,player.y,Math.cos(a),Math.sin(a));
+  burst(player.x,player.y,'#ffb347',14+Math.round(12*c),190+130*c);
+  return true;
+}
+function castAlchemySkill(chargeRatio){
+  const c=clamp(Number(chargeRatio)||0,0.12,1);
+  const style=alchemyModeStyle();
+  const x=clamp(mouseX,46,W-46), y=clamp(mouseY,94,H-46);
+  playerSkillZones.push({kind:'toxic',x,y,r:58+54*c,t:0,life:style.life+0.8*c,tick:0,seed:rand(0,TAU),dmg:Math.max(2,totalAttackPower(player)*(style.dmgMul+0.08*c)),color:style.color,accent:style.accent});
+  player.classSkillCd=classSkillMaxCooldown();
+  burst(x,y,style.color,16+Math.round(12*c),220+120*c);
+  return true;
+}
+function castCurseSkill(chargeRatio){
+  const c=clamp(Number(chargeRatio)||0,0.16,1);
+  const cost=Math.max(1,Math.round(player.maxhp*(0.05+0.08*c)));
+  player.hp=Math.max(1,player.hp-cost);
+  player.curseSurgeT=2.4+3.0*c;
+  player.curseSurgePower=0.45+0.65*c;
+  player.classSkillCd=classSkillMaxCooldown();
+  updateHpHud();
+  burst(player.x,player.y,'#c98bff',18+Math.round(14*c),230+150*c);
+  banner('저주 폭주','체력 소모 · 공격 강화',900);
+  return true;
+}
+function explodeTankGuard(chargeRatio,absorbBonus){
+  const c=clamp(Number(chargeRatio)||1,0.12,1);
+  const stored=Math.max(0,Number(absorbBonus)||0);
+  const dmg=Math.max(18,totalAttackPower(player)*(0.92+0.72*c)+12+stored*0.55), r=142+62*c+Math.min(44,stored*1.4);
+  damagePlayerSkillCircle(player.x,player.y,r,dmg,'#ff7f94');
+  burst(player.x,player.y,'#ff7f94',24+Math.round(18*c),290+160*c);
+  screenShake=Math.max(screenShake||0,8+7*c);
+}
+function castTankSkill(){
+  player.tankGuardT=0;
+  player.tankGuardExploded=true;
+  player.classSkillCd=classSkillMaxCooldown();
+  const amt=Math.max(20,Math.round(player.maxhp*0.18));
+  const used=healPlayer(amt,player.x,player.y-player.r-10);
+  updateHpHud();
+  burst(player.x,player.y,'#5dff9b',used>0?18:8,220);
+  banner('응급 회복',used>0?'체력 +'+Math.round(used):'이미 최대 체력',900);
+  return true;
+}
+function beginClassSkill(){
+  if(!classSkillReady()) return false;
+  const id=player.classId||'basic_streamer';
+  if(id==='basic_streamer'){
+    mouseRightDown=false;
+    return castBasicSkill(1);
+  }
+  if(id==='rush_streamer'){
+    mouseRightDown=false;
+    return castRushSkill(1);
+  }
+  if(id==='curse_contractor'){
+    mouseRightDown=false;
+    return castCurseSkill(1);
+  }
+  if(id==='tank_streamer'){
+    mouseRightDown=false;
+    return castTankSkill();
+  }
+  const spec=classSkillHoldSpec(id);
+  mouseRightDown=true;
+  player.classSkillHold={id,t:0,max:spec.max,min:spec.min,fxT:0,absorb:0};
+  player.sniperLaserChargeT=0;
+  player.sniperLaserChargeFxT=0;
+  return true;
+}
+function cancelClassSkillHold(){
+  mouseRightDown=false;
+  if(!player) return;
+  player.classSkillHold=null;
+  player.sniperLaserChargeT=0;
+  player.sniperLaserChargeFxT=0;
+}
+function updateClassSkillHold(dt,previewLocked){
+  if(!player||!mouseRightDown||!player.classSkillHold) return;
+  const hold=player.classSkillHold;
+  if(paused||previewLocked||roomCleared||bossTalkActive()||player.stunT>0||player._adBlockT>0){
+    cancelClassSkillHold();
+    return;
+  }
+  hold.t=Math.min(Math.max(0.01,Number(hold.max)||1),(Number(hold.t)||0)+dt);
+  hold.fxT=(Number(hold.fxT)||0)+dt;
+  const spec=classSkillHoldSpec(hold.id), charge=classSkillHoldRatio(hold);
+  if(hold.id==='sniper_streamer'){
+    player.sniperLaserChargeT=hold.t;
+    player.sniperLaserChargeFxT=hold.fxT;
+  }else{
+    player.sniperLaserChargeT=0;
+    player.sniperLaserChargeFxT=0;
+  }
+  if(hold.fxT>=Math.max(0.035,0.12-0.055*charge)){
+    hold.fxT=0;
+    const a=Math.atan2(mouseY-player.y,mouseX-player.x);
+    const rr=20+18*charge;
+    let col=spec.color;
+    if(hold.id==='alchemy_streamer') col=alchemyModeStyle().color;
+    particles.push({x:player.x+Math.cos(a)*rr+rand(-4,4),y:player.y+Math.sin(a)*rr+rand(-4,4),vx:rand(-12,12),vy:rand(-12,12),life:0.20,max:0.20,color:charge>=1?spec.accent:col,r:rand(2,4+3*charge)});
+  }
+}
+function releaseClassSkillAction(){
+  if(!player||!player.classSkillHold){
+    cancelClassSkillHold();
+    return false;
+  }
+  const hold=player.classSkillHold;
+  const previewLocked=roomPreviewT>0||bossTalkBlocksMovement();
+  const charge=classSkillHoldRatio(hold);
+  const id=hold.id;
+  cancelClassSkillHold();
+  if(paused||previewLocked||player.stunT>0||player._adBlockT>0) return false;
+  if(charge<(Number(hold.min)||0.12)) return false;
+  switch(id){
+    case 'sniper_streamer': return firePlayerSniperLaser(charge);
+    case 'basic_streamer': return castBasicSkill(charge);
+    case 'rush_streamer': return castRushSkill(charge);
+    case 'alchemy_streamer': return castAlchemySkill(charge);
+    case 'curse_contractor': return castCurseSkill(charge);
+    case 'tank_streamer': return castTankSkill();
+    default: return false;
+  }
+}
 cvs.addEventListener('mousemove',e=>{const p=canvasPos(e);mouseX=p.x;mouseY=p.y;});
 let autoFire=false;
 cvs.addEventListener('mousedown',e=>{
   const p=canvasPos(e); mouseX=p.x; mouseY=p.y;
+  if(e.button===2){
+    e.preventDefault();
+    e.stopPropagation();
+    beginClassSkill();
+    return;
+  }
+  if(e.button!=null&&e.button!==0) return;
   if(state==='play' && bossTalkActive && bossTalkActive() && handleBossTalkAdvance(p)){
     e.preventDefault();
     e.stopPropagation();
@@ -1325,11 +2044,24 @@ cvs.addEventListener('mousedown',e=>{
     autoFire=!autoFire;
   }
 });
-window.addEventListener('mouseup',()=>{mouseDown=false;});
+window.addEventListener('mouseup',e=>{
+  if(e&&Number.isFinite(e.clientX)){
+    const p=canvasPos(e); mouseX=p.x; mouseY=p.y;
+  }
+  if(e&&e.button===2){
+    e.preventDefault();
+    releaseClassSkillAction();
+    return;
+  }
+  mouseDown=false;
+});
 cvs.addEventListener('contextmenu',e=>e.preventDefault());
+window.addEventListener('contextmenu',e=>{ e.preventDefault(); e.stopPropagation(); return false; },true);
+window.addEventListener('blur',()=>cancelClassSkillHold());
+document.addEventListener('visibilitychange',()=>{ if(document.hidden) cancelClassSkillHold(); });
 
 // ---------- 게임 상태 ----------
-let state='title'; // title, start, play, door, relic, shop, vote, end, help
+let state='title'; // title, start, class, play, door, relic, shop, vote, end, help
 let prevState='play';
 const LEADERBOARD_FIREBASE_CONFIG=null;
 function getLeaderboardFirebaseConfig(){
@@ -2201,6 +2933,9 @@ function conditionalAttackFlat(p){
   if(p.maxhpPowerAtkFlat){
     flat+=Math.floor((Number(p.maxhp)||0)/100)*(Number(p.maxhpPowerAtkFlat)||0);
   }
+  if(p.tankHpAttackDiv){
+    flat+=Math.floor((Number(p.maxhp)||0)/Math.max(1,Number(p.tankHpAttackDiv)||30));
+  }
   if((p.investmentReturn||p.investmentReturnAtkFlat)&&gold>=150){
     flat+=Number(p.investmentReturnAtkFlat)||3;
   }
@@ -2209,6 +2944,12 @@ function conditionalAttackFlat(p){
   }
   if(p.doomWorshipAtkFlat||p.doomWorship){
     flat+=curseRelicStacks(p)*(Number(p.doomWorshipAtkFlat)||(p.doomWorship?3.2:0));
+  }
+  if(p.curseContractClass){
+    flat+=curseRelicStacks(p)*(Number(p.curseContractAtkFlat)||1.4);
+  }
+  if(p.curseSurgeT>0){
+    flat+=8*(Number(p.curseSurgePower)||1);
   }
   return flat;
 }
@@ -2275,7 +3016,9 @@ function fmtSignedNumber(n){
 }
 function effectiveArmor(p){
   p=p||player;
-  return clamp((p.armor||0)+(p.potionArmor||0),-1,0.85);
+  const guard=(p&&p.tankGuardT>0)?0.35:0;
+  const holdGuard=(p&&p.classSkillHold&&p.classSkillHold.id==='tank_streamer')?0.15:0;
+  return clamp((p.armor||0)+(p.potionArmor||0)+guard+holdGuard,-1,0.85);
 }
 function armorDisplayLabel(v){
   return v<0?'받는 피해':'피해 감소';
@@ -2929,6 +3672,7 @@ function effectiveCritChance(target,bullet){
   if(target&&player&&player.statusCritChance>0&&targetHasStatus(target)) chance+=player.statusCritChance;
   if(target&&player&&player.chillCritChance>0&&target.chillT>0) chance+=player.chillCritChance;
   if(bullet&&bullet.extraProjectile&&player&&player.extraProjectileCritChance>0) chance+=player.extraProjectileCritChance;
+  if(bullet&&bullet.classCritBonus>0) chance+=bullet.classCritBonus;
   return clamp(chance,0,CRIT_CHANCE_CAP);
 }
 function effectiveCritMult(){
@@ -5112,6 +5856,10 @@ function createRunBuildSnapshot(scoreData){
   const p=player||{};
   const pc=v=>Math.round(Number(v||0)*1000)/1000;
   return {
+    classId:p.classId||'basic_streamer',
+    className:p.className||'베이직 방송인',
+    weaponName:p.weaponName||'기본 총',
+    weaponUpgrades:(p.weaponUpgrades||[]).slice(),
     relics:sanitizeStoredRelicIds((p.relics||[]).map(r=>r&&r.id)),
     potions:(p.potions||[]).map(pt=>pt&&pt.id).filter(Boolean),
     perks:sanitizeStoredLevelPerkIds(p.perkIds),
@@ -5131,6 +5879,10 @@ function createRunBuildSnapshot(scoreData){
     },
     gold:Math.round(Number(gold)||0),
     goldStats:getRunGoldStatsSnapshot(),
+    broadcastSchedule:runScheduleSummary(),
+    startChoice:runStartChoicePick?Object.assign({},runStartChoicePick):null,
+    runFlags:clonePlain(ensureRunFlags()),
+    runHistory:clonePlain(runHistory||[]),
     act:Math.max(1,Number(act)||1),
     stage:scoreData&&scoreData.reachedFloor?Number(scoreData.reachedFloor):Math.max(1,currentRow+1),
     clearedAct:(scoreData&&scoreData.cleared)?Math.max(1,Number(act)||1):0,
@@ -5596,6 +6348,8 @@ async function renderRankingList(){
 }
 const player={};
 let enemies=[], pBullets=[], eBullets=[], pickups=[], particles=[];
+let playerLaserFx=[];
+let playerSkillZones=[];
 const PERF_LIMITS={
   damageTexts:100,
   particles:220,
@@ -5684,6 +6438,8 @@ let hazards=[];
 let kijoMasks=[], kijoGazes=[], kijoParades=[], kijoLaserWarns=[];
 function clearCombatThreats(){
   eBullets.length=0;
+  playerLaserFx.length=0;
+  playerSkillZones.length=0;
   hazards=[];
   kijoMasks=[]; kijoGazes=[]; kijoParades=[]; kijoLaserWarns=[];
   if(typeof clearSeungwooFx==='function') clearSeungwooFx();
@@ -5724,6 +6480,16 @@ const DONATION_CHEST_CONFIG={
   2:{chance:0.12,redChance:0.04},
   3:{chance:0.16,redChance:0.08}
 };
+const ROOM_MODIFIER_CHANCE={easy:0.08,normal:0.15,hard:0.22};
+const ROOM_MODIFIERS=[
+  {id:'unstable',name:'불안정한 방',color:'#ff9b4d',desc:'10초마다 예고 폭격. 골드 +15%.',rewardMul:1.15},
+  {id:'darkness',name:'암전 방송',color:'#8be8ff',desc:'시야가 좁아진다. 골드 +20%.',rewardMul:1.20},
+  {id:'tremor',name:'진동 송출',color:'#ffd34d',desc:'주기적으로 화면이 흔들린다. 경험치 +10%.',xpMul:1.10},
+  {id:'crowded',name:'과밀 채팅방',color:'#ff4d6d',desc:'적이 더 많지만 약간 약하다. 골드 +10%.',countMul:1.28,hpMul:0.92,rewardMul:1.10},
+  {id:'quiet',name:'정적의 방',color:'#c98bff',desc:'적은 적지만 더 단단하다. 경험치 +15%.',countMul:0.72,hpMul:1.25,atkMul:1.08,xpMul:1.15},
+  {id:'donation',name:'후원 러시',color:'#5dff9b',desc:'후원 상자가 1~2회 추가 등장. 적 속도 +5%.',spdMul:1.05,rewardMul:1.06},
+  {id:'glitch',name:'글리치 방',color:'#ff6bc8',desc:'간헐적으로 적이 가속한다. 골드 +8%, 경험치 +8%.',rewardMul:1.08,xpMul:1.08}
+];
 const SPECIAL_ROOM_STATS_DEFAULT={
   captureCleared:0,
   survivalCleared:0,
@@ -5733,6 +6499,7 @@ const SPECIAL_ROOM_STATS_DEFAULT={
 };
 let currentCombat={variant:'normal',active:false};
 let donationChests=[];
+let activeRoomModifier=null;
 let specialRoomStats={captureCleared:0,survivalCleared:0,bountyKilled:0,donationChestsOpened:0,redDonationChestsOpened:0};
 let act=1, mapData=null, currentRow=0;
 const MAX_ACT=3;
@@ -5853,6 +6620,7 @@ function queueNextCombatMod(mod){
 function resetCombatModState(){
   nextCombatMods=null; combatRewardMul=1; combatXpMul=1; combatChallenge=null; combatSpecialReward=null; combatTookHit=false; combatTempAlly=false; nextGoldPenalty=0;
   resetCombatVariantState();
+  resetRoomModifierState();
 }
 function syncSpecialRoomDebug(){
   try{
@@ -5866,6 +6634,157 @@ function resetCombatVariantState(){
   currentCombat={variant:'normal',active:false};
   donationChests=[];
   syncSpecialRoomDebug();
+}
+function resetRoomModifierState(){
+  activeRoomModifier=null;
+  try{ if(window.run&&typeof window.run==='object') window.run.roomModifier=null; }catch(e){}
+}
+function roomModifierChance(){
+  const key=(diffSet&&diffSet.key)||'easy';
+  const base=ROOM_MODIFIER_CHANCE[key]||ROOM_MODIFIER_CHANCE.easy;
+  return clamp(base+broadcastModAdd('modifierChanceAdd',act),0,0.5);
+}
+function chooseRoomModifier(kind){
+  if(kind!=='fight'||tutorialMode||!pendingNode||pendingNode.type!=='fight') return null;
+  if(currentCombat&&currentCombat.variant&&currentCombat.variant!=='normal') return null;
+  const flags=ensureRunFlags();
+  if(flags.forcedRoomModifier){
+    const id=String(flags.forcedRoomModifier);
+    flags.forcedRoomModifier=null;
+    const found=ROOM_MODIFIERS.find(m=>m.id===id);
+    if(found) return found;
+  }
+  const forced=typeof window!=='undefined'?String(window.BTV_DEBUG_FORCE_ROOM_MODIFIER||'').toLowerCase():'';
+  if(forced){
+    const found=ROOM_MODIFIERS.find(m=>m.id===forced);
+    if(found) return found;
+  }
+  if(Math.random()>=roomModifierChance()) return null;
+  return pick(ROOM_MODIFIERS);
+}
+function initRoomModifier(kind){
+  const def=chooseRoomModifier(kind);
+  if(!def){ resetRoomModifierState(); return; }
+  activeRoomModifier={id:def.id,def,t:0,aoeT:rand(6,9),shakeT:rand(5.5,8),chestT:rand(5.5,8),chests:0,glitchT:rand(6,10),glitchBoostT:0};
+  combatRewardMul*=Number(def.rewardMul)||1;
+  combatXpMul*=Number(def.xpMul)||1;
+  banner(def.name,def.desc,1800);
+  try{ if(!window.run||typeof window.run!=='object') window.run={}; window.run.roomModifier={id:def.id,name:def.name}; }catch(e){}
+}
+function roomModifierCountMul(){
+  return activeRoomModifier&&activeRoomModifier.def&&activeRoomModifier.def.countMul?Number(activeRoomModifier.def.countMul)||1:1;
+}
+function applyRoomModifierEnemySetup(kind){
+  if(!activeRoomModifier||kind!=='fight') return;
+  const d=activeRoomModifier.def||{};
+  enemies.forEach(e=>{
+    if(!e||e.midboss||e.eliteViewer||e.elite) return;
+    if(d.hpMul){ e.hp*=d.hpMul; e.maxhp*=d.hpMul; }
+    if(d.spdMul){ e.spd*=d.spdMul; if(e._spd0!=null) e._spd0*=d.spdMul; }
+    if(d.atkMul){
+      e.dmg=Math.round((e.dmg||0)*d.atkMul);
+      if(e.touchDmg!=null) e.touchDmg=Math.round(e.touchDmg*d.atkMul);
+      if(e.bodyDmg!=null) e.bodyDmg=Math.round(e.bodyDmg*d.atkMul);
+      if(e.contactDmg!=null) e.contactDmg=Math.round(e.contactDmg*d.atkMul);
+    }
+  });
+}
+function updateRoomModifier(dt){
+  if(!activeRoomModifier||!currentCombat||!currentCombat.active||roomCleared||state!=='play') return;
+  const m=activeRoomModifier, d=m.def||{};
+  m.t=(m.t||0)+dt;
+  if(d.id==='unstable'){
+    m.aoeT-=dt;
+    if(m.aoeT<=0){
+      m.aoeT=10;
+      const p=randomArenaPoint(85);
+      warnAoE(p.x,p.y,irand(70,90),0.8,0.5,Math.round(13+act*3),'불안정한 방','#ff9b4d');
+      if(Math.random()<0.45) warnAoE(clamp(player.x+rand(-120,120),70,W-70),clamp(player.y+rand(-90,90),105,H-70),76,0.9,0.45,Math.round(12+act*3),'불안정한 방','#ff9b4d');
+    }
+  }else if(d.id==='tremor'){
+    m.shakeT-=dt;
+    if(m.shakeT<=0){ m.shakeT=rand(7,9); m.tremorFlash=0.45; screenShake=Math.max(screenShake||0,5.5); }
+    if(m.tremorFlash>0){ m.tremorFlash=Math.max(0,m.tremorFlash-dt); screenShake=Math.max(screenShake||0,2.6); }
+  }else if(d.id==='donation'){
+    m.chestT-=dt;
+    if(m.chestT<=0&&m.chests<2){
+      m.chests++;
+      m.chestT=rand(7,10);
+      spawnDonationChest(false);
+    }
+  }else if(d.id==='glitch'){
+    m.glitchT-=dt;
+    if(m.glitchT<=0){
+      m.glitchT=rand(8,12);
+      m.glitchBoostT=1.5;
+      if(typeof GL!=='undefined') GL.keyRev=Math.max(GL.keyRev||0,0.15);
+      screenShake=Math.max(screenShake||0,3);
+      banner('글리치 발생','적 움직임이 잠깐 빨라집니다',900);
+    }
+    if(m.glitchBoostT>0){
+      m.glitchBoostT=Math.max(0,m.glitchBoostT-dt);
+      enemies.forEach(e=>{ if(e&&!e.midboss&&!e.eliteViewer) e._roomGlitchBoost=0.24; });
+    }
+  }
+}
+function drawRoomModifierWorld(){
+  if(!activeRoomModifier||state!=='play') return;
+  const d=activeRoomModifier.def||{};
+  if(d.id==='tremor'&&(activeRoomModifier.tremorFlash||0)>0){
+    ctx.save();
+    ctx.globalAlpha=0.08+0.12*(activeRoomModifier.tremorFlash||0);
+    ctx.fillStyle='#ffd34d';
+    for(let y=92;y<H;y+=18) ctx.fillRect(0,y,W,2);
+    ctx.restore();
+  }
+}
+function drawRoomModifierOverlay(){
+  if(!activeRoomModifier||state!=='play') return;
+  const d=activeRoomModifier.def||{};
+  if(d.id==='darkness'){
+    ctx.save();
+    ctx.fillStyle='rgba(0,0,0,0.64)';
+    ctx.fillRect(0,0,W,H);
+    ctx.globalCompositeOperation='destination-out';
+    const g=ctx.createRadialGradient(player.x,player.y,36,player.x,player.y,205);
+    g.addColorStop(0,'rgba(255,255,255,1)');
+    g.addColorStop(0.72,'rgba(255,255,255,0.55)');
+    g.addColorStop(1,'rgba(255,255,255,0)');
+    ctx.fillStyle=g;
+    ctx.beginPath();
+    ctx.arc(player.x,player.y,205,0,TAU);
+    ctx.fill();
+    ctx.globalCompositeOperation='source-over';
+    ctx.strokeStyle='rgba(139,232,255,.38)';
+    ctx.lineWidth=3;
+    ctx.beginPath();
+    ctx.arc(player.x,player.y,205,0,TAU);
+    ctx.stroke();
+    ctx.restore();
+  }else if(d.id==='glitch'&&(activeRoomModifier.glitchBoostT||0)>0){
+    ctx.save();
+    ctx.globalAlpha=0.10;
+    ctx.fillStyle='#ff4dd2';
+    ctx.fillRect(rand(-8,8),0,W,H);
+    ctx.globalAlpha=0.08;
+    ctx.fillStyle='#38e8ff';
+    ctx.fillRect(rand(-12,12),0,W,H);
+    ctx.restore();
+  }
+  const w=206,h=34,x=clamp(W-w-18,18,Math.max(18,W-w-18)),y=92;
+  ctx.save();
+  ctx.fillStyle='rgba(10,6,18,.78)';
+  ctx.fillRect(x,y,w,h);
+  ctx.strokeStyle=d.color||'#8be8ff';
+  ctx.lineWidth=2;
+  ctx.strokeRect(x,y,w,h);
+  ctx.fillStyle=d.color||'#8be8ff';
+  ctx.font='bold 12px Courier New';
+  ctx.fillText('ROOM MOD',x+8,y+13);
+  ctx.fillStyle='#fff';
+  ctx.font='bold 13px sans-serif';
+  ctx.fillText(d.name||'',x+8,y+28);
+  ctx.restore();
 }
 function resetSpecialRoomStats(){
   specialRoomStats={captureCleared:0,survivalCleared:0,bountyKilled:0,donationChestsOpened:0,redDonationChestsOpened:0};
@@ -6251,6 +7170,11 @@ function resetPlayer(){
     lastStand:false,usedLastStand:false,
     dodgeBlast:0,dodgeHaste:false,dodgeIframeBonus:0,
     dodgeCharges:1,dodgeMaxCharges:1,dashFxTrailT:0,dodgeReadyFxT:0,minion:null,
+    classId:'basic_streamer',className:'베이직 방송인',weaponType:'basic',weaponName:'기본 총',weaponUpgrades:[],
+    weaponRangeMul:1,weaponPellets:1,weaponSpreadMul:1,weaponExplode:0,weaponExplosionRadius:0,
+    weaponChargeT:0,lastHitAt:0,closeKillHasteT:0,basicStreamerClass:false,basicShotCounter:0,
+    classSkillCd:0,classSkillHold:null,basicReloadT:0,basicFocusT:0,curseSurgeT:0,curseSurgePower:1,tankGuardT:0,tankGuardExploded:false,
+    sniperLaserChargeT:0,sniperLaserCd:0,sniperLaserChargeFxT:0,curseContractClass:false,curseContractAtkFlat:0,
     // === 신규 퍼 스탯 ===
     goldPower:0, goldPowerAtkFlat:0, statusDmgMul:0, statusDotDmgMul:0, critHeal:0, chainLightning:0,
     chainKillLightning:0, critExplodeMul:0, recoveryMul:1, roomClearHeal:0, roomEntryHeal:0, shopCostMul:1, timeStop:0,
@@ -6268,6 +7192,7 @@ function resetPlayer(){
     training:Object.assign({},TRAINING_DEFAULTS), trainingAtkBonus:0, trainingSpeedBonus:0, trainingFocusBonus:0, trainingDefenseBonus:0,
     _critDefaultsV2:true,
   });
+  applyPlayerClass(player);
 }
 
 // ---------- HUD ----------
@@ -7256,7 +8181,7 @@ let lastRoomKind=null, cutsceneT=0, roomEntryHp=0, roomStartedAt=0, retries=0;
 let roomEntrySnap=null;
 function snapshotProgress(){
   roomEntrySnap={
-    xp, level, xpNext, pendingLevels, gold, totalKills,
+    xp, level, xpNext, pendingLevels, pendingWeaponEvolutions, gold, totalKills,
     runStats:getRunStatsSnapshot(),
     bossStoryChoices:clonePlain(bossStoryChoices),
     bossStoryFlags:clonePlain(bossStoryFlags),
@@ -7276,7 +8201,7 @@ function snapshotProgress(){
 }
 function restoreProgress(){
   const s=roomEntrySnap; if(!s) return;
-  xp=s.xp; level=s.level; xpNext=s.xpNext; pendingLevels=s.pendingLevels; gold=s.gold; totalKills=s.totalKills;
+  xp=s.xp; level=s.level; xpNext=s.xpNext; pendingLevels=s.pendingLevels; pendingWeaponEvolutions=s.pendingWeaponEvolutions||0; gold=s.gold; totalKills=s.totalKills;
   runStats=normalizeRunStats(s.runStats);
   bossStoryChoices=Object.assign(clonePlain(s.bossStoryChoices||{}),bossStoryChoices||{});
   bossStoryFlags=normalizeBossStoryFlags(Object.assign(clonePlain(s.bossStoryFlags||{}),bossStoryFlags||{}),bossStoryChoices);
@@ -7407,7 +8332,7 @@ function saveRunCheckpoint(){
       version:RUN_SAVE_VERSION,
       savedAt:Date.now(),
       diffKey:diffSet&&diffSet.key?diffSet.key:'easy',
-      act,currentRow,kills,totalKills,gold,level,xp,xpNext,pendingLevels,retries,runHits,runShopPurchases,runShopSpent,elapsed,
+      act,currentRow,kills,totalKills,gold,level,xp,xpNext,pendingLevels,pendingWeaponEvolutions,retries,runHits,runShopPurchases,runShopSpent,elapsed,
       runStats:getRunStatsSnapshot(),
       bossStoryChoices:clonePlain(bossStoryChoices),
       bossStoryFlags:clonePlain(bossStoryFlags),
@@ -7417,6 +8342,13 @@ function saveRunCheckpoint(){
       treePoints,treeUnlocked:[...treeUnlocked],
       nextCombatMods:nextCombatMods?clonePlain(nextCombatMods):null,
       combatRewardMul,combatXpMul,nextShopDiscount,nextGoldPenalty,
+      runBroadcastSchedule:runBroadcastSchedule?clonePlain(runBroadcastSchedule):null,
+      runStartChoiceOptions:(runStartChoiceOptions||[]).slice(),
+      runStartChoicePick:runStartChoicePick?clonePlain(runStartChoicePick):null,
+      runStartChoiceApplied:!!runStartChoiceApplied,
+      runStartChoiceMods:clonePlain(runStartChoiceMods||{}),
+      runFlags:clonePlain(ensureRunFlags()),
+      runHistory:clonePlain(runHistory||[]),
       mapData:serializeMapData(mapData),
       player:serializePlayerForSave()
     };
@@ -7442,7 +8374,7 @@ function loadRunCheckpoint(){
   try{
     diffSet=DIFFS[data.diffKey]||DIFFS.easy;
     act=clamp(Math.round(Number(data.act)||1),1,MAX_ACT); currentRow=data.currentRow||0; kills=0; totalKills=data.totalKills||0;
-    gold=data.gold||0; level=data.level||1; xp=data.xp||0; xpNext=data.xpNext||20; pendingLevels=data.pendingLevels||0;
+    gold=data.gold||0; level=data.level||1; xp=data.xp||0; xpNext=data.xpNext||20; pendingLevels=data.pendingLevels||0; pendingWeaponEvolutions=data.pendingWeaponEvolutions||0;
     retries=data.retries||0; runHits=data.runHits||0; runShopPurchases=data.runShopPurchases||0; runShopSpent=data.runShopSpent||0; runStats=normalizeRunStats(data.runStats); runStartedAt=performance.now()-(data.elapsed||0);
     bossStoryChoices=clonePlain(data.bossStoryChoices||{});
     bossStoryFlags=normalizeBossStoryFlags(data.bossStoryFlags||{},bossStoryChoices);
@@ -7453,6 +8385,13 @@ function loadRunCheckpoint(){
     tierIntroShown=!!data.tierIntroShown; treeIntroShown=!!data.treeIntroShown; shopIntroShown=!!data.shopIntroShown;
     treePoints=data.treePoints||0; treeUnlocked=new Set(data.treeUnlocked&&data.treeUnlocked.length?data.treeUnlocked:['hub']);
     nextCombatMods=data.nextCombatMods||null; combatRewardMul=data.combatRewardMul||1; combatXpMul=data.combatXpMul||1; nextShopDiscount=data.nextShopDiscount||0; nextGoldPenalty=data.nextGoldPenalty||0;
+    runBroadcastSchedule=data.runBroadcastSchedule||generateBroadcastSchedule();
+    runStartChoiceOptions=Array.isArray(data.runStartChoiceOptions)?data.runStartChoiceOptions.slice():[];
+    runStartChoicePick=data.runStartChoicePick||null;
+    runStartChoiceApplied=!!data.runStartChoiceApplied;
+    runStartChoiceMods=data.runStartChoiceMods||{};
+    runFlags=normalizeRunFlags(data.runFlags||{});
+    runHistory=Array.isArray(data.runHistory)?data.runHistory.slice(-24):[];
     restorePlayerFromSave(data.player);
     mapData=restoreMapData(data.mapData);
     if(!mapData) throw new Error('map restore failed');
@@ -7486,6 +8425,14 @@ function startCombat(kind, fresh){
     fitField();
   }
   if(fresh){ roomEntryHp=player.hp; snapshotProgress(); if(player.roomEntryHeal>0) healPlayer(player.roomEntryHeal,player.x,player.y); }
+  if(fresh&&kind==='boss'){
+    const flags=ensureRunFlags();
+    if(flags.savedFan&&!flags.fanBossGift){
+      flags.fanBossGift=true;
+      if(player.potions&&player.potions.length<3){ addPotion(rollPotion()); banner('구조한 팬의 보답','보스 전 포션 지급',1500); }
+      else { healPlayer(15,player.x,player.y); banner('구조한 팬의 보답','체력 +15',1500); }
+    }
+  }
   enemies=[]; pBullets=[]; eBullets=[]; pickups=[]; particles=[]; hazards=[]; floatBubbles=[]; kijoMasks=[]; kijoGazes=[]; kijoParades=[]; kijoLaserWarns=[];
   player.x=W/2; player.y=H-90;
   roomCleared=false; combatClearGrace=false; roomIsBoss=(kind==='boss'); roomIsMidboss=(kind==='midboss'); kills=0; boss=null; roomHadElite=false; roomEliteKind=null; roomMidbossKind=null; roomBossKind=null; eliteIntro=null; bossTalk=null; bossStoryLastDefeatKey=null; bossStoryDefeatPending=false; bossStoryDefeatShown=false; timeScale=1; slowmoT=0; bagjeinRewind=null;
@@ -7495,6 +8442,7 @@ function startCombat(kind, fresh){
   roomStartedAt=performance.now();
   resetStallWatch();
   initCombatVariant(kind);
+  initRoomModifier(kind);
   // GL/gView 리셋 (승우 외 보스전 잔여 효과 제거)
   if(typeof GL!=='undefined'){ for(const k in GL) GL[k]=0; }
   if(typeof gView!=='undefined'){ gView.rot=0;gView.rotT=0;gView.fx=1;gView.fy=1;gView.fxT=1;gView.fyT=1; }
@@ -7524,7 +8472,7 @@ function startCombat(kind, fresh){
     if(row<mid) base*=0.8;        // 중보 전: 약한 몹 중심, 낮은 밀도
     else if(row>mid) base*=(act===1||act===2)?0.7:1.05; // 1·2막 후반은 강한 일반몹 비중으로 압박, 물량은 완화 / 3막은 고유 기믹몹 소수전
     const countMax=act>=3?7:(((act===1||act===2)&&row>mid)?11:16);
-    let count=clamp(Math.round(base*diffSet.cnt), row<mid?2:4, countMax);
+    let count=clamp(Math.round(base*diffSet.cnt*roomModifierCountMul()*broadcastModValue('fightCountMul',act,1)), row<mid?2:4, countMax);
     if(kind==='midboss'){
       if(act===2){
         const sb=BOSSES.find(b=>b&&b.key==='set3');
@@ -7600,7 +8548,15 @@ function startCombat(kind, fresh){
       if(mul!==1){ o.hp*=mul; o.maxhp*=mul; }
     });
   }
+  if(enemies.length){
+    const bhp=broadcastModValue('enemyHpMul',act,1);
+    if(bhp!==1) enemies.forEach(o=>{ if(o&&!o.midboss){ o.hp*=bhp; o.maxhp*=bhp; } });
+  }
   combatRewardMul=1; combatXpMul=1; combatChallenge=null; combatSpecialReward=null; combatTookHit=false; player._fireHandicap=1; combatTempAlly=false;
+  if(activeRoomModifier){
+    combatRewardMul*=Number(activeRoomModifier.def&&activeRoomModifier.def.rewardMul)||1;
+    combatXpMul*=Number(activeRoomModifier.def&&activeRoomModifier.def.xpMul)||1;
+  }
   if(nextCombatMods){
     const M=nextCombatMods; nextCombatMods=null;
     if(M.cntMul && enemies.length){ const extra=Math.round(enemies.length*(M.cntMul-1)); for(let i=0;i<extra;i++){ spawnRandomEnemy(pickNormalEnemyForRoom(act,row,roomSpawnCounts), diff, 60, H-180); } }
@@ -7615,6 +8571,9 @@ function startCombat(kind, fresh){
     activeCombatBadges=buildCombatBadges(M);
     renderCombatBadges();
   }
+  combatRewardMul*=broadcastModValue(kind==='elite'?'eliteGoldMul':'goldMul',act,1);
+  combatXpMul*=broadcastModValue('xpMul',act,1);
+  applyRoomModifierEnemySetup(kind);
   assignBountyTarget();
   if(player.roomShield>0) player.buffs.shield=Math.max(player.buffs.shield,player.roomShield);
   // 신규 전투 입장 시 2초 정지 미리보기 — 중보/보스는 접근 대면 연출이 대신 담당
@@ -7767,24 +8726,78 @@ function playerShoot(){
   const speed=playerBulletSpeed(player);
   let baseShot=base;
   if(player.dodgeReloadT>0){ baseShot*=1.4; player.dodgeReloadT=0; }
-  const n=player.shots+(player.shadowBarrageT>0?(player.shadowBarrageExtraShots||1):0), spread=n>1?0.16*Math.max(0,Number(player._spreadMul)||1):0;
-  const primaryDirIndex=Math.floor((n-1)/2);
-  const dirs=[];
-  for(let i=0;i<n;i++) dirs.push(ang+(i-(n-1)/2)*spread);
-  if(player.backShot) dirs.push(ang+Math.PI);
+  const weapon=player.weaponType||'basic';
+  const rangeMul=Math.max(0.35,Number(player.weaponRangeMul)||1);
+  const extraShots=Math.max(0,(player.shots||1)-1)+(player.shadowBarrageT>0?(player.shadowBarrageExtraShots||1):0);
   const fire=()=>{
     const attackId='player:'+Date.now()+':'+(++playerAttackSeq);
-    dirs.forEach((a,idx)=>{
-    let dmg=baseShot, crit=false;
-    pBullets.push({
-      x:player.x+Math.cos(a)*16, y:player.y+Math.sin(a)*16,
-      sx:player.x, sy:player.y,
-      vx:Math.cos(a)*speed, vy:Math.sin(a)*speed,
-      r:(crit?7.5:6)*player.bulletSize, dmg, life:1.1,
-      bounce:player.bounce, pierce:player.pierce, hitSet:new Set(), crit, homing:player.homing,
-      attackId, playerShot:true, extraProjectile:idx!==primaryDirIndex,
-    });
-  }); };
+    const addBullet=(a,dmgMul,opts)=>{
+      opts=opts||{};
+      const basicFocus=weapon==='basic'&&player.basicFocusT>0;
+      const sp=speed*(opts.speedMul||1)*(basicFocus?1.18:1);
+      const pierce=(opts.pierce!=null?opts.pierce:player.pierce)+(basicFocus?1:0);
+      const critBonus=(opts.critBonus||0)+(basicFocus?0.10:0);
+      pBullets.push({
+        x:player.x+Math.cos(a)*16, y:player.y+Math.sin(a)*16,
+        sx:player.x, sy:player.y,
+        vx:Math.cos(a)*sp, vy:Math.sin(a)*sp,
+        r:(opts.r||6)*player.bulletSize*(player.curseSurgeT>0?1.25:1)*(basicFocus?1.08:1), dmg:baseShot*(dmgMul||1)*(basicFocus?1.10:1), life:(opts.life||1.1)*rangeMul,
+        bounce:opts.bounce!=null?opts.bounce:player.bounce,
+        pierce,
+        hitSet:new Set(), crit:false, homing:player.homing,
+        attackId, playerShot:true, extraProjectile:!!opts.extraProjectile, classCritBonus:critBonus,
+        weaponType:weapon, shotColor:opts.color||(basicFocus?'#ffd34d':playerWeaponShotColor(weapon)), shotAccent:opts.accent||(basicFocus?'#ffffff':playerWeaponShotAccent(weapon))
+      });
+    };
+    if(weapon==='shotgun'){
+      const pellets=Math.max(3,(player.weaponPellets||5)+extraShots);
+      const spread=0.52*Math.max(0.45,Number(player.weaponSpreadMul)||1);
+      const mid=Math.floor((pellets-1)/2);
+      for(let i=0;i<pellets;i++){
+        const off=pellets===1?0:(i-(pellets-1)/2)*(spread/Math.max(1,pellets-1));
+        addBullet(ang+off,0.48,{life:0.78,r:4.6,speedMul:0.94,extraProjectile:i!==mid});
+      }
+      if(player.backShot) addBullet(ang+Math.PI,0.52,{life:0.72,r:4.6,speedMul:0.92,extraProjectile:true});
+      return;
+    }
+    if(weapon==='sniper'){
+      const charged=(performance.now()-(player.lastHitAt||0))>=3000;
+      player.weaponChargeT=performance.now();
+      addBullet(ang,1.18,{life:1.75,r:6.8,speedMul:1.20,pierce:Math.max(player.pierce||0,2),critBonus:charged?0.20:0});
+      for(let i=0;i<extraShots;i++) addBullet(ang+(i%2?1:-1)*(0.08+0.02*i),0.55,{life:1.45,r:5.2,speedMul:1.12,pierce:Math.max(player.pierce||0,1),extraProjectile:true});
+      return;
+    }
+    if(weapon==='bazooka'){
+      addBullet(ang,1.08,{life:0.95,r:8.4,speedMul:0.72,pierce:0});
+      for(let i=0;i<extraShots;i++) addBullet(ang+(i%2?1:-1)*(0.12+0.04*i),0.55,{life:0.82,r:7,speedMul:0.68,pierce:0,extraProjectile:true});
+      return;
+    }
+    if(weapon==='cursed'){
+      addBullet(ang,1.08+curseRelicStacks(player)*0.05,{life:1.12,r:6.3,speedMul:1.04});
+      for(let i=0;i<extraShots;i++) addBullet(ang+(i%2?1:-1)*(0.13+0.03*i),0.62,{life:1.02,r:5.3,speedMul:1.02,extraProjectile:true});
+      if(player.backShot) addBullet(ang+Math.PI,0.62,{life:1.02,r:5.3,speedMul:1.02,extraProjectile:true});
+      return;
+    }
+    const n=1+extraShots, spread=n>1?0.16*Math.max(0,Number(player._spreadMul)||1):0;
+    const mid=Math.floor((n-1)/2);
+    let basicPowerShot=false;
+    if(player.basicStreamerClass&&weapon==='basic'){
+      player.basicShotCounter=(Number(player.basicShotCounter)||0)+1;
+      basicPowerShot=player.basicShotCounter%4===0;
+    }
+    for(let i=0;i<n;i++){
+      const main=i===mid;
+      const power=basicPowerShot&&main;
+      addBullet(ang+(i-(n-1)/2)*spread,power?1.35:1,{
+        extraProjectile:!main,
+        pierce:power?(Number(player.pierce)||0)+1:player.pierce,
+        r:power?7.2:undefined,
+        color:power?'#ffd34d':undefined,
+        accent:power?'#ffffff':undefined
+      });
+    }
+    if(player.backShot) addBullet(ang+Math.PI,1,{extraProjectile:true});
+  };
   fire();
   if(player.doubleTap>0 && Math.random()<player.doubleTap) fire();
   sfx.shoot();
@@ -8024,7 +9037,12 @@ function hurtPlayer(dmg, src){
     updateHUD();
     return;
   }
-  player.hp-=dmg; player.iframes=0.5; hitFlash=0.25; screenShake=Math.max(screenShake,8); combatTookHit=true; onCombatVariantPlayerHit(); runHits++;
+  player.hp-=dmg; player.iframes=0.5; hitFlash=0.25; screenShake=Math.max(screenShake,8); combatTookHit=true; onCombatVariantPlayerHit(); runHits++; player.lastHitAt=performance.now();
+  if(player.weaponType==='bazooka'){
+    const counter=Math.max(7,totalAttackPower(player)*0.55);
+    enemies.slice().forEach(o=>{ if(o&&dist2(o.x,o.y,player.x,player.y)<140*140) applyEnemyDirectDamage(o,counter,'#ff7f94',{silent:true}); });
+    burst(player.x,player.y,'#ff7f94',18,230);
+  }
   if(player.hp<=1) unlockAchievement('one_hp_survive');
   if(player.thorns>0){ enemies.slice().forEach(o=>{ if(dist2(o.x,o.y,player.x,player.y)<THORNS_DAMAGE_RADIUS*THORNS_DAMAGE_RADIUS){ o.hp-=player.thorns; o.hitT=0.1; if(o.hp<=0) handleEnemyDefeat(o); } }); }
   sfx.hurt();
@@ -8525,6 +9543,10 @@ function killEnemy(e){
     if(player.lifesteal>0 && Math.random()<player.lifesteal){ healPlayerNoDrop(5,player.x,player.y-player.r-18); }
     if(player.healOnKill>0){ healPlayer(player.healOnKill,e.x,e.y); }
     if(player.donateChance>0 && Math.random()<player.donateChance){ const dg=irand(24,58); addGold(dg,'other'); metaToast('💸 +'+dg+'G',{tone:'gold',ms:1200}); burst(e.x,e.y,'#ffd34d',18,240); }
+    if(player.weaponType==='shotgun'&&dist2(player.x,player.y,e.x,e.y)<=170*170){
+      player.closeKillHasteT=Math.max(player.closeKillHasteT||0,2);
+      burst(player.x,player.y,'#ffb347',7,110);
+    }
   }
   // 골드: 처치 즉시 획득 (소환몹은 무한 스폰이라 미지급)
   if(countsForKillScore){
@@ -8569,13 +9591,14 @@ function gainXP(n){
     player.dmg+=0.5;                                // 공격력 소폭 증가 (고정값)
     healPlayer(11);  // 회복 + 늘어난 최대체력만큼
     pendingLevels++; sfx.pick();
+    if(level>1 && level%10===0) pendingWeaponEvolutions++;
     treePoints++;   // 트리 포인트 +1
     if(player.levelFullHeal) healPlayerRaw(player.maxhp);
     else if(player._levelHeal) healPlayer(player._levelHeal);
   }
   checkLevelAchievements();
   updateHUD();
-  if(pendingLevels>0 && state==='play') showLevelUp();
+  if((pendingWeaponEvolutions>0||pendingLevels>0) && state==='play') showLevelUp();
 }
 
 // ---------- 보스 패턴 ----------
@@ -9358,6 +10381,60 @@ function update(dt){
   if(player.shadowBarrageT>0) player.shadowBarrageT=Math.max(0,player.shadowBarrageT-dt);
   if(player.shadowBarrageCd>0) player.shadowBarrageCd=Math.max(0,player.shadowBarrageCd-dt);
   if(player.perfectDodgeFireT>0) player.perfectDodgeFireT=Math.max(0,player.perfectDodgeFireT-dt);
+  if(player.closeKillHasteT>0) player.closeKillHasteT=Math.max(0,player.closeKillHasteT-dt);
+  if(player.sniperLaserCd>0) player.sniperLaserCd=Math.max(0,player.sniperLaserCd-dt);
+  if(player.classSkillCd>0) player.classSkillCd=Math.max(0,player.classSkillCd-dt);
+  if(player.basicReloadT>0) player.basicReloadT=Math.max(0,player.basicReloadT-dt);
+  if(player.basicFocusT>0) player.basicFocusT=Math.max(0,player.basicFocusT-dt);
+  if(player.curseSurgeT>0) player.curseSurgeT=Math.max(0,player.curseSurgeT-dt);
+  else player.curseSurgePower=1;
+  if(player.tankGuardT>0){
+    player.tankGuardT=Math.max(0,player.tankGuardT-dt);
+    if(player.tankGuardT<=0&&!player.tankGuardExploded){
+      player.tankGuardExploded=true;
+      explodeTankGuard();
+    }
+  }
+  if(playerLaserFx.length){
+    for(let i=playerLaserFx.length-1;i>=0;i--){
+      const fx=playerLaserFx[i]; fx.t+=dt;
+      if(fx.t>=fx.life) playerLaserFx.splice(i,1);
+    }
+  }
+  if(playerSkillZones.length){
+    for(let i=playerSkillZones.length-1;i>=0;i--){
+      const z=playerSkillZones[i]; z.t+=dt; z.tick-=dt;
+      if(z.tick<=0){
+        z.tick=0.36;
+        const col=z.color||(z.kind==='fire'?'#ff7a3d':(z.kind==='slow'?'#8be8ff':'#76d36a'));
+        const dmg=z.dmg||Math.max(2,totalAttackPower(player)*0.3), r2=z.r*z.r;
+        enemies.slice().forEach(e=>{
+          if(!e||e.hp<=0||dist2(z.x,z.y,e.x,e.y)>=r2) return;
+          if(z.kind==='slow'){
+            e.chillT=Math.max(e.chillT||0,1.05);
+            e.slowDebuffT=Math.max(e.slowDebuffT||0,1.05);
+          }else{
+            e.psStacks=Math.min((e.psStacks||0)+1,(player.poisonMaxStacks||6));
+            e.psT=Math.max(e.psT||0,z.kind==='fire'?2.2:4);
+            e.psDmg=Math.max(e.psDmg||0,z.kind==='fire'?(player.poison||2)*1.25:(player.poison||2));
+          }
+          applyEnemyDirectDamage(e,dmg,col,{silent:true});
+        });
+        if(boss&&dist2(z.x,z.y,boss.x,boss.y)<r2){
+          if(z.kind==='slow'){
+            boss.chillT=Math.max(boss.chillT||0,0.7);
+          }else{
+            boss.psStacks=Math.min((boss.psStacks||0)+1,(player.poisonMaxStacks||6));
+            boss.psT=Math.max(boss.psT||0,z.kind==='fire'?2.2:4);
+            boss.psDmg=Math.max(boss.psDmg||0,z.kind==='fire'?(player.poison||2)*1.25:(player.poison||2));
+          }
+          damageBoss(boss,dmg,false,false);
+        }
+        burst(z.x,z.y,col,4,110);
+      }
+      if(z.t>=z.life) playerSkillZones.splice(i,1);
+    }
+  }
   if(player.perfectDodgeArmed){
     player.perfectDodgeCheckT=Math.max(0,player.perfectDodgeCheckT-dt);
     if(player.perfectDodgeCheckT<=0){
@@ -9432,22 +10509,9 @@ function update(dt){
   const wasDashActive=player.dodging>0;
   if(player.dodging>0){ player.dodging=Math.max(0,player.dodging-dt); }
   if(!keys[' ']) dodgeLatch=false;   // 스페이스 떼면 재장전
-  if(!previewLocked&&keys[' ']&&!dodgeLatch&&player.dodgeCharges>0&&player.dodging<=0&&!(player.moveLockT>0)){
-    dodgeLatch=true;
-    player.dodging=0.22+(player.dodgeIframeBonus||0); if(player.dodgeCd<=0) player.dodgeCd=10*playerDodgeCooldownMul(player); player.dodgeCharges--; updateHUD(); sfx.dodge(); if(tutorial&&tutorial.shot)tutorial.dodged=true;
-    if(player.dodgeReload) player.dodgeReloadT=2;
-    if(player.perfectDodge){ player.perfectDodgeArmed=true; player.perfectDodgeCheckT=1; }
-    if(player.shadowBarrage&&player.shadowBarrageCd<=0){ player.shadowBarrageT=1; player.shadowBarrageCd=6; }
-    if(player.dodgeHaste) player.buffs.haste=Math.max(player.buffs.haste,2.5);
-    if(player.dodgeBlast>0){ enemies.slice().forEach(o=>{ if(dist2(o.x,o.y,player.x,player.y)<38025){ o.hp-=player.dodgeBlast; o.hitT=0.1; const ka=Math.atan2(o.y-player.y,o.x-player.x); o.x+=Math.cos(ka)*69; o.y+=Math.sin(ka)*69; if(o.hp<=0) handleEnemyDefeat(o); } }); burst(player.x,player.y,'#38e8ff',22,280); screenShake=Math.max(screenShake,8); }
-    let mvx=(keys['d']||keys['arrowright']?1:0)-(keys['a']||keys['arrowleft']?1:0);
-    let mvy=(keys['s']||keys['arrowdown']?1:0)-(keys['w']||keys['arrowup']?1:0);
-    if(typeof GL!=='undefined'&&GL.keyRev>0){ mvx=-mvx; mvy=-mvy; }
-    if(mvx===0&&mvy===0){ mvx=Math.cos(player.facing); mvy=Math.sin(player.facing); }
-    const m=Math.hypot(mvx,mvy)||1; player.dvx=mvx/m; player.dvy=mvy/m;
-    player.dashFxTrailT=0;
-    spawnDashFx('start',player.x,player.y,player.dvx,player.dvy);
-    burst(player.x,player.y,'#38e8ff',8,120);
+  updateClassSkillHold(dt,previewLocked);
+  if(!previewLocked&&keys[' ']&&!dodgeLatch){
+    triggerPlayerDodge(previewLocked);
   }
 
   // 이동
@@ -9474,6 +10538,7 @@ function update(dt){
     player.dashFxTrailT=0;
   }
   updateCombatVariant(dt);
+  updateRoomModifier(dt);
 
   // 발사
   if(player.fireTimer>0) player.fireTimer-=dt;
@@ -9599,6 +10664,7 @@ function update(dt){
     updateBonusPatterns(e,dt);
     if(e._spd0==null) e._spd0=e.spd;
     const _chl=(e.chillT=(e.chillT||0))>0; if(_chl) e.chillT-=dt; e.spd=_chl? e._spd0*0.5 : e._spd0;
+    if((e._roomGlitchBoost||0)>0){ e._roomGlitchBoost=Math.max(0,e._roomGlitchBoost-dt); e.spd*=1.24; }
     if((e.burnT=(e.burnT||0))>0){ e.burnT-=dt; const burnDps=(e.burnDmg||0)*statusDotDamageMul(); const bdmg=burnDps*dt; e.hp-=bdmg; e._burnPopT=(e._burnPopT||0)-dt; if(e._burnPopT<=0){ e._burnPopT=0.35; if(GS.dmgNum&&typeof spawnDmgNum==='function') spawnDmgNum(e.x,e.y-e.r-4,Math.max(1,Math.round(burnDps*0.35)),false,'burn'); } if(e.hp<=0){ handleEnemyDefeat(e); continue; } }
     else { e._burnPopT=0; }
     if((e.psT=(e.psT||0))>0){ e.psT-=dt; const poisonDps=(e.psStacks||0)*(e.psDmg||0)*statusDotDamageMul()*poisonDotDamageMul(); const pdmg=poisonDps*dt; e.hp-=pdmg; e._psPopT=(e._psPopT||0)-dt; if(e._psPopT<=0){ e._psPopT=0.35; if(GS.dmgNum&&typeof spawnDmgNum==='function') spawnDmgNum(e.x,e.y-e.r-4,Math.max(1,Math.round(poisonDps*0.35)),false,'poison'); } if(e.hp<=0){ handleEnemyDefeat(e); continue; } } else { e.psStacks=0; e._psPopT=0; }
@@ -10941,7 +12007,8 @@ function genMap(){
 function rollNodeType(row){
   const bag=[];
   for(let i=0;i<40;i++) bag.push('fight');
-  for(let i=0;i<40;i++) bag.push('event');
+  const eventW=40+broadcastModAdd('eventWeightAdd',act)+(Number(runStartChoiceMods&&runStartChoiceMods.eventWeightAdd)||0);
+  for(let i=0;i<Math.max(8,Math.round(eventW));i++) bag.push('event');
   if(row>=1) for(let i=0;i<15;i++) bag.push('shop');
   return pick(bag);
 }
@@ -11265,6 +12332,7 @@ function onCombatCleared(){
   clearCombatThreats();
   donationChests=[];
   if(currentCombat) currentCombat.active=false;
+  resetRoomModifierState();
   syncSpecialRoomDebug();
   player.iframes=Math.max(player.iframes||0,1.2);
   if((t==='boss'||t==='midboss')&&maybeStartBossDefeatStory(t)) return;
@@ -11273,6 +12341,10 @@ function onCombatCleared(){
   // 다음전투 골드 페널티(이벤트) 소비
   if(nextGoldPenalty>0){ const loss=spendGold(Math.round(gold*nextGoldPenalty),'other'); nextGoldPenalty=0; if(loss>0) setTimeout(()=>banner('분위기 하락','골드 -'+loss,1200),200); updateHUD(); }
   if(player.roomClearHeal>0) healPlayer(player.roomClearHeal,player.x,player.y);
+  if(player.classId==='basic_streamer'&&t!=='boss'){
+    addGold(10,'roomReward');
+    metaToast('📺 클리어 보너스 +10G',{tone:'gold',ms:1100});
+  }
   combatXpMul=1;
   if(player.infiniteRefill&&Math.random()<0.20){
     const pot=rollPotion();
@@ -12479,7 +13551,76 @@ function mysteryChoiceLabel(t){
 }
 try{ window.toggleMysteryOutcome=()=>{ mysteryHideOutcome=!mysteryHideOutcome; return mysteryHideOutcome?'미지 결과 숨김 ON':'결과 표시(원래대로) ON'; }; }catch(e){}
 
-function showEventPanel(tag,title,body,choices){
+const D20_CHECK_LABEL={int:'지능',luck:'운',cha:'매력',dex:'민첩',str:'완력'};
+let currentMysteryEventMeta=null;
+function d20CheckLabel(type){ return D20_CHECK_LABEL[type]||type||'판정'; }
+function d20BonusFor(type){
+  const p=player||{};
+  if(type==='int') return clamp(Math.floor((Number(level)||1)/4),0,5);
+  if(type==='luck') return clamp(Math.floor((Number(p.critChance)||0)*10)+(p.relics&&p.relics.length>=5?1:0),0,5);
+  if(type==='cha') return clamp(Math.floor((Number(gold)||0)/180),0,4);
+  if(type==='dex') return clamp(Math.floor((playerMoveSpeed(p)-230)/35),0,5);
+  if(type==='str') return clamp(Math.floor((totalAttackPower(p)-10)/5),0,5);
+  return 0;
+}
+function ensureD20Overlay(){
+  let ov=document.getElementById('d20Overlay');
+  if(ov) return ov;
+  ov=document.createElement('div');
+  ov.id='d20Overlay';
+  ov.className='d20-overlay hidden';
+  ov.innerHTML='<div class="d20-box">'+
+    '<div class="d20-kicker" id="d20Kicker">CHECK</div>'+
+    '<div class="d20-die" id="d20Die">20</div>'+
+    '<div class="d20-line" id="d20RollLine">d20</div>'+
+    '<div class="d20-total" id="d20TotalLine"></div>'+
+    '<div class="d20-result" id="d20ResultLine"></div>'+
+  '</div>';
+  document.body.appendChild(ov);
+  return ov;
+}
+function runD20Check(choice,eventMeta){
+  const chk=choice&&choice.check;
+  if(!chk){ if(choice&&choice.f) choice.f(); return; }
+  const ov=ensureD20Overlay();
+  const die=document.getElementById('d20Die'), kicker=document.getElementById('d20Kicker');
+  const rollLine=document.getElementById('d20RollLine'), totalLine=document.getElementById('d20TotalLine'), resultLine=document.getElementById('d20ResultLine');
+  const bonus=(chk.bonus!=null?Number(chk.bonus):d20BonusFor(chk.type))||0;
+  const dc=Math.max(1,Math.round(Number(chk.dc)||10));
+  const roll=irand(1,20), total=roll+bonus;
+  const result=roll===20?'critSuccess':(roll===1?'critFail':(total>=dc?'success':'failure'));
+  const label=d20CheckLabel(chk.type);
+  if(kicker) kicker.textContent=label+' 판정 DC '+dc;
+  if(totalLine) totalLine.textContent='';
+  if(resultLine){ resultLine.textContent='굴리는 중...'; resultLine.className='d20-result'; }
+  ov.className='d20-overlay rolling';
+  let ticks=0;
+  const timer=setInterval(()=>{
+    ticks++;
+    if(die) die.textContent=String(irand(1,20));
+    if(rollLine) rollLine.textContent='d20 주사위가 굴러간다';
+    if(ticks>=14){
+      clearInterval(timer);
+      if(die) die.textContent=String(roll);
+      if(rollLine) rollLine.textContent='주사위 '+roll+' · 보정 '+(bonus>=0?'+':'')+bonus;
+      if(totalLine) totalLine.textContent='총합 '+total+' / DC '+dc;
+      const txt=result==='critSuccess'?'자연 20! 대성공!':(result==='critFail'?'자연 1... 대실패!':(result==='success'?'성공!':'실패'));
+      if(resultLine){ resultLine.textContent=txt; resultLine.className='d20-result '+result; }
+      addRunHistory({
+        kind:'d20',eventId:eventMeta&&eventMeta.id||'',eventTitle:eventMeta&&eventMeta.title||'',
+        choiceId:choice.id||'',choice:mysteryChoiceLabel(choice.t||''),checkType:label,roll,bonus,total,dc,result
+      });
+      setTimeout(()=>{
+        ov.className='d20-overlay hidden';
+        const fn=choice[result]||((result==='critSuccess'||result==='success')?choice.success:choice.failure)||choice.f;
+        if(fn) fn({roll,bonus,total,dc,result,choice,event:eventMeta});
+      },900);
+    }
+  },55);
+}
+
+function showEventPanel(tag,title,body,choices,meta){
+  currentMysteryEventMeta=meta||{tag,title,id:''};
   // ── 테마 조회 ──────────────────────────────────────────────
   const theme = EVENT_THEMES[tag] || {
     scene:'dice',accent:'#6040c0',
@@ -12537,8 +13678,9 @@ function showEventPanel(tag,title,body,choices){
     el.disabled=!!disabled;
     if(disabled) el.style.opacity='0.45';
     el.style.setProperty('--ev-accent',theme.accent);
-    el.innerHTML='<div class="ttl">'+mysteryChoiceLabel(c.t)+'</div>'+(c.desc?'<div class="desc">'+c.desc+'</div>':'');
-    el.onclick=()=>{ if(el.disabled) return; Array.from(cont.children).forEach(ch=>{ ch.disabled=true; }); evStopScene(); hideAll(); eventResultActive=true; c.f(); };
+    const checkDesc=c.check?'<div class="desc check">'+d20CheckLabel(c.check.type)+' 판정 DC '+c.check.dc+'</div>':'';
+    el.innerHTML='<div class="ttl">'+mysteryChoiceLabel(c.t)+'</div>'+checkDesc+(c.desc?'<div class="desc">'+c.desc+'</div>':'');
+    el.onclick=()=>{ if(el.disabled) return; Array.from(cont.children).forEach(ch=>{ ch.disabled=true; }); evStopScene(); hideAll(); eventResultActive=true; runD20Check(c,currentMysteryEventMeta); };
     cont.appendChild(el);
   });
 
@@ -12550,6 +13692,157 @@ function offerGladiatorReward(){
     {t:'골드 획득 — +220G',f:()=>{addGold(220,'event');try{sfx.coin&&sfx.coin();}catch(e){}banner('검투장 상금','골드 +220',1500);updateHUD();finishNode();}},
     {t:'포션 획득 — 랜덤 전설 포션',f:()=>{eventAddPotionOrGold(eventRollPotionByRarity('legend'),60);finishNode();}},
   ]);
+}
+
+function chainEventDone(id,title,choice,result){
+  addRunHistory({kind:'chain',eventId:id,eventTitle:title||'',choice:choice||'',result:result||''});
+}
+function grantRelicByIdOrFallback(id,opts,after){
+  const r=relicById(id);
+  if(r&&grantDirectRelic(r)){ banner(r.icon+' '+r.name,'유물 획득!',1500); updateHUD(); if(after) after(); return; }
+  eventGiveRelic(opts||{noCurse:true},after||finishNode);
+}
+function removeOneCurseOrHeal(){
+  const r=act3RemoveRandomCurse();
+  if(r){ banner('저주 제거',r.name+' 제거',1400); updateHUD(); return true; }
+  healPlayer(Math.max(18,Math.round(player.maxhp*0.22)),player.x,player.y);
+  banner('정화','저주가 없어 체력을 회복했다',1400);
+  return false;
+}
+function chainSafeFinish(id,title,choice,result,msg){
+  chainEventDone(id,title,choice,result);
+  if(msg) banner(msg[0],msg[1]||'',msg[2]||1400);
+  updateHUD();
+  finishNode();
+}
+const CHAIN_EVENTS=[
+  {id:'suspicious_viewer_1',tag:'👁 수상한 시청자',title:'수상한 시청자',weight:18,
+   filter:()=>runFlagCount('suspicious_viewer_1')<1,
+   body:'채팅창 사이로 낯선 닉네임이 떠오른다.\n\n“다음에도 절 찾아오시면 더 좋은 걸 드리죠.”',
+   choices:[
+    {id:'take_donation',t:'후원 받기',check:{type:'luck',dc:12},desc:'성공: 골드와 표식. 실패: 소량 골드, 표식, 후원 빚.',
+      success:()=>{const f=ensureRunFlags();f.suspiciousMark=true;addGold(120,'event');chainSafeFinish('suspicious_viewer_1','수상한 시청자','후원 받기','성공',['수상한 후원','골드 +120 / 표식 획득']);},
+      critSuccess:()=>{const f=ensureRunFlags();f.suspiciousMark=true;addGold(170,'event');chainSafeFinish('suspicious_viewer_1','수상한 시청자','후원 받기','대성공',['대형 후원','골드 +170 / 표식 획득']);},
+      failure:()=>{const f=ensureRunFlags();f.suspiciousMark=true;f.sponsorDebt+=1;addGold(60,'event');chainSafeFinish('suspicious_viewer_1','수상한 시청자','후원 받기','실패',['찜찜한 후원','골드 +60 / 후원 빚 +1']);},
+      critFail:()=>{const f=ensureRunFlags();f.suspiciousMark=true;f.sponsorDebt+=2;addGold(80,'event');queueNextCombatMod({rewardMul:1.25,hpMul:1.12,banner:{big:'후원 빚',small:'다음 전투가 거칠어진다'}});chainSafeFinish('suspicious_viewer_1','수상한 시청자','후원 받기','대실패',['불길한 후원','골드 +80 / 빚 +2 / 다음 보상↑']);}},
+    {id:'refuse',t:'거절',check:{type:'cha',dc:10},desc:'성공: 체력 회복. 실패: 관심만 남음.',
+      success:()=>{healPlayer(Math.max(18,Math.round(player.maxhp*0.22)),player.x,player.y);chainSafeFinish('suspicious_viewer_1','수상한 시청자','거절','성공');},
+      failure:()=>chainSafeFinish('suspicious_viewer_1','수상한 시청자','거절','실패',['무응답','아무 일도 없었다']),
+      critFail:()=>{ensureRunFlags().sponsorDebt+=1;chainSafeFinish('suspicious_viewer_1','수상한 시청자','거절','대실패',['시선이 남았다','후원 빚 +1']);}},
+    {id:'trace',t:'추적하기',check:{type:'int',dc:14},desc:'성공: 다음 막 미지 확률 증가. 실패: 재등장 확률 증가.',
+      success:()=>{const f=ensureRunFlags();f.mysteryBoostNextAct=true;f.suspiciousMark=true;chainSafeFinish('suspicious_viewer_1','수상한 시청자','추적하기','성공',['흔적 추적','다음 막 미지 확률 증가']);},
+      failure:()=>{const f=ensureRunFlags();f.suspiciousMark=true;f.forcedChainEvent='suspicious_contract';chainSafeFinish('suspicious_viewer_1','수상한 시청자','추적하기','실패',['역추적됨','다음 미지에서 다시 나타날 수 있다']);}}
+   ]},
+  {id:'suspicious_contract',tag:'📝 수상한 계약',title:'수상한 계약',weight:24,
+   filter:()=>act>=2&&runFlagCount('suspicious_contract')<1&&(ensureRunFlags().suspiciousMark||ensureRunFlags().sponsorDebt>0||ensureRunFlags().mysteryBoostNextAct),
+   body:'그 시청자가 다시 나타났다.\n\n“표식은 마음에 드셨나요? 이제 진짜 계약을 해봅시다.”',
+   choices:[
+    {id:'complete',t:'계약 완성',check:{type:'luck',dc:16},desc:'성공: 골드 유물. 실패: 저주와 골드.',
+      success:()=>{ensureRunFlags().suspiciousContractDone=true;grantRelicByIdOrFallback('gold_pig',{tiers:['rare','epic'],noCurse:true},()=>chainSafeFinish('suspicious_contract','수상한 계약','계약 완성','성공'));},
+      critSuccess:()=>{ensureRunFlags().suspiciousContractDone=true;grantRelicByIdOrFallback('greed_ring',{tiers:['legend'],noCurse:true},()=>chainSafeFinish('suspicious_contract','수상한 계약','계약 완성','대성공'));},
+      failure:()=>{ensureRunFlags().sponsorDebt=Math.max(0,ensureRunFlags().sponsorDebt-1);addGold(150,'event');eventGiveRelic({curseOnly:true},()=>chainSafeFinish('suspicious_contract','수상한 계약','계약 완성','실패'));},
+      critFail:()=>{ensureRunFlags().suspiciousAftermath=true;addGold(200,'event');eventGiveRelic({curseOnly:true},()=>chainSafeFinish('suspicious_contract','수상한 계약','계약 완성','대실패'));}},
+    {id:'cut',t:'손절',check:{type:'int',dc:14},desc:'성공: 표식 제거와 저주 정화. 실패: 빚 증가.',
+      success:()=>{const f=ensureRunFlags();f.suspiciousMark=false;f.sponsorDebt=0;removeOneCurseOrHeal();chainSafeFinish('suspicious_contract','수상한 계약','손절','성공');},
+      failure:()=>{ensureRunFlags().sponsorDebt+=1;chainSafeFinish('suspicious_contract','수상한 계약','손절','실패',['계약 잔재','후원 빚 +1']);}},
+    {id:'exploit',t:'이용하기',check:{type:'cha',dc:15},desc:'성공: 골드 대량과 후폭풍. 실패: 골드와 저주.',
+      success:()=>{const f=ensureRunFlags();f.suspiciousAftermath=true;addGold(260,'event');chainSafeFinish('suspicious_contract','수상한 계약','이용하기','성공',['계약 역이용','골드 +260 / 후폭풍']);},
+      failure:()=>{addGold(120,'event');eventGiveRelic({curseOnly:true},()=>chainSafeFinish('suspicious_contract','수상한 계약','이용하기','실패'));}}
+   ]},
+  {id:'hacker_1',tag:'💻 의문의 해커',title:'의문의 해커',weight:16,
+   filter:()=>runFlagCount('hacker_1')<1,
+   body:'깨진 채팅창 사이로 메시지가 끼어든다.\n\n“맵 데이터를 조금 보여드릴까요?”',
+   choices:[
+    {id:'hire',t:'해킹을 맡긴다',check:{type:'int',dc:12},desc:'성공: 다음 방 정보 일부. 실패: 다음 일반 전투가 글리치 방, 보상 증가.',
+      success:()=>{const f=ensureRunFlags();f.helpedHacker=true;f.hackerMapHint=2;chainSafeFinish('hacker_1','의문의 해커','해킹을 맡긴다','성공',['맵 데이터 수신','다음 2개 방 타입 일부 공개']);},
+      failure:()=>{const f=ensureRunFlags();f.helpedHacker=true;f.hackerGlitchDebt=true;f.forcedRoomModifier='glitch';queueNextCombatMod({rewardMul:1.35,xpMul:1.20,banner:{big:'글리치 채무',small:'보상은 커졌다'}});chainSafeFinish('hacker_1','의문의 해커','해킹을 맡긴다','실패',['해킹 역류','다음 일반방 글리치 / 보상 증가']);}},
+    {id:'self',t:'직접 해킹한다',check:{type:'int',dc:16},desc:'성공: 보상 강화. 실패: 체력 -8, 글리치 채무.',
+      success:()=>{queueNextCombatMod({rewardMul:1.45,xpMul:1.30,banner:{big:'맵 해킹 성공',small:'다음 전투 보상 강화'}});chainSafeFinish('hacker_1','의문의 해커','직접 해킹한다','성공');},
+      failure:()=>{const f=ensureRunFlags();f.hackerGlitchDebt=true;f.forcedRoomModifier='glitch';player.hp=Math.max(1,player.hp-8);chainSafeFinish('hacker_1','의문의 해커','직접 해킹한다','실패',['역추적','체력 -8 / 다음 글리치']);}},
+    {id:'ignore',t:'무시한다',f:()=>chainSafeFinish('hacker_1','의문의 해커','무시한다','-',['무시','아무 일도 없었다'])}
+   ]},
+  {id:'hacker_follow',tag:'💻 해커의 답례',title:'해커의 답례',weight:22,
+   filter:()=>runFlagCount('hacker_follow')<1&&ensureRunFlags().helpedHacker,
+   body:'“전에 도와드린 값은 받았습니다. 이번엔 제가 도와드리죠.”',
+   choices:[
+    {id:'patch',t:'패치 받기',check:{type:'int',dc:12},desc:'성공: 다음 글리치 보상 증가. 실패: 그래도 보상 증가, 위험도 증가.',
+      success:()=>{ensureRunFlags().hackerFollowDone=true;queueNextCombatMod({rewardMul:1.45,xpMul:1.25,banner:{big:'해커 패치',small:'다음 전투 보상 증가'}});chainSafeFinish('hacker_follow','해커의 답례','패치 받기','성공');},
+      failure:()=>{ensureRunFlags().forcedRoomModifier='glitch';queueNextCombatMod({rewardMul:1.6,hpMul:1.15,banner:{big:'불안정 패치',small:'위험과 보상이 함께 증가'}});chainSafeFinish('hacker_follow','해커의 답례','패치 받기','실패');}},
+    {id:'cashout',t:'정보를 판다',check:{type:'cha',dc:13},desc:'성공: 골드. 실패: 글리치 채무 정리 대신 보상 감소 없음.',
+      success:()=>{addGold(150,'event');chainSafeFinish('hacker_follow','해커의 답례','정보를 판다','성공',['정보 판매','골드 +150']);},
+      failure:()=>{ensureRunFlags().hackerGlitchDebt=false;chainSafeFinish('hacker_follow','해커의 답례','정보를 판다','실패',['채무 정리','빚은 사라졌다']);}}
+   ]},
+  {id:'cursed_box_1',tag:'📦 봉인된 상자',title:'봉인된 상자',weight:16,
+   filter:()=>runFlagCount('cursed_box_1')<1,
+   body:'방 한가운데 봉인된 상자가 놓여 있다. 상자 안에서 무언가 두드리는 소리가 난다.',
+   choices:[
+    {id:'careful',t:'조심히 연다',check:{type:'dex',dc:12},desc:'성공: 유물. 실패: 체력 -8, 골드.',
+      success:()=>{const f=ensureRunFlags();f.cursedBoxOpened=true;f.cursedBoxLevel+=1;eventGiveCleanRelic({},()=>chainSafeFinish('cursed_box_1','봉인된 상자','조심히 연다','성공'));},
+      failure:()=>{const f=ensureRunFlags();f.cursedBoxOpened=true;f.cursedBoxLevel+=1;player.hp=Math.max(1,player.hp-8);addGold(90,'event');chainSafeFinish('cursed_box_1','봉인된 상자','조심히 연다','실패',['상자 폭발','체력 -8 / 골드 +90']);}},
+    {id:'break',t:'힘으로 부순다',check:{type:'str',dc:14},desc:'성공: 골드와 유물. 실패: 저주와 희귀 보상 확률 증가.',
+      success:()=>{const f=ensureRunFlags();f.cursedBoxOpened=true;f.cursedBoxLevel+=1;addGold(80,'event');eventGiveCleanRelic({},()=>chainSafeFinish('cursed_box_1','봉인된 상자','힘으로 부순다','성공'));},
+      failure:()=>{const f=ensureRunFlags();f.cursedBoxOpened=true;f.cursedBoxLevel+=1;eventGiveRelic({curseOnly:true},()=>eventOfferRelics(2,{tiers:['rare','epic'],noCurse:true},'저주받은 보상','저주는 묻었지만 안쪽 보상도 드러났다.',()=>chainSafeFinish('cursed_box_1','봉인된 상자','힘으로 부순다','실패')));}},
+    {id:'decode',t:'봉인을 해석한다',check:{type:'int',dc:15},desc:'성공: 저주 없는 보상. 실패: 다음 방 강화, 보상 증가.',
+      success:()=>{const f=ensureRunFlags();f.cursedBoxOpened=true;f.cursedBoxLevel+=1;eventGiveCleanRelic({tiers:['rare','epic']},()=>chainSafeFinish('cursed_box_1','봉인된 상자','봉인을 해석한다','성공'));},
+      failure:()=>{const f=ensureRunFlags();f.cursedBoxOpened=true;f.cursedBoxLevel+=1;queueNextCombatMod({hpMul:1.22,rewardMul:1.45,banner:{big:'봉인 균열',small:'다음 전투 강화 / 보상 증가'}});chainSafeFinish('cursed_box_1','봉인된 상자','봉인을 해석한다','실패');}},
+    {id:'blood',t:'피를 바친다',f:()=>{const f=ensureRunFlags();f.cursedBoxOpened=true;f.cursedBoxLevel+=1;eventMaxHpDelta(-10);eventGiveCleanRelic({tiers:['rare','epic','legend']},()=>chainSafeFinish('cursed_box_1','봉인된 상자','피를 바친다','-'));}}
+   ]},
+  {id:'cursed_box_2',tag:'📦 다시 나타난 상자',title:'다시 나타난 상자',weight:20,
+   filter:()=>runFlagCount('cursed_box_2')<1&&ensureRunFlags().cursedBoxOpened,
+   body:'같은 상자가 다시 나타났다. 이번에는 안쪽에서 네 이름을 부른다.',
+   choices:[
+    {id:'open_again',t:'다시 연다',check:{type:'luck',dc:16},desc:'성공: 전설 확률. 실패: 저주와 보상.',
+      success:()=>eventGiveRelic({tiers:['legend','mythic'],noCurse:true},()=>chainSafeFinish('cursed_box_2','다시 나타난 상자','다시 연다','성공')),
+      failure:()=>eventGiveRelic({curseOnly:true},()=>eventOfferRelics(2,{tiers:['rare','epic'],noCurse:true},'상자의 보상','저주와 함께 보상이 나왔다.',()=>chainSafeFinish('cursed_box_2','다시 나타난 상자','다시 연다','실패')))},
+    {id:'seal',t:'봉인한다',check:{type:'int',dc:14},desc:'성공: 저주 제거 또는 회복. 실패: 변화 없음.',
+      success:()=>{removeOneCurseOrHeal();chainSafeFinish('cursed_box_2','다시 나타난 상자','봉인한다','성공');},
+      failure:()=>chainSafeFinish('cursed_box_2','다시 나타난 상자','봉인한다','실패',['봉인 실패','상자는 사라졌다'])},
+    {id:'sell',t:'상점에 팔 생각을 한다',check:{type:'cha',dc:12},desc:'성공: 골드와 상점 호감도. 실패: 상자 도망.',
+      success:()=>{const f=ensureRunFlags();f.shopkeeperTrust+=1;addGold(130,'event');chainSafeFinish('cursed_box_2','다시 나타난 상자','상점에 팔 생각을 한다','성공',['거래 성립','골드 +130 / 상점 호감도 +1']);},
+      failure:()=>{ensureRunFlags().cursedBoxDone=true;chainSafeFinish('cursed_box_2','다시 나타난 상자','상점에 팔 생각을 한다','실패',['상자 도주','후속 없음']);}}
+   ]},
+  {id:'shop_backdoor',tag:'🚪 상점 주인의 뒷문',title:'상점 주인의 뒷문',weight:12,
+   filter:()=>runFlagCount('shop_backdoor')<2&&currentRow>=1,
+   body:'상점 구석에 잠긴 문이 보인다. 상점 주인은 못 본 척하고 있다.',
+   choices:[
+    {id:'persuade',t:'설득한다',check:{type:'cha',dc:12},desc:'성공: 숨겨진 상품. 실패: 상점 가격 +10%.',
+      success:()=>{const f=ensureRunFlags();f.shopkeeperTrust+=1;nextShopDiscount=Math.max(nextShopDiscount,0.20);chainSafeFinish('shop_backdoor','상점 주인의 뒷문','설득한다','성공',['숨겨진 거래','다음 상점 -20%']);},
+      failure:()=>{player.shopCostMul+=0.10;chainSafeFinish('shop_backdoor','상점 주인의 뒷문','설득한다','실패',['수상한 손님','상점 가격 +10%']);}},
+    {id:'sneak',t:'몰래 연다',check:{type:'dex',dc:14},desc:'성공: 암시장 플래그. 실패: 주인 분노.',
+      success:()=>{const f=ensureRunFlags();f.blackMarketUnlocked=true;nextShopDiscount=Math.max(nextShopDiscount,0.25);chainSafeFinish('shop_backdoor','상점 주인의 뒷문','몰래 연다','성공',['암시장 발견','다음 상점 -25%']);},
+      failure:()=>{const f=ensureRunFlags();f.shopkeeperAngry=true;player.shopCostMul+=0.15;chainSafeFinish('shop_backdoor','상점 주인의 뒷문','몰래 연다','실패',['상점 주인 분노','상점 가격 +15%']);}},
+    {id:'break',t:'부순다',check:{type:'str',dc:16},desc:'성공: 무료 골드. 실패: 이후 상점 가격 +20%.',
+      success:()=>{addGold(170,'event');chainSafeFinish('shop_backdoor','상점 주인의 뒷문','부순다','성공',['문 파괴','골드 +170']);},
+      failure:()=>{ensureRunFlags().shopkeeperAngry=true;player.shopCostMul+=0.20;chainSafeFinish('shop_backdoor','상점 주인의 뒷문','부순다','실패',['출입 금지','상점 가격 +20%']);}},
+    {id:'leave',t:'그냥 나간다',f:()=>chainSafeFinish('shop_backdoor','상점 주인의 뒷문','그냥 나간다','-')}
+   ]},
+  {id:'fallen_fan',tag:'🩹 쓰러진 팬',title:'쓰러진 팬',weight:14,
+   filter:()=>runFlagCount('fallen_fan')<1,
+   body:'전투가 끝난 방 구석에 쓰러진 팬이 보인다.\n\n“살려주세요...”',
+   choices:[
+    {id:'heal',t:'치료한다',check:{type:'int',dc:12},desc:'성공: 체력 회복과 savedFan. 실패: 포션 소모 또는 변화 없음.',
+      success:()=>{const f=ensureRunFlags();f.savedFan=true;healPlayer(Math.max(20,Math.round(player.maxhp*0.25)),player.x,player.y);chainSafeFinish('fallen_fan','쓰러진 팬','치료한다','성공');},
+      failure:()=>{if(player.potions&&player.potions.length){player.potions.pop();renderPotions();}chainSafeFinish('fallen_fan','쓰러진 팬','치료한다','실패',['응급처치 실패',player.potions&&player.potions.length?'포션을 소모했다':'아무 일도 없었다']);}},
+    {id:'carry',t:'업고 간다',check:{type:'str',dc:13},desc:'성공: 보스 전 회복 이벤트. 실패: 다음 방 이동속도 감소, 보상 증가.',
+      success:()=>{const f=ensureRunFlags();f.savedFan=true;f.fanBossGift=true;chainSafeFinish('fallen_fan','쓰러진 팬','업고 간다','성공',['팬 구조','보스 전 보답 예정']);},
+      failure:()=>{player.slowDebuffT=Math.max(player.slowDebuffT||0,8);queueNextCombatMod({rewardMul:1.25,banner:{big:'무거운 동행',small:'보상은 늘었다'}});chainSafeFinish('fallen_fan','쓰러진 팬','업고 간다','실패');}},
+    {id:'cheer',t:'응원한다',check:{type:'cha',dc:10},desc:'성공: 골드/후원 보상. 실패: 변화 없음.',
+      success:()=>{addGold(90,'event');chainSafeFinish('fallen_fan','쓰러진 팬','응원한다','성공',['응원 성공','골드 +90']);},
+      failure:()=>chainSafeFinish('fallen_fan','쓰러진 팬','응원한다','실패',['머쓱함','아무 일도 없었다'])},
+    {id:'ignore',t:'무시한다',f:()=>{ensureRunFlags().ignoredFan=true;chainSafeFinish('fallen_fan','쓰러진 팬','무시한다','-',['무시','찜찜한 기록이 남았다']);}}
+   ]}
+];
+
+function chainEventPool(){
+  const flags=ensureRunFlags();
+  let pool=CHAIN_EVENTS.filter(ev=>(!ev.filter||ev.filter())&&runFlagCount(ev.id)<3);
+  if(flags.forcedChainEvent){
+    const forced=pool.find(ev=>ev.id===flags.forcedChainEvent);
+    if(forced){ flags.forcedChainEvent=null; return [forced,forced,forced]; }
+  }
+  if(flags.ignoredFan&&runFlagCount('suspicious_viewer_1')<1) pool.push(CHAIN_EVENTS.find(ev=>ev.id==='suspicious_viewer_1'));
+  if(flags.hackerGlitchDebt&&runFlagCount('hacker_follow')<1) pool.push(CHAIN_EVENTS.find(ev=>ev.id==='hacker_follow'));
+  return pool.filter(Boolean);
 }
 
 const EVENTS=[
@@ -13075,15 +14368,18 @@ function startEvent(){
   // 현재 막에 해당하는 이벤트만 (acts 미지정=공용, 지정=해당 막 전용)
   const basePool=EVENTS.filter(ev=>(!ev.filter||ev.filter())&&eventActMatch(ev));
   const act3Pool=(act===3&&typeof ACT3_EVENTS!=='undefined')?ACT3_EVENTS.filter(ev=>!ev.filter||ev.filter()):[];
+  const chainPool=chainEventPool();
   let pool=basePool;
   if(act3Pool.length){
     // 3막은 전용 호러 이벤트(ACT3_EVENTS)와 막 공용/3막 EVENTS를 절반씩 섞는다.
     pool=Math.random()<0.55?act3Pool:basePool.concat(act3Pool);
   }
+  if(chainPool.length && Math.random()<0.36) pool=chainPool.concat(chainPool,basePool);
   // 안전망: 어떤 이유로 막 풀이 비면 필터 무시한 전체 EVENTS로 폴백
   if(!pool.length) pool=EVENTS.filter(ev=>!ev.filter||ev.filter());
   const ev=pick(pool);
-  showEventPanel(ev.tag,ev.title,ev.body,ev.choices);
+  if(chainPool.indexOf(ev)>=0) noteChainSeen(ev.id);
+  showEventPanel(ev.tag,ev.title,ev.body,ev.choices,ev);
 }
 
 // ========================================================
@@ -13656,7 +14952,50 @@ const ElectricBorder=(function(){
   if(typeof window!=='undefined') window.addEventListener('resize',()=>{ list.forEach(sizeOf); });
   return {attach,clear};
 })();
+function showWeaponEvolution(){
+  if(pendingWeaponEvolutions<=0) return false;
+  const pool=weaponEvolutionPool();
+  pendingWeaponEvolutions--;
+  if(!pool.length){
+    if(pendingWeaponEvolutions>0||pendingLevels>0) showLevelUp();
+    else { hideAll(); state='play'; syncChrome(); }
+    return true;
+  }
+  const tmp=pool.slice();
+  const picks=[];
+  for(let i=0;i<3&&tmp.length;i++) picks.push(tmp.splice(irand(0,tmp.length-1),1)[0]);
+  $('levelTitle').textContent='Lv.'+level+' — '+(player.weaponName||'무기')+' 진화 1택'+(pendingWeaponEvolutions>0?' ('+pendingWeaponEvolutions+'개 남음)':'');
+  const cont=$('levelChoices'); cont.className='perkrow weaponrow'; cont.innerHTML='';
+  let sel=null, selEl=null;
+  const confirmBtn=$('levelConfirm');
+  confirmBtn.disabled=true; confirmBtn.classList.remove('ready'); confirmBtn.textContent='진화를 선택하세요';
+  picks.forEach(up=>{
+    const el=document.createElement('button');
+    el.className='perkcard perk-epic weapon-card'; el.dataset.ebColor='#ffd34d';
+    el.title=up.name+' - '+up.desc;
+    el.innerHTML='<div class="pk-ic">'+weaponEvolutionIconHTML(up)+'</div><div class="pk-nm">'+up.name+'</div>'+
+      '<div class="pk-gr" style="color:#ffd34d">['+(player.weaponName||'무기')+']</div>'+
+      '<div class="pk-ds">'+up.desc+'</div>';
+    el.onclick=()=>{ if(selEl) selEl.classList.remove('sel'); selEl=el; sel=up; el.classList.add('sel'); confirmBtn.disabled=false; confirmBtn.classList.add('ready'); confirmBtn.textContent='진화 ✓  '+up.name; sfx.vote&&sfx.vote(); };
+    cont.appendChild(el);
+  });
+  confirmBtn.onclick=()=>{ if(sel) takeWeaponEvolution(sel); };
+  show('level');
+  cont.querySelectorAll('.perkcard').forEach(el=>ElectricBorder.attach(el, el.dataset.ebColor));
+  return true;
+}
+function takeWeaponEvolution(up){
+  if(!up) return;
+  if(!Array.isArray(player.weaponUpgrades)) player.weaponUpgrades=[];
+  if(player.weaponUpgrades.indexOf(up.id)<0) player.weaponUpgrades.push(up.id);
+  up.apply(player);
+  sfx.pick(); banner(up.icon+' '+up.name,'무기 진화',1200);
+  updateHUD();
+  if(pendingWeaponEvolutions>0||pendingLevels>0) showLevelUp();
+  else { hideAll(); state='play'; syncChrome(); }
+}
 function showLevelUp(){
+  if(pendingWeaponEvolutions>0) return showWeaponEvolution();
   if(!tierIntroShown){ tierIntroShown=true; show('tierIntro'); return; }
   const picks=rollPerks(3);
   if(sanitizeStoredLevelPerkIds(player.perkIds).length===0){
@@ -13696,7 +15035,7 @@ function pickLevelPerk(pk){
   if(id&&player.perkIds.indexOf(id)<0) player.perkIds.push(id);
   pk.apply(player); syncDoomWorshipHp(player); sfx.pick(); banner(pk.icon+' '+pk.name,'특성 획득',1100);
   pendingLevels--; updateHUD();
-  if(pendingLevels>0) showLevelUp();
+  if(pendingWeaponEvolutions>0||pendingLevels>0) showLevelUp();
   else if(showTreeIntro()) return;
   else { hideAll(); state='play'; syncChrome(); }
 }
@@ -13797,7 +15136,7 @@ const SHOP_STOCK_COST_MUL=[1,1.3,1.6];
 function shopPrice(base){
   const disc=nextShopDiscount>0?Math.max(0,1-nextShopDiscount):1;
   const costMul=player?statMulFromBonus(statBonusFromMul(player.shopCostMul),0.1):1;
-  const actMul=(act>=2?ACT2_SHOP_PRICE_MUL:1)*(actTuning(act).shopPriceMul||1);
+  const actMul=(act>=2?ACT2_SHOP_PRICE_MUL:1)*(actTuning(act).shopPriceMul||1)*broadcastModValue('shopMul',act,1);
   const safeBase=Number.isFinite(Number(base))?Number(base):1;
   return Math.max(1,Math.round(safeBase*costMul*disc*SHOP_PRICE_MUL*actMul));
 }
@@ -16782,6 +18121,28 @@ function drawEBullet(b){
   pxDraw(rows,pu,pal);
   ctx.restore();
 }
+const PLAYER_BULLET_PIX={
+  basic:[".1111.","211113",".1111."],
+  shotgun:[".1.","111",".1."],
+  sniper:["..111111","21111113","..111111"],
+  toxic:[".222.","21112","21112",".222."],
+  cursed:[".232.","21112","23132",".222."],
+  bazooka:["..1112","211113","211113","..1112"]
+};
+function drawPlayerBulletPx(b){
+  const type=PLAYER_BULLET_PIX[b.weaponType]?b.weaponType:'basic';
+  const base=b.crit?'#ffd34d':(b.shotColor||playerWeaponShotColor(type));
+  const accent=b.crit?'#fff4ad':(b.shotAccent||playerWeaponShotAccent(type));
+  const pal={'1':base,'2':_shade(base,-0.55),'3':accent};
+  const rows=PLAYER_BULLET_PIX[type];
+  const w=rows[0].length;
+  const pu=Math.max(2,(b.r*2.2)/Math.max(w,rows.length));
+  ctx.save();
+  ctx.translate(b.x,b.y);
+  ctx.rotate(Math.atan2(b.vy,b.vx));
+  pxDraw(rows,pu,pal);
+  ctx.restore();
+}
 function drawCleaverPx(b){
   const ang=Math.atan2(b.vy,b.vx);
   ctx.save(); ctx.translate(b.x,b.y); ctx.rotate(b.spin||ang);
@@ -16920,12 +18281,127 @@ function drawCombatVariantUI(){
   ctx.restore();
 }
 
+function drawSniperChargeBar(){
+  if(!player||state!=='play'||!player.classSkillHold) return;
+  const hold=player.classSkillHold;
+  const spec=classSkillHoldSpec(hold.id);
+  const x=clamp(player.x-39,10,W-88), y=clamp(player.y-player.r-34,34,H-26);
+  const w=78, h=8;
+  const charge=classSkillHoldRatio(hold);
+  const ready=charge>=1;
+  let col=spec.color, label=spec.label;
+  if(hold.id==='alchemy_streamer'){
+    const style=alchemyModeStyle();
+    col=style.color;
+    label=style.label;
+  }
+  ctx.save();
+  ctx.fillStyle='rgba(3,8,18,0.82)';
+  ctx.fillRect(x-3,y-3,w+6,h+16);
+  ctx.strokeStyle=ready?spec.accent:col;
+  ctx.lineWidth=1.5;
+  ctx.strokeRect(x,y,w,h);
+  ctx.fillStyle=ready?spec.accent:col;
+  ctx.fillRect(x+1,y+1,(w-2)*charge,h-2);
+  ctx.fillStyle=ready?'#ffffff':'rgba(255,255,255,0.76)';
+  ctx.font='900 9px "Galmuri11","Malgun Gothic",monospace';
+  ctx.textAlign='center';
+  ctx.fillText(ready?'MAX':label,x+w/2,y+h+11);
+  ctx.restore();
+}
+
+function classSkillIconRows(){
+  switch(player&&player.classId){
+    case 'basic_streamer': return {pal:{'1':'#ffd34d','2':'#fff1a8','3':'#7a5400'},rows:["..11..",".1221.","122221","..33..",".3..3."]};
+    case 'rush_streamer': return {pal:{'1':'#ffb347','2':'#fff1a8','3':'#7a2030'},rows:[".1..1.","111111",".2222.","..33..",".3..3."]};
+    case 'sniper_streamer': return {pal:{'1':'#8be8ff','2':'#eafaff','3':'#203348'},rows:["...2..","..222.","111111","..333.","...3.."]};
+    case 'alchemy_streamer': return {pal:{'1':'#76d36a','2':'#d8ffd2','3':'#203626'},rows:["..22..",".2112.","121121",".2112.","..33.."]};
+    case 'curse_contractor': return {pal:{'1':'#c98bff','2':'#ff6bff','3':'#2d2440'},rows:["1....1",".1..1.","..22..",".1331.","3....3"]};
+    case 'tank_streamer': return {pal:{'1':'#ff7f94','2':'#d8f0ff','3':'#3b2432'},rows:[".2222.","211112","211112",".2112.","..33.."]};
+    default: return {pal:{'1':'#8be8ff','2':'#eafaff'},rows:["111111","1....1","1....1","111111"]};
+  }
+}
+function drawMiniPixelRows(rows,pal,x,y,size){
+  const h=rows.length, w=Math.max(...rows.map(r=>r.length)), pu=Math.max(1,Math.floor(size/Math.max(w,h)));
+  const ox=x+(size-w*pu)/2, oy=y+(size-h*pu)/2;
+  for(let yy=0;yy<h;yy++){
+    const row=rows[yy]||'';
+    for(let xx=0;xx<row.length;xx++){
+      const col=pal[row[xx]];
+      if(!col) continue;
+      ctx.fillStyle=col;
+      ctx.fillRect(Math.round(ox+xx*pu),Math.round(oy+yy*pu),pu,pu);
+    }
+  }
+}
+function drawClassSkillHud(){
+  if(state!=='play'||!player||!player.classId) return;
+  const sz=Math.round(46*SKILL_HUD_SCALE);
+  const ix=clamp(SKILL_HUD_MARGIN_X+sz+26,12,Math.max(12,W-sz-12));
+  const iy=clamp(H-sz-SKILL_HUD_MARGIN_Y,12,Math.max(12,H-sz-12));
+  const cx=ix+sz/2, cy=iy+sz/2;
+  const cdMax=Math.max(0.01,classSkillMaxCooldown());
+  const cd=player.classId==='sniper_streamer'?Number(player.sniperLaserCd)||0:Number(player.classSkillCd)||0;
+  const ready=cd<=0;
+  const rem=clamp(cd/cdMax,0,1);
+  const icon=classSkillIconRows();
+  ctx.save();
+  ctx.fillStyle='rgba(5,12,20,0.72)';
+  ctx.fillRect(ix-8,iy-24,sz+16,sz+32);
+  ctx.strokeStyle=ready?'rgba(255,211,77,0.62)':'rgba(105,93,140,0.42)';
+  ctx.lineWidth=2;
+  ctx.strokeRect(ix-8,iy-24,sz+16,sz+32);
+  ctx.fillStyle='#0a0712';
+  ctx.fillRect(ix,iy,sz,sz);
+  drawMiniPixelRows(icon.rows,icon.pal,ix+5,iy+5,sz-10);
+  if(rem>0){
+    ctx.fillStyle='rgba(6,4,12,0.78)';
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,sz,-Math.PI/2,-Math.PI/2+rem*TAU); ctx.closePath(); ctx.fill();
+  }
+  ctx.lineWidth=ready?4:3; ctx.strokeStyle=ready?'#ffd34d':'#4d4566'; ctx.strokeRect(ix,iy,sz,sz);
+  if(ready){
+    ctx.shadowColor='#ffd34d'; ctx.shadowBlur=18; ctx.strokeStyle='#fff1a8'; ctx.lineWidth=2.5;
+    ctx.strokeRect(ix+3,iy+3,sz-6,sz-6);
+    ctx.shadowBlur=0;
+  }
+  ctx.fillStyle='rgba(5,16,25,0.88)'; ctx.fillRect(ix+5,iy+sz-20,sz-10,16);
+  ctx.fillStyle=ready?'#fff1a8':'#c9c0e8'; ctx.font='bold 11px Courier New'; ctx.textAlign='center';
+  ctx.strokeStyle='#02050a'; ctx.lineWidth=3;
+  const label=ready?'RMB':Math.ceil(cd*10)/10;
+  ctx.strokeText(label, cx, iy+sz-7);
+  ctx.fillText(label, cx, iy+sz-7);
+  ctx.textAlign='left';
+  ctx.fillStyle=ready?'#ffd34d':'#b9acd8'; ctx.font='bold 12px sans-serif';
+  ctx.strokeText('스킬  우클릭', ix, iy-8);
+  ctx.fillText('스킬  우클릭', ix, iy-8);
+  ctx.restore();
+}
+
+function drawPlayerSkillZones(){
+  for(const z of playerSkillZones){
+    const a=clamp(z.t<0.35?z.t/0.35:(z.life-z.t)/0.9,0,1);
+    const col=z.color||(z.kind==='fire'?'#ff7a3d':(z.kind==='slow'?'#8be8ff':'#76d36a'));
+    const glow=z.accent||(z.kind==='fire'?'#ffe08a':(z.kind==='slow'?'#eafaff':'#d8ffd2'));
+    ctx.save();
+    ctx.globalAlpha=0.38*a;
+    pxBlob(z.x,z.y,z.r,z.r*0.58,Math.max(4,z.r*0.34),col,'#203626');
+    ctx.globalAlpha=0.32*a; ctx.fillStyle=glow;
+    for(let k=0;k<4;k++){
+      const ka=k/4*TAU+(z.seed||0)+z.t*1.5;
+      const bx=z.x+Math.cos(ka)*z.r*0.42, by=z.y+Math.sin(ka)*z.r*0.25, g=9;
+      ctx.fillRect(Math.round(bx-g/2),Math.round(by-g/2),g,g);
+    }
+    ctx.restore();
+  }
+}
+
 function draw(){
   ctx.save();
   { const _sk=screenShake*(typeof GS!=='undefined'?GS.shake:1); if(_sk>0.5){ ctx.translate(rand(-_sk,_sk),rand(-_sk,_sk)); } }
   if(boss&&(boss.pattern==='glitch'||boss.pattern==='set3')&&state==='play'){ const cx=W/2,cy=H/2; ctx.translate(cx,cy); ctx.scale(gView.fx,gView.fy); ctx.rotate(gView.rot); ctx.translate(-cx,-cy); }
   drawBackground();
   drawCombatVariantWorld();
+  drawRoomModifierWorld();
 
   // 픽업
   for(const pk of pickups){
@@ -16935,6 +18411,7 @@ function draw(){
   }
   drawDonationChests();
   drawHazards();
+  drawPlayerSkillZones();
   drawA3World();
   drawKijoFx();
   // 적
@@ -16965,16 +18442,36 @@ function draw(){
     }
     else drawEBullet(b);
   }
+  for(const fx of playerLaserFx){
+    const a=1-clamp((fx.t||0)/(fx.life||0.18),0,1);
+    ctx.save();
+    ctx.globalAlpha=0.22*a;
+    ctx.strokeStyle=fx.col||'#8be8ff';
+    ctx.lineWidth=(fx.width||14)*2.4;
+    ctx.beginPath();
+    ctx.moveTo(fx.x,fx.y);
+    ctx.lineTo(fx.x+Math.cos(fx.ang)*fx.range,fx.y+Math.sin(fx.ang)*fx.range);
+    ctx.stroke();
+    ctx.globalAlpha=0.95*a;
+    ctx.strokeStyle='#eafaff';
+    ctx.lineWidth=Math.max(2,(fx.width||14)*0.42);
+    ctx.beginPath();
+    ctx.moveTo(fx.x,fx.y);
+    ctx.lineTo(fx.x+Math.cos(fx.ang)*fx.range,fx.y+Math.sin(fx.ang)*fx.range);
+    ctx.stroke();
+    ctx.restore();
+  }
   for(const b of pBullets){
     if(!b||!Number.isFinite(b.x)||!Number.isFinite(b.y)) continue;
-    const _r=b.r||4, _glow=b.crit?'#ffd34d':'#38e8ff';
+    const _r=b.r||4, _glow=b.crit?'#ffd34d':(b.shotColor||playerWeaponShotColor(b.weaponType||'basic'));
     // 글로우: shadowBlur 대신 옅은 외곽원 1패스(=PB_GLOW). 네온감 유지하며 비용 대폭 절감
     ctx.globalAlpha=0.26; circle(b.x,b.y,_r*PB_GLOW,_glow); ctx.globalAlpha=1;
-    circle(b.x,b.y,_r,b.crit?'#ffe28a':'#bff8ff',b.crit?'#a8740a':'#1d8fa0');
+    drawPlayerBulletPx(b);
   }
   drawDashFx();
   // 플레이어
   if(state!=='start'&&state!=='end') drawPlayer();
+  drawSniperChargeBar();
   // 파티클
   for(const p of particles){
     ctx.globalAlpha=clamp(p.life/p.max,0,1);
@@ -16989,6 +18486,7 @@ function draw(){
   if(hitFlash>0){ ctx.fillStyle='rgba(255,77,109,'+(hitFlash*0.6*(typeof GS!=='undefined'?GS.flashScale:1))+')'; ctx.fillRect(0,0,W,H); }
   if(boss&&(boss.pattern==='glitch'||boss.pattern==='set3')&&state==='play') drawSeungwooOverlay();
   if(state==='play' && typeof GL!=='undefined' && GL.keyRev>0) drawKeyRevOverlay();
+  drawRoomModifierOverlay();
   drawA3Screen();
   if(eliteIntro) drawEliteIntro();
   if(bossEvolve) drawBossEvolve();
@@ -17094,6 +18592,7 @@ function draw(){
     ctx.strokeText('베인Q  SPACE', ix, iy-8);
     ctx.fillText('베인Q  SPACE', ix, iy-8);
   }
+  drawClassSkillHud();
   drawTutorial();
   try{ drawAct3FinalClear(); }catch(e){ console.warn('act3 final clear draw failed',e); if(act3FinalClearActive()){ const c=act3FinalClear; if(c.timer) clearTimeout(c.timer); act3FinalClear=null; victory(); } }
   if(typeof drawFpsOverlay==='function') drawFpsOverlay();
@@ -17106,6 +18605,7 @@ let paused=false;
 function togglePause(){
   if(paused){ resumeGame(); return; }
   if(state!=='play'&&state!=='map') return; // 전투/맵 화면에서 일시정지 가능
+  cancelClassSkillHold();
   paused=true;
   const ov=$('ovPause'); if(ov) ov.classList.remove('hidden');
   mouseDown=false; autoFire=false;     // 멈출 때 발사 입력 해제
@@ -17147,10 +18647,11 @@ function skipCutscene(){
 // ---------- 오버레이 제어 ----------
 
 // ===== JS: Overlay state machine and UI wiring =====
-const overlays={title:'ovTitle',start:'ovStart',map:'ovMap',relic:'ovRelic',shop:'ovShop',event:'ovEvent',inv:'ovInv',level:'ovLevel',reward:'ovReward',end:'ovEnd',ranking:'ovRanking',achievements:'ovAchievements',database:'ovDatabase',help:'ovHelp',story:'ovStory',entrance:'ovEntrance',tierIntro:'ovTierIntro',treeIntro:'ovTreeIntro',taunt:'ovTaunt',campfire:'ovCampfire'};
-function hideAll(){ if(typeof TooltipManager!=='undefined') TooltipManager.hideAll(); Object.values(overlays).forEach(id=>{ const el=$(id); if(el) el.classList.add('hidden'); }); if(typeof evStopScene==='function') evStopScene(); const _ec=$('ovEnding'); if(_ec) _ec.classList.add('hidden'); if(typeof EndingCredits!=='undefined' && EndingCredits.stop) EndingCredits.stop(); if(typeof ElectricBorder!=='undefined' && ElectricBorder.clear) ElectricBorder.clear(); }
-function syncChrome(){ document.body.classList.toggle('title-mode', state==='title'||state==='start'); }
+const overlays={title:'ovTitle',start:'ovStart',class:'ovClass',map:'ovMap',relic:'ovRelic',shop:'ovShop',event:'ovEvent',inv:'ovInv',level:'ovLevel',reward:'ovReward',end:'ovEnd',ranking:'ovRanking',achievements:'ovAchievements',database:'ovDatabase',help:'ovHelp',story:'ovStory',entrance:'ovEntrance',tierIntro:'ovTierIntro',treeIntro:'ovTreeIntro',taunt:'ovTaunt',campfire:'ovCampfire',broadcastSchedule:'ovBroadcastSchedule',startChoice:'ovStartChoice'};
+function hideAll(){ if(typeof TooltipManager!=='undefined') TooltipManager.hideAll(); Object.values(overlays).forEach(id=>{ const el=$(id); if(el) el.classList.add('hidden'); }); if(typeof evStopScene==='function') evStopScene(); const _ec=$('ovEnding'); if(_ec) _ec.classList.add('hidden'); const _d20=$('d20Overlay'); if(_d20) _d20.className='d20-overlay hidden'; if(typeof EndingCredits!=='undefined' && EndingCredits.stop) EndingCredits.stop(); if(typeof ElectricBorder!=='undefined' && ElectricBorder.clear) ElectricBorder.clear(); }
+function syncChrome(){ document.body.classList.toggle('title-mode', state==='title'||state==='start'||state==='class'); }
 function show(st){
+  if(st!=='play'&&typeof cancelClassSkillHold==='function') cancelClassSkillHold();
   hideAll();
   if(overlays[st]){ const el=$(overlays[st]); if(el) el.classList.remove('hidden'); }
   if(st!=='help') state=st;
@@ -17171,7 +18672,7 @@ function sidePanelSignature(){
     (Number(p.critChance)||0).toFixed(3),
     (Number(p.critMult)||0).toFixed(2),
     playerFireRate(p).toFixed(2),
-    p.shots||1,p.pierce||0,p.bounce||0,p.homing||0,!!p.backShot,
+    p.classId||'',p.weaponName||'',(p.weaponUpgrades||[]).join(','),p.shots||1,p.pierce||0,p.bounce||0,p.homing||0,!!p.backShot,
     incomingDamageMul(p).toFixed(3),
     effectiveRegen(p).toFixed(2),
     (p.relics||[]).map(r=>r&&r.id).join(','),
@@ -17830,6 +19331,7 @@ function spEffects(p){
   const critMult=clamp(p.critMult,1,CRIT_MULT_CAP);
   const fireHandicap=Number(p._fireHandicap)||1;
   const fireBonus=(Number(p.fireAdd)||0)+(Number(p.potionFireAdd)||0)+(buffs.haste>0?DODGE_HASTE_FIRE_ADD:0)+(p.perfectDodgeFireT>0?0.20:0)+(fireHandicap!==1?((1/fireHandicap)-1):0);
+  add(p.className,'class',p.className,p.weaponName||'직업','시작 직업: '+(p.weaponName||'기본 무기'),'class-'+(p.classId||'basic'));
   const armorNow=effectiveArmor(p);
   add(p.nonCritDmgMul<1,'🎲','비치명타 피해 '+pc(p.nonCritDmgMul),'도박사의 칼날','치명타 확률/피해 증가 대신 비치명타 피해 감소','noncrit-penalty');
   add(p.redPulseRegen>0,'🩸','붉은 맥박'+(p.redPulseBuff>0?timeLabel(p.redPulseBuff):''),'붉은 맥박','치명타 적중 시 재생 +'+p.redPulseRegen+'/초, 3초 지속, 내부쿨 6초','red-pulse');
@@ -18016,6 +19518,8 @@ function renderInventory(){
   const flat=v=>String(Math.round((Number(v)||0)*10)/10).replace(/\.0$/,'');
   const incomingMul=incomingDamageMul(p);
   const stats=[
+    ['직업', p.className||'베이직 방송인'],
+    ['무기', p.weaponName||'기본 총'],
     ['공격력', totalAttackPower(p).toFixed(1)],
     ['치명타 확률', pc(clamp(p.critChance,0,CRIT_CHANCE_CAP))],
     ['초당 발사', fr+'발'],
@@ -18059,6 +19563,14 @@ function renderInventory(){
   if(p.lowHpAtkFlat>0) stats.push(['저체력 강화', flat(p.lowHpAtkFlat)]);
   if(p.bulletSize!==1) stats.push(['탄 크기', pc(p.bulletSize)]);
   if(p.bulletSpeedMul!==1) stats.push(['탄 속도', '+'+Math.round((p.bulletSpeedMul-1)*100)+'%']);
+  if(p.weaponUpgrades&&p.weaponUpgrades.length){
+    const names=p.weaponUpgrades.map(id=>{
+      const all=Object.values(WEAPON_EVOLUTIONS).flat();
+      const up=all.find(x=>x.id===id);
+      return up?up.name:id;
+    }).join(', ');
+    stats.push(['무기 진화', names]);
+  }
   if(p.goldMul!==1) stats.push(['골드 보너스', '+'+Math.round((p.goldMul-1)*100)+'%']);
   if(p.xpMul!==1) stats.push(['경험치', '+'+Math.round((p.xpMul-1)*100)+'%']);
   if(p.dodgeCdMul!==1) stats.push(['베인Q 쿨', pc(p.dodgeCdMul)]);
@@ -18086,7 +19598,7 @@ function retryRoom(){
   player.buffs={rage:0,haste:0,shield:0};
   player.potionBuffs=[]; player.deathWard=0; recalcPotionBuffs(player);
   if(!restorePermanentMinion(player)) player.minion=null;
-  pendingLevels=0;                   // 재도전 시 미처리 레벨업 초기화 (사망 직전 레벨업 중복 방지)
+  pendingLevels=0; pendingWeaponEvolutions=0; // 재도전 시 미처리 레벨업/무기강화 초기화
   state='play'; syncChrome();
   startCombat(lastRoomKind||'fight', false);   // fresh=false → 스냅샷 새로 찍지 않음
   player.iframes=1.2;
@@ -18669,10 +20181,13 @@ function gameOver(win, killer){
   $('endTitle').style.color=win?'#5dff9b':'#ff4d6d';
   const scoreData=calcRunScore(win);
   recordRunResult(scoreData);
+  const scheduleNames=runScheduleSummary().map(r=>r.label+' '+r.name).join(' / ');
+  const startChoiceLine=runStartChoicePick?('시작 선택: <b>'+escapeRunText(runStartChoicePick.name)+'</b>'):'시작 선택: <b>-</b>';
+  const broadcastLine='<br><span class="end-run-rules">'+startChoiceLine+(scheduleNames?' · 편성표: '+escapeRunText(scheduleNames):'')+'</span>'+renderRunHistorySummary();
   $('endStats').innerHTML=
     "도달: <b>"+act+"막 "+scoreData.reachedFloor+"층</b> · 처치: <b>"+totalKills+"</b> · 레벨: <b>"+level+"</b><br>"+
     "피격: <b>"+runHits+"</b> · 시간: <b>"+fmtTime(scoreData.elapsedSec)+"</b> · 재도전 감점: <b style='color:#ff748b'>-"+fmtScore(scoreData.retryPenalty)+"</b><br>"+
-    "골드: <b style='color:#ffd34d'>"+gold+"</b> · 유물: <b>"+player.relics.length+"개</b> · 난이도: <b style='color:"+diffSet.col+"'>"+diffSet.label+"</b>"+
+    "골드: <b style='color:#ffd34d'>"+gold+"</b> · 유물: <b>"+player.relics.length+"개</b> · 난이도: <b style='color:"+diffSet.col+"'>"+diffSet.label+"</b>"+broadcastLine+
     renderEndGoldSummary();
   const scoreEl=$('endScore'); if(scoreEl) scoreEl.textContent=fmtScore(scoreData.score);
   pendingScoreData=scoreData;
@@ -18687,16 +20202,35 @@ function gameOver(win, killer){
 }
 function victory(){ gameOver(true); }
 
+function renderRunHistorySummary(){
+  const hist=Array.isArray(runHistory)?runHistory:[];
+  if(!hist.length) return '';
+  const chain=hist.filter(h=>h&&h.kind==='chain').slice(-4);
+  const d20=hist.filter(h=>h&&h.kind==='d20');
+  const succ=d20.filter(h=>h.result==='success'||h.result==='critSuccess').length;
+  const fail=d20.filter(h=>h.result==='failure'||h.result==='critFail').length;
+  const crit=d20.filter(h=>h.result==='critSuccess').length;
+  const fumble=d20.filter(h=>h.result==='critFail').length;
+  let html='<br><span class="end-run-rules">주사위 판정: <b>'+d20.length+'</b>회 · 성공 '+succ+' / 실패 '+fail+' · 대성공 '+crit+' / 대실패 '+fumble+'</span>';
+  if(chain.length){
+    html+='<br><span class="end-run-rules">주요 선택: '+chain.map(h=>
+      escapeRunText((h.floor||'?')+'층 '+(h.eventTitle||'미지')+' - '+(h.choice||'선택')+' '+(h.result?('('+h.result+')'):''))
+    ).join(' · ')+'</span>';
+  }
+  return html;
+}
+
 // ---------- 시작/재시작 ----------
 function newGame(){
   clearRunCheckpoint();
   startBGM();
   runActive=true;
   pendingRunBuildSnapshot=null;
-  act=1; currentRow=0; kills=0; totalKills=0; gold=0; level=1; xp=0; xpNext=20; pendingLevels=0; retries=0; runHits=0; runShopPurchases=0; runShopSpent=0; runStartedAt=performance.now(); treePoints=0; treeUnlocked=new Set(['hub']);
+  act=1; currentRow=0; mapData=null; kills=0; totalKills=0; gold=0; level=1; xp=0; xpNext=20; pendingLevels=0; pendingWeaponEvolutions=0; retries=0; runHits=0; runShopPurchases=0; runShopSpent=0; runStartedAt=performance.now(); treePoints=0; treeUnlocked=new Set(['hub']);
   bossStoryChoices={}; bossStoryFlags={}; seenBossDialogues={}; seenBossPhaseDialogues={}; syncBossStoryChoiceDebug();
   resetCombatModState();
   resetSpecialRoomStats();
+  initRunOpeningSystems();
   resetRunStats();
   resetPlayer();
   runPotionUsed=false;
@@ -18706,7 +20240,6 @@ function newGame(){
   enemies=[];pBullets=[];eBullets=[];pickups=[];particles=[];boss=null;floatBubbles=[];lastKiller=null;
   pendingNode=null; roomCleared=true; tierIntroShown=false; treeIntroShown=false; shopIntroShown=false; eliteViewerSpawns=0;
   tutorial={active:true,moved:false,shot:false,dodged:false,tabbed:false,doneAt:0};
-  genMap();
   startTutorial();
 }
 function startTutorial(){
@@ -18764,17 +20297,18 @@ function finishTutorial(){
   enemies=[]; pBullets=[]; eBullets=[]; pickups=[]; particles=[];
   mouseDown=false; autoFire=false;
   banner("튜토리얼 완료!","이제 진짜 방송 시작",1600);
-  setTimeout(function(){ showMap(); banner("1막 시작","지도에서 길을 골라라",1700); }, 1000);
+  setTimeout(function(){ showRunOpeningThenMap(); }, 1000);
 }
 // 다시시작 전용: 연출/튜토리얼 스킵 → 곧장 1막 지도
 function newGameSkip(){
   clearRunCheckpoint();
   startBGM();
   runActive=true;
-  act=1; currentRow=0; kills=0; totalKills=0; gold=0; level=1; xp=0; xpNext=20; pendingLevels=0; retries=0; runHits=0; runShopPurchases=0; runShopSpent=0; runStartedAt=performance.now(); treePoints=0; treeUnlocked=new Set(['hub']);
+  act=1; currentRow=0; mapData=null; kills=0; totalKills=0; gold=0; level=1; xp=0; xpNext=20; pendingLevels=0; pendingWeaponEvolutions=0; retries=0; runHits=0; runShopPurchases=0; runShopSpent=0; runStartedAt=performance.now(); treePoints=0; treeUnlocked=new Set(['hub']);
   bossStoryChoices={}; bossStoryFlags={}; seenBossDialogues={}; seenBossPhaseDialogues={}; syncBossStoryChoiceDebug();
   resetCombatModState();
   resetSpecialRoomStats();
+  initRunOpeningSystems();
   resetRunStats();
   resetPlayer();
   runPotionUsed=false;
@@ -18785,11 +20319,7 @@ function newGameSkip(){
   pendingNode=null; roomCleared=true; tierIntroShown=false; treeIntroShown=false; shopIntroShown=false; eliteViewerSpawns=0;
   tutorial={active:false,moved:true,shot:true,dodged:true,tabbed:true,doneAt:0};
   tutorialMode=false; tutorialDoneFlag=true;
-  genMap();
-  hideAll();
-  { const _sb=$('skipTutBtn'); if(_sb) _sb.style.display='none'; }
-  showMap();
-  banner("1막 시작","지도에서 길을 골라라",1700);
+  showRunOpeningThenMap();
 }
 
 // ---------- 버튼 ----------
@@ -18800,7 +20330,7 @@ function buildDiffButtons(){
     const b=document.createElement('button');
     b.className='diffbtn'; b.style.borderColor=d.col;
     b.innerHTML='<div class="diff-name" style="color:'+d.col+'">'+d.label+'</div><div class="diff-desc">'+d.desc+'</div>';
-    b.onclick=()=>{ try{if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)(); if(audioCtx.state==='suspended')audioCtx.resume();}catch(e){} diffSet=d; introFxReset(); stopIntroDrone(); newGame(); };
+    b.onclick=()=>{ try{if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)(); if(audioCtx.state==='suspended')audioCtx.resume();}catch(e){} diffSet=d; introFxReset(); showClassSelect(d,newGame); };
     cont.appendChild(b);
   });
 }
@@ -19833,6 +21363,7 @@ function bootGame(){
   // tmSettings는 wireSettings()에서 openSettings로 연결됨 (아래에서 재정의)
   $('tmExit').onclick=()=>{ try{ window.close(); }catch(e){} };
   $('diffBack').onclick=closeDifficultyTab;
+  { const cb=$('classBack'); if(cb) cb.onclick=()=>{ pendingClassStartFn=null; show('start'); }; }
 
   // 초기 채팅 잡담 미리 깔기
   chatSys("스트리머가 곧 들어옵니다...");
