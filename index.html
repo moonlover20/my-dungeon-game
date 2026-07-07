@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>시청자를 막아라</title>
-<link rel="stylesheet" href="btv/css/styles.css?v=1.8.14">
+<link rel="stylesheet" href="btv/css/styles.css?v=1.8.21">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%2315101f'/%3E%3Crect x='5' y='1' width='6' height='1' fill='%239b8fc4'/%3E%3Crect x='3' y='2' width='10' height='1' fill='%239b8fc4'/%3E%3Crect x='2' y='3' width='12' height='1' fill='%239b8fc4'/%3E%3Crect x='2' y='4' width='12' height='1' fill='%239b8fc4'/%3E%3Crect x='2' y='5' width='12' height='1' fill='%239b8fc4'/%3E%3Crect x='3' y='4' width='3' height='3' fill='%2315101f'/%3E%3Crect x='10' y='4' width='3' height='3' fill='%2315101f'/%3E%3Crect x='3' y='4' width='3' height='3' fill='%23a02080'/%3E%3Crect x='10' y='4' width='3' height='3' fill='%23a02080'/%3E%3Crect x='2' y='6' width='12' height='1' fill='%239b8fc4'/%3E%3Crect x='2' y='7' width='12' height='1' fill='%239b8fc4'/%3E%3Crect x='3' y='8' width='10' height='1' fill='%239b8fc4'/%3E%3Crect x='4' y='9' width='8' height='1' fill='%239b8fc4'/%3E%3Crect x='4' y='10' width='3' height='1' fill='%239b8fc4'/%3E%3Crect x='9' y='10' width='3' height='1' fill='%239b8fc4'/%3E%3Crect x='4' y='11' width='3' height='3' fill='%239b8fc4'/%3E%3Crect x='9' y='11' width='3' height='3' fill='%239b8fc4'/%3E%3C/svg%3E">
 </head>
 <body>
@@ -218,6 +218,17 @@
           <p class="sub" style="margin:10px 0 6px; line-height:1.55">방송 중, 화면을 뚫고 나를 향해 공격해오는 시청자들.<br>달려드는 그들을 막아내고 끝까지 살아남아라.</p>
           <p class="sub" style="margin:8px 0 2px">난이도를 골라 시작하라</p>
           <div id="diffBtns" class="diffbtns"></div>
+        </div>
+      </div>
+
+      <!-- CLASS SELECT -->
+      <div class="overlay hidden" id="ovClass">
+        <div class="panel-box class-select-box">
+          <button class="backToTitle" id="classBack">◀ 난이도로</button>
+          <div class="tag">방송 시작 세팅</div>
+          <h1>직업을 선택하라</h1>
+          <p class="sub">시작 무기, 능력치, 고유 패시브가 이번 런의 방향을 정한다.</p>
+          <div id="classChoices" class="class-grid"></div>
         </div>
       </div>
 
@@ -631,7 +642,7 @@
 <script defer src="btv/js/data/bosses.js?v=1.8.14"></script>
 <script defer src="btv/js/data/relicPixels.js?v=1.8.14"></script>
 <script defer src="btv/js/data/achievements.js?v=1.8.14"></script>
-<script defer src="btv/js/game.js?v=1.8.15"></script>
+<script defer src="btv/js/game.js?v=1.8.32"></script>
 
       <!-- PASSIVE TREE -->
       <div class="hidden" id="ovTree" style="position:fixed;inset:0;z-index:500;background:rgba(5,3,10,0.97);display:flex;flex-direction:column;align-items:stretch;">
