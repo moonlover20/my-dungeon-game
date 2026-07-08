@@ -2540,6 +2540,142 @@
   line-height: 1.45;
 }
 
+.tree-recommend-panel {
+  position: absolute;
+  z-index: 5;
+  left: 18px;
+  top: 144px;
+  width: min(318px, calc(100vw - 36px));
+  border: 1px solid rgba(139,232,255,.34);
+  background: linear-gradient(180deg, rgba(13,21,28,.96), rgba(6,8,12,.94));
+  box-shadow: 0 18px 42px rgba(0,0,0,.58), 0 0 22px rgba(139,232,255,.14), inset 0 0 0 1px rgba(255,255,255,.04);
+  padding: 12px;
+  font-family: "Courier New", monospace;
+  color: #dffaff;
+}
+
+.tree-rec-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.tree-rec-head b {
+  display: block;
+  color: #fff3c0;
+  font-size: 13px;
+  line-height: 1.25;
+  text-shadow: 0 0 10px rgba(139,232,255,.28);
+}
+
+.tree-rec-head span {
+  display: block;
+  margin-top: 5px;
+  color: rgba(223,250,255,.62);
+  font-size: 10px;
+  line-height: 1.45;
+  word-break: keep-all;
+}
+
+.tree-rec-collapse {
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  border: 1px solid rgba(139,232,255,.36);
+  background: rgba(4,7,11,.72);
+  color: #dffaff;
+  font-family: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.tree-rec-body {
+  margin-top: 10px;
+}
+
+.tree-recommend-panel.collapsed .tree-rec-body {
+  display: none;
+}
+
+.tree-rec-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tree-rec-preset,
+.tree-rec-off {
+  border: 1px solid rgba(139,232,255,.28);
+  background: rgba(9,13,18,.86);
+  color: rgba(223,250,255,.78);
+  padding: 7px 8px;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.tree-rec-preset.active,
+.tree-rec-off.active {
+  border-color: #f3d98b;
+  color: #fff3c0;
+  background: linear-gradient(180deg, rgba(50,42,24,.95), rgba(18,15,10,.95));
+  box-shadow: 0 0 12px rgba(243,217,139,.18);
+}
+
+.tree-rec-beginner {
+  display: block;
+  margin-top: 3px;
+  color: #89e0a1;
+  font-size: 9px;
+  letter-spacing: .3px;
+}
+
+.tree-rec-title {
+  margin-top: 12px;
+  color: #fff3c0;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.tree-rec-short {
+  margin-top: 3px;
+  color: #8be8ff;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .8px;
+}
+
+.tree-rec-desc {
+  margin-top: 8px;
+  color: rgba(223,250,255,.72);
+  font-size: 11px;
+  line-height: 1.55;
+  word-break: keep-all;
+}
+
+.tree-rec-next {
+  margin-top: 10px;
+  padding: 8px;
+  border: 1px solid rgba(139,232,255,.24);
+  background: rgba(3,6,10,.72);
+  color: #dffaff;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.tree-rec-next.ready {
+  border-color: rgba(243,217,139,.56);
+  color: #fff3c0;
+  box-shadow: inset 0 0 0 1px rgba(243,217,139,.08), 0 0 12px rgba(243,217,139,.12);
+}
+
+.tree-rec-next.done {
+  border-color: rgba(137,224,161,.45);
+  color: #89e0a1;
+}
+
 .tree-close-btn {
   position: absolute;
   z-index: 6;
@@ -2583,6 +2719,16 @@
     bottom: 14px;
     width: auto;
     padding: 12px;
+  }
+  .tree-recommend-panel {
+    left: 12px;
+    top: 122px;
+    width: min(280px, calc(100vw - 24px));
+    padding: 10px;
+  }
+  .tree-recommend-panel:not(.collapsed) {
+    max-height: 38vh;
+    overflow: auto;
   }
   #ovTree .tree-topbar {
     justify-content: flex-start;
