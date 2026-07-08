@@ -24479,6 +24479,69 @@ const TREE_NODES = [
     apply:p=>{ p.alchemyMaster=true; p.potionAmp=(Number(p.potionAmp)||0)+0.40; p.alchemySurge=true; p.alchemySurgeFlat=9; } },
 ];
 
+const PASSIVE_TREE_RECOMMENDATIONS = {
+  basic_streamer: [
+    { id:'safe_projectile', name:'초보 안정형', short:'투사체 + 생존', beginner:true,
+      desc:'기본 화력을 먼저 확보하고 체력/방어로 실수를 보완하는 추천 경로입니다.',
+      nodes:['s_speed1','s_size1','s_speed2','s_spread','s_stable_barrage','v_hp1','v_armor1','v_hp2'],
+      tips:{ s_speed1:'기본탄이 맞기 쉬워지는 첫 화력 노드', s_size1:'초보자가 명중률을 체감하기 좋음', v_hp1:'실수를 버티기 위한 생존 보강' } },
+    { id:'basic_power', name:'화력형', short:'치명타 + 원거리 화력',
+      desc:'치명타와 거리 보너스를 활용해 보스전 화력을 끌어올리는 경로입니다.',
+      nodes:['sharp_senses','weakpoint_strike','red_pulse','s_longcast','s_long_hit','far_focus','keystone_long_distance','gamblers_blade'],
+      tips:{ sharp_senses:'치명 기반 화력의 출발점', s_long_hit:'끝거리 적중 보너스를 체감하기 좋음', keystone_long_distance:'거리 유지에 익숙할 때 고점이 높음' } }
+  ],
+  rush_streamer: [
+    { id:'rush_beginner', name:'초보 돌격형', short:'산탄 + 생존', beginner:true,
+      desc:'산탄 핵심 노드와 생존 노드를 같이 찍어 근접 교전의 위험을 줄이는 경로입니다.',
+      nodes:['shotgun_mastery','s_spread','barrage_focus','bridge_close_shot','close_lock','v_hp1','v_armor1','v_hp2'],
+      tips:{ shotgun_mastery:'돌격 방송인의 산탄 운용을 강화', s_spread:'산탄 퍼짐을 줄여 근접 명중률 상승', v_hp1:'근접 실수를 버티기 위한 첫 생존 노드' } },
+    { id:'rush_expert', name:'숙련 돌격형', short:'근접 정박 + 회피',
+      desc:'근접 유지와 회피 후 보너스를 묶어 공격적인 돌파 플레이를 돕는 경로입니다.',
+      nodes:['shotgun_mastery','bridge_close_shot','close_lock','m_dodge','perfect_dodge','dodge_reload','bridge_dodge_range','m_blitz'],
+      tips:{ close_lock:'가까이 붙을수록 강해지는 핵심 축', m_dodge:'숙련 돌격의 생존 버튼', m_blitz:'회피 이후 화력을 크게 밀어줌' } }
+  ],
+  sniper_streamer: [
+    { id:'sniper_beginner', name:'초보 저격형', short:'사거리 + 탄속 + 치명', beginner:true,
+      desc:'사거리와 탄속을 먼저 확보해 안전한 거리에서 치명타 빌드로 이어지는 경로입니다.',
+      nodes:['s_speed1','s_speed2','s_longcast','s_fastcast','sharp_senses','weakpoint_strike','red_pulse','s_long_hit'],
+      tips:{ s_longcast:'저격수가 안전거리를 유지하기 쉬워짐', sharp_senses:'저격 치명타 운영의 기본', s_long_hit:'멀리서 맞힐수록 보상이 커짐' } },
+    { id:'sniper_peak', name:'고점 저격형', short:'끝거리 + 치명 키스톤',
+      desc:'끝거리 적중과 치명 계열을 깊게 타서 한 방 고점을 노리는 경로입니다.',
+      nodes:['sharp_senses','weakpoint_strike','red_pulse','s_longcast','s_long_hit','far_focus','keystone_long_distance','gamblers_blade'],
+      tips:{ far_focus:'거리 유지 숙련도를 화력으로 전환', keystone_long_distance:'저격수의 장거리 고점 선택지', gamblers_blade:'치명 운영을 더 공격적으로 밀어줌' } }
+  ],
+  alchemy_streamer: [
+    { id:'alchemy_beginner', name:'초보 연금형', short:'독 + 포션 보조', beginner:true,
+      desc:'독/상태이상 기본기와 연금 보조를 같이 챙겨 안정적으로 성장하는 경로입니다.',
+      nodes:['t_poison1','t_poison2','t_dmg','t_venom_mature','a_amp1','a_amp2','a_recovery','a_potency'],
+      tips:{ t_poison1:'연금 방송인의 독 운용 시작점', t_venom_mature:'독 누적 체감이 커지는 핵심 노드', a_recovery:'포션과 회복으로 안정성 보강' } },
+    { id:'poison_stack', name:'독 누적형', short:'지속 + 스택 + 확산',
+      desc:'독 지속시간, 독 최대 스택, 상태 확산을 묶어 누적 피해를 키우는 경로입니다.',
+      nodes:['t_poison1','t_poison2','t_venom_mature','t_long_poison','t_acute_poison','t_venom_cultivate','t_spread','corrosive_spread'],
+      tips:{ t_long_poison:'독이 오래 남아 누적 유지가 쉬움', t_venom_cultivate:'독 최대 스택을 늘리는 핵심', corrosive_spread:'상태이상 확산으로 다수전을 보조' } }
+  ],
+  curse_contractor: [
+    { id:'curse_beginner', name:'초보 계약형', short:'생존 우선 + 저주 보조', beginner:true,
+      desc:'저주 화력 욕심을 조금 늦추고 체력/방어를 먼저 챙기는 안전 경로입니다.',
+      nodes:['v_hp1','v_armor1','v_hp2','v_armor2','v_regen','sharp_senses','weakpoint_strike','red_pulse'],
+      tips:{ v_hp1:'낮은 체력을 보완하는 첫 선택', v_regen:'저주 리스크를 버티기 위한 회복축', red_pulse:'생존을 챙긴 뒤 화력으로 전환' } },
+    { id:'curse_risk', name:'고위험 계약형', short:'골드 + 치명 + 위험 집중',
+      desc:'골드/계약 성장을 공격적으로 활용하고 위험한 집중 계열로 고점을 노리는 경로입니다.',
+      nodes:['g_gold1','g_gold2','g_power','investment_return','greed_contract','sharp_senses','bridge_risky_focus','gamblers_blade'],
+      tips:{ greed_contract:'계약형 성장 고점을 여는 선택지', bridge_risky_focus:'위험을 감수하고 화력을 끌어올림', gamblers_blade:'치명 기반 폭발력을 보강' } }
+  ],
+  tank_streamer: [
+    { id:'tank_beginner', name:'초보 탱커형', short:'체력 + 방어 + 재생', beginner:true,
+      desc:'탱커의 장점인 최대 체력과 방어를 먼저 키워 안정적으로 버티는 경로입니다.',
+      nodes:['v_hp1','v_armor1','v_hp2','v_armor2','v_regen','v_shield_training','regen_overload','overheal_guard'],
+      tips:{ v_hp1:'탱커 직업 패시브 공격력도 함께 보조', v_armor1:'받는 피해를 줄이는 기본 방어축', regen_overload:'낮은 체력 구간을 버티기 쉬워짐' } },
+    { id:'tank_counter', name:'반격형', short:'생존 + 근접/폭발/가시',
+      desc:'체력 기반 생존을 바탕으로 가시, 근접, 폭발 계열을 섞는 반격 경로입니다.',
+      nodes:['v_hp1','v_armor1','v_armor2','v_thorns','v_shield_training','heavy_broadcast','close_lock','keystone_crowd_addict'],
+      tips:{ v_thorns:'맞으면서 버티는 탱커 감성에 맞는 반격 노드', heavy_broadcast:'묵직한 폭발 계열 보조', keystone_crowd_addict:'주변 적이 많을수록 직접 피해를 보강' } }
+  ]
+};
+
 // 찍힌 노드 id Set
 let treeUnlocked = new Set(['hub']);
 
@@ -24513,6 +24576,7 @@ function treeUnlockNode(node){
   node.apply(player);
   if(node.isKeystone) unlockAchievement('first_keystone');
   updateHUD();
+  if(treeOpen) updateTreeRecommendPanel();
   return true;
 }
 
@@ -24575,6 +24639,107 @@ let _treeLayout = null;
 let _treeHover = null;
 let _treeGraphCache = null;
 let _treeHoverFocusCache = null;
+let treeRecommendEnabled = true;
+let treeRecommendPresetId = null;
+let treeRecommendClassId = null;
+const TREE_REC_ENABLED_KEY = 'btv_tree_recommend_enabled';
+const TREE_REC_PRESET_KEY = 'btv_tree_recommend_preset';
+const TREE_REC_ORD = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩','⑪','⑫'];
+
+function treeRecEsc(v){
+  return String(v==null?'':v).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+function treeNodeByIdStrict(id){
+  return (TREE_NODES||[]).find(n=>n&&n.id===id)||null;
+}
+function treeCurrentClassId(){
+  return (player&&player.classId)||selectedPlayerClassId||'basic_streamer';
+}
+function treeRecommendationList(classId){
+  return PASSIVE_TREE_RECOMMENDATIONS[classId] || PASSIVE_TREE_RECOMMENDATIONS.basic_streamer || [];
+}
+function treeRecommendationBeginner(list){
+  return (list||[]).find(p=>p&&p.beginner) || (list||[])[0] || null;
+}
+function treeRecommendationNodes(preset){
+  if(!preset||!Array.isArray(preset.nodes)) return [];
+  const seen=new Set();
+  return preset.nodes.filter(id=>{
+    if(!id||seen.has(id)||!treeNodeByIdStrict(id)) return false;
+    seen.add(id);
+    return true;
+  });
+}
+function loadTreeRecommendationState(){
+  try{
+    const v=localStorage.getItem(TREE_REC_ENABLED_KEY);
+    treeRecommendEnabled = v==null ? false : v !== '0';
+    treeRecommendPresetId = localStorage.getItem(TREE_REC_PRESET_KEY) || null;
+  }catch(e){
+    treeRecommendEnabled = false;
+    treeRecommendPresetId = null;
+  }
+}
+function saveTreeRecommendationState(){
+  try{
+    localStorage.setItem(TREE_REC_ENABLED_KEY, treeRecommendEnabled ? '1' : '0');
+    if(treeRecommendPresetId) localStorage.setItem(TREE_REC_PRESET_KEY, treeRecommendPresetId);
+  }catch(e){}
+}
+function syncTreeRecommendationState(){
+  const classId=treeCurrentClassId();
+  const list=treeRecommendationList(classId);
+  const current=list.find(p=>p&&p.id===treeRecommendPresetId);
+  if(treeRecommendClassId!==classId || !current){
+    const fallback=treeRecommendationBeginner(list);
+    treeRecommendPresetId=fallback&&fallback.id;
+    treeRecommendClassId=classId;
+    saveTreeRecommendationState();
+  }
+}
+function currentTreeRecommendation(){
+  syncTreeRecommendationState();
+  if(!treeRecommendEnabled) return null;
+  const list=treeRecommendationList(treeCurrentClassId());
+  return list.find(p=>p&&p.id===treeRecommendPresetId) || treeRecommendationBeginner(list);
+}
+function treeRecommendationNodeIndex(nodeId){
+  const preset=currentTreeRecommendation();
+  if(!preset) return -1;
+  return treeRecommendationNodes(preset).indexOf(nodeId);
+}
+function treeRecommendationNextInfo(){
+  const preset=currentTreeRecommendation();
+  if(!preset) return {state:'off', text:'추천 표시 꺼짐'};
+  const ids=treeRecommendationNodes(preset);
+  for(const id of ids){
+    if(treeUnlocked.has(id)) continue;
+    const node=treeNodeByIdStrict(id);
+    if(!node) continue;
+    if(treeCanUnlock(node)) return {state:'ready', node, text:'다음 추천: '+node.name};
+    if(treeCanReach(node)) return {state:'points', node, text:'다음 추천: '+node.name+' · 포인트 부족'};
+    return {state:'locked', node, text:'다음 추천: '+node.name+' · 선행 노드 필요'};
+  }
+  return {state:'done', text:'추천 경로 완료'};
+}
+function treeRecommendationTip(nodeId){
+  const preset=currentTreeRecommendation();
+  if(!preset) return null;
+  const idx=treeRecommendationNodes(preset).indexOf(nodeId);
+  if(idx<0) return null;
+  return {preset, idx, reason:preset.tips&&preset.tips[nodeId]};
+}
+function treeRecommendationEdgeSet(){
+  const preset=currentTreeRecommendation();
+  const ids=new Set(treeRecommendationNodes(preset));
+  if(!ids.size) return null;
+  const edgeKeys=new Set();
+  for(const edge of getTreeGraph().edges){
+    if(ids.has(edge.from) && ids.has(edge.to)) edgeKeys.add(edge.key);
+  }
+  return edgeKeys;
+}
+loadTreeRecommendationState();
 
 function treeEdgeKey(a,b){
   return a < b ? a + '>' + b : b + '>' + a;
@@ -24902,6 +25067,56 @@ function ensureTreeChrome(){
   points.id='treePointBadge';
   points.className='tree-point-badge';
   ov.appendChild(points);
+  const rec=document.createElement('div');
+  rec.id='treeRecommendPanel';
+  rec.className='tree-recommend-panel';
+  ov.appendChild(rec);
+}
+function updateTreeRecommendPanel(){
+  const el=$('treeRecommendPanel');
+  if(!el) return;
+  syncTreeRecommendationState();
+  const classId=treeCurrentClassId();
+  const klass=playerClassById(classId);
+  const list=treeRecommendationList(classId);
+  const preset=list.find(p=>p&&p.id===treeRecommendPresetId) || treeRecommendationBeginner(list);
+  const next=treeRecommendationNextInfo();
+  const collapsed=el.classList.contains('collapsed');
+  const buttons=list.map(p=>{
+    const active=treeRecommendEnabled && preset && p.id===preset.id ? ' active' : '';
+    const badge=p.beginner?'<span class="tree-rec-beginner">초보 추천</span>':'';
+    return '<button class="tree-rec-preset'+active+'" data-rec-preset="'+treeRecEsc(p.id)+'">'+treeRecEsc(p.name)+badge+'</button>';
+  }).join('');
+  el.innerHTML='<div class="tree-rec-head">'+
+      '<div><b>추천 트리: '+treeRecEsc(klass&&klass.name||'베이직 방송인')+'</b><span>추천 트리는 길잡이일 뿐입니다. 다른 노드를 찍어도 불이익은 없습니다.</span></div>'+
+      '<button class="tree-rec-collapse" type="button">'+(collapsed?'+':'-')+'</button>'+
+    '</div>'+
+    '<div class="tree-rec-body">'+
+      '<div class="tree-rec-buttons">'+buttons+'<button class="tree-rec-off'+(!treeRecommendEnabled?' active':'')+'" data-rec-off="1">추천 '+(treeRecommendEnabled?'끄기':'켜기')+'</button></div>'+
+      (treeRecommendEnabled&&preset?'<div class="tree-rec-title">'+treeRecEsc(preset.name)+'</div><div class="tree-rec-short">'+treeRecEsc(preset.short||'추천 경로')+'</div><div class="tree-rec-desc">'+treeRecEsc(preset.desc||'')+'</div>':'<div class="tree-rec-desc">추천 표시가 꺼져 있습니다. 자유롭게 노드를 선택할 수 있습니다.</div>')+
+      '<div class="tree-rec-next '+treeRecEsc(next.state)+'">'+treeRecEsc(next.text||'추천 정보 없음')+'</div>'+
+    '</div>';
+  const collapseBtn=el.querySelector('.tree-rec-collapse');
+  if(collapseBtn) collapseBtn.onclick=()=>{
+    el.classList.toggle('collapsed');
+    updateTreeRecommendPanel();
+  };
+  el.querySelectorAll('[data-rec-preset]').forEach(btn=>{
+    btn.onclick=()=>{
+      treeRecommendPresetId=btn.getAttribute('data-rec-preset');
+      treeRecommendEnabled=true;
+      saveTreeRecommendationState();
+      updateTreeRecommendPanel();
+      renderTree();
+    };
+  });
+  const off=el.querySelector('[data-rec-off]');
+  if(off) off.onclick=()=>{
+    treeRecommendEnabled=!treeRecommendEnabled;
+    saveTreeRecommendationState();
+    updateTreeRecommendPanel();
+    renderTree();
+  };
 }
 function updateTreePointBadge(){
   const el=$('treePointBadge');
@@ -24941,7 +25156,9 @@ function openTree(){
   _treePrevPaused = paused;
   treeOpen = true;
   $('ovTree').classList.remove('hidden');
+  syncTreeRecommendationState();
   updateTreePanel();
+  updateTreeRecommendPanel();
   if(state==='play' && !paused){ paused=true; mouseDown=false; autoFire=false; }
   requestAnimationFrame(()=>requestAnimationFrame(renderTree));
 }
@@ -25010,6 +25227,31 @@ function drawTreeLink2(c,link,state,W,H,hoverOverlay){
   c.stroke();
   c.restore();
 }
+function drawTreeRecommendationLinks(c,W,H){
+  if(!treeRecommendEnabled) return;
+  const edgeSet=treeRecommendationEdgeSet();
+  if(!edgeSet||!edgeSet.size) return;
+  for(const link of getTreeGraph().edges){
+    if(!edgeSet.has(link.key)) continue;
+    const p=_treeLayout&&_treeLayout[link.to], q=_treeLayout&&_treeLayout[link.from];
+    if(!p||!q) continue;
+    const a=treeToScreen2(q.x,q.y,W,H), b=treeToScreen2(p.x,p.y,W,H);
+    const unlocked=treeUnlocked.has(link.from)&&treeUnlocked.has(link.to);
+    c.save();
+    c.globalAlpha=unlocked?0.42:0.28;
+    c.strokeStyle=unlocked?'#fff3c0':'#8be8ff';
+    c.lineWidth=unlocked?3.2:2.4;
+    c.lineCap='round';
+    c.setLineDash(unlocked?[]:[7,6]);
+    c.shadowColor=c.strokeStyle;
+    c.shadowBlur=unlocked?7:4;
+    c.beginPath();
+    c.moveTo(a.x,a.y);
+    c.lineTo(b.x,b.y);
+    c.stroke();
+    c.restore();
+  }
+}
 function drawTreeNode2(c,node,p,W,H){
   const sp=treeToScreen2(p.x,p.y,W,H);
   const unlocked=treeUnlocked.has(node.id), can=treeCanUnlock(node), reach=treeCanReach(node);
@@ -25020,6 +25262,24 @@ function drawTreeNode2(c,node,p,W,H){
   const col=TREE_BRANCH_COL[node.branch]||TREE_BRANCH_COL.hub;
   const major=node.id==='hub' || node.isMiniKeystone || node.isKeystone || (node.cost||1)>=3;
   const r=(major?22:16)*(hover||selected?1.14:1);
+  const recIdx=treeRecommendationNodeIndex(node.id);
+  const recNext=treeRecommendationNextInfo();
+  const recActive=treeRecommendEnabled && recIdx>=0;
+  const recIsNext=recActive && recNext && recNext.node && recNext.node.id===node.id && recNext.state==='ready';
+  if(recActive){
+    const pulse=0.5+0.5*Math.sin(performance.now()/260);
+    c.save();
+    c.globalAlpha=(recIsNext?(0.72+0.22*pulse):(unlocked?0.42:0.36))*dimMul;
+    c.strokeStyle=recIsNext?'#fff3c0':'#8be8ff';
+    c.lineWidth=recIsNext?2.4:1.5;
+    c.setLineDash(unlocked?[]:[5,5]);
+    c.shadowColor=c.strokeStyle;
+    c.shadowBlur=recIsNext?18:8;
+    c.beginPath();
+    c.arc(sp.x,sp.y,r+(recIsNext?14:11),0,TAU);
+    c.stroke();
+    c.restore();
+  }
   c.save();
   c.globalAlpha=(unlocked?1:(can?0.96:(reach?0.48:0.22)))*dimMul;
   c.shadowColor=(hoverRelated && (unlocked||can||selected||hover))?col:'transparent';
@@ -25053,6 +25313,33 @@ function drawTreeNode2(c,node,p,W,H){
   c.fillStyle='rgba(0,0,0,0.22)';
   c.fillRect(Math.round(sp.x-r*0.58),Math.round(sp.y-r*0.58),Math.round(r*1.16),Math.round(r*1.16));
   drawTreePixelIcon(c,node,sp.x,sp.y+1,major,(unlocked?1:(can?0.92:0.38))*dimMul);
+  if(recActive){
+    const ord=TREE_REC_ORD[recIdx]||String(recIdx+1);
+    c.save();
+    c.globalAlpha=0.96*dimMul;
+    c.font='bold 12px Arial, sans-serif';
+    c.textAlign='center';
+    c.textBaseline='middle';
+    const bx=sp.x+r*0.72, by=sp.y-r*0.72;
+    c.fillStyle=recIsNext?'#fff3c0':'#0b1117';
+    c.strokeStyle=recIsNext?'#ffffff':'#8be8ff';
+    c.lineWidth=1.5;
+    c.beginPath();
+    c.arc(bx,by,9,0,TAU);
+    c.fill();
+    c.stroke();
+    c.fillStyle=recIsNext?'#1c1306':'#dffaff';
+    c.fillText(ord,bx,by+0.5);
+    if(unlocked){
+      c.font='bold 15px Arial, sans-serif';
+      c.fillStyle='#89e0a1';
+      c.strokeStyle='rgba(0,0,0,0.82)';
+      c.lineWidth=3;
+      c.strokeText('✓',sp.x+r*0.70,sp.y+r*0.72);
+      c.fillText('✓',sp.x+r*0.70,sp.y+r*0.72);
+    }
+    c.restore();
+  }
   c.restore();
 }
 function renderTree(){
@@ -25067,6 +25354,7 @@ function renderTree(){
   ['locked','reachable','available','unlocked'].forEach(state=>{
     for(const link of links){ if(treeLinkState(link)===state) drawTreeLink2(c,link,state,W,H,false); }
   });
+  drawTreeRecommendationLinks(c,W,H);
   if(_treeHover){
     for(const link of links) drawTreeLink2(c,link,treeLinkState(link),W,H,true);
   }
@@ -25112,9 +25400,23 @@ function updateTreeTooltip(node,cx,cy){
   $('ttDesc').textContent=node.desc||'';
   $('ttState').textContent=treeStatusText(node);
   $('ttState').style.color=treeCanUnlock(node)?'#f3d98b':treeUnlocked.has(node.id)?'#89e0a1':'#9a8d76';
+  let recEl=$('ttRecommend');
+  if(!recEl){
+    recEl=document.createElement('div');
+    recEl.id='ttRecommend';
+    recEl.style.cssText='margin-top:8px;padding-top:8px;border-top:1px solid rgba(139,232,255,.22);font-size:11px;line-height:1.45;color:#dffaff;';
+    tt.appendChild(recEl);
+  }
+  const recTip=treeRecommendationTip(node.id);
+  if(recTip){
+    recEl.innerHTML='추천 경로 '+(recTip.idx+1)+'번째 노드'+(recTip.reason?'<br>추천 이유: '+treeRecEsc(recTip.reason):'');
+    recEl.style.display='block';
+  }else{
+    recEl.style.display='none';
+  }
   tt.style.borderColor=col;
   tt.style.boxShadow='0 0 22px '+col+'55';
-  const W=window.innerWidth,H=window.innerHeight,tw=280,th=118;
+  const W=window.innerWidth,H=window.innerHeight,tw=280,th=recTip?154:118;
   let tx=cx+18,ty=cy+18;
   if(tx+tw>W-8) tx=cx-tw-12;
   if(ty+th>H-8) ty=cy-th-12;
