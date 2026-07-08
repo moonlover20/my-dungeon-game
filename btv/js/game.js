@@ -2120,8 +2120,9 @@ function classSkillMaxCooldown(){
     case 'rush_streamer':
     case 'alchemy_streamer':
     case 'curse_contractor':
-    case 'tank_streamer':
       base=15.0; break;
+    case 'tank_streamer':
+      base=25.0; break;
     default: base=15.0;
   }
   let cd=Math.max(4,(base-(Number(player&&player.classSkillCdReduce)||0))*playerClassSkillCdMul(player));
