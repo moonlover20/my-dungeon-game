@@ -8,9 +8,9 @@ const ENEMY_TYPES={
   jaemin        :{name:"\uC7AC\uBBFC", r:27, hp:42, spd:68, dmg:9, color:"#f0a84a", xp:36, ai:"boomerang_thrower", range:440, cool:1.95, label:"\uC7AC\uBBFC"},
   sniper_viewer :{name:"\uC800\uACA9\uB7EC", r:26, hp:116, spd:28, dmg:13, touchDmg:10, color:"#d83a3a", xp:320, ai:"sniper_laser", range:1200, cool:1.8, label:"\uC800\uACA9\uB7EC"},
   stream_watcher:{name:"\uBC29\uD50C\uB7EC", r:26, hp:40, spd:44, dmg:10, color:"#4fc0d8", xp:34, ai:"movement_lock", range:360, cool:2.6, label:"\uBC29\uD50C\uB7EC"},
-  rhino_beetle   :{name:"자잘자",   r:34, hp:170, spd:78, dmg:16, touchDmg:16, color:"#3a2418", xp:75, ai:"charge", armor:0.15, label:"자잘자"},
+  rhino_beetle   :{name:"자잘자",   r:34, hp:340, spd:78, dmg:16, touchDmg:16, color:"#3a2418", xp:75, ai:"charge", armor:0.15, label:"자잘자"},
   earthworm      :{name:"케터피", r:12, hp:10, spd:82, dmg:6, color:"#e87a8a", xp:0, ai:"erratic", label:"케터피"},
-  hyechul        :{name:"혜철이", r:52, hp:437, spd:42, dmg:15, color:"#c0392b", xp:150, ai:"hyechul", label:"혜철이"},
+  hyechul        :{name:"혜철이", r:52, hp:656, spd:42, dmg:15, color:"#c0392b", xp:150, ai:"hyechul", label:"혜철이"},
   zergling       :{name:"저글링", r:14, hp:14, spd:132, dmg:7, color:"#c98bff", xp:0, ai:"charge", label:"저글링"},
   mutalisk       :{name:"뮤탈", r:16, hp:19, spd:130, dmg:8, color:"#b97a4a", xp:0, ai:"chase", label:"뮤탈"},
   ultra          :{name:"울트라", r:26, hp:78, spd:68, dmg:20, touchDmg:20, color:"#8a6f4a", xp:0, ai:"chase", armor:0.25, label:"울트라"},
@@ -53,7 +53,7 @@ const ENEMY_TYPES={
   onster      :{name:"\uC628\uC2A4\uD130", r:58, hp:4000, spd:34, dmg:18, touchDmg:18, color:"#8d72ff", xp:1800, ai:"onster", range:360, cool:1.35, label:"\uC628\uC2A4\uD130"},
   yanggaeng     :{name:"박제인간", r:58, hp:3400, spd:48, dmg:17, touchDmg:17, color:"#111111", xp:3400, ai:"bagjein", cool:1.7, label:"박제인간"},
   // === 2막 엘리트: 미주 (3페이즈) ===
-  kkotchung     :{name:"미주", r:37, hp:330, spd:50, dmg:16, touchDmg:21, color:"#f7a8d0", xp:900,  ai:"kkotchung", cool:1.32, label:"미주"},
+  kkotchung     :{name:"미주", r:37, hp:660, spd:50, dmg:16, touchDmg:21, color:"#f7a8d0", xp:900,  ai:"kkotchung", cool:1.32, label:"미주"},
 };
 const ACT_POOLS=[
   { normal:["goblin_warrior","goblin_archer","goblin_shaman","goblin_bomber"], elite:["rhino_beetle"] },
