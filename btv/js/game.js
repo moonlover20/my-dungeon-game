@@ -3656,7 +3656,7 @@ function getSpecialEffectTooltipData(effectKey){
     'class-skill-power':{title:'스킬 효과',value:()=> 'x'+playerClassSkillPowerMul(player).toFixed(2),description:'직업 스킬 피해나 효과를 증가시킵니다. 탱커 회복량에는 적용되지 않습니다.',formulaText:'적용 방식: 직업 스킬 피해/효과 x'+playerClassSkillPowerMul(player).toFixed(2),kind:'attack'},
     'lifesteal':{title:'확률 회복',value:()=>pct(Number(player.lifesteal)||0),description:'적 처치 시 확률로 체력을 회복합니다.',formulaText:'적용 방식: 처치 시 정해진 비율만큼 회복',kind:'regen'},
     'heal-on-kill':{title:'처치 회복',value:()=> '+'+Math.round(Number(player.healOnKill)||0),description:'적 처치 시 체력을 회복합니다.',formulaText:'적용 방식: 처치 시 고정 회복량을 즉시 적용',kind:'regen'},
-    'shield-regen':{title:'재충전 보호막',value:'적용 중',description:'일정 시간마다 보호막을 충전합니다.',formulaText:'적용 방식: 정해진 주기마다 보호막 자동 충전',kind:'armor'},
+    'shield-regen':{title:'재충전 보호막',value:'30초',description:'30초마다 보호막을 충전합니다.',formulaText:'적용 방식: 30초마다 피격 무효 보호막 1회 자동 충전',kind:'armor'},
     'last-stand':{title:'막판 정신력',value:'적용 중',description:'치명적인 피해를 한 번 버팁니다.',formulaText:'적용 방식: 발동 조건 충족 시 체력 1로 생존',kind:'hp'},
     'donate':{title:'도네 알림',value:()=>pct(Number(player.donateChance)||0),description:'적 처치 시 확률로 골드를 얻습니다.',formulaText:'적용 방식: 처치 시 확률 판정 후 골드 지급',kind:'gold'},
     'crowd-rage':{title:'분노',value:()=>flat(Number(player.crowdRageAtkFlat)||0)+'/마리',description:'주변 적이 많을수록 공격력이 증가합니다.',formulaText:'적용 방식: 주변 적 1마리당 공격력 +'+flat(Number(player.crowdRageAtkFlat)||0)+', 최대 10마리',kind:'attack'},
@@ -6916,7 +6916,7 @@ function globalFloorOf(a,floor){
 const ACT_BOSS=[0,4,3]; // 1막 키죠 / 2막은 온스터 특수 스폰 / 3막 승우(글리치)
 const BOSS_SLOT_BALANCE={2:'onster',3:'set3'};
 const MIDBOSS_SLOT_BALANCE={2:'set3',3:'onster'};
-const SET3_MIDBOSS_HP_MUL=0.789; // normal 기준 2막 중보 총합 약 1.5만
+const SET3_MIDBOSS_HP_MUL=0.789; // normal 기준 2막 중보 총합 약 3만
 const CONTRACT_ROOM_CHANCE={fight:0.12,elite:0.18};
 const CONTRACT_ROOM_MAX_PER_ACT=3;
 const CONTRACT_TYPES=[
@@ -9320,7 +9320,8 @@ function applyMidbossSlotBalance(e,type,diff){
   const slotKey=MIDBOSS_SLOT_BALANCE[act]||type;
   const slotBase=enemyDataByKey(slotKey)||enemyDataByKey(type);
   if(slotBase){
-    const hp=slotBase.hp*diff*diffSet.hp;
+    const act3MidMul=(act>=3&&type==='yanggaeng')?1.5:1;
+    const hp=slotBase.hp*diff*diffSet.hp*act3MidMul;
     e.hp=hp; e.maxhp=hp;
   }
   e.slotRole='midboss'; e.slotAct=act; e.slotBalanceKey=slotKey;
@@ -9374,8 +9375,10 @@ function spawnBoss(b){
   markDiscovered('bosses', b&&b.key);
   const slotBase=bossSlotBalanceData(b);
   const scale=(1+(act-1)*0.35)*diffSet.hp*(actTuning(act).bossHpMul||1);
-  const phaseHp=slotBase.phaseHp?slotBase.phaseHp.map(v=>v*scale):null;
-  const hp=phaseHp?phaseHp[0]:slotBase.hp*scale;
+  // 3막 승우는 set3 슬롯 체력을 빌려 쓰므로, 2막 세트3 표시 데이터 2배와 합쳐 현재 기준 절반으로 맞춘다.
+  const finalBossHpMul=(act>=3&&b&&b.key==='seungwoo')?0.75:1;
+  const phaseHp=slotBase.phaseHp?slotBase.phaseHp.map(v=>v*scale*finalBossHpMul):null;
+  const hp=phaseHp?phaseHp[0]:slotBase.hp*scale*finalBossHpMul;
   const spawned={
     boss:true,key:b.key,sprite:b.sprite,name:b.name,x:W/2,y:140,r:b.r,
     title:placedBossTitle(b),quip:b.quip||'',
@@ -10373,6 +10376,25 @@ function kijoFrenzy(b){
   for(let i=0;i<5;i++){ const fx=clamp(player.x+rand(-170,170),40,W-40); eBullets.push({x:fx,y:-12,vx:rand(-20,20),vy:rand(165,215),r:9,dmg:16,life:4.2,foodImg:(typeof pickFood==='function'?pickFood():null),spin:rand(0,TAU),spinV:rand(-7,7)}); }
   banner('👹 광란의 가면','사방이 가면이다!',900); screenShake=Math.max(screenShake||0,8); if(typeof beep==='function')beep(80,0.3,'sawtooth',0.07);
 }
+function kijoFinalCurtain(b){
+  const base=Math.atan2(player.y-b.y,player.x-b.x);
+  const offsets=[-0.46,0,0.46];
+  for(let i=0;i<offsets.length;i++){
+    kijoLaserWarns.push({
+      x:b.x,y:b.y,ang:base+offsets[i],width:i===1?28:22,range:920,t:0,warn:0.82,
+      color:i===1?'#ff2d6d':'#b84dff',fired:false,sniper:true,dmg:i===1?22:18,
+      srcName:'키죠 최종 시선',trackRate:i===1?0.42:0
+    });
+  }
+  kijoRing(b.x,b.y,16,165,14,(b.angle||0)*1.7,'evil_eye');
+  setTimeout(()=>{
+    if(boss!==b||!b||b.hp<=0) return;
+    kijoRing(b.x,b.y,22,195,16,(b.angle||0)*2.15,'cursed_mask');
+  },620);
+  playFileSfx('kijoLaserCharge',{vol:0.58,rate:0.78,maxDur:1.4,cd:0.8,key:'kijoFinalCurtain'});
+  banner('최종 시선','가면이 한꺼번에 열린다',900);
+  screenShake=Math.max(screenShake||0,10);
+}
 function kijoBarrage(b){
   const pa=Math.atan2(player.y-b.y,player.x-b.x), k=b.enraged?8:7, spread=0.14, sp=b.enraged?218:245;
   for(let i=-(k-1)/2;i<=(k-1)/2;i++) eBullets.push({x:b.x,y:b.y,vx:Math.cos(pa+i*spread)*sp,vy:Math.sin(pa+i*spread)*sp,r:8,dmg:15,life:3.4,srcName:'키죠',style:b.enraged?'cursed_mask':undefined});
@@ -10635,10 +10657,16 @@ function updateBoss(dt){
   }
   b.phaseT+=dt; b.attackT-=dt; b.angle+=dt*1.2; if(b.hitT>0)b.hitT-=dt;
   if(b.reflectT>0) b.reflectT-=dt;
-  if(!b.enraged && b.hp<b.maxhp*0.4){ b.enraged=true; b.spd*=(b.key==='kijo'?1.18:1.4); banner("격노!","보스가 분노한다",1300); chatSys("🔥 보스 격노 — 채팅 카오스 monkaS");
+  if(!b.enraged && b.hp<b.maxhp*(b.key==='kijo'?0.6:0.4)){ b.enraged=true; b.spd*=(b.key==='kijo'?1.18:1.4); banner("격노!","보스가 분노한다",1300); chatSys("🔥 보스 격노 — 채팅 카오스 monkaS");
     if(b.key==='kijo'){ armBossPhaseStory(b,2,'봤구나.'); b._kijoBag=null; b._kijoRep=0; banner("👹 가면의 마귀 각성","광란의 가면 해금!",1400); screenShake=Math.max(screenShake||0,16); kijoFrenzy(b); }
   }
-  if(b.key==='kijo'&&b.hp>0&&b.hp<b.maxhp*0.2&&!bossTalkActive()) armBossPhaseStory(b,3,'그럼 끝까지 봐.');
+  if(b.key==='kijo'&&b.hp>0&&b.hp<b.maxhp*0.3&&!b.kijoFinalPhase){
+    b.kijoFinalPhase=true; b._kijoBag=null; b._kijoRep=0;
+    if(!bossTalkActive()) armBossPhaseStory(b,3,'그럼 끝까지 봐.');
+    banner('👁 최종 시선','키죠의 마지막 가면이 열린다',1400);
+    screenShake=Math.max(screenShake||0,14);
+    kijoFinalCurtain(b);
+  }
   if(stunned) return;
   if(b.key==='kijo'){ b.restT=0; b.restWaitT=0; b.restWaitDur=0; }
   if(b.key==='kijo'&&b.intent&&b.intent.label==='마안') return;
@@ -10674,7 +10702,7 @@ function updateBoss(dt){
       if((b._kijoRep||0)>0){ b._kijoRep--; phase=b._kijoPhase; b.attackT=rate*0.72; }   // 단순 탄막 집중 반복 중
       else {
         b.atkN=(b.atkN||0)+1;
-        phase=nextFromBag(b,'_kijoBag',b.enraged?10:9);   // 셔플백 (격노 시 10번째=광란의 가면)
+        phase=nextFromBag(b,'_kijoBag',b.kijoFinalPhase?11:(b.enraged?10:9));   // 셔플백 (격노 시 10번째=광란의 가면, 3페 11번째=최종 시선)
         b._kijoPhase=phase;
         if(phase===2||phase===7||phase===8){ b._kijoRep=2+(Math.random()<0.5?1:0); b.attackT=rate*0.72; }   // 회전나선/음식폭격/가면난사 → 3~4회 집중
       }
@@ -10713,9 +10741,12 @@ function updateBoss(dt){
       } else if(phase===8){
         // ⑧ 가면 난사 (집중 연사)
         kijoBarrage(b);
-      } else {
+      } else if(phase===9){
         // ⑨ [격노 전용] 광란의 가면
         kijoFrenzy(b);
+      } else {
+        // ⑩ [3페이즈 전용] 최종 시선
+        kijoFinalCurtain(b);
       }
       // 격노 보너스: 유도하는 음식탄 (피하기 까다로움)
       if(b.enraged && Math.random()<0.22){
@@ -12362,7 +12393,7 @@ function update(dt){
       updateHUD();
     }
   }
-  if(player.shieldRegen>0){ player.shieldRegenT=(player.shieldRegenT||0)+dt; if(player.shieldRegenT>=player.shieldRegen){ player.shieldRegenT=0; player.hitShield=Math.min((player.hitShield||0)+1,1); } }
+  if(player.shieldRegen>0){ const shieldRegenCd=Math.max(30,Number(player.shieldRegen)||0); player.shieldRegenT=(player.shieldRegenT||0)+dt; if(player.shieldRegenT>=shieldRegenCd){ player.shieldRegenT=0; player.hitShield=Math.min((player.hitShield||0)+1,1); } }
   if(player.minion){
     const mn=player.minion;
     mn.ang=(mn.ang||0)+dt*2.2;
@@ -16987,7 +17018,7 @@ const LEVEL_PERKS=[
   {g:'legend',icon:'💀',name:'폭주',desc:'공격력 +6',apply:p=>{p.dmg+=6;}},
   {g:'legend',icon:'💢',name:'작렬탄',desc:'삭제된 레벨업 특성',removed:true,skip:()=>true,apply:p=>{}},
   {g:'legend',icon:'🌀',name:'이중 도약',desc:'베인Q 2회 충전',skip:p=>p.dodgeMaxCharges>=2,apply:p=>{p.dodgeMaxCharges=2;p.dodgeCharges=2;}},
-  {g:'legend',icon:'🔵',name:'재충전 보호막',desc:'10초마다 1회 피격 무효',skip:p=>p.shieldRegen>0,apply:p=>{p.shieldRegen=10;}},
+  {g:'legend',icon:'🔵',name:'재충전 보호막',desc:'30초마다 1회 피격 무효',skip:p=>p.shieldRegen>0,apply:p=>{p.shieldRegen=30;}},
   {g:'legend',icon:'⚰️',name:'사형 선고',desc:'삭제된 레벨업 특성',removed:true,skip:()=>true,apply:p=>{}},
   {g:'legend',icon:'🌬️',name:'확산',desc:'상태이상 적 처치 시 주변에 같은 효과 전파',skip:p=>p.statusSpread,apply:p=>{p.statusSpread=true;}},
   {g:'legend',icon:'☠',name:'처형 본능',desc:'체력 25% 이하 적 피해 +25% (보스 절반)',apply:p=>{p.executeInstinctDmgMul+=0.25;}},
@@ -21800,7 +21831,7 @@ function spEffects(p){
   add(p.regenOverload,'🌿','재생 과부하','재생 과부하','체력 50% 이하일 때 양수 재생 효과 +50%','regen-overload');
   add(p.lifesteal>0,'🩸','확률 회복 '+pc(p.lifesteal),'확률 회복','적 처치 시 확률로 체력 회복','lifesteal');
   add(p.healOnKill>0,'💚','처치 회복 '+p.healOnKill,'처치 회복','적 처치 시 체력 회복','heal-on-kill');
-  add(p.shieldRegen>0,'🔵','재충전 보호막','재충전 보호막','일정 시간마다 보호막 충전','shield-regen');
+  add(p.shieldRegen>0,'🔵','재충전 보호막','재충전 보호막',Math.max(30,Number(p.shieldRegen)||0)+'초마다 보호막 충전','shield-regen');
   add(p.hitShield>0,'🔵','피격 보호막 '+p.hitShield,'보호막 물약','피해를 무효화하는 보호막','hit-shield');
   add(p.overhealShieldRate>0,'🛡️','과치유 보호막 '+Math.round(p.overhealShield||0)+'/'+Math.round(p.maxhp*(p.overhealShieldCap||0.2)),'과치유 보호막','초과 회복량의 '+pc(p.overhealShieldRate)+'를 보호막으로 전환. 상한 최대 체력 '+pc(p.overhealShieldCap||0.2),'vamp-shield');
   add(p.deathWard>0,'🪽','불사 '+p.deathWard,'불사 물약','죽을 피해를 무시','death-ward');
