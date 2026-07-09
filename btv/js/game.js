@@ -90,7 +90,7 @@ function playerShootCooldown(p){
   if(p&&p.brokenReloadT>0) totalFireAdd-=0.20;
   if(p.buffs&&p.buffs.haste>0) totalFireAdd+=DODGE_HASTE_FIRE_ADD;
   if(p&&p.perfectDodgeFireT>0) totalFireAdd+=0.20;
-  if(p&&p.basicReloadT>0) totalFireAdd+=0.55;
+  if(p&&p.basicReloadT>0) totalFireAdd+=0.30;
   const fireHandicap=Number(p._fireHandicap)||1;
   if(fireHandicap!==1) totalFireAdd+=(1/fireHandicap)-1;
   const fireRateMul=Math.max(0.1,1+totalFireAdd);
@@ -2187,7 +2187,7 @@ function castBasicSkill(chargeRatio){
   player.basicFocusT=dur;
   player.classSkillCd=classSkillMaxCooldown();
   burst(player.x,player.y,'#ffd34d',14+Math.round(12*c),190+120*c);
-  banner('빠른 재장전','발사속도 증가',900);
+  banner('빠른 재장전','발사속도 +30%',900);
   return true;
 }
 function castRushSkill(chargeRatio){
@@ -2202,7 +2202,7 @@ function castRushSkill(chargeRatio){
     player.x=clamp(player.x,player.r,W-player.r);
     player.y=clamp(player.y,player.r,H-player.r);
   }
-  const dmg=Math.max(2,totalAttackPower(player)*(0.60+0.58*c)*(1+(Number(player.rushSkillDmgMulAdd)||0))*playerClassSkillPowerMul(player));
+  const dmg=Math.max(2,totalAttackPower(player)*(0.64+0.66*c)*(1+(Number(player.rushSkillDmgMulAdd)||0))*playerClassSkillPowerMul(player));
   const speed=playerBulletSpeed(player)*(0.84+0.16*c);
   const attackId='rushSkill:'+Date.now()+':'+(++playerAttackSeq);
   const pellets=4+Math.round(3*c)+(Number(player.rushSkillPelletAdd)||0);
@@ -3568,11 +3568,13 @@ function getFireRateBreakdown(){
   const total=(Number(player.fireAdd)||0)+(Number(player.potionFireAdd)||0)
     +(player.buffs&&player.buffs.haste>0?DODGE_HASTE_FIRE_ADD:0)
     +(player.perfectDodgeFireT>0?0.20:0)
+    +(player.basicReloadT>0?0.30:0)
     +(fireHandicap!==1?((1/fireHandicap)-1):0);
   const parts=collectAppliedSourceParts('fireAdd',player);
   addPotionBuffParts(parts,'fireAdd');
   if(player.buffs&&player.buffs.haste>0) addSpecialPart(parts,'추진력 발동',DODGE_HASTE_FIRE_ADD,'임시 효과');
   if(player.perfectDodgeFireT>0) addSpecialPart(parts,'완벽 회피 발동',0.20,'패시브 노드');
+  if(player.basicReloadT>0) addSpecialPart(parts,'빠른 재장전',0.30,'직업 스킬');
   addRemainderPart(parts,total,'기타 발사속도 보너스');
   return {total,parts};
 }
@@ -3700,6 +3702,8 @@ function getSpecialEffectTooltipData(effectKey){
     const finalMul=incomingDamageMul(player);
     const takenMul=curseDamageTakenMul(player);
     const rows=specialPartsToText(b.parts,pct);
+    const curseAffinityReduction=(player&&player.curseAffinity)?curseDamageTakenBonus(player)*0.20:0;
+    if(curseAffinityReduction>0.0005) rows.push({label:'저주 친화 완화',value:'-'+pct(curseAffinityReduction),sourceType:'레벨업 특성'});
     if(Math.abs(takenMul-1)>0.005) rows.push({label:'받는 피해 배율',value:pct(takenMul-1),sourceType:'리스크'});
     title=incomingDamageDisplayLabel(finalMul)+' '+incomingDamageDisplayValue(finalMul); totalText=incomingDamageDisplayValue(finalMul); description='현재 최종 받는 피해 보정입니다.'; formulaText='적용 방식: (1 - 방어 수치) x 받는 피해 배율'; kind='armor';
     return {title,totalText,description,breakdown:rows,formulaText,kind};
@@ -3814,6 +3818,8 @@ function getStatTooltipData(statKey){
     const b=getArmorBreakdown();
     breakdown=specialPartsToText(b.parts,pct);
     const takenMul=curseDamageTakenMul(player);
+    const curseAffinityReduction=(player&&player.curseAffinity)?curseDamageTakenBonus(player)*0.20:0;
+    if(curseAffinityReduction>0.0005) breakdown.push({label:'저주 친화 완화',value:'-'+pct(curseAffinityReduction),sourceType:'레벨업 특성'});
     if(Math.abs(takenMul-1)>0.005) breakdown.push({label:'받는 피해 배율',value:pct(takenMul-1),sourceType:'리스크'});
     const finalMul=incomingDamageMul(player);
     description='현재 최종 받는 피해 보정입니다.';
@@ -10620,7 +10626,7 @@ function beginKijoGaze(b){
     b.gazeT=b.enraged?3.4:2.8; b.gazeStareT=0; b.gazeFireT=0.6; b.gazeInverse=false;
     // [3페] 두 번째 눈: 키죠와 두 번째 눈 방향 모두 피해야 함
     b.gaze2 = kph>=3 ? {x:clamp(W-b.x+rand(-90,90),80,W-80), y:clamp(rand(120,H*0.5),120,H*0.5)} : null;
-    banner(kph>=3?'👁 두 개의 눈':'👁 보지 마!', kph>=3?'두 시선 모두 피해!':'커서를 키죠에서 떼고 눈먼 사격을',1100);
+    banner(kph>=3?'👁 두 개의 눈':'👁 보지 마!', kph>=3?'두 시선 모두 피해!':'커서를 키죠에서 떼고 눈먼 사격을',3300);
     playFileSfx('kijoWhisper',{vol:0.62,rate:0.78,maxDur:1.4,cd:0.9,key:'kijoDoNotLook'});
     if(typeof beep==='function')beep(120,0.3,'sawtooth',0.06); screenShake=Math.max(screenShake||0,6);
     b._gazeCd=14;
@@ -10630,7 +10636,7 @@ function beginKijoGaze(b){
 function beginKijoInverseGaze(b){
   return setIntent(b,'👁','노려봐',1.1,()=>{
     b.gazeT=3.2; b.gazeStareT=0; b.gazeFireT=0.6; b.gazeInverse=true; b.gaze2=null;
-    banner('👁 노려봐!','반대다 — 키죠를 계속 조준해!',1200);
+    banner('👁 노려봐!','반대다 — 키죠를 계속 조준해!',3300);
     playFileSfx('kijoWhisper',{vol:0.62,rate:0.7,maxDur:1.4,cd:0.9,key:'kijoInverseGaze'});
     if(typeof beep==='function')beep(150,0.3,'sawtooth',0.06); screenShake=Math.max(screenShake||0,7);
     b._invGazeCd=16;
@@ -10710,9 +10716,10 @@ function updateBossIntentPatterns(b,dt){
   if(b.key==='kijo'){ b.restT=0; b.restWaitT=0; b.restWaitDur=0; }
   const cd=(name,base)=>{ b[name]=(b[name]==null?rand(base*0.65,base*1.2):b[name])-dt; return b[name]<=0&&!b.intent; };
   if(b.key==='kijo'){
-    if(b.kijoFinalPhase&&(b.gazeT||0)<=0&&(b.stageT||0)<=0&&cd('_invGazeCd',16)) beginKijoInverseGaze(b);   // [3페] 규칙 반전
-    else if((b.gazeT||0)<=0&&(b.stageT||0)<=0&&cd('_gazeCd',b.enraged?14:23)) beginKijoGaze(b);   // 격노 전에도 순한 버전을 긴 쿨로 미리 노출(시그니처 각인)
-    else if((b.gazeT||0)<=0&&(b.stageT||0)<=0&&cd('_stageCd',18)) beginKijoStage(b);
+    if((b._sigLock=(b._sigLock||0)-dt)>0){ /* 시그니처 여파 중 — 특수 스킵 */ }
+    else if(b.kijoFinalPhase&&(b.gazeT||0)<=0&&(b.stageT||0)<=0&&cd('_invGazeCd',16)){ beginKijoInverseGaze(b); b._sigLock=1.3; }   // [3페] 규칙 반전
+    else if((b.gazeT||0)<=0&&(b.stageT||0)<=0&&cd('_gazeCd',b.enraged?14:23)){ beginKijoGaze(b); b._sigLock=1.3; }   // 격노 전에도 순한 버전을 긴 쿨로 미리 노출(시그니처 각인)
+    else if((b.gazeT||0)<=0&&(b.stageT||0)<=0&&cd('_stageCd',18)){ beginKijoStage(b); b._sigLock=1.3; }
     else if(cd('_evilEyeCd',8)) beginKijoEvilEye(b);
     else if(cd('_maskBombCd',11)) setIntent(b,'🎭','가면 폭발',1.5,()=>{ for(let i=0;i<4;i++){ const x=clamp(player.x+rand(-150,150),50,W-50), y=clamp(player.y+rand(-120,120),90,H-60); warnAoE(x,y,90,0.75,0.4,16,'가면 폭발','#c0392b'); } b._maskBombCd=12; });
   }else if(b.key==='seungwoo'&&!isSeungwooVoidFight()){
@@ -10754,7 +10761,7 @@ function updateBoss(dt){
   if(stunned) return;
   if(b.key==='kijo'){ b.restT=0; b.restWaitT=0; b.restWaitDur=0; }
   if(b.key==='kijo'&&b.intent&&b.intent.label==='마안') return;
-  if(b.key==='kijo'){ updateKijoGaze(b,dt); updateKijoStage(b,dt); if((b.gazeT||0)>0||(b.stageT||0)>0) b.attackT=Math.max(b.attackT,0.5); }
+  if(b.key==='kijo'){ updateKijoGaze(b,dt); updateKijoStage(b,dt); if((b.gazeT||0)>0||(b.stageT||0)>0) b.attackT=Math.max(b.attackT,0.95); }
   // 플레이어 추적(느슨) — 순서 기억 중엔 추적 정지, 타일 링 위로 물러나 그 자리에서 사격
   const a=Math.atan2(player.y-b.y,player.x-b.x);
   const sp=b.spd*(b.enraged?(b.key==='kijo'?1.12:1.3):1)*statusMoveMul(b);
@@ -10824,7 +10831,7 @@ function updateBoss(dt){
         kijoFinalCurtain(b);
       }
       // 격노 보너스: 유도하는 음식탄 (피하기 까다로움)
-      if(b.enraged && Math.random()<0.22){
+      if(b.enraged && (b.gazeT||0)<=0 && (b.stageT||0)<=0 && Math.random()<0.15){
         const pa=Math.atan2(player.y-b.y,player.x-b.x);
         for(let i=0;i<5;i++) throwFood(b, pa+i/5*TAU, 150, 15, 1.05);
       }
@@ -14970,11 +14977,11 @@ const EVENT_THEMES = {
   '😴 졸고 있는 승우': {scene:'well',     accent:'#7aa8ff', bg:'radial-gradient(ellipse at 50% 60%,#08122a 0%,#0a0814 60%)', tags:[{t:'휴식',c:'#7aa8ff',bg:'rgba(0,30,70,.55)'}]},
   '🐤 대파와 아기새': {scene:'well',     accent:'#ffd24d', bg:'radial-gradient(ellipse at 50% 58%,#1a1600 0%,#0a0814 60%)', tags:[{t:'회복',c:'#40ee80',bg:'rgba(0,50,20,.55)'}]},
   '🎤 광천김 노래':   {scene:'ticket',   accent:'#38e8ff', bg:'radial-gradient(ellipse at 50% 55%,#06182a 0%,#0a0814 60%)', tags:[{t:'힐링',c:'#40ee80',bg:'rgba(0,50,20,.55)'},{t:'버프',c:'#38e8ff',bg:'rgba(0,50,80,.55)'}]},
-  '⛷️ 르블이 스키':   {scene:'dice',     accent:'#9bd4ff', bg:'radial-gradient(ellipse at 50% 70%,#0a1424 0%,#0a0814 60%)', tags:[{t:'도박',c:'#ffaa00',bg:'rgba(55,35,0,.55)'}]},
+  '⛷️ 르블이 스키':   {scene:'ski',      accent:'#9bd4ff', bg:'radial-gradient(ellipse at 50% 70%,#0a1424 0%,#0a0814 60%)', tags:[{t:'활강',c:'#9bd4ff',bg:'rgba(20,55,80,.55)'}]},
   '🌳 나무 그늘':     {scene:'well',     accent:'#5dff9b', bg:'radial-gradient(ellipse at 50% 60%,#08200f 0%,#0a0814 60%)', tags:[{t:'회복',c:'#40ee80',bg:'rgba(0,50,20,.55)'}]},
   '✨ 파이리 텐션':   {scene:'roulette', accent:'#ff8840', bg:'radial-gradient(ellipse at 50% 60%,#1c0c00 0%,#0a0814 60%)', tags:[{t:'랜덤',c:'#ffaa00',bg:'rgba(55,35,0,.55)'}]},
   '🗣️ 말대모 잔소리': {scene:'book',     accent:'#6688ff', bg:'radial-gradient(ellipse at 40% 50%,#080a20 0%,#0a0814 60%)', tags:[{t:'조언',c:'#6688ff',bg:'rgba(0,15,60,.55)'}]},
-  '🕊️ 비둘기 떼':    {scene:'dice',     accent:'#cfd6e0', bg:'radial-gradient(ellipse at 50% 60%,#12141c 0%,#0a0814 60%)', tags:[{t:'도박',c:'#ffaa00',bg:'rgba(55,35,0,.55)'}]},
+  '🕊️ 비둘기 떼':    {scene:'pigeon_flock',accent:'#cfd6e0', bg:'radial-gradient(ellipse at 50% 60%,#12141c 0%,#0a0814 60%)', tags:[{t:'도박',c:'#ffaa00',bg:'rgba(55,35,0,.55)'}]},
   '💰 러라 투자':     {scene:'royal',    accent:'#ffd24d', bg:'radial-gradient(ellipse at 50% 30%,#181400 0%,#0a0814 60%)', tags:[{t:'골드',c:'#ffd24d',bg:'rgba(60,45,0,.55)'},{t:'도박',c:'#ffaa00',bg:'rgba(55,35,0,.55)'}]},
   '💔 킬조이의 부탁': {scene:'collector',accent:'#ff6b9d', bg:'radial-gradient(ellipse at 40% 55%,#1c0814 0%,#0a0814 60%)', tags:[{t:'거래',c:'#ffcc30',bg:'rgba(60,45,0,.55)'},{t:'도박',c:'#ffaa00',bg:'rgba(55,35,0,.55)'}]},
   '💕 한쥐 썸':       {scene:'roulette', accent:'#ff6b9d', bg:'radial-gradient(ellipse at 50% 60%,#1c0814 0%,#0a0814 60%)', tags:[{t:'연애',c:'#ff6b9d',bg:'rgba(70,0,30,.55)'},{t:'도박',c:'#ffaa00',bg:'rgba(55,35,0,.55)'}]},
@@ -15637,6 +15644,61 @@ function evDrawScene(sceneId, canvas){
       ctx.fillStyle='#20223a'; ctx.fillRect(W*.18,H*.52,W*.64,H*.06);
       ctx.fillStyle=`rgba(70,110,255,${.28+Math.sin(t*2.8)*.38})`;
       for(let i=0;i<3;i++) ctx.fillRect(W*.24+i*W*.22,H*.60,W*.12,3);
+    },
+    ski: (t)=>{
+      ctx.clearRect(0,0,W,H);
+      ctx.fillStyle='#081426'; ctx.fillRect(0,0,W,H);
+      ctx.fillStyle='#152c48'; ctx.fillRect(0,H*.18,W,H*.82);
+      ctx.fillStyle='#d8f3ff';
+      ctx.beginPath(); ctx.moveTo(0,H*.56); ctx.lineTo(W,H*.28); ctx.lineTo(W,H); ctx.lineTo(0,H); ctx.closePath(); ctx.fill();
+      ctx.fillStyle='#f7fdff';
+      ctx.beginPath(); ctx.moveTo(0,H*.68); ctx.lineTo(W,H*.44); ctx.lineTo(W,H); ctx.lineTo(0,H); ctx.closePath(); ctx.fill();
+      for(let i=0;i<14;i++){
+        const sx=(i*37+t*28)%W, sy=H*.12+((i*19+t*22)%Math.floor(H*.42));
+        ctx.fillStyle=i%2?'#ffffff':'#9bd4ff'; ctx.fillRect(sx,sy,2,2);
+      }
+      const px=W*.24+((t*34)%Math.floor(W*.48)), py=H*.50+Math.sin(t*2)*4;
+      ctx.fillStyle='rgba(20,80,120,.22)'; ctx.fillRect(px-20,py+31,66,4);
+      ctx.save(); ctx.translate(px,py); ctx.rotate(-0.28+Math.sin(t*4)*0.05);
+      ctx.fillStyle='#ff6b8a'; ctx.fillRect(-6,-18,13,18);
+      ctx.fillStyle='#f3d0b8'; ctx.fillRect(-5,-29,11,10);
+      ctx.fillStyle='#28324d'; ctx.fillRect(-7,-32,15,4);
+      ctx.fillStyle='#314c80'; ctx.fillRect(-10,0,8,17); ctx.fillRect(4,0,8,17);
+      ctx.fillStyle='#5b6f8c'; ctx.fillRect(-22,17,38,3); ctx.fillRect(0,24,42,3);
+      ctx.fillStyle='#26364d'; ctx.fillRect(-14,-10,5,20); ctx.fillRect(9,-8,5,21);
+      ctx.restore();
+      for(let i=0;i<5;i++){
+        ctx.fillStyle='rgba(90,150,200,'+(0.22-i*0.03)+')';
+        ctx.fillRect(px-34-i*15,py+20+i*2,18,2);
+      }
+    },
+    pigeon_flock: (t)=>{
+      ctx.clearRect(0,0,W,H);
+      ctx.fillStyle='#0b1018'; ctx.fillRect(0,0,W,H);
+      ctx.fillStyle='#182232'; ctx.fillRect(0,H*.58,W,H*.42);
+      ctx.fillStyle='#242b36'; ctx.fillRect(W*.06,H*.54,W*.88,H*.07);
+      ctx.fillStyle='#111823'; ctx.fillRect(W*.12,H*.61,W*.18,H*.18); ctx.fillRect(W*.58,H*.60,W*.24,H*.20);
+      ctx.fillStyle='#2f3846'; ctx.fillRect(W*.20,H*.49,W*.14,H*.09); ctx.fillRect(W*.66,H*.50,W*.12,H*.10);
+      ctx.fillStyle='rgba(207,214,224,.12)'; ctx.fillRect(0,H*.20,W,H*.16);
+      for(let i=0;i<9;i++){
+        const x=(W*.10+i*W*.10+Math.sin(t*1.7+i)*18)%W;
+        const y=H*.18+Math.sin(t*2.1+i*.8)*H*.12+(i%3)*8;
+        const s=4+(i%3);
+        ctx.fillStyle=i%2?'#d9dee6':'#aeb7c2';
+        ctx.fillRect(x,y,s,s);
+        ctx.fillRect(x-s,y+s,s,s);
+        ctx.fillRect(x+s,y+s,s,s);
+        ctx.fillStyle='#707b88'; ctx.fillRect(x,y+s,s,s);
+      }
+      const cx=W*.48+Math.sin(t*2)*6, cy=H*.49+Math.sin(t*3)*3;
+      ctx.fillStyle='rgba(0,0,0,.22)'; ctx.fillRect(cx-32,cy+31,64,4);
+      ctx.fillStyle='#cfd6e0'; ctx.fillRect(cx-13,cy-8,26,24);
+      ctx.fillStyle='#e8edf3'; ctx.fillRect(cx-9,cy-22,18,14);
+      ctx.fillStyle='#8e99a8'; ctx.fillRect(cx-24,cy-4,12,14); ctx.fillRect(cx+12,cy-4,12,14);
+      ctx.fillStyle='#ffb347'; ctx.fillRect(cx-3,cy-10,6,4);
+      ctx.fillStyle='#222833'; ctx.fillRect(cx-5,cy-17,3,3); ctx.fillRect(cx+4,cy-17,3,3);
+      ctx.fillStyle='#7b8796'; ctx.fillRect(cx-8,cy+16,4,13); ctx.fillRect(cx+5,cy+16,4,13);
+      for(let i=0;i<4;i++){ ctx.fillStyle='rgba(207,214,224,'+(0.18+i*.08)+')'; ctx.fillRect(W*.18+i*W*.16,H*.76+Math.sin(t*2+i)*4,18,3); }
     },
     dice: (t)=>{
       ctx.clearRect(0,0,W,H);
