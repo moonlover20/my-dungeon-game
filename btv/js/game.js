@@ -9272,7 +9272,7 @@ function startCombat(kind, fresh){
         ze.hp*=1.75; ze.maxhp*=1.75; ze.dmg=Math.round(ze.dmg*1.4); ze.r+=5; ze.xp=900; ze.coolT=1.0;
         ze.x=W/2; ze.y=190; ze.intro=true; ze.introScale=0; ze.stunT=4; ze.tauntedHalf=false;
         ze.atkT=1.8; ze.atkN=0; ze.enr=false; ze.enrShown=false;
-        ze.phase=1; ze.phaseHp=[0.68,0.36]; ze.climaxT=0; ze.eyeOrbs=[];
+        ze.phase=1; ze.climaxT=0; ze.eyeOrbs=[];   // 미주는 3바 풀피 전환(kkotNextPhase) — phaseHp 임계값 미사용이라 제거
         eliteIntro={t:0, ze:ze, warn:null, landed:false, banner:0, tensionDone:false};
         beep(523,0.3,'sine',0.05); beep(392,0.5,'sine',0.035); // 달콤한 척 하는 음
       } else {
