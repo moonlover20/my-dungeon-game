@@ -11046,6 +11046,9 @@ function killBoss(){
     if(deadBoss&&deadBoss.key==='set3') banner('재밌었다','다음 시즌에 보자',1600);
     saveUserProgress();
   }
+  else if(deadBoss&&deadBoss.key==='set3'){
+    gainXP(1800);   // 세트3 중보 XP — 혜철이(150) ↔ 박제인간(3400) 중간값. (그 외 boss-변수형 중보는 기존대로 XP 없음)
+  }
   if(deadBoss&&deadBoss.key) markDiscovered('bosses', deadBoss.key);
   if(act>=MAX_ACT){ enemies.length=0; eBullets.length=0; }   // 최종보스 처치 시 남은 잡몹·탄막 정리
   updateHUD();
