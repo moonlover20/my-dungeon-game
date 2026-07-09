@@ -1,14 +1,14 @@
 const ENEMY_TYPES={
   // === 1막: 고블린 소굴 ===
-  goblin_warrior :{name:"러부엉",  r:24, hp:28, spd:86, dmg:11, color:"#6fae4e", xp:8,  ai:"chase", lunge:true, label:"러부엉"},
-  goblin_archer  :{name:"대파",  r:22, hp:18, spd:50, dmg:8,  color:"#7bbf5a", xp:10, ai:"shooter", range:340, cool:1.25, label:"대파"},
-  goblin_shaman  :{name:"까치",  r:23, hp:24, spd:66, dmg:8,  color:"#8a6fb0", xp:12, ai:"orbit",   range:240, cool:1.05, label:"까치"},
-  goblin_bomber  :{name:"블페러", r:23, hp:22, spd:108, dmg:6,  color:"#9aa83f", xp:11, ai:"chase", explode:true, label:"블페러"},
-  hoonsangtae   :{name:"\uD6C8\uC0C1\uD0DC", r:30, hp:48, spd:55, dmg:10, color:"#e25572", xp:38, ai:"cleaver_thrower", range:320, cool:1.55, label:"\uD6C8\uC0C1\uD0DC"},
-  jaemin        :{name:"\uC7AC\uBBFC", r:27, hp:42, spd:68, dmg:9, color:"#f0a84a", xp:36, ai:"boomerang_thrower", range:440, cool:1.95, label:"\uC7AC\uBBFC"},
+  goblin_warrior :{name:"러부엉",  r:24, hp:28, spd:86, dmg:11, color:"#6fae4e", xp:4,  ai:"chase", lunge:true, label:"러부엉"},
+  goblin_archer  :{name:"대파",  r:22, hp:18, spd:50, dmg:8,  color:"#7bbf5a", xp:5, ai:"shooter", range:340, cool:1.25, label:"대파"},
+  goblin_shaman  :{name:"까치",  r:23, hp:24, spd:66, dmg:8,  color:"#8a6fb0", xp:6, ai:"orbit",   range:240, cool:1.05, label:"까치"},
+  goblin_bomber  :{name:"블페러", r:23, hp:22, spd:108, dmg:6,  color:"#9aa83f", xp:5, ai:"chase", explode:true, label:"블페러"},
+  hoonsangtae   :{name:"\uD6C8\uC0C1\uD0DC", r:30, hp:48, spd:55, dmg:10, color:"#e25572", xp:24, ai:"cleaver_thrower", range:320, cool:1.55, label:"\uD6C8\uC0C1\uD0DC"},
+  jaemin        :{name:"\uC7AC\uBBFC", r:27, hp:42, spd:68, dmg:9, color:"#f0a84a", xp:22, ai:"boomerang_thrower", range:440, cool:1.95, label:"\uC7AC\uBBFC"},
   sniper_viewer :{name:"\uC800\uACA9\uB7EC", r:26, hp:116, spd:28, dmg:13, touchDmg:10, color:"#d83a3a", xp:320, ai:"sniper_laser", range:1200, cool:1.8, label:"\uC800\uACA9\uB7EC"},
-  stream_watcher:{name:"\uBC29\uD50C\uB7EC", r:26, hp:40, spd:44, dmg:10, color:"#4fc0d8", xp:34, ai:"movement_lock", range:360, cool:2.6, label:"\uBC29\uD50C\uB7EC"},
-  rhino_beetle   :{name:"자잘자",   r:34, hp:340, spd:78, dmg:16, touchDmg:16, color:"#3a2418", xp:75, ai:"charge", armor:0.15, label:"자잘자"},
+  stream_watcher:{name:"\uBC29\uD50C\uB7EC", r:26, hp:40, spd:44, dmg:10, color:"#4fc0d8", xp:20, ai:"movement_lock", range:360, cool:2.6, label:"\uBC29\uD50C\uB7EC"},
+  rhino_beetle   :{name:"자잘자",   r:34, hp:340, spd:78, dmg:16, touchDmg:16, color:"#3a2418", xp:45, ai:"charge", armor:0.15, label:"자잘자"},
   earthworm      :{name:"케터피", r:12, hp:10, spd:82, dmg:6, color:"#e87a8a", xp:0, ai:"erratic", label:"케터피"},
   hyechul        :{name:"혜철이", r:52, hp:656, phaseHp:[400,500,600], spd:42, dmg:15, color:"#c0392b", xp:150, ai:"hyechul", label:"혜철이"},
   zergling       :{name:"저글링", r:14, hp:28, spd:132, dmg:7, color:"#c98bff", xp:0, ai:"charge", label:"저글링"},
@@ -38,7 +38,7 @@ const ENEMY_TYPES={
   // --- 2막 어려운 적 ---
   pobear        :{name:"포베어", r:30, hp:148, spd:66, dmg:20, touchDmg:18, color:"#c8884a", xp:330, ai:"charge", armor:0.08, label:"포베어"},
   blackstar     :{name:"흑별",   r:27, hp:132, spd:42, dmg:17, touchDmg:14, color:"#17111f", xp:315, ai:"orbit", range:300, cool:1.15, label:"흑별"},
-  killjoy       :{name:"킬조이", r:26, hp:34, spd:104,dmg:13, touchDmg:10, color:"#38e8ff", xp:42, ai:"shooter", range:405, cool:1.10, label:"킬조이"},
+  killjoy       :{name:"킬조이", r:26, hp:34, spd:104,dmg:13, touchDmg:10, color:"#38e8ff", xp:26, ai:"shooter", range:405, cool:1.10, label:"킬조이"},
   apple         :{name:"사과",   r:27, hp:128, spd:64, dmg:18, color:"#ff4d6d", xp:310, ai:"erratic", range:300, cool:1.25, label:"사과"},
   // === 3막 전용 몬스터 ===
   act3_domin     :{name:"\uB3C4\uBBFC", r:23, hp:172, spd:88, dmg:18, touchDmg:18, color:"#7ad7ff", xp:160, ai:"submerge_charge", range:420, cool:3.2, label:"\uB3C4\uBBFC"},
