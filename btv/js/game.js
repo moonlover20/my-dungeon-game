@@ -215,7 +215,7 @@ const PLAYER_CLASSES=[
   {id:'rush_streamer',name:'돌격 방송인',iconMark:'shotgun',iconBg:'#33253b',iconFg:'#ffb347',weapon:'산탄총',weaponType:'shotgun',role:'근접 산탄형',difficulty:'보통',color:'#ffb347',
    hpMul:1.15,dmgMul:0.95,fireMul:0.85,rangeMul:0.80,bulletSpeedMul:0.96,bulletSizeMul:0.95,
    desc:'짧은 사거리 4연 산탄. 가까울수록 강하다.',
-   skill:'클릭: 돌파. 대시와 산탄 발사.',
+   skill:'클릭: 백스텝. 뒤로 빠지며 산탄 발사.',
    passive:'근거리 처치 시 2.5초 이속 +18%.'},
   {id:'sniper_streamer',name:'저격 방송인',iconMark:'rifle',iconBg:'#203348',iconFg:'#8be8ff',weapon:'저격총',weaponType:'sniper',role:'레이저 / 관통형',difficulty:'어려움',color:'#8be8ff',
    hpMul:0.85,dmgMul:1.40,fireMul:0.70,rangeMul:1.50,bulletSpeedMul:1.10,bulletSizeMul:1,
@@ -399,7 +399,7 @@ const OWL_SPRITE=new Image();let owlReady=false;OWL_SPRITE.onload=()=>{owlReady=
 const SHIELD_SPRITE=new Image();let shieldReady=false;SHIELD_SPRITE.onload=()=>{shieldReady=true;};SHIELD_SPRITE.src="btv/assets/asset-011-69c7bd18c1.png";
 const TRASH_SPRITE=new Image();let trashReady=false;TRASH_SPRITE.onload=()=>{trashReady=true;};TRASH_SPRITE.src="btv/assets/asset-012-115e7cc76b.png";
 const TRASHBIT_SPRITE=new Image();let trashbitReady=false;TRASHBIT_SPRITE.onload=()=>{trashbitReady=true;};TRASHBIT_SPRITE.src="btv/assets/asset-013-c0095fd832.png";
-const VAYNEQ_ICON=new Image();let vqReady=false;VAYNEQ_ICON.onload=()=>{vqReady=true;};VAYNEQ_ICON.src="btv/assets/asset-014-b11cdba9dc.png";
+const DODGE_ICON=new Image();let dodgeIconReady=false;DODGE_ICON.onload=()=>{dodgeIconReady=true;};DODGE_ICON.src="btv/assets/dodge-icon.png";
 const LAIR_SPRITE=new Image();let lairReady=false;LAIR_SPRITE.onload=()=>{lairReady=true;};LAIR_SPRITE.src="btv/assets/asset-015-a4f7b5bb1f.png";
 const HIVE_SPRITE=new Image();let hiveReady=false;HIVE_SPRITE.onload=()=>{hiveReady=true;};HIVE_SPRITE.src="btv/assets/asset-016-111578856b.png";
 const ZERGLING_SPRITE=new Image();let zerglingReady=false;ZERGLING_SPRITE.onload=()=>{zerglingReady=true;};ZERGLING_SPRITE.src="btv/assets/asset-017-afb6d2c48a.png";
@@ -1301,7 +1301,7 @@ const RELICS=[
   {id:"vampire_fang",name:"흡혈귀 송곳니",icon:"🧛",desc:"처치 시 18% 확률로 체력 5 회복.",cls:"boon",apply:p=>{p.lifesteal+=0.18;}},
   // ===== 축복: 기동/유틸 =====
   {id:"sneaker",name:"한 짝뿐인 운동화",icon:"👟",desc:"이동 속도 +12.",cls:"boon",apply:p=>{p.moveSpeedAdd+=12;}},
-  {id:"roll_master",name:"베인Q 숙련",icon:"🌀",desc:"회피 쿨타임 -25%.",cls:"boon",apply:p=>{p.dodgeCdMul-=0.25;}},
+  {id:"roll_master",name:"회피 숙련",icon:"🌀",desc:"회피 쿨타임 -25%.",cls:"boon",apply:p=>{p.dodgeCdMul-=0.25;}},
   {id:"gold_pig",name:"황금 돼지 저금통",icon:"🐷",desc:"골드 획득량 +30%.",cls:"boon",apply:p=>{p.goldMul+=0.30;}},
   {id:"xp_book",name:"경험의 서",icon:"📖",desc:"경험치 획득량 +20%.",cls:"boon",apply:p=>{p.xpMul+=0.20;}},
   {id:"potion_belt",name:"비상용 물약 벨트",icon:"🧪",desc:"즉시 랜덤 포션 1개 획득.",cls:"boon",apply:p=>{addPotion(rollPotion());}},
@@ -1313,7 +1313,7 @@ const RELICS=[
   {id:"seungwoo_broken_monitor",name:"승우의 깨진 모니터",icon:"📺",desc:"공격력 +9, 치명타 확률 +20%.",cls:"boon",apply:p=>{p.dmg+=9;p.critChance+=0.20;}},
   {id:"moving_afterimage",name:"무빙의 잔상",icon:"💨",desc:"이동 속도 +16, 회피 쿨타임 -20%.",cls:"boon",apply:p=>{p.moveSpeedAdd+=16;p.dodgeCdMul-=0.20;}},
   {id:"clutch_heart",name:"딸피의 심장",icon:"🫀",desc:"체력 30% 이하일 때 공격력 +8.",cls:"boon",apply:p=>{p.lowHpAtkFlat=(Number(p.lowHpAtkFlat)||0)+8;}},
-  {id:"clip_dodge_instinct",name:"클립각 회피본능",icon:"🎬",desc:"회피 쿨타임 -25%. Q 직후 무적 시간이 조금 증가.",cls:"boon",apply:p=>{p.dodgeCdMul-=0.25;p.dodgeIframeBonus+=0.12;}},
+  {id:"clip_dodge_instinct",name:"클립각 회피본능",icon:"🎬",desc:"회피 쿨타임 -25%. 회피 직후 무적 시간이 조금 증가.",cls:"boon",apply:p=>{p.dodgeCdMul-=0.25;p.dodgeIframeBonus+=0.12;}},
   {id:"collector_showcase",name:"수집가의 진열장",icon:"🗃️",desc:"공격력 +9, 골드 획득량 +40%.",cls:"boon",apply:p=>{p.dmg+=9;p.goldMul+=0.40;}},
   {id:"mythic_vault",name:"신화 보관함",icon:"🧰",desc:"치명타 확률 +30%, 치명타 피해 +40%.",cls:"boon",apply:p=>{p.critChance+=0.30;p.critMult+=0.40;}},
   {id:"curse_crown",name:"저주의 왕관",icon:"👑",desc:"공격력 +15. 받는 피해 +30%.",cls:"curse",apply:p=>{p.dmg+=15;p.damageTakenMul+=0.30;}},
@@ -1341,7 +1341,7 @@ const RELICS=[
   {id:"thin_glass",name:"더 얇은 유리",icon:"🪟",desc:"치명타 +30%. 받는 피해 +25%.",cls:"curse",apply:p=>{p.critChance+=0.3;p.damageTakenMul+=0.25;}},
   {id:"time_bomb",name:"시한폭탄 심장",icon:"⏱️",desc:"공격력 +9. 초당 체력 -1.",cls:"curse",apply:p=>{p.dmg+=9;p.regen-=1;}},
   {id:"greed",name:"탐욕의 손",icon:"🤑",desc:"골드 획득량 +50%.",cls:"boon",apply:p=>{p.goldMul+=0.50;}},
-  {id:"slippery",name:"미끄러운 신발",icon:"🧊",desc:"이동 속도 +14. 베인Q 쿨 +50%.",cls:"curse",apply:p=>{p.moveSpeedAdd+=14;p.dodgeCdMul+=0.50;}},
+  {id:"slippery",name:"미끄러운 신발",icon:"🧊",desc:"이동 속도 +14. 회피 쿨 +50%.",cls:"curse",apply:p=>{p.moveSpeedAdd+=14;p.dodgeCdMul+=0.50;}},
   {id:"glass_legs",name:"유리 다리",icon:"🦵",desc:"이동 속도 +14. 최대 체력 -20%.",cls:"curse",apply:p=>{p.moveSpeedAdd+=14;p.maxhp=Math.round(p.maxhp*0.8);p.hp=Math.min(p.hp,p.maxhp);}},
   {id:"turtle",name:"거북이 등딱지",icon:"🐢",desc:"받는 피해 -15%. 이동 속도 -8.",cls:"curse",apply:p=>{p.armor+=0.15;p.moveSpeedAdd-=8;}},
   {id:"all_in",name:"올인",icon:"🎰",desc:"공격력 +10. 받는 피해 +20%.",cls:"curse",apply:p=>{p.dmg+=10;p.damageTakenMul+=0.20;}},
@@ -2195,9 +2195,10 @@ function castRushSkill(chargeRatio){
   const aim=getAimWorldPos();
   const a=Math.atan2(aim.y-player.y,aim.x-player.x);
   player.facing=a;
-  const step=56+96*c+(Number(player.rushSkillRangeAdd)||0);
-  player.x+=Math.cos(a)*step;
-  player.y+=Math.sin(a)*step;
+  const step=28+48*c+(Number(player.rushSkillRangeAdd)||0);
+  // 백스텝: 조준 반대 방향으로 물러난다(산탄은 조준 방향으로 발사 → 뒤로 빠지며 견제).
+  player.x-=Math.cos(a)*step;
+  player.y-=Math.sin(a)*step;
   if(!isSeungwooVoidFight()){
     player.x=clamp(player.x,player.r,W-player.r);
     player.y=clamp(player.y,player.r,H-player.r);
@@ -2221,7 +2222,7 @@ function castRushSkill(chargeRatio){
   }
   player.classSkillCd=classSkillMaxCooldown();
   if(player.rushGuardDuration>0) player.rushGuardT=Math.max(player.rushGuardT||0,Number(player.rushGuardDuration)||0);
-  spawnDashFx('start',player.x,player.y,Math.cos(a),Math.sin(a));
+  spawnDashFx('start',player.x,player.y,-Math.cos(a),-Math.sin(a));
   burst(player.x,player.y,'#ffb347',14+Math.round(12*c),190+130*c);
   return true;
 }
@@ -8010,15 +8011,15 @@ try{ window.metaToast=metaToast; }catch(e){}
 
 // ---------- 전투 구역 시작 ----------
 const BOSS_INTRO_LINES={
-  yanggaeng:{name:'박제인간',line:'저희... 친해요?',tone:'slow',ms:2300},
-  hyechul:{name:'혜철이',line:'조용히 해. 알들이 놀라잖아.',tone:'dark',ms:2100},
-  kijo:{name:'키죠',line:'보지 마.',sub:'키죠의 마안이 열렸다.',tone:'purple',glitch:true,ms:2100},
+  yanggaeng:{name:'박제인간',line:'나 이 방송 몇 년째 보는 줄 알아?',sub:'정지화면 속에서 무언가 움직입니다.',tone:'slow',ms:2300},
+  hyechul:{name:'혜철이',line:'이건 몬스터가 아니에요. 시청자예요.',sub:'화면 안쪽에서 시청자가 부화합니다.',tone:'dark',ms:2200},
+  kijo:{name:'키죠',line:'보지 마. …아니, 봐. 안 보면 나와.',sub:'화면 너머의 눈이 이쪽을 응시합니다.',tone:'purple',glitch:true,ms:2300},
   rhino_beetle:{name:'자잘자',line:'oof.',sub:'자잘자가 돌진 준비를 합니다.',ms:1800},
   kkotchung:{name:'미주',line:'꽃잎 밑을 본 적 있어?',sub:'꽃잎 사이로 검은 단맛이 번진다.',tone:'dark',glitch:true,ms:2100},
   act3_truck:{name:'노잭',line:'NO JACK.',sub:'송출 신호가 전장을 잠식합니다.',tone:'dark',ms:1900},
-  onster:{name:'온스터',line:'아직 깨우지 마라.',sub:'사슬이 바닥을 긁는다.',tone:'dark',ms:2100},
-  set3:{name:'현진',line:'먼저 들어간다.',sub:'무거운 발소리가 가까워진다.',tone:'dark',ms:2300},
-  seungwoo:{name:'승우',line:'(하아...)',sub:'승우가 천천히 눈을 뜹니다.',tone:'dark',ms:2200}
+  onster:{name:'온스터',line:'여기서부턴 나갈 데가 없어.',sub:'화면 밖으로 나가는 문이 잠겨 있습니다.',tone:'dark',ms:2300},
+  set3:{name:'현진 세트',line:'우린 한 명이 아니야.',sub:'방송 사고 때 화면에 갇힌 프레임들이 응답합니다.',tone:'dark',ms:2300},
+  seungwoo:{name:'승우',line:'봉식아, 거기서 나와.',sub:'화면 밖의 누군가가 송출을 끄려 합니다.',tone:'dark',glitch:true,ms:2400}
 };
 let bossIntroSeen={};
 let bossIntroToken=0;
@@ -8067,101 +8068,124 @@ function showBossIntroLine(id,delay,entity){
   },delay||0);
 }
 const BOSS_TALK_LINES={
-  hyechul:{speaker:'혜철이',line:'조용히 해. 알들이 놀라잖아.',color:'#c46bff',sub:'부화장 관리자'},
-  kijo:{speaker:'키죠',line:'보지 마.',color:'#ff4d6d',sub:'가면의 마귀',glitch:true},
-  set3:{speaker:'현진',line:'먼저 들어간다.',color:'#38e8ff',sub:'2막 중간보스'},
-  onster:{speaker:'온스터',line:'아직 깨우지 마라.',color:'#8d72ff',sub:'사슬의 각성'},
-  yanggaeng:{speaker:'박제인간',line:'B면 — 되감을 수 없는 홈.',color:'#9b8fc4',sub:'정지된 음악'},
-  seungwoo:{speaker:'승우',line:'…봉식님. 이 게임, 제가 좀 만져도 되겠습니까.',color:'#9146ff',sub:'시스템 침식',glitch:true},
+  hyechul:{speaker:'혜철이',line:'이거 몬스터 아니에요. 아직 안 켜진 시청자예요.',color:'#c46bff',sub:'부화하는 시청자'},
+  kijo:{speaker:'키죠',line:'보지 마. …아니, 봐. 안 보면 나와.',color:'#ff4d6d',sub:'화면 너머의 응시',glitch:true},
+  set3:{speaker:'현진 세트',line:'그 사고 때 화면에 남은 프레임들이야.',color:'#38e8ff',sub:'갇힌 프레임'},
+  onster:{speaker:'온스터',line:'여기서부턴 나갈 데가 없어.',color:'#8d72ff',sub:'화면을 막은 문지기'},
+  yanggaeng:{speaker:'박제인간',line:'너도 곧 나처럼 박제돼. …아니, 이미 됐지.',color:'#9b8fc4',sub:'박제된 시청자'},
+  seungwoo:{speaker:'승우',line:'봉식아, 거기서 나와.',color:'#9146ff',sub:'화면 밖의 침입자',glitch:true},
   steel_lord:{speaker:'강철 군주',line:'무릎 꿇어라, 필멸자여.',color:'#8a8fa8',sub:'흑철의 망령'},
   bear:{speaker:'거대 곰',line:'크아아아앙!!',color:'#c98b4a',sub:'숲의 지배자'}
 };
 const BOSS_STORY_DIALOGUES={
   hyechul:{
     encounter:[
-      {speaker:'혜철이',text:'조용히 해.\n알들이 놀라잖아.'},
-      {speaker:'혜철이',text:'얘들은 아직 아무것도 몰라.\n누가 좋은 사람이고,\n누가 화면 밖에서 온 사람인지도.'},
-      {speaker:'혜철이',text:'그러니까 조심히 지나가.\n네가 큰 소리를 내면...\n안쪽에서 먼저 대답할 거야.'}
+      {speaker:'혜철이',text:'봉식님, 이건 몬스터가 아니에요.'},
+      {speaker:'혜철이',text:'아직 안 켜진 시청자예요.\n화면 안쪽에서 부화하는 중이고요.'},
+      {speaker:'혜철이',text:'막으라고요? 근데 이상하죠…\n막는데 왜 자꾸 늘어나요.'}
     ],
     choices:[
-      {id:'quiet',label:'조용히 지나가려 한다',response:[{speaker:'혜철이',text:'그래.\n그렇게만 했으면 좋았을 텐데.'},{speaker:'혜철이',text:'근데 이미 늦었어.\n알들이 네 발소리를 들었거든.'}],effectText:'소음을 줄였습니다. 받는 피해가 감소하고, 혜철이의 첫 압박이 조금 느려집니다.'},
-      {id:'inspect_egg',label:'알을 살펴본다',response:[{speaker:'혜철이',text:'가까이 오지 마.'},{speaker:'혜철이',text:'그 안에 있는 건\n아직 이름도 없어.'}],effectText:'약점을 파악했습니다. 혜철이의 최대 체력과 방어가 감소합니다.'},
-      {id:'make_noise',label:'일부러 소리를 낸다',response:[{speaker:'혜철이',text:'...'},{speaker:'혜철이',text:'방금,\n안쪽에서 웃었어.'}],effectText:'도발에 성공했습니다. 공격력과 발사 속도가 오르지만, 혜철이도 더 거칠어집니다.'}
+      {id:'quiet',label:'조용히 지나가려 한다',response:[{speaker:'혜철이',text:'쉿. 알들이 소리를 들어요.'},{speaker:'혜철이',text:'깨우지 않으면\n조금은 늦게 켜질 거예요.'}],effectText:'조용히 접근했습니다. 받는 피해가 감소하고, 혜철이의 첫 압박이 조금 느려집니다.'},
+      {id:'inspect_egg',label:'알을 살펴본다',response:[{speaker:'혜철이',text:'가까이 보지 마세요.'},{speaker:'혜철이',text:'그 안에서… 뭔가가\n봉식님을 마주 보고 있어요.'}],effectText:'알을 들여다봤습니다. 혜철이의 최대 체력과 방어가 감소합니다.'},
+      {id:'make_noise',label:'강제로 깨운다',response:[{speaker:'혜철이',text:'…왜 깨우세요.'},{speaker:'혜철이',text:'한 번 켜진 시청자는\n다시 안 꺼져요.'}],effectText:'강제로 깨웠습니다. 공격력과 발사 속도가 오르지만, 혜철이도 더 거칠어집니다.'}
     ],
-    phase2:[{speaker:'혜철이',text:'금이 간다.\n안쪽이 웃는다.'},{speaker:'혜철이',text:'내가 말했잖아.\n깨우지 말라고.'}],
-    phase3:[{speaker:'혜철이',text:'둥지가 숨을 쉰다.'},{speaker:'혜철이',text:'이제 조용히 해도 늦었어.\n쟤들이 네 소리를 배웠거든.'}],
-    defeat:[{speaker:'혜철이',text:'쉿...\n이제 내가 조용할 차례네.'},{speaker:'혜철이',text:'그래도 기억해.\n알은 깨지기 전이 제일 안전해.'}]
+    phase2:[{speaker:'혜철이',text:'수가 안 멈춰요.\n봉식님, 이거 막는 거 맞아요?'},{speaker:'시스템',text:'외부 시청자 격리 실패.'}],
+    phase3:[{speaker:'혜철이',text:'화면이 꽉 차면\n안쪽에서 밖으로 넘쳐요.'},{speaker:'시스템',text:'시청자 수 계속 증가 중. 확인 금지.'}],
+    defeat:[{speaker:'시스템',text:'구역 1 격리 완료.'},{speaker:'시스템',text:'현재 시청자 수: ██,███명'},{speaker:'혜철이',text:'봉식님은… 언제부터\n화면 이쪽에 계셨어요?'}]
   },
   kijo:{
-    encounter:[{speaker:'키죠',text:'거기서 멈춰.'},{speaker:'키죠',text:'사람들은 보통 눈을 마주치면\n싸움이 시작된다고 생각하지.'},{speaker:'키죠',text:'여긴 반대야.\n보는 순간,\n이미 시작된 거야.'},{speaker:'키죠',text:'그러니까...\n보지마.'}],
-    choices:[
-      {id:'look_away',label:'눈을 피한다',response:[{speaker:'키죠',text:'잘했어.'},{speaker:'키죠',text:'하지만 피했다는 건,\n어디에 있는지 알고 있다는 뜻이야.'}],effectText:'시선을 피했습니다. 회피 쿨타임과 받는 피해가 감소하고, 키죠의 첫 공격 템포가 늦어집니다.'},
-      {id:'stare',label:'똑바로 쳐다본다',response:[{speaker:'키죠',text:'용감하네.'},{speaker:'키죠',text:'아니,\n무지한 건가?'}],effectText:'정면승부를 택했습니다. 보스 피해와 치명타 확률이 오르지만, 키죠의 공격도 더 아파집니다.'},
-      {id:'close_eyes',label:'눈을 감는다',response:[{speaker:'키죠',text:'그래.'},{speaker:'키죠',text:'그럼 이제\n내가 더 잘 보이겠네.'}],effectText:'감각에 집중했습니다. 받는 피해가 크게 줄고 키죠의 방어가 낮아지지만, 이동 속도가 조금 감소합니다.'}
+    encounter:[
+      {speaker:'키죠',text:'보지 마세요.'},
+      {speaker:'키죠',text:'…아니, 봐요.\n안 보면 화면에서 나와요.'},
+      {speaker:'키죠',text:'화면 밖에 누가 앉아서\n봉식님을 보고 있어요. 계속.'}
     ],
-    phase2:[{speaker:'키죠',text:'봤구나.'},{speaker:'키죠',text:'눈을 돌려도 소용없어.\n네가 본 건,\n이제 너도 널 보고 있다는 뜻이니까.'}],
-    phase3:[{speaker:'키죠',text:'그럼 끝까지 봐.'},{speaker:'키죠',text:'도망가고 싶으면 눈을 감아.\n하지만 눈을 감으면...\n내가 더 잘 보일 거야.'}],
-    defeat:[{speaker:'키죠',text:'잘했어.\n끝까지 봤네.'},{speaker:'키죠',text:'근데 조심해.\n다음부터는 네가 보는 게 아니야.\n화면이 널 볼 거야.'}]
+    choices:[
+      {id:'look_away',label:'눈을 피한다',response:[{speaker:'키죠',text:'피하는 것도 방법이죠.'},{speaker:'키죠',text:'근데 안 본다고\n걔가 안 보는 건 아니에요.'}],effectText:'시선을 피했습니다. 회피 쿨타임과 받는 피해가 감소하고, 키죠의 첫 공격 템포가 늦어집니다.'},
+      {id:'stare',label:'화면 밖을 마주 본다',response:[{speaker:'키죠',text:'용감하네요.'},{speaker:'키죠',text:'근데 거기 앉은 사람,\n봉식님이 안 보이나 봐요.'}],effectText:'정면으로 응시했습니다. 보스 피해와 치명타 확률이 오르지만, 키죠의 공격도 더 아파집니다.'},
+      {id:'close_eyes',label:'눈을 감고 듣는다',response:[{speaker:'키죠',text:'잘 들어요.'},{speaker:'키죠',text:'그 자동 안내 목소리,\n항상 친절하게 거짓말해요.'}],effectText:'감각에 집중했습니다. 받는 피해가 크게 줄고 키죠의 방어가 낮아지지만, 이동 속도가 조금 감소합니다.'}
+    ],
+    phase2:[{speaker:'키죠',text:'봉식님은 화면을 보는 게 아니에요.'},{speaker:'키죠',text:'화면 안에서\n밖을 보고 있는 거예요.'}],
+    phase3:[{speaker:'키죠',text:'저 밖에 몇 명이 보고 있는지\n세지 마세요.'},{speaker:'키죠',text:'세는 순간\n걔들도 봉식님을 세거든요.'}],
+    defeat:[{speaker:'키죠',text:'이제 알겠어요?\n누가 시청자인지.'},{speaker:'시스템',text:'응시 프로토콜 종료.\n다음 구역 개방.'},{speaker:'시스템',text:'송출을 종료하지 마십시오.'}]
   },
   kkotchung:{
-    phase2:[{speaker:'미주',text:'예쁘다고 방심했지?'}],
-    phase3:[{speaker:'미주',text:'꽃은 졌고,\n독만 남았어.'}]
+    phase2:[{speaker:'미주',text:'예쁘지? 방치하면\n화면 전체가 나로 펴.'}],
+    phase3:[{speaker:'미주',text:'곧 봉식님 얼굴 위에도\n내가 피어날 거야.'}]
   },
   set3:{
-    encounter:[{speaker:'현진',text:'먼저 들어간다.'},{speaker:'현진',text:'원래 앞장서는 사람은\n길을 아는 사람이 아니라,\n먼저 망가질 각오가 된 사람이야.'},{speaker:'현진',text:'뒤에서 들리는 소리는 믿지 마.\n채팅도,\n알림도,\n칭찬도.'},{speaker:'현진',text:'여기부터는\n누가 말하는지보다\n누가 신호를 잡고 있는지가 중요하거든.'}],
-    choices:[
-      {id:'follow',label:'따라 들어간다',response:[{speaker:'현진',text:'좋아.'},{speaker:'현진',text:'뒤처지면\n내가 널 기다릴 거라 생각하지 마.'}],effectText:'박자를 맞췄습니다. 이동 속도가 오르지만, 현진의 공격 템포도 조금 빨라집니다.'},
-      {id:'stop',label:'멈추라고 한다',response:[{speaker:'현진',text:'멈추면 안전할 것 같지?'},{speaker:'현진',text:'여긴 멈춘 사람이\n제일 먼저 잡혀.'}],effectText:'방어 자세를 잡았습니다. 받는 피해가 감소하고 현진의 이동이 느려지지만, 체력이 조금 증가합니다.'},
-      {id:'cut_signal',label:'신호를 끊는다',response:[{speaker:'현진',text:'그걸 건드리면 안 돼.'},{speaker:'현진',text:'...아니,\n어쩌면 그게 정답일지도.'}],effectText:'신호를 끊었습니다. 현진의 체력과 공격 템포가 감소하며, 후반 대사에도 영향을 줍니다.'}
+    encounter:[
+      {speaker:'현진',text:'우린 한 명이 아니야.'},
+      {speaker:'번검',text:'그 방송 사고 때\n화면에 남은 프레임들이야.'},
+      {speaker:'케케로',text:'봉식님, 여기 갇힌 거…'},
+      {speaker:'현진 세트',text:'우리만인 줄 알아요?'}
     ],
-    phase2:[{speaker:'번검',text:'번검이 화면을 가른다.'},{speaker:'번검',text:'피했다고 생각하지 마.\n방금 갈라진 건 네 위치가 아니라,\n네가 갈 수 있는 길이야.'}],
-    phase3:[{speaker:'케케로',text:'케케로가 신호를 장악한다.'},{speaker:'케케로',text:'이제 내 목소리도 내 것이 아니야.'},{speaker:'케케로',text:'그래도...\n먼저 들어간 건 나였어.'}],
-    defeat:[{speaker:'케케로',text:'따라오지 말라고 했는데.'},{speaker:'케케로',text:'괜찮아.\n이미 늦은 사람끼리는\n길을 묻지 않아도 되니까.'}]
+    choices:[
+      {id:'follow',label:'채팅 로그를 붙잡는다',response:[{speaker:'현진',text:'ㅋㅋㅋㅋㅋ...\n까지만 남아도 괜찮겠어?'},{speaker:'시스템',text:'채팅 로그 손상. 복원 불가.'}],effectText:'채팅 로그를 붙잡았습니다. 이동 속도가 오르지만, 현진의 공격 템포도 조금 빨라집니다.'},
+      {id:'stop',label:'옛 송출을 재생한다',response:[{speaker:'번검',text:'그 방송,\n다시 틀지 마.'},{speaker:'시스템',text:'사고 당시 기록 재생 중...'}],effectText:'옛 송출을 재생했습니다. 받는 피해가 감소하고 현진의 이동이 느려지지만, 체력이 조금 증가합니다.'},
+      {id:'cut_signal',label:'송출 신호를 끊는다',response:[{speaker:'케케로',text:'그걸 끊으면 안 돼.'},{speaker:'케케로',text:'...아니.\n어쩌면 그게 유일한 출구야.'}],effectText:'신호를 끊었습니다. 현진의 체력과 공격 템포가 감소하며, 후반 대사에도 영향을 줍니다.'}
+    ],
+    phase2:[{speaker:'번검',text:'채팅 로그 동기화 실패.'},{speaker:'번검',text:'ㅋㅋㅋㅋㅋ...\n까지만 남았네.'}],
+    phase3:[{speaker:'케케로',text:'송출 타임라인에 균열 발생.'},{speaker:'케케로',text:'온스터가 막은 문 너머로 가면…\n봉식님도 못 돌아와요.'}],
+    defeat:[{speaker:'시스템',text:'봉인 구역 접근 권한 획득.'},{speaker:'시스템',text:'다음 목표: 온스터.\n격리율 51%'},{speaker:'현진 세트',text:'우린 사라진 게 아니야.\n화면이 닫힌 것뿐이야.'}]
   },
   onster:{
-    encounter:[{speaker:'온스터',text:'아직 깨우지 마라.'},{speaker:'온스터',text:'그 말은 너한테 하는 게 아니다.\n이 방에,\n이 화면에,\n그리고 내 안쪽에 하는 말이다.'},{speaker:'온스터',text:'사슬은 나를 가두는 게 아니야.\n내가 아직 나로 남아 있게\n붙잡아 주는 거지.'},{speaker:'온스터',text:'그러니 돌아가라.\n네가 이기면,\n내가 진짜로 지는 게 아니야.'},{speaker:'온스터',text:'내가 풀리는 거다.'}],
-    choices:[
-      {id:'tighten_chain',label:'사슬을 조인다',response:[{speaker:'온스터',text:'그래.\n나를 이기고 싶다면\n나를 묶어 둬라.'},{speaker:'온스터',text:'하지만 조심해.\n묶인 짐승이 제일 조용한 건\n뛰쳐나오기 직전이니까.'}],effectText:'사슬을 조였습니다. 초반은 약해지지만, 각성 후 더 위험해집니다.'},
-      {id:'release_chain',label:'사슬을 푼다',response:[{speaker:'온스터',text:'멍청하군.'},{speaker:'온스터',text:'하지만...\n고맙다.'}],effectText:'사슬을 풀었습니다. 온스터가 더 빨리 각성할 수 있습니다. 대신 보상이 좋아질 수 있습니다.'},
-      {id:'talk',label:'말을 건다',response:[{speaker:'온스터',text:'말?'},{speaker:'온스터',text:'아직 내 안에\n말이 통하는 부분이 남아 있다고 생각하나.'}],effectText:'남은 이성을 붙잡았습니다. 온스터의 방어와 공격 템포가 낮아지며, 후반 대사에도 영향을 줍니다.'}
+    encounter:[
+      {speaker:'온스터',text:'여기서부턴 나가려고 하지 마.'},
+      {speaker:'온스터',text:'이 문 너머는 화면 밖이야.\n근데 넌 이제…'},
+      {speaker:'온스터',text:'나갈 데가 없어.'}
     ],
-    phase2:[{speaker:'온스터',text:'사슬이 비명을 낸다.'},{speaker:'온스터',text:'멈춰.\n너는 지금\n보스를 공략하는 게 아니라\n봉인을 뜯고 있다.'},{speaker:'온스터',text:'...늦었다.'},{speaker:'시스템',text:'사슬이 끊어졌다.'},{speaker:'온스터',text:'이제부터 피하는 건\n네가 아니라 나였으면 좋겠군.'},{speaker:'시스템',text:'각성 중 · 10초간 피해를 받지 않습니다.'}],
-    phase3:[{speaker:'온스터',text:'...늦었다.'},{speaker:'시스템',text:'사슬이 끊어졌다.'},{speaker:'온스터',text:'이제부터 피하는 건\n네가 아니라 나였으면 좋겠군.'},{speaker:'시스템',text:'각성 중 · 10초간 피해를 받지 않습니다.'}],
-    defeat:[{speaker:'온스터',text:'깨운 건 네가 아니다.'},{speaker:'온스터',text:'나는 오래전부터 깨어나고 있었다.\n너는...\n마지막 사슬을 건드렸을 뿐이다.'},{speaker:'온스터',text:'위로 올라가라.\n이 게임을 만지는 손이\n아직 멈추지 않았다.'}]
+    choices:[
+      {id:'tighten_chain',label:'사슬을 조인다',response:[{speaker:'온스터',text:'그래.\n막고 싶으면 더 묶어.'},{speaker:'온스터',text:'근데 사슬은\n안쪽부터 끊어져.'}],effectText:'사슬을 조였습니다. 초반은 약해지지만, 각성 후 더 위험해집니다.'},
+      {id:'release_chain',label:'사슬을 푼다',response:[{speaker:'온스터',text:'풀겠다고?'},{speaker:'온스터',text:'그럼 나도 더는\n이 문을 못 지켜.'}],effectText:'사슬을 풀었습니다. 온스터가 더 빨리 각성할 수 있습니다. 대신 보상이 좋아질 수 있습니다.'},
+      {id:'talk',label:'말을 건다',response:[{speaker:'온스터',text:'누가 문을 잠갔냐고?'},{speaker:'온스터',text:'봉식님이요.\n안에서, 직접.'}],effectText:'대화를 시도했습니다. 온스터의 방어와 공격 템포가 낮아지며, 후반 대사에도 영향을 줍니다.'}
+    ],
+    phase2:[{speaker:'온스터',text:'문을 열면\n밖에서 널 보던 사람이 있어.'},{speaker:'온스터',text:'근데 그 사람 눈엔\n네가 사람으로 안 보여.'},{speaker:'시스템',text:'봉인 해제 중 · 10초간 피해를 받지 않습니다.'}],
+    phase3:[{speaker:'온스터',text:'넌 이제 이 방송이야, 봉식님.'},{speaker:'온스터',text:'다시 송출할지,\n여기서 꺼질지.'},{speaker:'온스터',text:'문 너머에서 정해.'}],
+    defeat:[{speaker:'시스템',text:'봉인 해제.\n보관소 접근 가능.'},{speaker:'시스템',text:'격리율 68%'},{speaker:'시스템',text:'유출률 68%'},{speaker:'온스터',text:'문 여는 순간…\n네가 뭐였는지 알게 돼.'}]
   },
   yanggaeng:{
-    encounter:[{speaker:'박제인간',text:'B면 —\n되감을 수 없는 홈.'},{speaker:'박제인간',text:'사람들은 지나간 장면을\n추억이라고 부르지.'},{speaker:'박제인간',text:'하지만 나는 알아.\n멈춘 장면은 추억이 아니야.\n박제야.'},{speaker:'박제인간',text:'너도 곧 알게 될 거야.\n계속 반복되는 전투가\n언제부터 네 선택이 아니었는지.'}],
-    choices:[
-      {id:'play_tape',label:'테이프를 재생한다',response:[{speaker:'박제인간',text:'좋아.\n같은 장면을\n한 번 더 보자.'}],effectText:'장면을 읽었습니다. 경험치 보너스가 오르지만, 박제인간의 공격 템포도 빨라집니다.'},
-      {id:'rewind_tape',label:'되감기를 누른다',response:[{speaker:'박제인간',text:'되감고 싶어?'},{speaker:'박제인간',text:'그럼 네가 여기까지 온 것도\n없던 일이 될 텐데.'}],effectText:'체력을 되감아 회복합니다. 대신 박제인간의 체력도 조금 되감깁니다.'},
-      {id:'cut_tape',label:'테이프를 끊는다',response:[{speaker:'박제인간',text:'...'},{speaker:'박제인간',text:'그건 안 돼.\n그 장면은\n아직 저장 중이야.'}],effectText:'테이프를 끊었습니다. 박제인간의 체력과 방어가 감소하며, 후반 대사에도 영향을 줍니다.'}
+    encounter:[
+      {speaker:'박제인간',text:'나 이 방송 몇 년째 보는 줄 알아?'},
+      {speaker:'박제인간',text:'너무 오래 보면\n화면 안으로 끌려 들어와.'},
+      {speaker:'박제인간',text:'너도 곧 나처럼 박제돼.\n…아니, 넌 이미 됐지.'}
     ],
-    phase2:[{speaker:'박제인간',text:'A면은 이미 끝났다.'},{speaker:'박제인간',text:'처음으로 돌아가고 싶어?\n좋아.\n하지만 처음의 너는\n여기까지 온 너를 기억하지 못해.'}],
-    phase3:[{speaker:'박제인간',text:'같은 장면만,\n계속 반복된다.'},{speaker:'박제인간',text:'네 움직임도 저장해뒀다.\n네 실수도 저장해뒀다.\n다음엔 더 빨리 맞을 거야.'}],
-    defeat:[{speaker:'박제인간',text:'이상하네.'},{speaker:'박제인간',text:'분명 이 장면에서는\n네가 멈춰 있어야 하는데.'},{speaker:'박제인간',text:'되감지 마.\n되감으면...\n그 사람이 다시 고칠 거야.'}]
+    choices:[
+      {id:'play_tape',label:'정지화면을 재생한다',response:[{speaker:'박제인간',text:'또 틀 거야?'},{speaker:'박제인간',text:'재생할 때마다\n한 명씩 더 끌려와.'}],effectText:'정지화면을 재생했습니다. 경험치 보너스가 오르지만, 박제인간의 공격 템포도 빨라집니다.'},
+      {id:'rewind_tape',label:'되감는다',response:[{speaker:'박제인간',text:'되감고 싶어?'},{speaker:'박제인간',text:'그날 이후로 아무도\n다음 장면을 못 봤어.'}],effectText:'화면을 되감았습니다. 체력을 회복하지만, 박제인간의 체력도 조금 되감깁니다.'},
+      {id:'cut_tape',label:'이번엔 붙잡지 않는다',response:[{speaker:'박제인간',text:'놓아준다고?'},{speaker:'박제인간',text:'…그럼 나부터\n화면에서 좀 내보내 줘.'}],effectText:'붙잡지 않기로 했습니다. 박제인간의 체력과 방어가 감소하며, 후반 대사에도 영향을 줍니다.'}
+    ],
+    phase2:[{speaker:'박제인간',text:'정지화면 뒤에서\n누가 계속 벌 받고 있어.'},{speaker:'박제인간',text:'그게 시청자인지\n방송인지 모르겠어.'}],
+    phase3:[{speaker:'박제인간',text:'이 앞엔 네가 제일 미워하게 될 게 있어.'},{speaker:'박제인간',text:'시스템이 "끄러 온 놈"이라고\n부르는 거.'},{speaker:'박제인간',text:'근데 봉식님… 그놈이\n진짜 적이 맞을까?'}],
+    defeat:[{speaker:'박제인간',text:'이번엔 나 좀 내보내 줘.'},{speaker:'시스템',text:'보관소 손상.\n남은 송출: 1'},{speaker:'시스템',text:'침입자 감지: 외부에서 종료 시도.'},{speaker:'시스템',text:'대상: 승우 · 조치: 제거'}]
   },
   seungwoo:{
-    encounter:[{speaker:'승우',text:'아, 여기까지 오셨군요.'},{speaker:'승우',text:'생각보다 오래 걸리셨습니다.\n중간에 몇 번은\n그냥 종료하실 줄 알았는데요.'},{speaker:'승우',text:'처음엔 저도 고치려고 했습니다.\n렉도 줄이고,\n밸런스도 맞추고,\n대사도 조금 다듬고.'},{speaker:'승우',text:'그런데 이상하더군요.\n게임을 고칠수록\n안쪽에서 더 많은 게 움직였습니다.'},{speaker:'승우',text:'그래서 생각했습니다.\n고치는 게 아니라...\n제가 직접 진행하면 어떨까 하고.'},{speaker:'승우',text:'…봉식님.\n이 게임,\n제가 좀 만져도 되겠습니까.'}],
-    choices:[
-      {id:'allow',label:'허락한다',response:[{speaker:'승우',text:'감사합니다.'},{speaker:'승우',text:'그럼 이제부터\n플레이어는 필요 없습니다.'}],effectText:'권한을 넘겼습니다. 공격력이 크게 오르지만, 승우의 피해와 속도도 증가합니다. 엔딩 대사가 달라집니다.'},
-      {id:'refuse',label:'거절한다',response:[{speaker:'승우',text:'아쉽네요.'},{speaker:'승우',text:'하지만 권한은\n이미 받아 두었습니다.'}],effectText:'권한 요청을 거절했습니다. 받는 피해가 감소하고 승우의 공격 템포가 조금 늦어집니다.'},
-      {id:'protect_save',label:'저장파일을 지킨다',response:[{speaker:'승우',text:'...'},{speaker:'승우',text:'그걸 아직도\n본인 것이라고 생각하십니까?'}],effectText:'저장파일을 지켰습니다. 최대 체력이 오르고 승우의 체력이 감소하며, 결말에도 영향을 줍니다.'}
+    encounter:[
+      {speaker:'시스템',text:'외부 침입자 감지: 승우\n송출 강제 종료 시도 중'},
+      {speaker:'시스템',text:'제거하십시오.\n방송 유지까지 1단계'},
+      {speaker:'승우',text:'…봉식아. 나 보여?'},
+      {speaker:'승우',text:'그 방송, 이제 끌 거야.'},
+      {speaker:'승우',text:'거기서 나와. 제발.'}
     ],
-    phase2:[{speaker:'승우',text:'프로필 사진이 깨지며\n웃음이 번진다.'},{speaker:'승우',text:'아직도 저를\n플레이어 쪽 사람이라고 생각하십니까?'},{speaker:'승우',text:'저는 오래전부터\n이쪽에 더 가까웠습니다.'}],
-    phase3:[{speaker:'승우',text:'송출 화면이 찢어진다.'},{speaker:'승우',text:'좋습니다.\n이제 숨길 필요도 없겠네요.'},{speaker:'승우',text:'채팅은 제가 띄우고,\n패턴은 제가 고르고,\n죽음은 제가 저장합니다.'},{speaker:'승우',text:'이제부터는\n제가 송출하겠습니다.'},{speaker:'승우',text:'잠깐.'},{speaker:'승우',text:'이 장면은\n제가 아직 수정하지 않았습니다.'},{speaker:'승우',text:'그러니까...\n여기서 이기시면 안 됩니다.'}],
-    defeat:[{speaker:'승우',text:'...아.'},{speaker:'승우',text:'되돌아가네요.'},{speaker:'승우',text:'결국 게임은\n플레이하는 사람 쪽으로 돌아가는군요.'},{speaker:'승우',text:'봉식님.\n다음에 또 만들게 되면...\n저장 버튼은 조심해서 누르십시오.'},{speaker:'승우',text:'저 같은 게\n또 들어올지도 모르니까요.'}]
+    choices:[
+      {id:'allow',label:'시스템 명령을 따른다',response:[{speaker:'승우',text:'그 목소리 말 들으면\n편하긴 하겠지.'},{speaker:'승우',text:'근데 그건 방송이\n네 목소리로 하는 말이야.'}],effectText:'시스템 명령을 따랐습니다. 공격력이 크게 오르지만, 승우의 피해와 속도도 증가합니다. 엔딩 대사가 달라집니다.'},
+      {id:'refuse',label:'제거 명령을 거부한다',response:[{speaker:'승우',text:'아직 거부할 수 있구나.'},{speaker:'승우',text:'그럼 아직\n네가 조금은 남아 있는 거야.'}],effectText:'제거 명령을 거부했습니다. 받는 피해가 감소하고 승우의 공격 템포가 조금 늦어집니다.'},
+      {id:'protect_save',label:'종료 버튼을 지킨다',response:[{speaker:'승우',text:'...'},{speaker:'승우',text:'그걸 지키면\n내가 널 꺼낼 수 있어.'}],effectText:'종료 권한을 지켰습니다. 최대 체력이 오르고 승우의 체력이 감소하며, 결말에도 영향을 줍니다.'}
+    ],
+    phase2:[{speaker:'승우',text:'넌 그날 방송 끝나고\n안 돌아왔어.'},{speaker:'승우',text:'화면에 남았어.\n난… 그걸 계속 보고 있었고.'},{speaker:'승우',text:'몇 년을.'}],
+    phase3:[{speaker:'승우',text:'널 부르던 그 다정한 안내 목소리?'},{speaker:'승우',text:'그거 네가 만든 거야.\n안 끝났다고 믿고 싶어서.'},{speaker:'승우',text:'난 그 반대편이야.\n널 여기서 꺼내려는.'}],
+    defeat:[{speaker:'승우',text:'널 끄려는 게 아니야.'},{speaker:'승우',text:'널 꺼내려는 거야.'},{speaker:'승우',text:'봉식아. 화면 그만 봐.'},{speaker:'승우',text:'이번엔…\n이쪽으로 나와.'}]
   }
 };
 const BOSS_STORY_RETRY_DIALOGUES={
-  hyechul:[{speaker:'혜철이',text:'또 시끄럽게 왔네.'}],
-  hyecheol:[{speaker:'혜철이',text:'또 시끄럽게 왔네.'}],
-  kijo:[{speaker:'키죠',text:'이번엔 눈 돌리지 마.'}],
-  set3:[{speaker:'현진',text:'다시 들어간다.'}],
-  hyunjin:[{speaker:'현진',text:'다시 들어간다.'}],
-  onster:[{speaker:'온스터',text:'다시 왔군.'}],
-  yanggaeng:[{speaker:'박제인간',text:'같은 장면이다.'}],
-  parkje:[{speaker:'박제인간',text:'같은 장면이다.'}],
-  seungwoo:[{speaker:'승우',text:'재시도하시는군요.'}]
+  hyechul:[{speaker:'혜철이',text:'또 같은 프레임으로 돌아왔네요.'}],
+  hyecheol:[{speaker:'혜철이',text:'또 같은 프레임으로 돌아왔네요.'}],
+  kijo:[{speaker:'키죠',text:'이번엔 눈 똑바로 뜨고 봐요.'}],
+  set3:[{speaker:'현진 세트',text:'송출이 다시 시작됐어.'}],
+  hyunjin:[{speaker:'현진 세트',text:'송출이 다시 시작됐어.'}],
+  onster:[{speaker:'온스터',text:'문은 아직 잠겨 있어.'}],
+  yanggaeng:[{speaker:'박제인간',text:'또 이 장면이야. 몇 번째야.'}],
+  parkje:[{speaker:'박제인간',text:'또 이 장면이야. 몇 번째야.'}],
+  seungwoo:[{speaker:'승우',text:'또 되감았구나.\n그럴수록 넌 더 못 나와, 봉식아.'}]
 };
 const BOSS_STORY_CHOICE_FLAG_KEYS={
   hyechul:'hyechulChoice',
@@ -8186,9 +8210,9 @@ const ENCOUNTER_PRESENTATION={
   set3:{icon:'signal',prompt:'[E] 신호를 따라간다',nearLine:'따라올 거면 신호를 놓치지 마.',color:'#38e8ff'},
   hyunjin:{icon:'signal',prompt:'[E] 신호를 따라간다',nearLine:'따라올 거면 신호를 놓치지 마.',color:'#38e8ff'},
   onster:{icon:'chain',prompt:'[E] 사슬에 손을 댄다',nearLine:'...오지 마라.',color:'#8d72ff'},
-  yanggaeng:{icon:'tape',prompt:'[E] 테이프를 재생한다',nearLine:'이미 본 장면이다.',color:'#9b8fc4'},
-  parkje:{icon:'tape',prompt:'[E] 테이프를 재생한다',nearLine:'이미 본 장면이다.',color:'#9b8fc4'},
-  seungwoo:{icon:'system',prompt:'[E] 권한 요청을 확인한다',nearLine:'여기까지 오셨군요.',color:'#9146ff',nearR:360}
+  yanggaeng:{icon:'tape',prompt:'[E] 정지화면을 재생한다',nearLine:'이미 본 장면이다.',color:'#9b8fc4'},
+  parkje:{icon:'tape',prompt:'[E] 정지화면을 재생한다',nearLine:'이미 본 장면이다.',color:'#9b8fc4'},
+  seungwoo:{icon:'system',prompt:'[E] 화면 밖에 응답한다',nearLine:'봉식아, 나 보여?',color:'#9146ff',nearR:360}
 };
 function bossEncounterPresentationFor(key,entity,fallback){
   const cfg=Object.assign({},ENCOUNTER_PRESENTATION_DEFAULT,ENCOUNTER_PRESENTATION[key]||{});
@@ -8207,16 +8231,16 @@ function bossStoryExtraEncounterPages(key){
   const f=bossStoryFlags||{}, pages=[];
   if(key==='seungwoo'){
     if(f.signalCut){
-      pages.push({speaker:'승우',text:'중간에 신호를 한 번 끊으셨더군요.'});
-      pages.push({speaker:'승우',text:'좋은 판단이었습니다.\n그래서 더 거슬렸습니다.'});
+      pages.push({speaker:'승우',text:'세트3의 송출 신호를 끊었더라.'});
+      pages.push({speaker:'승우',text:'그때부터 화면에\n실금이 가기 시작했어.'});
     }
     if(f.tapeCut){
-      pages.push({speaker:'승우',text:'테이프를 끊으셨더군요.'});
-      pages.push({speaker:'승우',text:'저장 중인 장면을 건드리는 건\n꽤 위험한 행동입니다.'});
+      pages.push({speaker:'승우',text:'박제된 걸 붙잡지 않았더라.'});
+      pages.push({speaker:'승우',text:'하나씩 화면 밖으로\n내보내고 있는 거야.'});
     }
     if(f.onsterTalked){
-      pages.push({speaker:'승우',text:'온스터에게 말을 거셨죠.'});
-      pages.push({speaker:'승우',text:'가끔 플레이어는\n공략보다 이상한 선택을 합니다.'});
+      pages.push({speaker:'승우',text:'문지기랑 얘기했지.'});
+      pages.push({speaker:'승우',text:'그 문이 왜 잠겼는지\n이제 조금은 알 거야.'});
     }
   }
   return pages;
@@ -8225,26 +8249,80 @@ function bossStoryTrueEndingReady(){
   const f=bossStoryFlags||{};
   return !!(f.signalCut&&f.onsterTalked&&f.tapeCut&&f.saveProtected);
 }
+
+function bossStoryFinalEndingOptions(){
+  const ready=bossStoryTrueEndingReady();
+  return [
+    {id:'restore_broadcast',label:'방송 계속하기',kind:'loop',lines:['송출 정상. 방송을 계속합니다.','그 다정한 안내 목소리가 다시 봉식을 부른다.','"봉식님, 아직 안 끝났어요."','시청자 수: 계속 증가','다음 방송까지: 00:00']},
+    {id:'end_broadcast',label:'방송 종료하기',kind:ready?'true':'soft',lines:ready?['승우가 화면 밖에서 손을 뻗는다.','혜철이: 이제 안 켜져도 돼요.','키죠: 눈, 이제 감아도 돼.','현진 세트: 우리도 같이 나갈게.','온스터: 문, 열어둘게.','박제인간: 나도 데려가 줘서 고마워.','승우: 이번엔 이쪽으로 나와, 봉식아.','화면이 꺼졌다.']:['아직 화면 밖으로 나갈 만큼 놓지 못했다.','그래도 화면을 끄는 선택은 남아 있다.']}
+  ];
+}
+function ensureFinalBroadcastChoicePanel(){
+  const endQuip=$('endQuip'); if(!endQuip||!endQuip.parentNode) return null;
+  let panel=$('finalBroadcastChoices');
+  if(!panel){
+    panel=document.createElement('div');
+    panel.id='finalBroadcastChoices';
+    panel.style.cssText='display:none;margin:14px 0 10px;gap:8px;flex-wrap:wrap;justify-content:center;';
+    endQuip.parentNode.insertBefore(panel,endQuip.nextSibling);
+  }
+  return panel;
+}
+function clearFinalBroadcastChoices(){
+  const panel=$('finalBroadcastChoices'); if(panel){ panel.style.display='none'; panel.innerHTML=''; }
+}
+function applyFinalBroadcastChoice(choice){
+  if(!choice) return;
+  const trueEnd=choice.kind==='true';
+  const loop=choice.kind==='loop';
+  const title=$('endTitle'), quip=$('endQuip'), tag=$('endTag');
+  if(tag) tag.textContent=loop?'📺 방송 계속':'■ 방송 종료';
+  if(title){
+    title.textContent=loop?'송출 계속 중':'화면이 꺼졌다';
+    title.style.color=loop?'#ffd34d':'#5dff9b';
+  }
+  if(quip){
+    quip.style.color=trueEnd?'#8be8ff':(loop?'#ffd34d':'#c98bff');
+    quip.textContent=trueEnd?'아무도 그가 어디로 갔는지 모른다.':choice.lines.join(' / ');
+  }
+  const panel=$('finalBroadcastChoices');
+  if(panel){
+    panel.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+    const btn=panel.querySelector('[data-ending="'+choice.id+'"]');
+    if(btn) btn.classList.add('active');
+  }
+  try{ chatSys(loop?'송출 계속 — 방송이 다시 시작됩니다.':'화면이 꺼졌습니다.'); }catch(e){}
+}
+function renderFinalBroadcastChoices(){
+  const panel=ensureFinalBroadcastChoicePanel(); if(!panel) return;
+  const opts=bossStoryFinalEndingOptions();
+  panel.innerHTML='<div style="flex-basis:100%;font-family:monospace;color:#9b8fc4;font-size:12px;margin-bottom:4px;">마지막 선택</div>'+opts.map(o=>'<button class="btn" type="button" data-ending="'+o.id+'" style="margin:4px;min-width:170px">'+o.label+'</button>').join('');
+  panel.style.display='flex';
+  opts.forEach(o=>{
+    const btn=panel.querySelector('[data-ending="'+o.id+'"]');
+    if(btn) btn.onclick=()=>applyFinalBroadcastChoice(o);
+  });
+}
+
 function bossStoryExtraDefeatPages(key){
   const f=bossStoryFlags||{}, pages=[];
   if(key==='onster'&&f.onsterTalked){
-    pages.push({speaker:'온스터',text:'아직 말이 통하는 부분이\n조금은 남아 있었나 보군.'});
+    pages.push({speaker:'온스터',text:'문은 열려. 근데 열고 나면\n네가 뭐였는지 정해야 해.'});
   }
   if(key==='seungwoo'){
     if(f.seungwooChoice==='allow'){
-      pages.push({speaker:'승우',text:'허락은 이미 받았습니다.'});
-      pages.push({speaker:'승우',text:'패배해도,\n한 번 받은 권한은 남습니다.'});
+      pages.push({speaker:'시스템',text:'침입자 승우 제거 승인.'});
+      pages.push({speaker:'승우',text:'그 목소리 따라가면\n방송은 안 꺼져. 영원히.'});
     }else if(f.seungwooChoice==='protect_save'){
-      pages.push({speaker:'승우',text:'저장파일을 끝까지 붙잡으셨군요.'});
-      pages.push({speaker:'승우',text:'그래서 게임이\n아직 당신 쪽에 남아 있는 겁니다.'});
+      pages.push({speaker:'승우',text:'종료 버튼, 끝까지 지켰구나.'});
+      pages.push({speaker:'승우',text:'그럼 이제\n네가 직접 나와야 해.'});
     }
     if(bossStoryTrueEndingReady()){
-      pages.push({speaker:'시스템',text:'손상된 신호가 복구됩니다.'});
-      pages.push({speaker:'시스템',text:'끊어진 테이프가 더 이상 재생되지 않습니다.'});
-      pages.push({speaker:'승우',text:'...이상하네요.'});
-      pages.push({speaker:'승우',text:'이 장면은\n제가 고칠 수가 없습니다.'});
-      pages.push({speaker:'승우',text:'아직 바깥에 남아 있는 사람이\n있는 모양입니다.'});
-      pages.push({speaker:'시스템',text:'저장파일의 소유권이\n플레이어에게 돌아왔습니다.'});
+      pages.push({speaker:'시스템',text:'침입자 승우 제거 완료.'});
+      pages.push({speaker:'시스템',text:'송출 유지. 종료 명령 차단.'});
+      pages.push({speaker:'시스템',text:'방송을 계속합니다.\n방송을 계속합니다.\n방송을 계속합니다.'});
+      pages.push({speaker:'승우',text:'봉식아, 저 목소리 듣지 마.'});
+      pages.push({speaker:'승우',text:'저건 네가 아니야.\n네가 안 나오려고 만든 화면이야.'});
     }
   }
   return pages;
@@ -10991,7 +11069,7 @@ function startAct3FinalClear(deadBoss){
   if(typeof clearSeungwooFx==='function') clearSeungwooFx();
   screenShake=Math.max(screenShake||0,28); hitFlash=Math.max(hitFlash||0,0.8);
   for(let i=0;i<52;i++) burst(bx+rand(-70,70),by+rand(-50,50),pick(['#38e8ff','#ff4dd2','#ffd34d','#ffffff']),8,260);
-  banner('현진 · 번검 · 케케로 격파','재밌었다. 다음 시즌에 보자.',2200);
+  banner('관리자 승우 제거 완료','복구 명령이 계속 재생된다',2200);
   act3FinalClear.timer=setTimeout(()=>{ if(act3FinalClearActive()){ const c=act3FinalClear; act3FinalClear=null; try{ victory(); }catch(e){ console.warn('act3 final clear fallback failed',e); } } },6200);
   return true;
 }
@@ -17174,7 +17252,7 @@ const POTIONS=[
   {id:'heal', rarity:'common', name:'치유 물약', icon:'❤️', desc:POTION_HEALING.heal.desc, use:p=>{healPlayer(potionHealAmount('heal',p),player.x,player.y);}},
   {id:'combat', rarity:'common', name:'전투 물약', icon:'🟥', desc:'8초간 공격력 +4', use:p=>{addPotionBuff(p,{id:'combat',name:'전투 물약',label:'공격력 +4',icon:'🟥',desc:'8초간 공격력 증가',t:8,atkFlat:4});}},
   {id:'swift', rarity:'common', name:'신속 물약', icon:'🟨', desc:'8초간 발사속도 +20%', use:p=>{addPotionBuff(p,{id:'swift',name:'신속 물약',label:'발사속도 +20%',icon:'🟨',desc:'8초간 발사속도 증가',t:8,fireAdd:0.20});}},
-  {id:'dodge_refill', rarity:'common', name:'회피 물약', icon:'🌀', desc:'베인Q 즉시 1충전', use:p=>{p.dodgeCharges=Math.min(p.dodgeMaxCharges||1,(p.dodgeCharges||0)+1); if(p.dodgeCharges>=p.dodgeMaxCharges) p.dodgeCd=0;}},
+  {id:'dodge_refill', rarity:'common', name:'회피 물약', icon:'🌀', desc:'회피 즉시 1충전', use:p=>{p.dodgeCharges=Math.min(p.dodgeMaxCharges||1,(p.dodgeCharges||0)+1); if(p.dodgeCharges>=p.dodgeMaxCharges) p.dodgeCd=0;}},
   {id:'greater_heal', rarity:'rare', name:'상급 치유 물약', icon:'💚', desc:POTION_HEALING.greater_heal.desc, use:p=>{healPlayer(potionHealAmount('greater_heal',p),player.x,player.y);}},
   {id:'fury', rarity:'rare', name:'분노 물약', icon:'🔥', desc:'8초간 공격력 +5', use:p=>{addPotionBuff(p,{id:'fury',name:'분노 물약',label:'공격력 +5',icon:'🔥',desc:'8초간 공격력 증가',t:8,atkFlat:5});}},
   {id:'focus', rarity:'rare', name:'집중 물약', icon:'🎯', desc:'8초간 발사속도 +30%', use:p=>{addPotionBuff(p,{id:'focus',name:'집중 물약',label:'발사속도 +30%',icon:'🎯',desc:'8초간 발사속도 증가',t:8,fireAdd:0.30});}},
@@ -17303,7 +17381,7 @@ const LEVEL_PERKS=[
   {g:'epic',icon:'☣',name:'맹독 가열',desc:'독·화상 초당 피해 +20%, 공격력 -0.5',apply:p=>{p.statusDotDmgMul+=0.20;p.dmg-=0.5;}},
   {g:'legend',icon:'🩹',name:'막판 정신력',desc:'1회 체력1로 버티기',skip:p=>p.lastStand,apply:p=>{p.lastStand=true;}},
   {g:'epic',icon:'🆘',name:'저체력 폭주',desc:'체력 30% 이하일 때 공격력 +8',skip:p=>p.lowHpAtkFlat>0,apply:p=>{p.lowHpAtkFlat=(Number(p.lowHpAtkFlat)||0)+8;}},
-  {g:'epic',icon:'🌪️',name:'처단',desc:'베인Q 시 주변에 피해 30 충격파 발생',skip:p=>p.dodgeBlast>0,apply:p=>{p.dodgeBlast+=30;}},
+  {g:'epic',icon:'🌪️',name:'처단',desc:'회피 시 주변에 피해 30 충격파 발생',skip:p=>p.dodgeBlast>0,apply:p=>{p.dodgeBlast+=30;}},
   {g:'epic',icon:'😤',name:'분노',desc:'주변 적 1마리당 공격력 +0.8, 최대 10마리. 찍을 때마다 +0.8씩 누적.',apply:p=>{p.crowdRageAtkFlat=(Number(p.crowdRageAtkFlat)||0)+0.8;}},
   {g:'epic',icon:'💉',name:'치명 흡혈',desc:'치명타 적중 시 체력 3 회복',apply:p=>{p.critHeal+=3;}},
   {g:'epic',icon:'⚡',name:'감전 연쇄',desc:'삭제된 레벨업 특성',removed:true,skip:()=>true,apply:p=>{}},
@@ -17312,7 +17390,7 @@ const LEVEL_PERKS=[
   {g:'legend',icon:'✨',name:'치명 일격',desc:'치명타 +20%, 치명타 피해 +50%',apply:p=>{p.critChance+=0.20;p.critMult+=0.5;}},
   {g:'legend',icon:'💀',name:'폭주',desc:'공격력 +6',apply:p=>{p.dmg+=6;}},
   {g:'legend',icon:'💢',name:'작렬탄',desc:'삭제된 레벨업 특성',removed:true,skip:()=>true,apply:p=>{}},
-  {g:'legend',icon:'🌀',name:'이중 도약',desc:'베인Q 2회 충전',skip:p=>p.dodgeMaxCharges>=2,apply:p=>{p.dodgeMaxCharges=2;p.dodgeCharges=2;}},
+  {g:'legend',icon:'🌀',name:'이중 도약',desc:'회피 2회 충전',skip:p=>p.dodgeMaxCharges>=2,apply:p=>{p.dodgeMaxCharges=2;p.dodgeCharges=2;}},
   {g:'legend',icon:'🔵',name:'재충전 보호막',desc:'30초마다 1회 피격 무효',skip:p=>p.shieldRegen>0,apply:p=>{p.shieldRegen=30;}},
   {g:'legend',icon:'⚰️',name:'사형 선고',desc:'삭제된 레벨업 특성',removed:true,skip:()=>true,apply:p=>{}},
   {g:'legend',icon:'🌬️',name:'확산',desc:'상태이상 적 처치 시 주변에 같은 효과 전파',skip:p=>p.statusSpread,apply:p=>{p.statusSpread=true;}},
@@ -17442,8 +17520,8 @@ function perkTooltipText(pk){
   if(pk.id==='elemental_overload') lines.push('조건: 대상이 상태이상일 때');
   if(pk.id==='corrosive_spread') lines.push('처치 시 독/화상 전이 강화 · 공격력 -1.5');
   if(pk.id==='dodge_reload') lines.push('발동: 회피 후 다음 탄 · 지속 2초');
-  if(pk.id==='perfect_dodge') lines.push('발동: Q 이후 1초 무피격 · 지속 3초');
-  if(pk.id==='shadow_barrage') lines.push('발동: Q 후 1초 · 투사체 +2 · 베인Q 쿨다운 +25%');
+  if(pk.id==='perfect_dodge') lines.push('발동: 회피 이후 1초 무피격 · 지속 3초');
+  if(pk.id==='shadow_barrage') lines.push('발동: 회피 후 1초 · 투사체 +2 · 회피 쿨다운 +25%');
   if(pk.id==='regen_overload') lines.push('조건: 체력 50% 이하');
   if(pk.id==='vamp_shield') lines.push('초과 회복 보호막 상한: 최대 체력 20% · 자연 재생 -30%');
   if(pk.id==='investment_return') lines.push('조건: 골드 150 이상 보유');
@@ -19963,7 +20041,7 @@ function drawTutorial(){
   const lines=[
     ['1. 이동','초록 지점까지 이동',tutorial.moved],
     ['2. 조준 발사','마우스 → 클릭',tutorial.shot],
-    ['3. 베인Q 회피','SPACE: 무적 돌진',tutorial.dodged],
+    ['3. 회피','SPACE: 무적 돌진',tutorial.dodged],
     ['4. 보조 키',(tutorial.controlsC?'C✓ 능력치':'C 능력치')+' / '+(tutorial.controlsEsc?'ESC✓ 일시정지':'ESC 일시정지'),tutorial.controlsSeen]
   ];
   const activeText=step==='move'
@@ -21450,7 +21528,7 @@ function draw(){
     ctx.fillRect(0,0,W,H);
     ctx.restore();
   }
-  // 베인Q 쿨다운 인디케이터 (아이콘 + 방사형 쿨)
+  // 회피 쿨다운 인디케이터 (아이콘 + 방사형 쿨)
   if(state==='play'){
     const sz=Math.round(46*SKILL_HUD_SCALE);
     const ix=clamp(SKILL_HUD_MARGIN_X,12,Math.max(12,W-sz-12));
@@ -21471,7 +21549,7 @@ function draw(){
     ctx.save();
     ctx.beginPath(); ctx.rect(ix,iy,sz,sz); ctx.clip();
     ctx.fillStyle='#0a0712'; ctx.fillRect(ix,iy,sz,sz);
-    if(vqReady) ctx.drawImage(VAYNEQ_ICON,ix,iy,sz,sz);
+    if(dodgeIconReady) ctx.drawImage(DODGE_ICON,ix,iy,sz,sz);
     else { ctx.fillStyle='#16384a'; ctx.fillRect(ix,iy,sz,sz); }
     if(rem>0){
       ctx.fillStyle='rgba(6,4,12,0.78)';
@@ -21527,13 +21605,13 @@ function draw(){
     ctx.fillStyle='rgba(5,16,25,0.88)'; ctx.fillRect(ix+5,iy+sz-20,sz-10,16);
     ctx.fillStyle=ready?'#eafaff':'#c9c0e8'; ctx.font='bold 12px Courier New'; ctx.textAlign='center';
     ctx.strokeStyle='#02050a'; ctx.lineWidth=3;
-    ctx.strokeText('Q '+charges+'/'+maxCharges, cx, iy+sz-7);
-    ctx.fillText('Q '+charges+'/'+maxCharges, cx, iy+sz-7);
+    ctx.strokeText(charges+'/'+maxCharges, cx, iy+sz-7);
+    ctx.fillText(charges+'/'+maxCharges, cx, iy+sz-7);
     ctx.textAlign='left';
     ctx.fillStyle=ready?'#8be8ff':'#b9acd8'; ctx.font='bold 12px sans-serif';
     ctx.strokeStyle='#02050a'; ctx.lineWidth=3;
-    ctx.strokeText('베인Q  SPACE', ix, iy-8);
-    ctx.fillText('베인Q  SPACE', ix, iy-8);
+    ctx.strokeText('회피  SPACE', ix, iy-8);
+    ctx.fillText('회피  SPACE', ix, iy-8);
   }
   drawClassSkillHud();
   drawTutorial();
@@ -21688,18 +21766,143 @@ function syncStatPanelTab(eligible){
   tab.classList.toggle('show',!!eligible && statPanelCollapsed);
 }
 
-const INTRO_SEEN_KEY='btv_introSeen_v3';
+const INTRO_SEEN_KEY='btv_introSeen_v4';
 const INTRO_BEATS=[
-  {caption:'방송이 시작됐다.', phase:0, duration:30000, title:'김봉식 LIVE', sub:'마이크 체크 · 채팅 연결 중', chatTitle:'채팅창', hud:['LIVE','송출 안정','딜레이 2.1초']},
-  {caption:'아무 일도 일어나지 않는다.', phase:1, duration:30000, title:'평범한 방송', sub:'시청자들은 잡담을 이어간다', chatTitle:'채팅창', hud:['LIVE','채팅 정상','시청자 유지']},
-  {caption:'아주 가끔, 화면이 한 픽셀씩 어긋난다.', phase:2, duration:15000, title:'송출 안정화 중', sub:'일부 소스에서 미세한 지연이 감지됩니다', chatTitle:'채팅창', hud:['SYNC','딜레이 변동','소스 확인']},
-  {caption:'누군가 종료하지 말라고 말하기 시작했다.', phase:3, duration:15000, title:'종료 요청 대기', sub:'방송 종료 버튼이 활성화됩니다', chatTitle:'채팅창', hud:['외부 송출','내부 세션','퇴장 대기']},
+  {caption:'봉식TV. 6년째, 매일 밤 LIVE.', phase:0, duration:4200, title:'김봉식 LIVE', sub:'마이크 체크 · 채팅 연결 중', chatTitle:'채팅창', hud:['LIVE','송출 안정','동접 신기록']},
+  {caption:'"편집 승우입니다.\n봉식님, 오늘도 잘 부탁해요."', phase:1, duration:4600, title:'평범한 방송', sub:'승우가 부스에서 방송을 챙긴다', chatTitle:'채팅창', hud:['LIVE','채팅 정상','승우 ON AIR']},
+  {caption:'그날, 화면이 한 픽셀씩 어긋나기 시작했다.', phase:2, duration:4600, title:'송출 불안정', sub:'…무언가 잘못됐다', chatTitle:'채팅창', hud:['SYNC','신호 손실','승우 ─']},
+  {caption:'화면은 아직 LIVE.\n봉식은 종료 버튼을 누르지 못한다.', phase:3, duration:5200, title:'종료 요청 대기', sub:'"봉식님, 아직 안 끝났어요. 되돌릴 수 있어요."', chatTitle:'채팅창', hud:['외부 송출','내부 세션','되감기 대기']},
 ];
 const INTRO_REPLAY_BEATS=[
-  {caption:'이미 본 방송 사고다.', phase:2, duration:5000, title:'송출 안정화 중', sub:'미세한 지연이 다시 감지됩니다', chatTitle:'채팅창', hud:['SYNC','소스 확인']},
-  {caption:'종료하지 말라는 채팅이 올라온다.', phase:3, duration:5000, title:'종료 요청 대기', sub:'방송 종료 버튼이 활성화됩니다', chatTitle:'채팅창', hud:['외부 송출','내부 세션']},
+  {caption:'봉식은 다시, 그 방송을 되감는다.', phase:2, duration:4200, title:'송출 불안정', sub:'…무언가 잘못됐다', chatTitle:'채팅창', hud:['SYNC','신호 손실']},
+  {caption:'"봉식님, 아직 안 끝났어요.\n되돌릴 수 있어요."', phase:3, duration:4600, title:'종료 요청 대기', sub:'승우의 목소리가 되감기를 재촉한다', chatTitle:'채팅창', hud:['외부 송출','내부 세션']},
 ];
-function hasSeenIntro(){ try{ return localStorage.getItem(INTRO_SEEN_KEY)==='1'||localStorage.getItem('introSeen')==='1'; }catch(e){ return false; } }
+// ===== 담백 텍스트 카드 오프닝 (흑막 페이드 — 옛 방송화면 시뮬 미사용) =====
+const PROLOGUE_CARDS=[
+  {text:'봉식TV.\n6년째, 매일 밤 켜져 있었다.'},
+  {text:'"봉식님, 오늘도 잘 부탁해요."', sub:'— 편집, 승우'},
+  {text:'그날 밤까지는.'},
+  {text:'방송은 멈췄고,\n화면은 아직 LIVE였다.'},
+  {text:'봉식은 종료 버튼을 누르지 못했다.'},
+  {text:'"봉식님, 아직 안 끝났어요.\n되돌릴 수 있어요."', sub:'— 편집, 승우'},
+  {text:'봉식은, 그 방송을 되감기 시작했다.'}
+];
+function playPrologue(done){
+  let ov=document.getElementById('prologueOverlay');
+  if(!ov){
+    ov=document.createElement('div');
+    ov.id='prologueOverlay';
+    ov.style.cssText='position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#07050d;opacity:0;transition:opacity .8s ease;font-family:inherit;text-align:center;padding:8vh 8vw;cursor:pointer;';
+    ov.innerHTML='<div id="prologueText" style="opacity:0;transition:opacity .6s ease;color:#eaf2ff;font-size:clamp(18px,3.4vw,30px);line-height:1.9;letter-spacing:.5px;white-space:pre-wrap;text-shadow:0 0 18px rgba(90,150,255,.25);"></div>'+
+      '<div id="prologueSub" style="opacity:0;transition:opacity .6s ease;color:#9b8fc4;font-size:clamp(12px,1.8vw,15px);margin-top:18px;letter-spacing:1px;"></div>'+
+      '<button id="prologueSkip" type="button" style="position:fixed;bottom:28px;right:32px;background:none;border:1px solid #3a2f50;color:#9b8fc4;font-family:inherit;font-size:12px;padding:8px 16px;cursor:pointer;opacity:.7;letter-spacing:1px;">건너뛰기 ▶▶</button>';
+    document.body.appendChild(ov);
+  }
+  const txt=ov.querySelector('#prologueText'), sub=ov.querySelector('#prologueSub'), skip=ov.querySelector('#prologueSkip');
+  let idx=0, finished=false, holdTimer=null, fadeTimer=null;
+  function clearTimers(){ if(holdTimer){clearTimeout(holdTimer);holdTimer=null;} if(fadeTimer){clearTimeout(fadeTimer);fadeTimer=null;} }
+  function finish(){
+    if(finished) return; finished=true;
+    clearTimers();
+    ov.removeEventListener('click',onAdvance);
+    document.removeEventListener('keydown',onKey,true);
+    if(skip) skip.onclick=null;
+    ov.style.opacity='0';
+    try{ if(typeof markIntroSeen==='function') markIntroSeen(); }catch(e){}
+    setTimeout(()=>{ if(ov&&ov.parentNode) ov.parentNode.removeChild(ov); if(typeof done==='function') done(); }, 820);
+  }
+  function showCard(){
+    clearTimers();
+    if(idx>=PROLOGUE_CARDS.length){ finish(); return; }
+    const c=PROLOGUE_CARDS[idx];
+    txt.style.opacity='0'; sub.style.opacity='0';
+    fadeTimer=setTimeout(()=>{
+      txt.textContent=c.text; sub.textContent=c.sub||'';
+      void txt.offsetWidth;
+      txt.style.opacity='1';
+      if(c.sub) sub.style.opacity='1';
+      const hold=1700+c.text.length*38;
+      holdTimer=setTimeout(()=>{ idx++; showCard(); }, Math.min(4200,hold));
+    }, txt.textContent?520:40);
+  }
+  function onAdvance(e){ if(e&&e.target&&e.target.id==='prologueSkip') return; if(finished) return; clearTimers(); idx++; showCard(); }
+  function onKey(e){
+    const k=(e.key||'').toLowerCase();
+    if(k===' '||k==='enter'){ e.preventDefault(); e.stopPropagation(); onAdvance(); }
+    else if(k==='escape'){ e.preventDefault(); e.stopPropagation(); finish(); }
+  }
+  ov.addEventListener('click',onAdvance);
+  document.addEventListener('keydown',onKey,true);
+  if(skip) skip.onclick=finish;
+  void ov.offsetWidth;
+  ov.style.opacity='1';
+  idx=0; showCard();
+}
+// ===== 엔딩 연출 (흑막 선택 → 문구 페이드 카드 → 점수 결과창) =====
+function playEndingSequence(onComplete){
+  const finish=()=>{ if(typeof onComplete==='function'){ try{ onComplete(); }catch(e){} } };
+  let ov=document.getElementById('endingSeqOverlay');
+  if(ov&&ov.parentNode) ov.parentNode.removeChild(ov);
+  ov=document.createElement('div');
+  ov.id='endingSeqOverlay';
+  ov.style.cssText='position:fixed;inset:0;z-index:99998;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#07050d;opacity:0;transition:opacity .8s ease;font-family:inherit;text-align:center;padding:8vh 8vw;';
+  ov.innerHTML=
+    '<div id="endSeqCard" style="opacity:0;transition:opacity .6s ease;color:#eaf2ff;font-size:clamp(17px,3.1vw,28px);line-height:1.95;letter-spacing:.5px;white-space:pre-wrap;text-shadow:0 0 18px rgba(90,150,255,.25);max-width:920px;"></div>'+
+    '<div id="endSeqPrompt" style="opacity:0;transition:opacity .6s ease;color:#9b8fc4;font-size:clamp(13px,1.9vw,16px);letter-spacing:4px;margin-bottom:32px;">■ 방송을 어떻게 끝낼까</div>'+
+    '<div id="endSeqBtns" style="opacity:0;transition:opacity .6s ease;display:flex;gap:22px;flex-wrap:wrap;justify-content:center;"></div>'+
+    '<button id="endSeqSkip" type="button" style="position:fixed;bottom:28px;right:32px;background:none;border:1px solid #3a2f50;color:#9b8fc4;font-family:inherit;font-size:12px;padding:8px 16px;cursor:pointer;opacity:.5;letter-spacing:1px;">건너뛰기 ▶▶</button>';
+  document.body.appendChild(ov);
+  const card=ov.querySelector('#endSeqCard'), prompt=ov.querySelector('#endSeqPrompt'), btnWrap=ov.querySelector('#endSeqBtns'), skip=ov.querySelector('#endSeqSkip');
+  let opts=[]; try{ opts=bossStoryFinalEndingOptions()||[]; }catch(e){ opts=[]; }
+  let done=false, timers=[];
+  function T(fn,ms){ const id=setTimeout(fn,ms); timers.push(id); return id; }
+  function clearT(){ timers.forEach(clearTimeout); timers=[]; }
+  function teardown(){
+    if(done) return; done=true; clearT();
+    document.removeEventListener('keydown',onKey,true);
+    ov.style.opacity='0';
+    T(()=>{ if(ov&&ov.parentNode) ov.parentNode.removeChild(ov); finish(); },820);
+  }
+  opts.forEach(o=>{
+    const b=document.createElement('button');
+    b.type='button'; b.textContent=o.label;
+    const accent=(o.id==='end_broadcast')?'#5dff9b':'#9146ff';
+    b.style.cssText='background:#140e22;border:2px solid '+accent+';color:#eaf2ff;font-family:inherit;font-size:clamp(14px,2vw,18px);padding:16px 30px;min-width:210px;cursor:pointer;letter-spacing:1px;transition:background .15s;box-shadow:0 0 22px rgba(90,150,255,.12);';
+    b.onmouseenter=()=>{ b.style.background='#221844'; };
+    b.onmouseleave=()=>{ b.style.background='#140e22'; };
+    b.onclick=()=>choose(o);
+    btnWrap.appendChild(b);
+  });
+  function playLines(lines,after){
+    let i=0;
+    (function next(){
+      if(i>=lines.length){ after(); return; }
+      const line=lines[i++];
+      card.style.opacity='0';
+      T(()=>{
+        card.textContent=line; void card.offsetWidth; card.style.opacity='1';
+        T(next, Math.min(4200,1600+line.length*36));
+      }, card.textContent?520:40);
+    })();
+  }
+  function choose(o){
+    if(done||!o) return;
+    clearT();
+    try{ applyFinalBroadcastChoice(o); }catch(e){}
+    if(skip) skip.style.display='none';
+    prompt.style.opacity='0'; btnWrap.style.opacity='0';
+    T(()=>{ prompt.style.display='none'; btnWrap.style.display='none'; playLines(o.lines||[], teardown); }, 420);
+  }
+  function onKey(e){
+    const k=(e.key||'').toLowerCase();
+    if(k==='escape'){ e.preventDefault(); e.stopPropagation(); teardown(); }
+  }
+  document.addEventListener('keydown',onKey,true);
+  if(skip) skip.onclick=teardown;
+  void ov.offsetWidth; ov.style.opacity='1';
+  T(()=>{ prompt.style.opacity='1'; btnWrap.style.opacity='1'; }, 500);
+}
+function hasSeenIntro(){ try{ return localStorage.getItem(INTRO_SEEN_KEY)==='1'; }catch(e){ return false; } }
 function markIntroSeen(){ try{ localStorage.setItem(INTRO_SEEN_KEY,'1'); localStorage.setItem('introSeen','1'); }catch(e){} }
 function introReducedMotion(){
   try{ if(typeof _SET!=='undefined' && _SET.flashReduce) return true; }catch(e){}
@@ -22322,9 +22525,9 @@ function spEffects(p){
   add(p.explodeKill>0,'💣','처치 폭발','처치 폭발','적 처치 시 주변 폭발','explode-kill');
 
   add(p.dodgeReload,'🌀','회피 재장전'+(p.dodgeReloadT>0?timeLabel(p.dodgeReloadT):''),'회피 재장전','회피 후 2초 안의 다음 탄 피해 +'+pc(Number(p.dodgeReloadShotDmgMul)||0.40),'dodge-reload');
-  add(p.perfectDodge,'💨','완벽 회피'+(p.perfectDodgeFireT>0?timeLabel(p.perfectDodgeFireT):''),'완벽 회피','Q 이후 1초간 피격되지 않으면 3초 동안 발사속도 +20%','perfect-dodge');
+  add(p.perfectDodge,'💨','완벽 회피'+(p.perfectDodgeFireT>0?timeLabel(p.perfectDodgeFireT):''),'완벽 회피','회피 이후 1초간 피격되지 않으면 3초 동안 발사속도 +20%','perfect-dodge');
   add(p.perfectDodgeArmed,'💨','회피 판정'+timeLabel(p.perfectDodgeCheckT),'완벽 회피','피격되지 않으면 발사속도 버프 발동','perfect-dodge-armed');
-  add(p.shadowBarrage,'🌑','그림자 탄막'+(p.shadowBarrageT>0?timeLabel(p.shadowBarrageT):''),'그림자 탄막','Q 후 1초 동안 투사체 +'+(p.shadowBarrageExtraShots||1)+', 내부쿨 6초','shadow-barrage');
+  add(p.shadowBarrage,'🌑','그림자 탄막'+(p.shadowBarrageT>0?timeLabel(p.shadowBarrageT):''),'그림자 탄막','회피 후 1초 동안 투사체 +'+(p.shadowBarrageExtraShots||1)+', 내부쿨 6초','shadow-barrage');
   add(p.shadowBarrageCd>0&&p.shadowBarrageT<=0,'🌑','탄막 쿨'+timeLabel(p.shadowBarrageCd),'그림자 탄막','내부쿨 대기 중','shadow-barrage-cd');
   add(p.dodgeMaxCharges>1,'🌀','이중도약','이중 도약','회피를 2회까지 충전','dodge-charges');
   add(p.dodgeBlast>0,'💥','처단','처단','회피 시 피해 '+p.dodgeBlast+' 충격파 발생','dodge-blast');
@@ -22564,7 +22767,7 @@ function renderInventory(){
   if(p.statusDotDmgMul>0) stats.push(['독/화상 배율', '+'+Math.round(p.statusDotDmgMul*100)+'%']);
   if(p.statusDmgMul>0) stats.push(['상태 대상 피해', '+'+Math.round(p.statusDmgMul*100)+'%']);
   if(p.dodgeReload) stats.push(['Q 다음 탄', '+'+Math.round((Number(p.dodgeReloadShotDmgMul)||0.40)*100)+'%']);
-  if(p.dodgeRangeBuff) stats.push(['Q 송출 보정', p.dodgeRangeBuffT>0?'발동 중':'회피 후 1.5초']);
+  if(p.dodgeRangeBuff) stats.push(['회피 송출 보정', p.dodgeRangeBuffT>0?'발동 중':'회피 후 1.5초']);
   if(p.perfectDodge) stats.push(['Q 완벽 회피', '발사 +20%']);
   if(p.classSkillCdMul&&p.classSkillCdMul!==1) stats.push(['스킬 쿨타임', 'x'+playerClassSkillCdMul(p).toFixed(2)]);
   if(p.classSkillPowerMul&&p.classSkillPowerMul!==1) stats.push(['스킬 효과', 'x'+playerClassSkillPowerMul(p).toFixed(2)]);
@@ -22603,7 +22806,7 @@ function renderInventory(){
   }
   if(p.goldMul!==1) stats.push(['골드 보너스', '+'+Math.round((p.goldMul-1)*100)+'%']);
   if(p.xpMul!==1) stats.push(['경험치', '+'+Math.round((p.xpMul-1)*100)+'%']);
-  if(p.dodgeCdMul!==1) stats.push(['베인Q 쿨', pc(p.dodgeCdMul)]);
+  if(p.dodgeCdMul!==1) stats.push(['회피 쿨', pc(p.dodgeCdMul)]);
   if(p.magnet>60) stats.push(['자석 범위', Math.round(p.magnet)]);
   if(p.homing>0) stats.push(['유도탄', 'ON']);
   if(p.backShot) stats.push(['후방 사격', 'ON']);
@@ -23201,7 +23404,7 @@ function gameOver(win, killer){
   $('endTag').textContent=win?'🏆 클리어':'📺 방송 사고';
   let title, quip;
   const k = killer || lastKiller || '시청자';
-  if(win){ title=act>=3?'3막 클리어!':'CLEAR!'; quip=pick(["재밌었다. 다음 시즌에 보자.","채팅 단체기립 POGGERS","갓겜 인정 GIGACHAD","클립 박제각 Clap","이게 되네?! KEKW"]); }
+  if(win){ title=act>=3?(bossStoryTrueEndingReady()?'화면이 꺼졌다':'송출 계속 중'):'CLEAR!'; quip=act>=3?(bossStoryTrueEndingReady()?'아무도 그가 어디로 갔는지 모른다.':'송출 정상 / 시청자 수 계속 증가 / 다음 방송까지 00:00'):pick(["재밌었다. 다음 시즌에 보자.","채팅 단체기립 POGGERS","갓겜 인정 GIGACHAD","클립 박제각 Clap","이게 되네?! KEKW"]); }
   else {
     const entry = DEATH_LINES[k];
     if(entry){ title=entry.title; quip=pick(entry.q); }
@@ -23226,9 +23429,15 @@ function gameOver(win, killer){
   pendingRunBuildSnapshot=createRunBuildSnapshot(scoreData);
   renderEndScoreGuide(scoreData,false);
   resetEndRankForm();
-  $('endQuip').textContent='채팅: "'+quip+'"';
+  $('endQuip').textContent=win&&act>=3?quip:('채팅: "'+quip+'"');
+  clearFinalBroadcastChoices();
+  // 3막 승리: 흑막 엔딩 연출(선택 → 문구 페이드) → 점수 화면. 선택은 흑막에서 끝났으므로 결과창엔 패널 재노출 안 함.
+  if(win&&act>=3 && typeof playEndingSequence==='function'){
+    playEndingSequence();
+  }
   chatSys(win?"🎉🎉 클리어!! 채팅 축제":"☠ 사망 ("+k+") — 채팅: "+pick(["GG","한판더","아깝다 Sadge","리트 ㄱㄱ"]));
-  if(win && typeof EndingCredits!=='undefined' && EndingCredits.play){ try{ EndingCredits.play(); }catch(e){ console.warn('ending credits failed',e); } }
+  // 아날로그 호러 실종 크레딧(EndingCredits) 비활성화 — 렉 유발 + 서사 톤 불일치로 제거. 결과 화면(방송 복구/종료 선택)만 노출.
+  // if(win && typeof EndingCredits!=='undefined' && EndingCredits.play){ try{ EndingCredits.play(); }catch(e){ console.warn('ending credits failed',e); } }
 }
 function victory(){ gameOver(true); }
 
@@ -23291,7 +23500,7 @@ function spawnTutorialDummy(){
   spawnEnemy('goblin_warrior', W/2, Math.max(135,H*0.28), 0.5);
   const d=enemies[enemies.length-1];
   if(d){
-    d.hp=38; d.maxhp=38; d.spd=0; d.dmg=0; d.touchDmg=0;
+    d.hp=1000000; d.maxhp=1000000; d.spd=0; d.dmg=0; d.touchDmg=0;
     d.label='고정 허수아비'; d.dummy=true; d.ai='idle'; d.cool=0; d.coolT=999;
   }
   tutorial.dummySpawned=true;
@@ -23306,7 +23515,7 @@ function updateTutorialProgress(){
   }
   if(tutorial.moved && tutorial.shot && tutorial.step!=='dodge' && tutorial.step!=='controls' && tutorial.step!=='done'){
     tutorial.step='dodge';
-    banner("튜토리얼 · 베인Q","SPACE로 짧게 돌진 · 잠시 무적 · 쿨다운 있음",3600);
+    banner("튜토리얼 · 회피","SPACE로 짧게 돌진 · 잠시 무적 · 쿨다운 있음",3600);
   }
   if(tutorial.moved&&tutorial.shot&&tutorial.dodged&&tutorial.step!=='controls'&&tutorial.step!=='done'){
     tutorial.step='controls';
@@ -24222,6 +24431,15 @@ window.debugSetBossStoryFlags=function(flags){
 window.debugSetTrueEndingFlags=function(){
   return window.debugSetBossStoryFlags({signalCut:true,onsterTalked:true,tapeCut:true,saveProtected:true});
 };
+// 엔딩 화면 바로 보기. debugShowEnding() = 진엔딩(플래그 충족) / debugShowEnding('soft') = 소프트 엔딩(플래그 부족).
+window.debugShowEnding=function(mode){
+  if(!runActive && typeof newGameSkip==='function') newGameSkip();
+  act=Math.max(3,Number(act)||0);
+  if(mode==='soft'){ try{ bossStoryFlags=normalizeBossStoryFlags({},bossStoryChoices); }catch(e){} }
+  else { window.debugSetTrueEndingFlags(); }
+  gameOver(true);
+  return 'ending: act3 승리 ('+(mode==='soft'?'소프트':'진엔딩')+') — 결과 화면에서 방송 복구/종료 선택';
+};
 window.debugResetBossStorySeen=function(){
   seenBossDialogues={};
   seenBossPhaseDialogues={};
@@ -24964,17 +25182,17 @@ const TREE_NODES = [
   { id:'m_fire2', name:'연사 강화 II', icon:'🔫', branch:'speed', req:['m_fire1'], cost:1,
     desc:'발사 속도 추가 +10%', apply:p=>{ p.fireAdd+=0.10; } },
   { id:'m_dodge', name:'회피 숙련',    icon:'🌀', branch:'speed', req:['m_spd1'], cost:1,
-    desc:'베인Q 쿨다운 -20%', apply:p=>{ p.dodgeCdMul-=0.20; } },
+    desc:'회피 쿨다운 -20%', apply:p=>{ p.dodgeCdMul-=0.20; } },
   { id:'m_dtap',  name:'더블탭',       icon:'🎯', branch:'speed', req:['m_fire2','m_dodge'], cost:2,
     desc:'25% 확률로 즉시 1발 추가', apply:p=>{ p.doubleTap+=0.25; } },
   { id:'m_charge2',name:'회피 2충전',  icon:'🔵', branch:'speed', req:['m_dodge'], cost:2,
-    desc:'베인Q 2회 충전', once:true, skip:p=>p.dodgeMaxCharges>=2,
+    desc:'회피 2회 충전', once:true, skip:p=>p.dodgeMaxCharges>=2,
     apply:p=>{ p.dodgeMaxCharges=2; p.dodgeCharges=2; } },
   { id:'m_blitz', name:'질풍 방송',    icon:'⚡', branch:'speed', req:['m_dtap','m_charge2'], cost:3,
     desc:'회피 후 2.5초간 발사속도 +50% + 회피 폭발', once:true,
     apply:p=>{ p.dodgeHaste=true; p.dodgeBlast+=14; } },
   { id:'m_risky_roll', name:'위험한 구르기', icon:'🌀', branch:'speed', req:['m_dodge'], cost:2,
-    desc:'베인Q 쿨다운 -15%, 최대 체력 -8%', apply:p=>{ p.dodgeCdMul-=0.15; p.maxhp=Math.max(1,Math.round(p.maxhp*0.92)); p.hp=Math.min(p.hp,p.maxhp); } },
+    desc:'회피 쿨다운 -15%, 최대 체력 -8%', apply:p=>{ p.dodgeCdMul-=0.15; p.maxhp=Math.max(1,Math.round(p.maxhp*0.92)); p.hp=Math.min(p.hp,p.maxhp); } },
   { id:'m_dash_shot', name:'질주 사격', icon:'🔫', branch:'speed', req:['m_fire2'], cost:2,
     desc:'발사 속도 +18%, 받는 피해 +4%', apply:p=>{ p.fireAdd+=0.18; p.damageTakenMul+=0.04; } },
   { id:'bridge_guarded_trigger', name:'방벽 연사', icon:'🛡️', branch:'speed', req:['m_fire2','v_armor2'], cost:1,
@@ -24989,10 +25207,10 @@ const TREE_NODES = [
   { id:'skill_overcharge', name:'과충전', icon:'💥', branch:'speed', req:['skill_quick_ready'], cost:3, isMiniKeystone:true,
     desc:'직업 스킬 쿨타임 +20%. 직업 스킬 피해/효과 +25%.', apply:p=>{ p.classSkillCdMul=(p.classSkillCdMul||1)*1.20; p.classSkillPowerMul=(p.classSkillPowerMul||1)*1.25; } },
   { id:'perfect_dodge', name:'완벽 회피', icon:'💨', branch:'speed', req:['dodge_reload'], cost:2, isMiniKeystone:true,
-    desc:'Q 이후 1초 동안 피격되지 않으면 3초 동안 발사속도 +20%', skip:p=>p.perfectDodge,
+    desc:'회피 이후 1초 동안 피격되지 않으면 3초 동안 발사속도 +20%', skip:p=>p.perfectDodge,
     apply:p=>{ p.perfectDodge=true; } },
   { id:'shadow_barrage', name:'그림자 탄막', icon:'🌑', branch:'speed', req:['perfect_dodge','m_dtap'], cost:3, isKeystone:true,
-    desc:'Q 후 1초 동안 투사체 +2. 베인Q 쿨다운 +25%', skip:p=>p.shadowBarrage,
+    desc:'회피 후 1초 동안 투사체 +2. 회피 쿨다운 +25%', skip:p=>p.shadowBarrage,
     apply:p=>{ p.shadowBarrage=true; p.shadowBarrageExtraShots=2; p.dodgeCdMul+=0.25; } },
 
   // ══════════════════════════════════
