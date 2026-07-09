@@ -6817,13 +6817,13 @@ let sfxVol=1, bgmVol=1;
 let bossEvolve=null;
 let shopIntroShown=false;
 let hazards=[];
-let kijoMasks=[], kijoGazes=[], kijoParades=[], kijoLaserWarns=[];
+let kijoMasks=[], kijoGazes=[], kijoParades=[], kijoLaserWarns=[], kijoDelays=[];
 function clearCombatThreats(){
   eBullets.length=0;
   playerLaserFx.length=0;
   playerSkillZones.length=0;
   hazards=[];
-  kijoMasks=[]; kijoGazes=[]; kijoParades=[]; kijoLaserWarns=[];
+  kijoMasks=[]; kijoGazes=[]; kijoParades=[]; kijoLaserWarns=[]; kijoDelays=[];
   if(typeof clearSeungwooFx==='function') clearSeungwooFx();
 }
 let stallTimer=0, stallWarned=false, stallRegenWarned=false, stallRaged=false, stallReinforced=false;
@@ -9069,7 +9069,7 @@ function loadRunCheckpoint(){
     mapData=restoreMapData(data.mapData);
     if(!mapData) throw new Error('map restore failed');
     buildBackdrop(act);
-    enemies=[]; pBullets=[]; eBullets=[]; pickups=[]; particles=[]; hazards=[]; floatBubbles=[]; kijoMasks=[]; kijoGazes=[]; kijoParades=[]; kijoLaserWarns=[];
+    enemies=[]; pBullets=[]; eBullets=[]; pickups=[]; particles=[]; hazards=[]; floatBubbles=[]; kijoMasks=[]; kijoGazes=[]; kijoParades=[]; kijoLaserWarns=[]; kijoDelays=[];
     boss=null; bossTalk=null; bossStoryDefeatPending=false; bossStoryDefeatShown=false; bossStoryLastDefeatKey=null; pendingNode=null; roomCleared=true; roomIsBoss=false; roomIsMidboss=false; roomHadElite=false; roomEliteKind=null; roomMidbossKind=null; bossBanner=0; bossEvolve=null; cutsceneT=0;
     tutorialMode=false; tutorialDoneFlag=true; paused=false; mouseDown=false; autoFire=false; runActive=true; state='map';
     hideAll(); startBGM(); showMap(); banner('이어하기','저장된 진행을 불러왔다',1400);
@@ -9116,7 +9116,7 @@ function startCombat(kind, fresh){
       else { healPlayer(15,player.x,player.y); banner('구조한 팬의 보답','체력 +15',1500); }
     }
   }
-  enemies=[]; pBullets=[]; eBullets=[]; pickups=[]; particles=[]; hazards=[]; floatBubbles=[]; kijoMasks=[]; kijoGazes=[]; kijoParades=[]; kijoLaserWarns=[];
+  enemies=[]; pBullets=[]; eBullets=[]; pickups=[]; particles=[]; hazards=[]; floatBubbles=[]; kijoMasks=[]; kijoGazes=[]; kijoParades=[]; kijoLaserWarns=[]; kijoDelays=[];
   player.x=W/2; player.y=H-90;
   roomCleared=false; combatClearGrace=false; roomIsBoss=(kind==='boss'); roomIsMidboss=(kind==='midboss'); kills=0; boss=null; roomHadElite=false; roomEliteKind=null; roomMidbossKind=null; roomBossKind=null; eliteIntro=null; bossTalk=null; bossStoryLastDefeatKey=null; bossStoryDefeatPending=false; bossStoryDefeatShown=false; timeScale=1; slowmoT=0; bagjeinRewind=null;
   bossIntroToken++;
@@ -9321,8 +9321,14 @@ function applyMidbossSlotBalance(e,type,diff){
   const slotBase=enemyDataByKey(slotKey)||enemyDataByKey(type);
   if(slotBase){
     const act3MidMul=(act>=3&&type==='yanggaeng')?1.5:1;
-    const hp=slotBase.hp*diff*diffSet.hp*act3MidMul;
-    e.hp=hp; e.maxhp=hp;
+    const hpScale=diff*diffSet.hp*act3MidMul;
+    const hp=slotBase.hp*hpScale;
+    if(Array.isArray(slotBase.phaseHp)&&slotBase.phaseHp.length){
+      e.phaseHp=slotBase.phaseHp.map(v=>Math.max(1,Number(v||1)*hpScale));
+      e.hp=e.phaseHp[0]; e.maxhp=e.phaseHp[0];
+    }else{
+      e.hp=hp; e.maxhp=hp;
+    }
   }
   e.slotRole='midboss'; e.slotAct=act; e.slotBalanceKey=slotKey;
   e.slotDamageScale=midbossDamageRatio(type,slotKey);
@@ -10081,6 +10087,43 @@ function hyechulCreepTide(e,ph){
   banner('🟣 점막 잠식','바닥이 먹힌다 — 선단을 쏴서 밀어내라!',1100);
   if(typeof beep==='function')beep(70,0.4,'sawtooth',0.06); screenShake=Math.max(screenShake||0,5);
 }
+// [2페+] 산란 회랑: 상단에서 점막 벽이 내려온다. 한 레인만 뚫려 있음 — 그 칸으로 슬롯인.
+function hyechulSpawnCorridor(e,ph){
+  if(hazards.some(h=>h.kind==='corridorWave')) return;   // 동시 1개
+  const cols=ph>=3?7:6, gap=irand(0,cols-1);
+  hazards.push({kind:'corridorWave',y:96,cols,gap,spd:ph>=3?150:128,
+    t:0,warnT:0.9,dmg:ph>=3?15:13,hitCd:0,seed:rand(0,TAU)});
+  // 벽 뒤에서 새끼 몇 마리 산란(물량 압박 유지) — 캡은 hyechulSpawnEgg 내부 처리
+  const plan=hyechulSummonPlan(ph);
+  hyechulSpawnEgg(e,'zergling',ph>=3?3:2,plan.hatch*0.7);
+  playFileSfx('hyechulAcid',{vol:0.58,rate:0.8,maxDur:1.6,cd:0.7,key:'hyechulCorridor'});
+  banner('🧫 산란 회랑','뚫린 레인으로 파고들어라!',1100);
+  if(typeof beep==='function')beep(74,0.35,'sawtooth',0.06); screenShake=Math.max(screenShake||0,5);
+}
+// [2페+] 부화 지뢰: 점막 꼬투리를 흩뿌린다. 무장(1.4s) 후 밟으면 터짐(경고 링 상시 표시).
+function hyechulSporeMines(e,ph,count){
+  const n=count||(ph>=3?4:3);
+  for(let i=0;i<n;i++){
+    let x,y;
+    if(i===0){ x=clamp(player.x+rand(-60,60),50,W-50); y=clamp(player.y+rand(-60,60),130,H-80); }
+    else { x=rand(70,W-70); y=rand(170,H-90); }
+    hazards.push({kind:'sporeMine',x,y,r:ph>=3?86:80,t:0,armT:1.4,life:7.5,dmg:ph>=3?16:14,seed:rand(0,TAU),ph});
+  }
+  playFileSfx('hyechulEgg',{vol:0.6,rate:1.05,cd:0.45,key:'hyechulSporeMine'});
+  banner('🟢 부화 지뢰','무장하면 밟지 마라',900); if(typeof beep==='function')beep(150,0.16,'triangle',0.05);
+}
+// [3페] 그림자 낙하: 발밑에 추적 그림자 → 잠시 후 그 자리에 강하 + 지뢰 산개.
+function hyechulShadowDrop(e,ph){
+  if(hazards.some(h=>h.kind==='shadowDrop')) return;
+  hazards.push({kind:'shadowDrop',x:player.x,y:player.y,r:118,t:0,warnT:1.0,follow:3.2,ph,_dropped:false,seed:rand(0,TAU)});
+  playFileSfx('hyechulGrowl',{vol:0.62,rate:0.86,maxDur:1.2,cd:0.7,key:'hyechulShadow'});
+  banner('🌑 그림자 낙하','그림자에서 벗어나라!',1000); if(typeof beep==='function')beep(64,0.32,'sawtooth',0.07); screenShake=Math.max(screenShake||0,5);
+}
+// [모디파이어] 죽음의 발악: 소환체가 죽으면 사망 위치에 소형 포자 링(0.4s 예고).
+function hyechulDeathThroe(x,y){
+  if(hazards.filter(h=>h.kind==='deathThroe').length>=5) return;   // 대량 사망 시 과부하 방지
+  hazards.push({kind:'deathThroe',x:clamp(x,30,W-30),y:clamp(y,90,H-40),t:0,warnT:0.4,_fired:false,dmg:8,seed:rand(0,TAU)});
+}
 function pickHyechulFocusPattern(e,ph){
   const pool=ph>=3?['fan','rain','ring','acidSwamp','acidSwamp','homingSpore','homingSpore','acidStorm','acidStorm']
             :ph>=2?['fan','rain','ring','acidSwamp','acidSwamp','homingSpore','homingSpore']
@@ -10111,6 +10154,7 @@ function runHyechulPattern(e,ph){
 
 function hyechulNextPhase(e){
   e.phase=(e.phase||1)+1;
+  e.maxhp=(e.phaseHp&&e.phaseHp[e.phase-1])||e.maxhp;
   e.hp=e.maxhp; e.hitT=0.2; e.stunT=0;
   e.summonT=3.5; e.atkT=1.4; e.atkN=0; e.climaxT=0;
   const ph=e.phase, col=ph===2?'#c46bff':'#ff6a3a';
@@ -10243,6 +10287,8 @@ function killEnemy(e){
   if(e.type==='slime_green') spawnSlimeSplit(e);
   markDiscovered('enemies', e.type);
   burst(e.x,e.y,e.color,14,220);
+  // 죽음의 발악: 혜철이 생존 중 군체(저글링/뮤탈/울트라) 사망 시 소형 포자 링
+  if((e.type==='zergling'||e.type==='mutalisk'||e.type==='ultra') && enemies.some(o=>o.type==='hyechul')) hyechulDeathThroe(e.x,e.y);
   if(!isSummon && (player.statusSpread||player.corrosiveSpread) && !(player.corrosiveSpread&&e._corrosiveSpreaded)){ // 확산 / 부식 확산
     const hadBurn=e.burnT>0, hadChill=e.chillT>0, hadPois=e.psT>0;
     if(hadBurn||hadChill||hadPois){
@@ -10365,16 +10411,24 @@ function nextFromBag(b,key,n){
   return bag.pop();
 }
 function kijoFrenzy(b){
-  // [격노 전용] 광란의 가면: 3중 회전 링 + 머리 위 가면 낙하
+  // [격노+] 광란의 가면: 다중 회전 링(순수 가면탄 — 낙하 음식은 통합 패턴으로 이관)
   playFileSfx('kijoGrowl',{vol:0.76,rate:0.82,maxDur:1.8,cd:0.9,key:'kijoFrenzyGrowl'});
   playFileSfx('kijoLaugh',{vol:0.7,rate:0.88,maxDur:1.4,cd:0.9,key:'kijoFrenzyLaugh'});
-  const cx=b.x, cy=b.y;
-  for(let ring=0;ring<3;ring++){
+  const cx=b.x, cy=b.y, rings=b.kijoFinalPhase?4:3;
+  for(let ring=0;ring<rings;ring++){
     const k=12+ring*3, sp=140+ring*34, off=(b.angle||0)*1.4+ring*0.5;
     for(let i=0;i<k;i++){ const a=off+i/k*TAU; eBullets.push({x:cx,y:cy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,r:8,dmg:16,life:4,srcName:'키죠 광란의 가면',style:'cursed_mask'}); }
   }
-  for(let i=0;i<5;i++){ const fx=clamp(player.x+rand(-170,170),40,W-40); eBullets.push({x:fx,y:-12,vx:rand(-20,20),vy:rand(165,215),r:9,dmg:16,life:4.2,foodImg:(typeof pickFood==='function'?pickFood():null),spin:rand(0,TAU),spinV:rand(-7,7)}); }
   banner('👹 광란의 가면','사방이 가면이다!',900); screenShake=Math.max(screenShake||0,8); if(typeof beep==='function')beep(80,0.3,'sawtooth',0.07);
+}
+// [필러 통폐합] 가면 음식 폭풍: 회전 나선 + (페이즈별) 낙하 음식 — 기존 나선/폭격 2종을 1종으로 통합, 페이즈 스케일링
+function kijoFoodStorm(b,kph){
+  playFileSfx('kijoCharge',{vol:0.36,rate:1.05,maxDur:0.8,cd:0.45,key:'kijoFoodStorm'});
+  const k=kph>=2?12:11, base=b.angle*2.6, sp1=kph>=2?165:185, sp2=kph>=2?158:175;
+  for(let i=0;i<k;i++){ throwFood(b, base+i/k*TAU, sp1, 15); throwFood(b, -base+i/k*TAU+0.3, sp2, 15); }
+  const rain=kph>=3?6:(kph>=2?3:0);   // 2페부터 낙하 음식 소량, 3페 다량 (폭격 역할 흡수)
+  for(let i=0;i<rain;i++){ const fx=rand(50,W-50); eBullets.push({x:fx,y:-12,vx:rand(-25,25),vy:rand(165,205)*(kph>=2?0.78:1),r:13,dmg:15,life:4.2,foodImg:pickFood(),spin:rand(0,TAU),spinV:rand(-7,7)}); }
+  banner(kph>=3?'🍢 음식 폭풍':'회전 나선', rain>0?'나선 + 낙하 회피!':'회전 탄막', 700);
 }
 function kijoFinalCurtain(b){
   const base=Math.atan2(player.y-b.y,player.x-b.x);
@@ -10387,10 +10441,7 @@ function kijoFinalCurtain(b){
     });
   }
   kijoRing(b.x,b.y,16,165,14,(b.angle||0)*1.7,'evil_eye');
-  setTimeout(()=>{
-    if(boss!==b||!b||b.hp<=0) return;
-    kijoRing(b.x,b.y,22,195,16,(b.angle||0)*2.15,'cursed_mask');
-  },620);
+  kijoDelay(0.62,()=>{ kijoRing(boss.x,boss.y,22,195,16,(boss.angle||0)*2.15,'cursed_mask'); });
   playFileSfx('kijoLaserCharge',{vol:0.58,rate:0.78,maxDur:1.4,cd:0.8,key:'kijoFinalCurtain'});
   banner('최종 시선','가면이 한꺼번에 열린다',900);
   screenShake=Math.max(screenShake||0,10);
@@ -10508,7 +10559,10 @@ function kijoQueueDamageWindow(b,t,delay){
   b.restWaitT=0;
   b.restWaitDur=0;
 }
+// setTimeout 대체: dt 기반 지연 실행 (일시정지/timeScale 준수, 보스 사망 시 자동 폐기)
+function kijoDelay(delay,fn){ kijoDelays.push({t:0,delay,fn}); }
 function updateKijoFx(dt){
+  for(let i=kijoDelays.length-1;i>=0;i--){ const d=kijoDelays[i]; d.t+=dt; if(d.t>=d.delay){ kijoDelays.splice(i,1); if(boss&&boss.key==='kijo'&&boss.hp>0) d.fn(); } }
   for(const w of kijoLaserWarns){ w.t+=dt; if(w.trackRate&&!w.fired&&w.warn&&w.t<w.warn*0.55){ const pa=Math.atan2(player.y-w.y,player.x-w.x); let da=pa-w.ang; while(da>Math.PI)da-=TAU; while(da<-Math.PI)da+=TAU; w.ang+=clamp(da,-w.trackRate*dt,w.trackRate*dt); } if(w.sniper&&!w.fired&&w.t>=w.warn) fireSniperLaser(w); }
   kijoLaserWarns=kijoLaserWarns.filter(w=>w.t<w.warn+0.32);
 
@@ -10562,20 +10616,41 @@ function updateKijoFx(dt){
 }
 function beginKijoGaze(b){
   return setIntent(b,'👁','보지 마',1.1,()=>{
-    b.gazeT=b.enraged?3.4:2.8; b.gazeStareT=0; b.gazeFireT=0.6;
-    banner('👁 보지 마!','커서를 키죠에서 떼고 눈먼 사격을',1100);
+    const kph=b.kijoFinalPhase?3:(b.enraged?2:1);
+    b.gazeT=b.enraged?3.4:2.8; b.gazeStareT=0; b.gazeFireT=0.6; b.gazeInverse=false;
+    // [3페] 두 번째 눈: 키죠와 두 번째 눈 방향 모두 피해야 함
+    b.gaze2 = kph>=3 ? {x:clamp(W-b.x+rand(-90,90),80,W-80), y:clamp(rand(120,H*0.5),120,H*0.5)} : null;
+    banner(kph>=3?'👁 두 개의 눈':'👁 보지 마!', kph>=3?'두 시선 모두 피해!':'커서를 키죠에서 떼고 눈먼 사격을',1100);
     playFileSfx('kijoWhisper',{vol:0.62,rate:0.78,maxDur:1.4,cd:0.9,key:'kijoDoNotLook'});
     if(typeof beep==='function')beep(120,0.3,'sawtooth',0.06); screenShake=Math.max(screenShake||0,6);
     b._gazeCd=14;
   });
 }
+// [3페 전용] 노려봐: 규칙 반전 — 키죠를 계속 조준하지 않으면 피해
+function beginKijoInverseGaze(b){
+  return setIntent(b,'👁','노려봐',1.1,()=>{
+    b.gazeT=3.2; b.gazeStareT=0; b.gazeFireT=0.6; b.gazeInverse=true; b.gaze2=null;
+    banner('👁 노려봐!','반대다 — 키죠를 계속 조준해!',1200);
+    playFileSfx('kijoWhisper',{vol:0.62,rate:0.7,maxDur:1.4,cd:0.9,key:'kijoInverseGaze'});
+    if(typeof beep==='function')beep(150,0.3,'sawtooth',0.06); screenShake=Math.max(screenShake||0,7);
+    b._invGazeCd=16;
+  });
+}
 function beginKijoStage(b){
   return setIntent(b,'🎭','무대 암전',1.2,()=>{
+    const kph=b.kijoFinalPhase?3:(b.enraged?2:1);
     b.stageT=b.enraged?5.6:4.6; b.stageHitT=0;
-    const n=b.enraged?2:1, spots=[];
-    for(let i=0;i<n;i++) spots.push({x:rand(140,W-140),y:rand(170,H-150),r:120});
+    const n=kph>=3?3:(b.enraged?2:1), spots=[];
+    for(let i=0;i<n;i++){
+      if(kph>=3){   // [3페] 회전 궤도 조명: 추적이 아니라 도는 조명 사이 어둠으로 위빙
+        const oa=i/n*TAU;
+        spots.push({x:W/2+Math.cos(oa)*220,y:H*0.45+Math.sin(oa)*150,r:112,mode:'orbit',oa,orad:220,ospd:0.95,odir:(i%2?-1:1)});
+      } else {
+        spots.push({x:rand(140,W-140),y:rand(170,H-150),r:120,mode:'chase'});
+      }
+    }
     b.stageSpots=spots;
-    banner('🎭 무대 암전','조명을 피해 어둠에 숨어라',1200);
+    banner(kph>=3?'🎭 회전 무대':'🎭 무대 암전', kph>=3?'도는 조명 사이 어둠으로!':'조명을 피해 어둠에 숨어라',1200);
     playFileSfx('kijoWhisper',{vol:0.68,rate:0.66,maxDur:1.5,cd:0.9,key:'kijoStage'});
     if(typeof beep==='function')beep(70,0.45,'sine',0.06); screenShake=Math.max(screenShake||0,7);
     b._stageCd=18;
@@ -10585,37 +10660,45 @@ function updateKijoGaze(b,dt){
   if(!(b.gazeT>0)) return;
   b.gazeT-=dt;
   const aimAng=Math.atan2(mouseY-player.y,mouseX-player.x);
-  const toBoss=Math.atan2(b.y-player.y,b.x-player.x);
-  const off=Math.abs(angleDiff(aimAng,toBoss));
+  const dirs=[{x:b.x,y:b.y}]; if(b.gaze2) dirs.push(b.gaze2);
+  let off=Infinity;
+  for(const d of dirs){ const toD=Math.atan2(d.y-player.y,d.x-player.x); off=Math.min(off,Math.abs(angleDiff(aimAng,toD))); }
   b.gazeAimOff=off;
-  const cone=0.46, looking=off<cone;
-  const grace=b.enraged?0.42:0.55;   // 유예: 콘 안에서 이만큼 버텨야 피해 시작
-  if(looking){
+  const cone=0.46, inCone=off<cone;
+  const bad=b.gazeInverse?!inCone:inCone;   // 노려봐: 콘 '밖'이 위험 / 보지 마: 콘 '안'이 위험
+  const grace=b.gazeInverse?0.7:(b.enraged?0.42:0.55);   // 유예
+  if(bad){
     b.gazeCharge=Math.min(1,(b.gazeCharge||0)+dt/grace);
     if(b.gazeCharge>=1){
       b.gazeStareT=(b.gazeStareT||0)+dt;
       const tick=b.enraged?0.78:0.95;
-      if(b.gazeStareT>=tick){ b.gazeStareT-=tick; hurtPlayer(b.enraged?16:12,'키죠의 시선'); hitFlash=Math.max(hitFlash||0,0.22); }
+      if(b.gazeStareT>=tick){ b.gazeStareT-=tick; hurtPlayer(b.enraged?16:12,b.gazeInverse?'키죠 노려봐':'키죠의 시선'); hitFlash=Math.max(hitFlash||0,0.22); }
     }
   } else {
-    b.gazeCharge=Math.max(0,(b.gazeCharge||0)-dt*2.2);   // 콘 벗어나면 빠르게 식음
+    b.gazeCharge=Math.max(0,(b.gazeCharge||0)-dt*2.2);   // 안전 상태면 빠르게 식음
     b.gazeStareT=Math.max(0,(b.gazeStareT||0)-dt*1.6);
   }
-  // 충전 중 상승 경고음
-  if(looking && (b.gazeCharge||0)<1){ b._gazeBeepT=(b._gazeBeepT||0)-dt; if(b._gazeBeepT<=0){ b._gazeBeepT=0.11; if(typeof beep==='function')beep(300+(b.gazeCharge||0)*430,0.05,'square',0.03); } }
+  // 위험 상태 상승 경고음
+  if(bad && (b.gazeCharge||0)<1){ b._gazeBeepT=(b._gazeBeepT||0)-dt; if(b._gazeBeepT<=0){ b._gazeBeepT=0.11; if(typeof beep==='function')beep(300+(b.gazeCharge||0)*430,0.05,'square',0.03); } }
   // 시선 동안 가벼운 견제 링(눈먼 사격 + 회피 강제)
   b.gazeFireT=(b.gazeFireT==null?0.7:b.gazeFireT)-dt;
   if(b.gazeFireT<=0){ b.gazeFireT=b.enraged?0.78:1.0; kijoRing(b.x,b.y,b.enraged?10:8,148,12,(b.angle||0)*1.3); }
-  if(b.gazeT<=0){ b.gazeStareT=0; b.gazeCharge=0; }
+  if(b.gazeT<=0){ b.gazeStareT=0; b.gazeCharge=0; b.gaze2=null; b.gazeInverse=false; }
 }
 function updateKijoStage(b,dt){
   if(!(b.stageT>0)) return;
   b.stageT-=dt;
   const spots=b.stageSpots||[]; let inLight=false;
-  const spd=b.enraged?108:88;
+  const spd=b.enraged?108:88, cx=W/2, cy=H*0.45;
   for(const s of spots){
-    const dx=player.x-s.x, dy=player.y-s.y, d=Math.hypot(dx,dy)||1;
-    s.x=clamp(s.x+dx/d*spd*dt,60,W-60); s.y=clamp(s.y+dy/d*spd*dt,120,H-80);
+    if(s.mode==='orbit'){
+      s.oa+=s.odir*s.ospd*dt;
+      s.x=clamp(cx+Math.cos(s.oa)*s.orad,60,W-60);
+      s.y=clamp(cy+Math.sin(s.oa)*s.orad*0.7,120,H-80);
+    } else {
+      const dx=player.x-s.x, dy=player.y-s.y, d=Math.hypot(dx,dy)||1;
+      s.x=clamp(s.x+dx/d*spd*dt,60,W-60); s.y=clamp(s.y+dy/d*spd*dt,120,H-80);
+    }
     if(dist2(player.x,player.y,s.x,s.y)<s.r*s.r) inLight=true;
   }
   if(inLight){ b.stageHitT=(b.stageHitT||0)-dt; if(b.stageHitT<=0){ b.stageHitT=0.45; hurtPlayer(b.enraged?15:11,'스포트라이트'); hitFlash=Math.max(hitFlash||0,0.22); } }
@@ -10627,10 +10710,11 @@ function updateBossIntentPatterns(b,dt){
   if(b.key==='kijo'){ b.restT=0; b.restWaitT=0; b.restWaitDur=0; }
   const cd=(name,base)=>{ b[name]=(b[name]==null?rand(base*0.65,base*1.2):b[name])-dt; return b[name]<=0&&!b.intent; };
   if(b.key==='kijo'){
-    if(b.enraged&&(b.gazeT||0)<=0&&(b.stageT||0)<=0&&cd('_gazeCd',14)) beginKijoGaze(b);
+    if(b.kijoFinalPhase&&(b.gazeT||0)<=0&&(b.stageT||0)<=0&&cd('_invGazeCd',16)) beginKijoInverseGaze(b);   // [3페] 규칙 반전
+    else if((b.gazeT||0)<=0&&(b.stageT||0)<=0&&cd('_gazeCd',b.enraged?14:23)) beginKijoGaze(b);   // 격노 전에도 순한 버전을 긴 쿨로 미리 노출(시그니처 각인)
     else if((b.gazeT||0)<=0&&(b.stageT||0)<=0&&cd('_stageCd',18)) beginKijoStage(b);
     else if(cd('_evilEyeCd',8)) beginKijoEvilEye(b);
-    else if(cd('_maskBombCd',11)) setIntent(b,'🎭','가면 폭발',1.5,()=>{ for(let i=0;i<4;i++){ const x=clamp(player.x+rand(-150,150),50,W-50), y=clamp(player.y+rand(-120,120),90,H-60); setTimeout(()=>intentShockwave(x,y,90,16,'가면 폭발','evil_eye'),5000); burst(x,y,'#c0392b',8,120); } b._maskBombCd=12; });
+    else if(cd('_maskBombCd',11)) setIntent(b,'🎭','가면 폭발',1.5,()=>{ for(let i=0;i<4;i++){ const x=clamp(player.x+rand(-150,150),50,W-50), y=clamp(player.y+rand(-120,120),90,H-60); warnAoE(x,y,90,0.75,0.4,16,'가면 폭발','#c0392b'); } b._maskBombCd=12; });
   }else if(b.key==='seungwoo'&&!isSeungwooVoidFight()){
     if(b.hp<=b.maxhp*0.25&&!b._overload){ b._overload=true; setIntent(b,'💀','오버로드',1.5,()=>{ b.intentSpeedMul=1.3; banner('💀 오버로드','패턴 속도 증가',1000); }); }
     else if(cd('_sysErrCd',9)) setIntent(b,'📺','시스템 오류',1.5,()=>{ const x=rand(70,W-70), y=rand(100,H-70); setTimeout(()=>intentShockwave(x,y,105,22,'시스템 오류'),2000); GL.frameDrop=Math.max(GL.frameDrop||0,2); b._sysErrCd=9.5; });
@@ -10698,13 +10782,14 @@ function updateBoss(dt){
       for(let i=0;i<8;i++) enemyShootAt(b, b.x+Math.cos(i/8*TAU)*100, b.y+Math.sin(i/8*TAU)*100, 200,8);
     }
     if(b.pattern==='summon'){
+      const kph=b.kijoFinalPhase?3:(b.enraged?2:1);
       let phase;
       if((b._kijoRep||0)>0){ b._kijoRep--; phase=b._kijoPhase; b.attackT=rate*0.72; }   // 단순 탄막 집중 반복 중
       else {
         b.atkN=(b.atkN||0)+1;
-        phase=nextFromBag(b,'_kijoBag',b.kijoFinalPhase?11:(b.enraged?10:9));   // 셔플백 (격노 시 10번째=광란의 가면, 3페 11번째=최종 시선)
+        phase=nextFromBag(b,'_kijoBag',kph>=3?10:(kph>=2?9:8));   // 셔플백 (2페 9번=광란의 가면, 3페 10번=최종 시선)
         b._kijoPhase=phase;
-        if(phase===2||phase===7||phase===8){ b._kijoRep=2+(Math.random()<0.5?1:0); b.attackT=rate*0.72; }   // 회전나선/음식폭격/가면난사 → 3~4회 집중
+        if(phase===2||phase===7){ b._kijoRep=2+(Math.random()<0.5?1:0); b.attackT=rate*0.72; }   // 음식 폭풍/가면 난사 → 3~4회 집중
       }
       if(phase===0){
         // ① 가면 뒤집기: 진짜/가짜 가면을 구분하는 속임수 탄막
@@ -10713,10 +10798,8 @@ function updateBoss(dt){
         // ② 가면 시선: 부채꼴 시야 밖으로 빠져야 하는 경고 패턴
         kijoGazePattern(b);
       } else if(phase===2){
-        // ③ 2갈래 회전 나선
-        playFileSfx('kijoCharge',{vol:0.36,rate:1.05,maxDur:0.8,cd:0.45,key:'kijoFoodSpiral'});
-        const k=b.enraged?12:11, base=b.angle*2.6, sp1=b.enraged?165:185, sp2=b.enraged?158:175;
-        for(let i=0;i<k;i++){ throwFood(b, base+i/k*TAU, sp1, 15); throwFood(b, -base+i/k*TAU+0.3, sp2, 15); }
+        // ③ 가면 음식 폭풍 (회전 나선 + 낙하, 페이즈 스케일링 — 나선/폭격 통합)
+        kijoFoodStorm(b,kph);
       } else if(phase===3){
         // ④ 탈춤 행진: 가면들이 측면에서 지나가며 탄을 뿌림
         kijoParadePattern(b);
@@ -10725,24 +10808,16 @@ function updateBoss(dt){
         // ⑤ 웃는 가면 / 우는 가면: 조준탄과 낙하탄의 역할 분리
         kijoMoodMasks(b);
       } else if(phase===5){
-        // ⑥ 가면 난무: 회피형 탄막만 남기고 피해 제한은 적용하지 않음
+        // ⑥ 가면 난무: 회피형 탄막
         kijoReflectStance(b);
       } else if(phase===6){
         // ⑦ 가면 낙인: 플레이어 주변 공간을 잠깐 봉쇄
         kijoMaskBrand(b);
       } else if(phase===7){
-        // ⑦ 음식 폭격 (낙하·증가)
-        const n=b.enraged?7:6;
-        const fall=b.enraged?0.72:1;   // 격노 시 낙하 음식 속도 완화
-        for(let i=0;i<n;i++){ const fx=rand(50,W-50); eBullets.push({x:fx,y:-12,vx:rand(-25,25),vy:rand(165,205)*fall,r:13,dmg:15,life:4.2,foodImg:pickFood(),spin:rand(0,TAU),spinV:rand(-7,7)}); }
-        playFileSfx('kijoImpact',{vol:0.45,rate:1.08,maxDur:0.8,cd:0.55,key:'kijoFoodRain'});
-        banner("음식 폭격!","",600);
-        if((b._kijoRep||0)<=0) kijoQueueDamageWindow(b,b.enraged?1.55:2.15,b.enraged?1.25:1.55);   // 반복 마지막에만 휴식
-      } else if(phase===8){
         // ⑧ 가면 난사 (집중 연사)
         kijoBarrage(b);
-      } else if(phase===9){
-        // ⑨ [격노 전용] 광란의 가면
+      } else if(phase===8){
+        // ⑨ [격노+] 광란의 가면
         kijoFrenzy(b);
       } else {
         // ⑩ [3페이즈 전용] 최종 시선
@@ -10788,6 +10863,9 @@ function killBoss(){
   if(act>=MAX_ACT){ enemies.length=0; eBullets.length=0; }   // 최종보스 처치 시 남은 잡몹·탄막 정리
   updateHUD();
   if(typeof clearSeungwooFx==='function') clearSeungwooFx();
+  if(deadBoss&&deadBoss.key==='kijo'){
+    kijoMasks=[]; kijoGazes=[]; kijoParades=[]; kijoLaserWarns=[]; kijoDelays=[];
+  }
   boss=null; if(!asMidboss) roomIsBoss=false;
   // 이후 흐름은 onCombatCleared() → finishNode() 에서 처리
 }
@@ -11899,7 +11977,7 @@ function seungwooNextPhase(b){
   const ph=(b.gphase||1)+1;
   b.gphase=ph;
   clearSeungwooFx();
-  eBullets.length=0; hazards=[]; particles=[]; kijoLaserWarns=[];
+  eBullets.length=0; hazards=[]; particles=[]; kijoLaserWarns=[]; kijoDelays=[];
   b.maxhp=(b.phaseHp&&b.phaseHp[ph-1])||b.maxhp;
   b.hp=b.maxhp;
   b.hitT=0.2; b.stunT=0; b.burnT=0; b.psT=0; b.psStacks=0;
@@ -13111,6 +13189,15 @@ function update(dt){
             hyechulSummonRush(e); e._rushCd=2;
             if(typeof beep==='function')beep(150,0.25,'sawtooth',0.06); screenShake=Math.max(screenShake||0,5);
             e.atkT=ph===1?1.6:(ph===2?1.4:1.2);
+          } else if((e.atkRep||0)<=0 && ph>=2 && (e._corrCd=(e._corrCd||0)-1)<=0 && !hazards.some(h=>h.kind==='corridorWave') && Math.random()<0.30){
+            hyechulSpawnCorridor(e,ph); e._corrCd=4;
+            e.atkT=ph>=3?1.5:1.7;
+          } else if((e.atkRep||0)<=0 && ph>=3 && (e._shadowCd=(e._shadowCd||0)-1)<=0 && !hazards.some(h=>h.kind==='shadowDrop') && Math.random()<0.32){
+            hyechulShadowDrop(e,ph); e._shadowCd=3;
+            e.atkT=1.4;
+          } else if((e.atkRep||0)<=0 && ph>=2 && (e._mineCd=(e._mineCd||0)-1)<=0 && Math.random()<0.26){
+            hyechulSporeMines(e,ph); e._mineCd=3;
+            e.atkT=ph>=3?1.5:1.7;
           } else {
             if((e.atkRep||0)<=0){ e._focusPat=pickHyechulFocusPattern(e,ph); e.atkRep=({rain:4,acidSwamp:4,homingSpore:1,acidStorm:1,fan:2}[e._focusPat])||(3+(Math.random()<0.5?1:0)); }
             runHyechulPatternFocus(e,ph,e._focusPat);
@@ -19832,6 +19919,63 @@ function hyechulEggBomb(e){
 function updateHazards(dt){
   player._creepSlow=false; player._slowField=false;
   for(let i=hazards.length-1;i>=0;i--){ const h=hazards[i]; h.t+=dt;
+    if(h.kind==='corridorWave'){
+      if(h.t>=h.warnT){
+        h.y+=h.spd*dt;
+        if(h.hitCd>0) h.hitCd-=dt;
+        const colW=W/h.cols, gapX0=h.gap*colW, gapX1=gapX0+colW, band=26;
+        if(Math.abs(player.y-h.y)<band && (player.dodging||0)<=0 && !(h.hitCd>0)){
+          const inGap=player.x>gapX0+8 && player.x<gapX1-8;
+          if(!inGap){ hurtPlayer(h.dmg,'산란 회랑'); h.hitCd=0.4; }
+        }
+        if(h.y>H-30){ hazards.splice(i,1); continue; }
+      }
+      continue;
+    }
+    if(h.kind==='sporeMine'){
+      const armed=h.t>=h.armT;
+      if(!h._boom){
+        let trig=false;
+        if(armed && (player.dodging||0)<=0 && dist2(player.x,player.y,h.x,h.y)<h.r*h.r){ trig=true; h._hitOnBoom=true; }
+        else if(h.t>=h.life){ trig=true; h._hitOnBoom=dist2(player.x,player.y,h.x,h.y)<h.r*h.r; }
+        if(trig){
+          h._boom=true; h._boomT=0;
+          if(h._hitOnBoom) hurtPlayer(h.dmg,'부화 지뢰');
+          const k=6, off=h.seed;
+          for(let m=0;m<k;m++){ const a2=m/k*TAU+off; eBullets.push({x:h.x,y:h.y,vx:Math.cos(a2)*170,vy:Math.sin(a2)*170,r:7,dmg:Math.max(8,h.dmg-4),life:2.8,style:'acid'}); }
+          burst(h.x,h.y,'#7be04a',16,220); screenShake=Math.max(screenShake||0,4);
+          playFileSfx('hyechulImpact',{vol:0.6,rate:1.1,cd:0.2,key:'sporeMineBoom'});
+        }
+      } else {
+        h._boomT+=dt; if(h._boomT>=0.28){ hazards.splice(i,1); continue; }
+      }
+      continue;
+    }
+    if(h.kind==='deathThroe'){
+      if(!h._fired && h.t>=h.warnT){
+        h._fired=true;
+        const k=6, off=h.seed;
+        for(let m=0;m<k;m++){ const a2=m/k*TAU+off; eBullets.push({x:h.x,y:h.y,vx:Math.cos(a2)*150,vy:Math.sin(a2)*150,r:6,dmg:h.dmg,life:2.6,style:'larva_blob'}); }
+        burst(h.x,h.y,'#c46bff',10,160);
+      }
+      if(h.t>=h.warnT+0.25){ hazards.splice(i,1); continue; }
+      continue;
+    }
+    if(h.kind==='shadowDrop'){
+      if(h.t<h.warnT){
+        const f=Math.min(1,dt*h.follow);
+        h.x+=(player.x-h.x)*f; h.y+=(player.y-h.y)*f;
+      } else if(!h._dropped){
+        h._dropped=true;
+        warnAoE(h.x,h.y,124,0.5,0.4,h.ph>=3?18:16,'혜철이 그림자','#7a3f9f');
+        const mn=h.ph>=3?3:2;
+        for(let mi=0;mi<mn;mi++){ const mx=clamp(h.x+rand(-72,72),50,W-50), my=clamp(h.y+rand(-72,72),130,H-80); hazards.push({kind:'sporeMine',x:mx,y:my,r:h.ph>=3?86:80,t:0,armT:1.3,life:6.5,dmg:h.ph>=3?16:14,seed:rand(0,TAU),ph:h.ph}); }
+        burst(h.x,h.y,'#7a3f9f',20,300); screenShake=Math.max(screenShake||0,8);
+        playFileSfx('hyechulImpact',{vol:0.82,rate:0.82,cd:0.4,key:'shadowDropImpact'});
+      }
+      if(h.t>=h.warnT+0.2){ hazards.splice(i,1); continue; }
+      continue;
+    }
     if(h.kind==='beamSweep'){
       if(h.hitCd>0) h.hitCd-=dt;
       const active=h.t>=h.warnT, done=h.t>=h.warnT+h.liveT;
@@ -20130,6 +20274,61 @@ function drawHazards(){
       ctx.stroke();
       ctx.restore(); continue;
     }
+    if(h.kind==='corridorWave'){
+      const colW=W/h.cols, gapX0=h.gap*colW, gapX1=gapX0+colW;
+      ctx.save();
+      if(h.t<h.warnT){
+        ctx.globalAlpha=0.4+0.3*Math.abs(Math.sin(h.t*15));
+        ctx.strokeStyle='#c46bff'; ctx.lineWidth=2.5; ctx.setLineDash([12,8]);
+        ctx.beginPath(); ctx.moveTo(0,h.y); ctx.lineTo(gapX0,h.y); ctx.moveTo(gapX1,h.y); ctx.lineTo(W,h.y); ctx.stroke(); ctx.setLineDash([]);
+        ctx.globalAlpha=0.5; ctx.fillStyle='rgba(120,255,140,0.12)'; ctx.fillRect(gapX0,90,colW,H-140);
+        ctx.strokeStyle='#7be08a'; ctx.lineWidth=2; ctx.strokeRect(gapX0,90,colW,H-140);
+      } else {
+        const th=26;
+        const g=ctx.createLinearGradient(0,h.y-th,0,h.y+th);
+        g.addColorStop(0,'rgba(74,32,104,0)'); g.addColorStop(0.5,'rgba(150,64,190,0.6)'); g.addColorStop(1,'rgba(74,32,104,0)');
+        ctx.fillStyle=g; ctx.fillRect(0,h.y-th,gapX0,th*2); ctx.fillRect(gapX1,h.y-th,W-gapX1,th*2);
+        ctx.shadowColor='#d68bff'; ctx.shadowBlur=14; ctx.globalAlpha=0.9;
+        ctx.strokeStyle='#e6a8ff'; ctx.lineWidth=3;
+        ctx.beginPath(); ctx.moveTo(0,h.y); ctx.lineTo(gapX0,h.y); ctx.moveTo(gapX1,h.y); ctx.lineTo(W,h.y); ctx.stroke();
+        ctx.shadowBlur=0;
+        for(let k=0;k<10;k++){ const bx=(k+0.5)/10*W; if(bx>gapX0&&bx<gapX1) continue; const by=h.y+Math.sin(h.seed+k*1.3+h.t*3)*8; ctx.globalAlpha=0.7; ctx.fillStyle='#b06bd8'; ctx.beginPath(); ctx.arc(bx,by,4,0,TAU); ctx.fill(); }
+      }
+      ctx.restore(); continue;
+    }
+    if(h.kind==='sporeMine'){
+      const armed=h.t>=h.armT, k=clamp(h.t/h.armT,0,1);
+      ctx.save();
+      ctx.globalAlpha=0.5; ctx.fillStyle='#3a5a22'; ctx.beginPath(); ctx.arc(h.x,h.y,10,0,TAU); ctx.fill();
+      ctx.globalAlpha=0.85; ctx.fillStyle=armed?'#9be04a':'#6a8a3a'; ctx.beginPath(); ctx.arc(h.x-2,h.y-2,5,0,TAU); ctx.fill();
+      if(!armed){
+        ctx.globalAlpha=0.35+0.3*Math.abs(Math.sin(h.t*10)); ctx.strokeStyle='#7be04a'; ctx.lineWidth=2; ctx.setLineDash([6,6]);
+        ctx.beginPath(); ctx.arc(h.x,h.y,h.r*k,0,TAU); ctx.stroke(); ctx.setLineDash([]);
+      } else {
+        const pulse=0.5+0.5*Math.abs(Math.sin(h.t*6));
+        ctx.globalAlpha=0.16+0.12*pulse; ctx.fillStyle='#7be04a'; ctx.beginPath(); ctx.arc(h.x,h.y,h.r,0,TAU); ctx.fill();
+        ctx.globalAlpha=0.7+0.2*pulse; ctx.strokeStyle='#aaff5a'; ctx.lineWidth=2.5; ctx.beginPath(); ctx.arc(h.x,h.y,h.r,0,TAU); ctx.stroke();
+      }
+      ctx.restore(); continue;
+    }
+    if(h.kind==='deathThroe'){
+      if(h.t<h.warnT){
+        const k=h.t/h.warnT; ctx.save(); ctx.globalAlpha=0.5+0.3*Math.abs(Math.sin(h.t*22));
+        ctx.strokeStyle='#c46bff'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(h.x,h.y,30*(1-k)+8,0,TAU); ctx.stroke();
+        ctx.restore();
+      }
+      continue;
+    }
+    if(h.kind==='shadowDrop'){
+      const k=clamp(h.t/h.warnT,0,1);
+      ctx.save();
+      const g=ctx.createRadialGradient(h.x,h.y,4,h.x,h.y,h.r);
+      g.addColorStop(0,'rgba(20,8,30,'+(0.55*k)+')'); g.addColorStop(0.7,'rgba(60,25,90,'+(0.4*k)+')'); g.addColorStop(1,'rgba(60,25,90,0)');
+      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(h.x,h.y,h.r,0,TAU); ctx.fill();
+      ctx.globalAlpha=0.6+0.3*Math.abs(Math.sin(h.t*12)); ctx.strokeStyle='#9a5fc0'; ctx.lineWidth=2.5; ctx.setLineDash([10,7]);
+      ctx.beginPath(); ctx.arc(h.x,h.y,h.r*(0.5+0.5*k),0,TAU); ctx.stroke(); ctx.setLineDash([]);
+      ctx.restore(); continue;
+    }
     if(h.kind==='movelock'){
       const warn=h.t<h.warnT, k=warn?clamp(h.t/h.warnT,0,1):1, fade=warn?1:clamp(1-(h.t-h.warnT)/(h.liveT||0.3),0,1);
       ctx.save();
@@ -20389,32 +20588,46 @@ function drawKijoFx(){
   }
   // === 보지 마(시선) — 키죠를 조준하면 피해 ===
   if(boss&&boss.key==='kijo'&&(boss.gazeT||0)>0){
-    const charge=clamp(boss.gazeCharge||0,0,1), armed=charge>=1;
+    const charge=clamp(boss.gazeCharge||0,0,1), armed=charge>=1, inv=!!boss.gazeInverse;
     const off=(boss.gazeAimOff==null?9:boss.gazeAimOff), warnBand=0.85;
     const near=clamp((warnBand-off)/(warnBand-0.46),0,1);   // 콘에 얼마나 가까운지(1=콘 안)
     const hot=Math.max(near*0.6,charge);
+    // 색 구분: 보지 마=보라 눈 / 노려봐=초록 눈(안전 커서 색과 통일). armed(피해 중)은 둘 다 적색.
+    const eyeRing=inv?'#3fe08a':'#d68bff', eyePupil=inv?'#4de89a':'#c46bff';
+    const beamCol=armed?'#ff2d4d':(inv?'#5fe0a0':(hot>0.3?'#ff8a4d':'#c46bff'));
     ctx.save();
-    // 시선 줄기 (가까울수록/충전될수록 붉고 굵게)
-    ctx.globalAlpha=0.28+0.4*hot; ctx.strokeStyle=armed?'#ff2d4d':(hot>0.3?'#ff8a4d':'#c46bff'); ctx.lineWidth=2+3*hot; ctx.setLineDash([8,7]);
+    // 시선 줄기 (보지 마: 가까울수록 붉게 / 노려봐: 초록 유지, 피해 시 적색)
+    ctx.globalAlpha=0.28+0.4*hot; ctx.strokeStyle=beamCol; ctx.lineWidth=2+3*hot; ctx.setLineDash([8,7]);
     ctx.beginPath(); ctx.moveTo(boss.x,boss.y); ctx.lineTo(player.x,player.y); ctx.stroke(); ctx.setLineDash([]);
     // 키죠 거대 눈
     const er=boss.r+16+3*Math.sin(performance.now()/110);
-    ctx.globalAlpha=0.6; ctx.strokeStyle=armed?'#ff2d4d':'#d68bff'; ctx.lineWidth=3;
+    ctx.globalAlpha=0.6; ctx.strokeStyle=armed?'#ff2d4d':eyeRing; ctx.lineWidth=3;
     ctx.beginPath(); ctx.arc(boss.x,boss.y,er,0,TAU); ctx.stroke();
-    ctx.globalAlpha=0.85; ctx.fillStyle=armed?'#ff2d4d':'#c46bff';
+    ctx.globalAlpha=0.85; ctx.fillStyle=armed?'#ff2d4d':eyePupil;
     ctx.beginPath(); ctx.arc(boss.x,boss.y,7,0,TAU); ctx.fill();
+    // [3페] 두 번째 눈 + 시선 줄기 (보지 마 전용이므로 보라 계열)
+    if(boss.gaze2){
+      const g2=boss.gaze2;
+      ctx.globalAlpha=0.28+0.4*hot; ctx.strokeStyle=beamCol; ctx.lineWidth=2+3*hot; ctx.setLineDash([8,7]);
+      ctx.beginPath(); ctx.moveTo(g2.x,g2.y); ctx.lineTo(player.x,player.y); ctx.stroke(); ctx.setLineDash([]);
+      const er2=30+3*Math.sin(performance.now()/110);
+      ctx.globalAlpha=0.6; ctx.strokeStyle=armed?'#ff2d4d':eyeRing; ctx.lineWidth=3;
+      ctx.beginPath(); ctx.arc(g2.x,g2.y,er2,0,TAU); ctx.stroke();
+      ctx.globalAlpha=0.85; ctx.fillStyle=armed?'#ff2d4d':eyePupil;
+      ctx.beginPath(); ctx.arc(g2.x,g2.y,7,0,TAU); ctx.fill();
+    }
     // === 커서 경고 ===
     if(near>0.02||charge>0){
       const mx=mouseX, my=mouseY, warn=Math.max(near,charge);
-      const col=armed?'#ff2d4d':(charge>0?'#ff5a2a':'#ffd34d');
+      const col=armed?'#ff2d4d':(charge>0?'#ff5a2a':(inv?'#7be08a':'#ffd34d'));
       const rr=Math.max(9,26-12*warn+2*Math.sin(performance.now()/70));
       ctx.globalAlpha=0.5+0.4*warn; ctx.strokeStyle=col; ctx.lineWidth=2.5;
       ctx.beginPath(); ctx.arc(mx,my,rr,0,TAU); ctx.stroke();
-      // 충전 게이지 호 (콘 안에서 충전 중)
+      // 충전 게이지 호 (위험 상태에서 충전 중)
       if(charge>0&&!armed){ ctx.globalAlpha=0.95; ctx.strokeStyle='#ff2d4d'; ctx.lineWidth=3.5; ctx.beginPath(); ctx.arc(mx,my,rr,-Math.PI/2,-Math.PI/2+charge*TAU); ctx.stroke(); }
       ctx.globalAlpha=0.85+0.15*Math.sin(performance.now()/80); ctx.fillStyle=col; ctx.textAlign='center';
       ctx.font='bold 16px sans-serif'; ctx.fillText('👁', mx, my-rr-8);
-      if(near>0.5||charge>0){ ctx.font='bold 11px sans-serif'; ctx.fillText(armed?'보지 마!':'시선 피해!', mx, my+rr+15); }
+      if(near>0.5||charge>0){ ctx.font='bold 11px sans-serif'; ctx.fillText(inv?(armed?'노려봐!':'조준 유지!'):(armed?'보지 마!':'시선 피해!'), mx, my+rr+15); }
       ctx.textAlign='left';
     }
     // 피해 중 화면 비네트
