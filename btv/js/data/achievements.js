@@ -52,6 +52,7 @@ const ACHIEVEMENTS=[
   {id:'gold_1000',name:'천 골드',desc:'한 런에서 골드 1000 이상을 보유한다.',reward:'시작 골드 +30'},
   {id:'shop_spend_1000',name:'큰손',desc:'상점에서 누적 1000G를 사용한다.',reward:'유물 해금: 큰손 카드'},
   {id:'no_shop_clear',name:'무소비 클리어',desc:'상점 구매 없이 게임을 클리어한다.',reward:'유물 해금: 무소비의 지갑'},
+  {id:'void_last_viewer',name:'마지막 시청자',desc:'공허에서 방송의 마지막 시청자를 남긴다.',reward:'업적',spoiler:true,hiddenName:'???',hiddenDesc:'공허의 결말을 확인한다.'},
 ];
 const ACHIEVEMENT_CATEGORY_ORDER=['progress','kills','bosses','combat','build','economy','clear'];
 const ACHIEVEMENT_CATEGORY_LABELS={
@@ -70,7 +71,7 @@ const ACHIEVEMENT_CATEGORIES={
   no_hit_boss:'combat',no_hit_room:'combat',clutch_room:'combat',one_hp_survive:'combat',berserk_kill:'combat',legend_exists:'combat',mythic_exists:'combat',greedy_exists:'combat',chosen_broadcast:'combat',quick_room_clear:'combat',lonely_intruder:'combat',
   relic_10:'build',mythic_3:'build',curse_3_clear:'build',first_keystone:'build',
   gold_1000:'economy',shop_spend_1000:'economy',
-  clear_game:'clear',hard_clear:'clear',no_potion_clear:'clear',low_hit_clear:'clear',no_shop_clear:'clear'
+  clear_game:'clear',hard_clear:'clear',no_potion_clear:'clear',low_hit_clear:'clear',no_shop_clear:'clear',void_last_viewer:'clear'
 };
 const TITLE_REWARDS={
   first_play:{id:'first_broadcast',name:'첫방송'},
