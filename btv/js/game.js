@@ -4512,7 +4512,7 @@ function updateSet3(b,dt){
   if(b._sigT<=0){
     if(ph===1){ set3StartStomp(b); b._sigT=a3Jit(8.5,0.12); }   // 현진 시그니처: 진각 파동 + 그로기 딜 창
     else if(ph===2){ set3StartIaido(b); b._sigT=a3Jit(9,0.12); }   // 번검 시그니처: 납도-발도(근접 즉사)
-    else { if((b.reflectT||0)<=0){ set3SignalReflect(b); b._sigT=a3Jit(8,0.12); } else b._sigT=1.0; }
+    else { set3KekeTakeover(b); b._sigT=a3Jit(8.5,0.12); }   // 케케로 시그니처: 송출 점거(공간압박)
   }
   const want=ph===1?165:ph===2?250:300;
   if(d>want+35){ b.x+=Math.cos(a)*b.spd*dt; b.y+=Math.sin(a)*b.spd*0.55*dt; }
@@ -4542,7 +4542,7 @@ function updateSet3(b,dt){
     b.patI=(b.patI||0)+1;
     if(ph===1){
       const s2=b.patI%3;
-      if(s2===0){ if(sfx.enemyWarn) sfx.enemyWarn(); warnAoE(player.x,player.y,108,0.60,0.4,18,'현진 내려찍기','#ff4dd2'); if(typeof beep==='function')beep(120,0.12,'sawtooth',0.05); }
+      if(s2===0){ if(sfx.enemyWarn) sfx.enemyWarn(); warnAoE(player.x,player.y,108,0.90,0.4,18,'현진 내려찍기','#ff4dd2'); if(typeof beep==='function')beep(120,0.12,'sawtooth',0.05); }
       else if(s2===1){ const pa=Math.atan2(player.y-b.y,player.x-b.x); b.x=clamp(b.x+Math.cos(pa)*120,b.r,W-b.r); b.y=clamp(b.y+Math.sin(pa)*80,b.r,H*0.58); if(dist2(b.x,b.y,player.x,player.y)<120*120) hurtPlayer(22,'현진 대시'); }
       else { const pa=Math.atan2(player.y-b.y,player.x-b.x); b.x=clamp(b.x+Math.cos(pa)*140,b.r,W-b.r); b.y=clamp(b.y+Math.sin(pa)*95,b.r,H*0.58); burst(b.x,b.y,'#ff4dd2',18,240); screenShake=Math.max(screenShake||0,8); intentShockwave(b.x,b.y,120,18,'현진 들이받기','red_crush'); }
       b.attackT=1.25;
@@ -4883,7 +4883,7 @@ function onsterChainWeb(e){
 // ── 세트3형제 셔플백 풀 + 디스패처 ──
 const SET3_PATS_P1=['cone','cross','wallslam','bosslaser','genesis'];
 const SET3_PATS_P2=['crossslash','tripleSlash','iaido','timeslash','hiddenblade','lasercross','halftime','genesis'];
-const SET3_PATS_P3=['lasergrid','dominion','objective','donationBomb','adtime','blackmage','genesis'];
+const SET3_PATS_P3=['lasergrid','sweeplaser','bosslaser','lasercross','objective','donationBomb','genesis'];   // 레이저 메인 + 공간압박. dominion/adtime/blackmage(사격봉인)은 휴면 처리
 function runSet3Pat(b,p){
   // P1 현진 (물리·그랩)
   if(p==='cone') a3ConeSlam(b,5,20,'#ff4dd2');
@@ -4927,6 +4927,7 @@ function runSet3Pat(b,p){
   else if(p==='halftime') set3HalfSwap(b);
   else if(p==='blackmage') set3BlackMage(b);
   else if(p==='dominion') set3DominionSurge(b);
+  else if(p==='sweeplaser') set3KekeSweep(b);
   else if(p==='genesis') set3Genesis(b);
 }
 // 현진(P1) 신규
@@ -4967,7 +4968,7 @@ function set3BladeWall(b){
 }
 function set3LaserColor(b){
   const ph=(b&&b.setPhase)||1;
-  return ph===1?'#ff6bc8':(ph===2?'#38e8ff':'#ffd34d');
+  return ph===1?'#ff6bc8':(ph===2?'#38e8ff':'#9146ff');   // 케케로: 트위치 퍼플(번검 시안과 차별)
 }
 function set3LaserName(b){
   const ph=(b&&b.setPhase)||1;
@@ -5380,12 +5381,12 @@ function set3SumoRing(b){
 function set3TimeSlash(b){
   if(sfx.enemyGlitch) sfx.enemyGlitch();
   banner('⏳ 시간 베기','느려진다… 검이 지나면 가속',1100);
-  timeScale=0.4; slowmoT=0.7;   // 슬로우 (slowmoT가 timeScale 유지/자동복원)
+  timeScale=0.7; slowmoT=0.7;   // 슬로우 (slowmoT가 timeScale 유지/자동복원)
   if(typeof beep==='function')beep(120,0.2,'sine',0.05);
-  set3Delay(0.26,()=>{   // 슬로우(0.4x) 중 게임타임 0.26 ≈ 실시간 0.65s — 원 타이밍 보정
+  set3Delay(0.45,()=>{   // 슬로우(0.7x) 중 게임타임 0.45 ≈ 실시간 0.65s — 원 타이밍 보정
     const base=Math.atan2(player.y-b.y,player.x-b.x);
     for(let i=-1;i<=1;i++) kijoLaserWarns.push({x:b.x,y:b.y,ang:base+i*0.3,width:20,range:840,t:0,warn:0.5,color:'#38e8ff',fired:false,sniper:true,dmg:18,srcName:'시간 베기'});
-    timeScale=2.4; slowmoT=0.55;   // 가속
+    timeScale=1.8; slowmoT=0.55;   // 가속
     if(sfx.enemyLaser) sfx.enemyLaser(); banner('⚡ 가속','빨라진다!',700);
     if(typeof beep==='function')beep(900,0.08,'square',0.05);
   });
@@ -5528,6 +5529,40 @@ function set3BlackMage(b){
   set3Reaper={owner:b,t:0,lockT:1.15,freezeT:0.95,blastT:0.6,phase:'lock',
     mx:player.x,my:player.y,r:120,dmg:40,_bound:false};
   if(typeof beep==='function'){ beep(180,0.2,'sine',0.05); set3Delay(0.76,()=>beep(120,0.3,'sawtooth',0.05)); }
+}
+
+// ── [케케로 P3 · 시그니처] 송출 점거 — 사방 레이저 벽이 3파도로 조여든다(안쪽으로 압축) ──
+function set3KekeTakeover(b){
+  if(sfx.enemyCore) sfx.enemyCore(); playCustomSfxGroup('set3Laser',{vol:0.84,maxDur:1.5,cd:0.55,key:'set3Laser'});
+  banner('📡 송출 점거','바깥부터 잠긴다 — 안쪽으로 모여라',1250);
+  const col='#9146ff', waves=3;
+  for(let w=0;w<waves;w++){
+    set3Delay(w*0.85,()=>{
+      const inset=64+w*70;   // 64,134,204 — 사방에서 안쪽으로 축소
+      set3QueueLaser(0,inset,0,{width:20,range:W+40,warn:0.82,dmg:20,color:col,srcName:'송출 점거'});
+      set3QueueLaser(0,H-inset,0,{width:20,range:W+40,warn:0.82,dmg:20,color:col,srcName:'송출 점거'});
+      set3QueueLaser(inset,0,Math.PI/2,{width:20,range:H+40,warn:0.82,dmg:20,color:col,srcName:'송출 점거'});
+      set3QueueLaser(W-inset,0,Math.PI/2,{width:20,range:H+40,warn:0.82,dmg:20,color:col,srcName:'송출 점거'});
+      screenShake=Math.max(screenShake||0,5);
+      if(typeof beep==='function')beep(150+w*55,0.08,'square',0.045);
+    });
+  }
+}
+// ── [케케로 P3] 송출 스윕 — 중심에서 뻗는 레이저가 한 방향으로 돌며, 빈 부채꼴을 따라가야 한다 ──
+function set3KekeSweep(b){
+  if(sfx.enemyLaser) sfx.enemyLaser(); playCustomSfxGroup('set3Laser',{vol:0.82,maxDur:1.4,cd:0.55,key:'set3Laser'});
+  banner('📡 송출 스윕','도는 레이저 — 빈 부채꼴로 따라가라',1150);
+  const col='#9146ff', arms=6, steps=5, dir=(Math.random()<0.5?1:-1), base=rand(0,TAU), gap=irand(0,arms-1);
+  for(let s=0;s<steps;s++){
+    set3Delay(s*0.5,()=>{
+      const rot=base+dir*s*0.42;   // 같은 방향 회전 → 안전 부채꼴이 닫히지 않고 이동
+      for(let a=0;a<arms;a++){
+        if(a===gap) continue;
+        set3QueueLaser(b.x,b.y,rot+a/arms*TAU,{width:18,range:920,warn:0.62,dmg:20,color:col,srcName:'송출 스윕'});
+      }
+      if(typeof beep==='function')beep(500+s*44,0.06,'triangle',0.04);
+    });
+  }
 }
 
 function updateA3Systems(dt){
@@ -8126,7 +8161,7 @@ const BOSS_STORY_DIALOGUES={
     ],
     phase2:[{speaker:'번검',text:'채팅 로그 동기화 실패.'},{speaker:'번검',text:'ㅋㅋㅋㅋㅋ...\n까지만 남았네.'}],
     phase3:[{speaker:'케케로',text:'송출 타임라인에 균열 발생.'},{speaker:'케케로',text:'온스터가 막은 문 너머로 가면…\n봉식님도 못 돌아와요.'}],
-    defeat:[{speaker:'시스템',text:'봉인 구역 접근 권한 획득.'},{speaker:'시스템',text:'다음 목표: 온스터.\n격리율 51%'},{speaker:'현진 세트',text:'우린 사라진 게 아니야.\n화면이 닫힌 것뿐이야.'}]
+    defeat:[{speaker:'시스템',text:'봉인 구역 접근 권한 획득.'},{speaker:'시스템',text:'봉인 너머 · 심연으로.\n격리율 68%'},{speaker:'현진 세트',text:'우린 사라진 게 아니야.\n화면이 닫힌 것뿐이야.'}]
   },
   onster:{
     encounter:[
@@ -9322,9 +9357,11 @@ function startCombat(kind, fresh){
 
   if(kind==='boss'){
     if(act===2){
-      const eb=spawnOnsterFinalBoss(diff);
-      logBossEncounterStart(eb,'finalBoss');
-      armBossTalk('onster',eb,'2막 보스');
+      const sb=BOSSES.find(b=>b&&b.key==='set3');
+      boss=spawnSet3FinalBoss(sb,diff);
+      roomBossKind='set3';
+      logBossEncounterStart(boss,'finalBoss');
+      armBossTalk('set3',boss,'2막 보스');
     }else{
       const b=BOSSES[ACT_BOSS[Math.min(act-1,ACT_BOSS.length-1)]];
       boss=spawnBoss(b);
@@ -9344,11 +9381,10 @@ function startCombat(kind, fresh){
     let count=clamp(Math.round(base*diffSet.cnt*roomModifierCountMul()*broadcastModValue('fightCountMul',act,1)*curseCountMul), row<mid?2:4, countMax);
     if(kind==='midboss'){
       if(act===2){
-        const sb=BOSSES.find(b=>b&&b.key==='set3');
-        boss=spawnSet3Midboss(sb,diff);
-        roomMidbossKind='set3';
-        logBossEncounterStart(boss,'midBoss');
-        armBossTalk('set3',boss,'2막 중간보스');
+        const eb=spawnOnsterMidboss(diff);
+        roomMidbossKind='onster';
+        logBossEncounterStart(eb,'midBoss');
+        armBossTalk('onster',eb,'2막 중간보스');
       } else if(act>=3){
         spawnEnemy('yanggaeng', W/2, 150, diff);
         const eb=enemies[enemies.length-1];
@@ -9552,9 +9588,40 @@ function spawnSet3Midboss(b,diff){
   debugSlotBalance(spawned);
   return spawned;
 }
+// ── 2막 스왑: 온스터 = 중보(≈6만, 단일 바) ──
+function spawnOnsterMidboss(diff){
+  spawnEnemy('onster', W/2, 150, diff);
+  const eb=enemies[enemies.length-1];
+  eb.elite=true; eb.midboss=true; eb.label='온스터';
+  eb.phase=1; eb.atkT=1.2; eb.atkN=0; eb.summonT=3.8; eb.awakened=false;
+  eb.title='2막 중간보스 · 사슬의 각성'; eb.quip='아직 깨우지 마라.';
+  eb.x=W/2; eb.y=170; eb.intro=true; eb.introScale=1; eb.stunT=4; eb.tauntedHalf=false;
+  eb.hp*=1.578; eb.maxhp=eb.hp; // 중보 보정: normal 기준 총합 약 6만 (각성 50% 포함)
+  eb.xp=Math.max(actTuning(2).bossXp||3100,eb.xp||0);
+  eb.slotRole='midboss'; eb.slotAct=act; eb.slotBalanceKey='onster_midboss'; eb.slotDamageScale=0.9;
+  onsterDelays=[];   // 지연 큐 초기화
+  markDiscovered('bosses','onster');
+  debugSlotBalance(eb);
+  return eb;
+}
+// ── 2막 스왑: 세트3 = 최종보스(≈10만, 3페이즈) ──
+function spawnSet3FinalBoss(b,diff){
+  const sb=b||BOSSES.find(x=>x&&x.key==='set3');
+  const spawned=spawnBoss(sb);
+  const base=(ENEMY_TYPES.onster&&ENEMY_TYPES.onster.hp?ENEMY_TYPES.onster.hp*diff*diffSet.hp:8200)*2.089; // 최종 보정: normal 기준 총합 약 10만
+  spawned.phaseHp=[base/6,base/3,base/2]; // 1:2:3 → normal 현진 약1.7만·번검 약3.3만·케케로 5만
+  spawned.hp=spawned.phaseHp[0]; spawned.maxhp=spawned.hp;
+  spawned.name='현진';
+  spawned.title='2막 보스 · 갇힌 프레임들';
+  spawned.quip='먼저 들어간다.';
+  spawned.slotRole='boss'; spawned.slotAct=act; spawned.slotBalanceKey='set3_final'; spawned.slotDamageScale=1.0;
+  spawned.attackT=1.9; spawned.stunT=3.5;
+  debugSlotBalance(spawned);
+  return spawned;
+}
 function bossPlacementTitle(b){
-  if(b&&b.key==='set3') return '2막 중간보스 · 현진';
-  if(b&&b.key==='onster') return '2막 보스 · 사슬의 각성';
+  if(b&&b.key==='set3') return '2막 보스 · 갇힌 프레임들';
+  if(b&&b.key==='onster') return '2막 중간보스 · 사슬의 각성';
   if(b&&b.key==='seungwoo') return '3막 최종보스 · 시스템 침식';
   return (b&&b.title)||'';
 }
@@ -12792,7 +12859,9 @@ function update(dt){
       if(decoy){ tx=decoy.x; ty=decoy.y; bd=decoy.d; }
       if(tx!==null){ const cur=Math.atan2(b.vy,b.vx); let da=Math.atan2(ty-b.y,tx-b.x)-cur; while(da>Math.PI)da-=TAU; while(da<-Math.PI)da+=TAU; const sp=Math.hypot(b.vx,b.vy), na=cur+clamp(da,-b.homing*dt,b.homing*dt); b.vx=Math.cos(na)*sp; b.vy=Math.sin(na)*sp; }
     }
-    b.x+=b.vx*dt; b.y+=b.vy*dt; b.life-=dt;
+    let _pdt=dt;
+    if(set3Half){ const slowSide=set3Half.leftSlow?(b.x<set3Half.splitX):(b.x>=set3Half.splitX); _pdt=dt*(slowSide?0.55:1.5); }   // 번검 반반시간: 플레이어 탄도 좌우 속도차 적용
+    b.x+=b.vx*_pdt; b.y+=b.vy*_pdt; b.life-=_pdt;
     // 벽 반사
     if(b.bounce>0&&!isSeungwooVoidFight()){
       if(b.x<b.r||b.x>W-b.r){ b.vx*=-1; b.bounce--; b.x=clamp(b.x,b.r,W-b.r); }
@@ -14635,7 +14704,7 @@ function onCombatCleared(){
   if(t==='fight'&&!combatTookHit) unlockAchievement('no_hit_room');
   if(t==='fight'&&roomStartedAt&&performance.now()-roomStartedAt<=10000) unlockAchievement('quick_room_clear');
   if(t==='boss'&&!combatTookHit) unlockAchievement('no_hit_boss');
-  if(t==='boss'&&roomBossKind==='onster'){
+  if(t==='boss'&&(roomBossKind==='onster'||roomBossKind==='set3')){
     userProgress.stats=normalizeProgressStats(userProgress&&userProgress.stats);
     userProgress.stats.totalBosses+=1;
     saveUserProgress();
@@ -14666,7 +14735,7 @@ function onCombatCleared(){
       reward();
       return;
     }
-    if(t==='midboss'){ const bonus=irand(70,105); addGold(bonus,'roomReward'); const midbossXp=roomMidbossKind==='set3'?2000:0; if(midbossXp>0) gainXP(midbossXp); let potTxt=''; if(act>=3){ const pot=rollPotion(); if(addPotion(pot)) potTxt=' · '+pot.name; } updateHUD(); const mbText=roomMidbossKind==='set3'?'현진 · 번검 · 케케로를 쓰러뜨린 보상이다':(roomMidbossKind==='onster'?'온스터를 쓰러뜨린 보상이다':(roomMidbossKind==='yanggaeng'?'박제인간을 쓰러뜨린 보상이다':'혜철이를 쓰러뜨린 보상이다')); const xpTxt=midbossXp>0?' · 경험치 +'+midbossXp:''; offerRelics(3,'중간보스 보상',mbText+' · 골드 +'+bonus+xpTxt+potTxt, finishNode); }
+    if(t==='midboss'){ const bonus=irand(70,105); addGold(bonus,'roomReward'); const midbossXp=(roomMidbossKind==='set3'||roomMidbossKind==='onster')?2000:0; if(midbossXp>0) gainXP(midbossXp); let potTxt=''; if(act>=3){ const pot=rollPotion(); if(addPotion(pot)) potTxt=' · '+pot.name; } updateHUD(); const mbText=roomMidbossKind==='set3'?'현진 · 번검 · 케케로를 쓰러뜨린 보상이다':(roomMidbossKind==='onster'?'온스터를 쓰러뜨린 보상이다':(roomMidbossKind==='yanggaeng'?'박제인간을 쓰러뜨린 보상이다':'혜철이를 쓰러뜨린 보상이다')); const xpTxt=midbossXp>0?' · 경험치 +'+midbossXp:''; offerRelics(3,'중간보스 보상',mbText+' · 골드 +'+bonus+xpTxt+potTxt, finishNode); }
     else if(t==='boss'&&act>=MAX_ACT){ finishNode(); }
     else if(t==='boss') offerRelics(3,'👑 보스 보상','막 보스를 쓰러뜨린 보상이다 · 좋은 유물 확률 증가', finishNode, {weights:BOSS_RELIC_WEIGHTS});
     else if(combatRewardMul>=2){ const bonus=Math.round(irand(36,65)*combatRewardMul); addGold(bonus,'roomReward'); combatRewardMul=1; offerRelics(3,'🎁 합방 보상','보상이 2배로! 골드 +'+bonus, finishNode); }
