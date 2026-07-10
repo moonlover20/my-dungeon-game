@@ -8208,7 +8208,7 @@ const BOSS_INTRO_LINES={
   act3_truck:{name:'노잭',line:'NO JACK.',sub:'송출 신호가 전장을 잠식합니다.',tone:'dark',ms:1900},
   onster:{name:'온스터',line:'여기서부턴 나갈 데가 없어.',sub:'화면 밖으로 나가는 문이 잠겨 있습니다.',tone:'dark',ms:2300},
   set3:{name:'현진',line:'우린 한 명이 아니야.',sub:'방송 사고 때 화면에 갇힌 프레임들이 응답합니다.',tone:'dark',ms:2300},
-  seungwoo:{name:'승우',line:'봉식아, 거기서 나와.',sub:'화면 밖의 누군가가 송출을 끄려 합니다.',tone:'dark',glitch:true,ms:2400}
+  seungwoo:{name:'승우',line:'봉식님, 거기서 나와요.',sub:'화면 밖의 누군가가 송출을 끄려 합니다.',tone:'dark',glitch:true,ms:2400}
 };
 let bossIntroSeen={};
 let bossIntroToken=0;
@@ -8262,7 +8262,7 @@ const BOSS_TALK_LINES={
   set3:{speaker:'현진',line:'그 사고 때 화면에 남은 프레임들이야.',color:'#38e8ff',sub:'갇힌 프레임'},
   onster:{speaker:'온스터',line:'여기서부턴 나갈 데가 없어.',color:'#8d72ff',sub:'화면을 막은 문지기'},
   yanggaeng:{speaker:'박제인간',line:'너도 곧 나처럼 박제돼. …아니, 이미 됐지.',color:'#9b8fc4',sub:'박제된 시청자'},
-  seungwoo:{speaker:'승우',line:'봉식아, 거기서 나와.',color:'#9146ff',sub:'화면 밖의 침입자',glitch:true},
+  seungwoo:{speaker:'승우',line:'봉식님, 거기서 나와요.',color:'#9146ff',sub:'화면 밖의 침입자',glitch:true},
   steel_lord:{speaker:'강철 군주',line:'무릎 꿇어라, 필멸자여.',color:'#8a8fa8',sub:'흑철의 망령'},
   bear:{speaker:'거대 곰',line:'크아아아앙!!',color:'#c98b4a',sub:'숲의 지배자'}
 };
@@ -8351,7 +8351,7 @@ const BOSS_STORY_DIALOGUES={
     encounter:[
       {speaker:'시스템',text:'외부 침입자 감지: 승우\n송출 강제 종료 시도 중'},
       {speaker:'시스템',text:'제거하십시오.\n방송 유지까지 1단계'},
-      {speaker:'승우',text:'…봉식아. 나 보여?'},
+      {speaker:'승우',text:'…봉식님. 저 보여요?'},
       {speaker:'승우',text:'그 방송, 이제 끌 거야.'},
       {speaker:'승우',text:'거기서 나와. 제발.'}
     ],
@@ -8362,7 +8362,7 @@ const BOSS_STORY_DIALOGUES={
     ],
     phase2:[{speaker:'승우',text:'넌 그날 방송 끝나고\n안 돌아왔어.'},{speaker:'승우',text:'화면에 남았어.\n난… 그걸 계속 보고 있었고.'},{speaker:'승우',text:'몇 년을.'}],
     phase3:[{speaker:'승우',text:'널 부르던 그 다정한 안내 목소리?'},{speaker:'승우',text:'그거 네가 만든 거야.\n안 끝났다고 믿고 싶어서.'},{speaker:'승우',text:'난 그 반대편이야.\n널 여기서 꺼내려는.'}],
-    defeat:[{speaker:'승우',text:'널 끄려는 게 아니야.'},{speaker:'승우',text:'널 꺼내려는 거야.'},{speaker:'승우',text:'봉식아. 화면 그만 봐.'},{speaker:'승우',text:'이번엔…\n이쪽으로 나와.'}]
+    defeat:[{speaker:'승우',text:'봉식님을 끄려는 게 아니에요.'},{speaker:'승우',text:'봉식님을 꺼내려는 거예요.'},{speaker:'승우',text:'봉식님. 화면 그만 봐요.'},{speaker:'승우',text:'이번엔…\n이쪽으로 나와요.'}]
   }
 };
 const BOSS_STORY_RETRY_DIALOGUES={
@@ -8374,7 +8374,7 @@ const BOSS_STORY_RETRY_DIALOGUES={
   onster:[{speaker:'온스터',text:'문은 아직 잠겨 있어.'}],
   yanggaeng:[{speaker:'박제인간',text:'또 이 장면이야. 몇 번째야.'}],
   parkje:[{speaker:'박제인간',text:'또 이 장면이야. 몇 번째야.'}],
-  seungwoo:[{speaker:'승우',text:'또 되감았구나.\n그럴수록 넌 더 못 나와, 봉식아.'}]
+  seungwoo:[{speaker:'승우',text:'또 되감으셨군요.\n그럴수록 더 못 나와요, 봉식님.'}]
 };
 const BOSS_STORY_CHOICE_FLAG_KEYS={
   hyechul:'hyechulChoice',
@@ -8401,7 +8401,7 @@ const ENCOUNTER_PRESENTATION={
   onster:{icon:'chain',prompt:'[E] 사슬에 손을 댄다',nearLine:'...오지 마라.',color:'#8d72ff'},
   yanggaeng:{icon:'tape',prompt:'[E] 정지화면을 재생한다',nearLine:'이미 본 장면이다.',color:'#9b8fc4'},
   parkje:{icon:'tape',prompt:'[E] 정지화면을 재생한다',nearLine:'이미 본 장면이다.',color:'#9b8fc4'},
-  seungwoo:{icon:'system',prompt:'[E] 화면 밖에 응답한다',nearLine:'봉식아, 나 보여?',color:'#9146ff',nearR:360}
+  seungwoo:{icon:'system',prompt:'[E] 화면 밖에 응답한다',nearLine:'봉식님, 저 보여요?',color:'#9146ff',nearR:360}
 };
 function bossEncounterPresentationFor(key,entity,fallback){
   const cfg=Object.assign({},ENCOUNTER_PRESENTATION_DEFAULT,ENCOUNTER_PRESENTATION[key]||{});
@@ -8443,7 +8443,7 @@ function bossStoryFinalEndingOptions(){
   const ready=bossStoryTrueEndingReady();
   return [
     {id:'restore_broadcast',label:'방송 계속하기',kind:'loop',lines:['송출 정상. 방송을 계속합니다.','그 다정한 안내 목소리가 다시 봉식을 부른다.','"봉식님, 아직 안 끝났어요."','시청자 수: 계속 증가','다음 방송까지: 00:00']},
-    {id:'end_broadcast',label:'방송 종료하기',kind:ready?'true':'soft',lines:ready?['승우가 화면 밖에서 손을 뻗는다.','혜철이: 이제 안 켜져도 돼요.','키죠: 눈, 이제 감아도 돼.','현진 세트: 우리도 같이 나갈게.','온스터: 문, 열어둘게.','박제인간: 나도 데려가 줘서 고마워.','승우: 이번엔 이쪽으로 나와, 봉식아.','화면이 꺼졌다.']:['아직 화면 밖으로 나갈 만큼 놓지 못했다.','그래도 화면을 끄는 선택은 남아 있다.']}
+    {id:'end_broadcast',label:'방송 종료하기',kind:ready?'true':'soft',lines:ready?['승우가 화면 밖에서 손을 뻗는다.','혜철이: 이제 안 켜져도 돼요.','키죠: 눈, 이제 감아도 돼.','현진 세트: 우리도 같이 나갈게.','온스터: 문, 열어둘게.','박제인간: 나도 데려가 줘서 고마워.','승우: 이번엔 이쪽으로 나와요, 봉식님.','화면이 꺼졌다.']:['아직 화면 밖으로 나갈 만큼 놓지 못했다.','그래도 화면을 끄는 선택은 남아 있다.']}
   ];
 }
 function ensureFinalBroadcastChoicePanel(){
@@ -8510,7 +8510,7 @@ function bossStoryExtraDefeatPages(key){
       pages.push({speaker:'시스템',text:'침입자 승우 제거 완료.'});
       pages.push({speaker:'시스템',text:'송출 유지. 종료 명령 차단.'});
       pages.push({speaker:'시스템',text:'방송을 계속합니다.\n방송을 계속합니다.\n방송을 계속합니다.'});
-      pages.push({speaker:'승우',text:'봉식아, 저 목소리 듣지 마.'});
+      pages.push({speaker:'승우',text:'봉식님, 저 목소리 듣지 마세요.'});
       pages.push({speaker:'승우',text:'저건 네가 아니야.\n네가 안 나오려고 만든 화면이야.'});
     }
   }
@@ -11616,8 +11616,19 @@ function seungwooFixedVoidDamage(amount,src){
   player.iframes=0.28;
   burst(player.x,player.y,'#c45bff',8,160);
   if(typeof spawnDmgNum==='function') spawnDmgNum(player.x,player.y-player.r-8,dmg,false,'void');
-  if(player.hp<=0){ player.hp=0; updateHUD(); gameOver(false,src||'공허 압축'); }
-  else updateHUD();
+  if(player.hp<=0){
+    if(player.deathWard>0){
+      player.deathWard--; player.hp=1; player.iframes=1.3;
+      banner('불사 발동','체력 1로 생존',1400); burst(player.x,player.y,'#ffd34d',24,240);
+    }else if(player.reviveOnce&&!player.usedRevive){
+      player.usedRevive=true; player.hp=Math.max(1,Math.round(player.maxhp*0.35)); player.iframes=1.3;
+    }else if(player.lastStand&&!player.usedLastStand){
+      player.usedLastStand=true; player.hp=1; player.iframes=1.3;
+    }else{
+      player.hp=0; updateHUD(); gameOver(false,src||'공허 압축'); return;
+    }
+  }
+  updateHUD();
 }
 function spawnVoidSlowZone(){
   if(!seungwooCounterState||!player) return;
@@ -23625,11 +23636,89 @@ const EndingCredits=(function(){
   return {play:play,stop:stop,finish:finish};
 })();
 
-function gameOver(win, killer){
+function playVoidDeathEnding(killer){
+  if(document.getElementById('voidDeathEndingOverlay')) return;
+  clearInputState();
+  hideAll();
+  state='end'; syncChrome();
+  runActive=false; roomIsBoss=false; roomIsMidboss=false;
+  clearRunCheckpoint();
+  try{ stopBGM(); }catch(e){}
+
+  const protectedExit=!!(bossStoryFlags&&bossStoryFlags.saveProtected);
+  const lines=protectedExit?[
+    '승우: 봉식님. 손 잡아요.\n거의 다 왔어요.',
+    '시스템: 구조 대상의 응답이 없습니다.',
+    '승우: 봉식님!\n대답해 주세요.',
+    '시청자 수: 12,491 → 3,204 → 87 → 1',
+    '승우: 봉식님.\n저 아직 보고 있어요.',
+    '시청자 1명 확인.\n송출 유지 조건 충족.',
+    '방송을 계속합니다.'
+  ]:[
+    '시스템: 외부 침입자의 접근을 차단합니다.',
+    '승우: 봉식님!\n화면 보지 마세요!',
+    '시스템: 구조 대상의 응답이 없습니다.',
+    '시청자 수: 12,491 → 3,204 → 87 → 1',
+    '승우: 봉식님.\n저 아직 보고 있어요.',
+    '시청자 1명 확인.\n송출 유지 조건 충족.',
+    '방송을 계속합니다.'
+  ];
+
+  const ov=document.createElement('div');
+  ov.id='voidDeathEndingOverlay';
+  ov.style.cssText='position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:#020207;opacity:0;transition:opacity .8s ease;padding:8vh 8vw;text-align:center;font-family:inherit;';
+  ov.innerHTML='<div id="voidDeathEndingCard" style="max-width:920px;white-space:pre-wrap;color:#e9e4ff;font-size:clamp(18px,3.1vw,30px);line-height:1.9;letter-spacing:.6px;opacity:0;transition:opacity .42s ease;text-shadow:0 0 22px rgba(145,70,255,.34);"></div>'+
+    '<button id="voidDeathEndingSkip" type="button" style="position:fixed;right:30px;bottom:26px;background:none;border:1px solid #3a2f50;color:#9b8fc4;font-family:inherit;font-size:12px;padding:8px 16px;cursor:pointer;opacity:.58;">건너뛰기 ▶▶</button>';
+  document.body.appendChild(ov);
+  const card=ov.querySelector('#voidDeathEndingCard'), skip=ov.querySelector('#voidDeathEndingSkip');
+  let done=false, index=0, timers=[];
+  const T=(fn,ms)=>{ const id=setTimeout(fn,ms); timers.push(id); return id; };
+  const clearTimers=()=>{ timers.forEach(clearTimeout); timers=[]; };
+  function complete(){
+    if(done) return;
+    done=true; clearTimers();
+    document.removeEventListener('keydown',onKey,true);
+    ov.style.opacity='0';
+    setTimeout(()=>{
+      if(ov.parentNode) ov.parentNode.removeChild(ov);
+      unlockAchievement('void_last_viewer');
+      gameOver(false,killer||'승우',{voidDeath:true});
+    },820);
+  }
+  function showNext(){
+    if(done) return;
+    if(index>=lines.length){ T(complete,900); return; }
+    const line=lines[index++];
+    card.style.opacity='0';
+    T(()=>{
+      card.textContent=line;
+      card.style.color=index>=lines.length-1?'#ff4d6d':(line.indexOf('승우:')===0?'#cbb8ff':'#e9e4ff');
+      void card.offsetWidth;
+      card.style.opacity='1';
+      T(showNext,index===lines.length?2500:2100);
+    },360);
+  }
+  function onKey(e){
+    const key=String(e.key||'').toLowerCase();
+    if(key==='escape'||key==='enter'||key===' '){ e.preventDefault(); e.stopPropagation(); complete(); }
+  }
+  document.addEventListener('keydown',onKey,true);
+  if(skip) skip.onclick=complete;
+  void ov.offsetWidth; ov.style.opacity='1';
+  T(showNext,650);
+}
+
+function gameOver(win, killer, options){
+  options=options||{};
+  if(!win&&!options.voidDeath&&isSeungwooVoidFight()){
+    playVoidDeathEnding(killer);
+    return;
+  }
+  const voidDeath=!!options.voidDeath;
   clearContractRoomRule({silent:true});
   state='end'; syncChrome();
   // 승리 시에만 인트로로 전환 — 사망 시엔 죽은 막의 음악을 그대로 유지
-  if(win){ runActive=false; roomIsBoss=false; roomIsMidboss=false; clearRunCheckpoint(); }
+  if(win||voidDeath){ runActive=false; roomIsBoss=false; roomIsMidboss=false; clearRunCheckpoint(); }
   else clearRunCheckpoint();
   if(win){
     unlockAchievement('clear_game');
@@ -23640,7 +23729,7 @@ function gameOver(win, killer){
     if(runShopPurchases===0 && runShopSpent===0) unlockAchievement('no_shop_clear');
   }
   show('end');
-  const canRetry = !win && (diffSet.maxRetries === Infinity || retries < diffSet.maxRetries);
+  const canRetry = !win && !voidDeath && (diffSet.maxRetries === Infinity || retries < diffSet.maxRetries);
   $('retryBtn').style.display = canRetry ? '' : 'none';
   const titleBtn=$('titleBtn'); if(titleBtn) titleBtn.style.display = win ? 'none' : '';
   // 재도전 버튼 텍스트에 남은 횟수 표시
@@ -23650,17 +23739,18 @@ function gameOver(win, killer){
   } else {
     $('retryBtn').textContent = '↺ 재도전하기';
   }
-  $('endTag').textContent=win?'🏆 클리어':'📺 방송 사고';
+  $('endTag').textContent=voidDeath?'BAD END · 공허 잔류':(win?'🏆 클리어':'📺 방송 사고');
   let title, quip;
   const k = killer || lastKiller || '시청자';
-  if(win){ title=act>=3?(bossStoryTrueEndingReady()?'화면이 꺼졌다':'송출 계속 중'):'CLEAR!'; quip=act>=3?(bossStoryTrueEndingReady()?'아무도 그가 어디로 갔는지 모른다.':'송출 정상 / 시청자 수 계속 증가 / 다음 방송까지 00:00'):pick(["재밌었다. 다음 시즌에 보자.","채팅 단체기립 POGGERS","갓겜 인정 GIGACHAD","클립 박제각 Clap","이게 되네?! KEKW"]); }
+  if(voidDeath){ title='마지막 시청자'; quip='방송은 끝나지 않았다. 보는 사람이 한 명 남아 있었으므로.'; }
+  else if(win){ title=act>=3?(bossStoryTrueEndingReady()?'화면이 꺼졌다':'송출 계속 중'):'CLEAR!'; quip=act>=3?(bossStoryTrueEndingReady()?'아무도 그가 어디로 갔는지 모른다.':'송출 정상 / 시청자 수 계속 증가 / 다음 방송까지 00:00'):pick(["재밌었다. 다음 시즌에 보자.","채팅 단체기립 POGGERS","갓겜 인정 GIGACHAD","클립 박제각 Clap","이게 되네?! KEKW"]); }
   else {
     const entry = DEATH_LINES[k];
     if(entry){ title=entry.title; quip=pick(entry.q); }
     else { title='"'+k+'"에게 당했다'; quip=pick(["채팅 폭소 KEKW","아 아까비 Sadge","한 판 더! LULW","발컨 박제 monkaS","멘탈 챙기세요"]); }
   }
   $('endTitle').textContent=title;
-  $('endTitle').style.color=win?'#5dff9b':'#ff4d6d';
+  $('endTitle').style.color=voidDeath?'#c98bff':(win?'#5dff9b':'#ff4d6d');
   const scoreData=calcRunScore(win);
   recordRunResult(scoreData);
   const scheduleNames=runScheduleSummary().map(r=>r.label+' '+r.name).join(' / ');
@@ -23678,13 +23768,13 @@ function gameOver(win, killer){
   pendingRunBuildSnapshot=createRunBuildSnapshot(scoreData);
   renderEndScoreGuide(scoreData,false);
   resetEndRankForm();
-  $('endQuip').textContent=win&&act>=3?quip:('채팅: "'+quip+'"');
+  $('endQuip').textContent=voidDeath?quip:(win&&act>=3?quip:('채팅: "'+quip+'"'));
   clearFinalBroadcastChoices();
   // 3막 승리: 흑막 엔딩 연출(선택 → 문구 페이드) → 점수 화면. 선택은 흑막에서 끝났으므로 결과창엔 패널 재노출 안 함.
   if(win&&act>=3 && typeof playEndingSequence==='function'){
     playEndingSequence();
   }
-  chatSys(win?"🎉🎉 클리어!! 채팅 축제":"☠ 사망 ("+k+") — 채팅: "+pick(["GG","한판더","아깝다 Sadge","리트 ㄱㄱ"]));
+  chatSys(voidDeath?'📺 시청자 1명 — 방송을 계속합니다.':(win?"🎉🎉 클리어!! 채팅 축제":"☠ 사망 ("+k+") — 채팅: "+pick(["GG","한판더","아깝다 Sadge","리트 ㄱㄱ"])));
   // 아날로그 호러 실종 크레딧(EndingCredits) 비활성화 — 렉 유발 + 서사 톤 불일치로 제거. 결과 화면(방송 복구/종료 선택)만 노출.
   // if(win && typeof EndingCredits!=='undefined' && EndingCredits.play){ try{ EndingCredits.play(); }catch(e){ console.warn('ending credits failed',e); } }
 }
