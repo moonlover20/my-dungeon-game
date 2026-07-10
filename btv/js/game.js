@@ -45,7 +45,7 @@ const BOSS_STUN_IMMUNITY_T=10;
 const ENEMY_SPAWN_SAFE_RADIUS=220;
 const CRIT_BASE_CHANCE=0.05;
 const CRIT_BASE_MULT=1.5;
-const CRIT_CHANCE_CAP=0.60;
+const CRIT_CHANCE_CAP=1.00;
 const CRIT_MULT_CAP=3.5;
 const DODGE_HASTE_FIRE_ADD=0.50;
 const THORNS_DAMAGE_RADIUS=200;
@@ -208,60 +208,136 @@ const BROADCAST_SCREEN="btv/assets/intro-broadcast-bg.png";
 
 const PLAYER_CLASSES=[
   {id:'basic_streamer',name:'베이직 방송인',iconMark:'pistol',iconBg:'#202844',iconFg:'#8be8ff',weapon:'기본 총',weaponType:'basic',role:'균형형',difficulty:'쉬움',color:'#38e8ff',
-   hpMul:1,dmgMul:1,fireMul:1,rangeMul:1,bulletSpeedMul:1,bulletSizeMul:1,
+   hpMul:1,dmgMul:1,fireMul:1,rangeMul:1,bulletSpeedMul:1,bulletSizeMul:1,moveSpeed:175,naturalRegen:0.5,
    desc:'안정적인 단발형. 강화탄으로 꾸준히 압박한다.',
    skill:'클릭: 집중. 기본탄 즉시 강화.',
    passive:'4번째 탄 관통. 방 클리어 골드 +10.'},
   {id:'rush_streamer',name:'돌격 방송인',iconMark:'shotgun',iconBg:'#33253b',iconFg:'#ffb347',weapon:'산탄총',weaponType:'shotgun',role:'근접 산탄형',difficulty:'보통',color:'#ffb347',
-   hpMul:1.15,dmgMul:0.95,fireMul:0.85,rangeMul:0.80,bulletSpeedMul:0.96,bulletSizeMul:0.95,
+   hpMul:1.10,dmgMul:1.00,fireMul:0.90,rangeMul:0.85,bulletSpeedMul:1.00,bulletSizeMul:1.00,moveSpeed:190,naturalRegen:0.55,
    desc:'짧은 사거리 4연 산탄. 가까울수록 강하다.',
    skill:'클릭: 백스텝. 뒤로 빠지며 산탄 발사.',
    passive:'근거리 처치 시 2.5초 이속 +18%.'},
   {id:'sniper_streamer',name:'저격 방송인',iconMark:'rifle',iconBg:'#203348',iconFg:'#8be8ff',weapon:'저격총',weaponType:'sniper',role:'레이저 / 관통형',difficulty:'어려움',color:'#8be8ff',
-   hpMul:0.85,dmgMul:1.40,fireMul:0.70,rangeMul:1.50,bulletSpeedMul:1.10,bulletSizeMul:1,
+   hpMul:0.80,dmgMul:1.25,fireMul:0.70,rangeMul:1.35,bulletSpeedMul:1.08,bulletSizeMul:1,moveSpeed:165,naturalRegen:0.35,
    desc:'느리지만 강한 관통탄. 원거리 안정형.',
    skill:'홀드: 레이저. 차징량만큼 폭/피해 증가.',
    passive:'3초 무피격 상태면 공격 치명 +20%.'},
   {id:'alchemy_streamer',name:'연금 방송인',iconMark:'toxicgun',iconBg:'#203626',iconFg:'#76d36a',weapon:'독성 총',weaponType:'toxic',role:'독 / 장판 / 지속딜형',difficulty:'보통',color:'#76d36a',
-   hpMul:0.90,dmgMul:0.82,fireMul:1,rangeMul:1,bulletSpeedMul:0.92,bulletSizeMul:0.95,
+   hpMul:0.90,dmgMul:0.82,fireMul:1,rangeMul:1,bulletSpeedMul:0.92,bulletSizeMul:0.95,moveSpeed:170,naturalRegen:0.65,
    desc:'직접 피해는 낮지만 상태이상 누적으로 강해진다.',
    skill:'홀드: 독장판. 차징량만큼 범위 증가.',
-   passive:'상태이상 피해 +15%, 독 최대 스택 +2.'},
+   passive:'상태이상 피해 +15%, 독 최대 스택 +1.'},
   {id:'curse_contractor',name:'저주 계약자',iconMark:'cursedgun',iconBg:'#2d2440',iconFg:'#c98bff',weapon:'저주받은 총',weaponType:'cursed',role:'고위험 고보상',difficulty:'어려움',color:'#c98bff',
-   hpMul:0.72,dmgMul:1.04,fireMul:0.95,rangeMul:1,bulletSpeedMul:1.02,bulletSizeMul:1.08,
+   hpMul:0.75,dmgMul:1.00,fireMul:0.95,rangeMul:1,bulletSpeedMul:1.02,bulletSizeMul:1.08,moveSpeed:185,naturalRegen:0.25,
    desc:'저주로 시작하는 고위험 성장형.',
    skill:'클릭: 계약. 체력 소모 후 공격 강화.',
    passive:'랜덤 저주 1개 시작. 저주 스택당 공격력/골드 증가.'},
   {id:'tank_streamer',name:'탱커 방송인',iconMark:'bazooka',iconBg:'#3b2432',iconFg:'#ff7f94',weapon:'묵직한 바주카포',weaponType:'bazooka',role:'생존 / 반격형',difficulty:'보통',color:'#ff7f94',
-   hpMul:1.42,dmgMul:0.82,fireMul:0.80,rangeMul:0.80,bulletSpeedMul:0.88,bulletSizeMul:1.34,
+   hpMul:1.35,dmgMul:0.88,fireMul:0.82,rangeMul:0.85,bulletSpeedMul:0.90,bulletSizeMul:1.34,moveSpeed:160,naturalRegen:0.75,
    desc:'묵직한 폭발탄과 높은 체력의 생존형.',
    skill:'클릭: 응급 회복. 즉시 체력 회복.',
    passive:'최대 체력 40당 공격력 +1.'}
 ];
 let selectedPlayerClassId='basic_streamer';
 let pendingClassStartFn=null;
+let pendingPlayerClassId=null;
 function playerClassById(id){ return PLAYER_CLASSES.find(c=>c.id===id)||PLAYER_CLASSES[0]; }
 function classPct(v){ return Math.round((Number(v)||1)*100)+'%'; }
-function classStatHTML(label,value){ return '<div class="class-stat">'+label+'<b>'+value+'</b></div>'; }
 function classIconHTML(c){
   const src=miniPixelIconSrc(c.iconBg||'#252840',c.iconFg||c.color||'#38e8ff',c.iconMark||'bullet');
   return '<img class="class-pix" src="'+src+'" alt="">';
 }
 function classNameHTML(name){
-  const parts=String(name||'').split(/\s+/).filter(Boolean);
-  return parts.length>1?parts.join('<br>'):String(name||'');
+  return String(name||'');
 }
 function classRoleHTML(role){
   return String(role||'').split('/').map(part=>part.trim()).filter(Boolean).map(part=>'<span>'+part+'</span>').join('<i>/</i>');
 }
+function classDifficultyMeta(c){
+  const key=c.difficulty==='쉬움'?'easy':(c.difficulty==='어려움'?'hard':'normal');
+  const dots=key==='easy'?'●○○':(key==='hard'?'●●●':'●●○');
+  const hints={
+    basic_streamer:'입문 추천',rush_streamer:'근접 숙련 필요',sniper_streamer:'조준·거리 운영',
+    alchemy_streamer:'상태이상 운영',curse_contractor:'리스크 관리',tank_streamer:'생존 중심'
+  };
+  return {key,dots,hint:hints[c.id]||c.role};
+}
+function classRadarPoint(factor,index){
+  const cx=80,cy=65,r=43*factor,ang=-Math.PI/2+index*TAU/6;
+  return (cx+Math.cos(ang)*r).toFixed(1)+','+(cy+Math.sin(ang)*r).toFixed(1);
+}
+function classRadarRing(scale){
+  return [0,1,2,3,4,5].map(i=>classRadarPoint(scale,i)).join(' ');
+}
+function classRadarValueFactor(value){
+  const pct=(Number(value)||1)*100;
+  const normalized=Math.max(0,Math.min(1,(pct-70)/80));
+  return 0.35+normalized*0.65;
+}
+function classRadarValuePoints(c){
+  return [c.hpMul,c.dmgMul,c.fireMul,c.rangeMul,c.moveSpeed/BASE_PLAYER_MOVE_SPEED,c.naturalRegen/0.5].map((value,i)=>classRadarPoint(classRadarValueFactor(value),i)).join(' ');
+}
+function classStatDelta(value){
+  const n=Number(value)||1;
+  if(n>1.005) return '<em class="stat-up">▲</em>';
+  if(n<0.995) return '<em class="stat-down">▼</em>';
+  return '<em class="stat-even">―</em>';
+}
+function classRadarHTML(c){
+  const stats=[
+    ['체력',c.hpMul,classPct(c.hpMul)],['공격',c.dmgMul,classPct(c.dmgMul)],['연사',c.fireMul,classPct(c.fireMul)],
+    ['사거리',c.rangeMul,classPct(c.rangeMul)],['이동',c.moveSpeed/BASE_PLAYER_MOVE_SPEED,Math.round(c.moveSpeed)],['회복',c.naturalRegen/0.5,Number(c.naturalRegen).toFixed(2)+'/초']
+  ];
+  return '<div class="class-radar-wrap">'+
+    '<svg class="class-radar" viewBox="0 0 160 140" role="img" aria-label="'+c.name+' 능력치 그래프">'+
+      '<polygon class="radar-ring radar-ring-outer" points="'+classRadarRing(1)+'"></polygon>'+
+      '<polygon class="radar-ring" points="'+classRadarRing(.72)+'"></polygon>'+
+      '<polygon class="radar-ring" points="'+classRadarRing(.44)+'"></polygon>'+
+      [0,1,2,3,4,5].map(i=>'<line class="radar-axis" x1="80" y1="65" x2="'+classRadarPoint(1,i).split(',')[0]+'" y2="'+classRadarPoint(1,i).split(',')[1]+'"></line>').join('')+
+      '<polygon class="radar-value" points="'+classRadarValuePoints(c)+'"></polygon>'+
+      '<circle class="radar-center" cx="80" cy="65" r="2"></circle>'+
+      '<text x="80" y="10" text-anchor="middle">체력</text><text x="139" y="42" text-anchor="middle">공격</text>'+
+      '<text x="139" y="96" text-anchor="middle">연사</text><text x="80" y="132" text-anchor="middle">사거리</text>'+
+      '<text x="20" y="96" text-anchor="middle">이동</text><text x="20" y="42" text-anchor="middle">회복</text>'+
+    '</svg>'+
+    '<div class="class-radar-values">'+stats.map(s=>'<span>'+s[0]+'<b>'+classStatDelta(s[1])+s[2]+'</b></span>').join('')+'</div>'+
+  '</div>';
+}
 function classChoiceHTML(c){
-  return '<div class="class-card-head"><div class="class-icon">'+classIconHTML(c)+'</div><div><div class="class-name">'+classNameHTML(c.name)+'</div><div class="class-role">'+classRoleHTML(c.role)+'</div></div></div>'+
+  const diff=classDifficultyMeta(c);
+  return '<div class="class-selected-badge">✓ 선택됨</div>'+
+    '<div class="class-card-head"><div class="class-icon">'+classIconHTML(c)+'</div><div class="class-title-wrap"><div class="class-name-line"><div class="class-name">'+classNameHTML(c.name)+'</div><span class="class-difficulty difficulty-'+diff.key+'"><strong>'+c.difficulty+'</strong><i aria-hidden="true">'+diff.dots+'</i></span></div><div class="class-role">'+classRoleHTML(c.role)+'</div><div class="class-difficulty-hint">'+diff.hint+'</div></div></div>'+
     '<div class="class-desc">'+c.desc+'</div>'+
-    '<div class="class-stats">'+
-      classStatHTML('무기',c.weapon)+
-    '</div>'+
+    '<div class="class-weapon"><span>시작 무기</span><b>'+c.weapon+'</b></div>'+
+    classRadarHTML(c)+
     '<div class="class-skill"><span>우클릭 스킬</span>'+c.skill+'</div>'+
-    '<div class="class-passive"><span>고유 패시브</span>'+c.passive+'</div>';
+    '<div class="class-passive"><span>고유 패시브</span>'+c.passive+'</div>'+
+    '<div class="class-card-cta">클릭하여 선택</div>';
+}
+function updateClassSelectionUI(){
+  const selected=pendingPlayerClassId?playerClassById(pendingPlayerClassId):null;
+  const grid=$('classChoices');
+  if(grid) grid.classList.toggle('has-selection',!!selected);
+  document.querySelectorAll('#classChoices .class-card').forEach(card=>{
+    const active=!!selected&&card.dataset.classId===selected.id;
+    card.classList.toggle('selected',active);
+    card.setAttribute('aria-pressed',active?'true':'false');
+    const cta=card.querySelector('.class-card-cta');
+    if(cta) cta.textContent=active?'현재 선택 직업':'클릭하여 선택';
+  });
+  const confirm=$('classConfirm'),name=$('classSelectedName'),hint=$('classSelectedHint');
+  if(name) name.textContent=selected?selected.name:'직업을 선택하세요';
+  if(hint) hint.textContent=selected?(selected.weapon+' · '+classDifficultyMeta(selected).hint):'카드를 눌러 능력과 난이도를 비교하세요.';
+  if(confirm){
+    confirm.disabled=!selected;
+    confirm.textContent=selected?(selected.name+'으로 시작'):'직업을 선택하세요';
+    confirm.style.setProperty('--class-col',selected?selected.color:'#38e8ff');
+  }
+}
+function selectPlayerClass(id){
+  pendingPlayerClassId=playerClassById(id).id;
+  updateClassSelectionUI();
+  if(typeof sfx!=='undefined'&&sfx.vote) sfx.vote();
 }
 function renderClassChoices(){
   const cont=$('classChoices'); if(!cont) return;
@@ -269,20 +345,29 @@ function renderClassChoices(){
   PLAYER_CLASSES.forEach(c=>{
     const b=document.createElement('button');
     b.className='class-card';
+    b.type='button';
+    b.dataset.classId=c.id;
+    b.setAttribute('aria-pressed','false');
+    b.setAttribute('aria-label',c.name+' 선택 · 난이도 '+c.difficulty);
     b.style.setProperty('--class-col',c.color);
     b.innerHTML=classChoiceHTML(c);
-    b.onclick=()=>startRunWithClass(c.id);
+    b.onclick=()=>selectPlayerClass(c.id);
     cont.appendChild(b);
   });
+  const confirm=$('classConfirm');
+  if(confirm) confirm.onclick=()=>{ if(pendingPlayerClassId) startRunWithClass(pendingPlayerClassId); };
+  updateClassSelectionUI();
 }
 function showClassSelect(diff,startFn){
   diffSet=diff||diffSet;
   pendingClassStartFn=startFn||newGame;
+  pendingPlayerClassId=null;
   renderClassChoices();
   show('class');
 }
 function startRunWithClass(id){
   selectedPlayerClassId=playerClassById(id).id;
+  pendingPlayerClassId=null;
   const fn=pendingClassStartFn||newGame;
   pendingClassStartFn=null;
   stopIntroDrone();
@@ -297,15 +382,17 @@ function applyPlayerClass(p){
   p.maxhp=Math.max(1,Math.round(p.maxhp*(c.hpMul||1))); p.hp=p.maxhp;
   p.dmg*=c.dmgMul||1;
   p.fireAdd+=(c.fireMul||1)-1;
+  p.spd=Number(c.moveSpeed)||p.spd;
+  p.regen+=(Number(c.naturalRegen)||BASE_NATURAL_REGEN)-BASE_NATURAL_REGEN;
   if(c.weaponType==='basic'){ p.basicStreamerClass=true; p.basicShotCounter=0; }
   if(c.weaponType==='shotgun'){ p.weaponPellets=4; p.weaponSpreadMul=1; p.closeProjectileDmgMul+=0.08; }
   if(c.weaponType==='sniper'){ p.pierce+=1; p.weaponChargeT=0; p.sniperLaserCd=0; p.sniperLaserChargeT=0; p.sniperLaserChargeFxT=0; }
-  if(c.weaponType==='toxic'){ p.poison+=2; p.statusDotDmgMul+=0.15; p.poisonMaxStacks=(Number(p.poisonMaxStacks)||DEFAULT_POISON_MAX_STACKS)+2; }
+  if(c.weaponType==='toxic'){ p.poison+=2; p.statusDotDmgMul+=0.15; p.poisonMaxStacks=(Number(p.poisonMaxStacks)||DEFAULT_POISON_MAX_STACKS)+1; }
   if(c.weaponType==='cursed'){
     grantRandomCurse(p,{source:'class_start'});
-    p.curseContractClass=true; p.curseContractAtkFlat=1.2;
+    p.curseContractClass=true; p.curseContractAtkFlat=0.9;
   }
-  if(c.weaponType==='bazooka'){ p.bulletExplode+=18; p.weaponExplode=18; p.weaponExplosionRadius=86; p.armor+=0.08; p.tankHpAttackDiv=40; }
+  if(c.weaponType==='bazooka'){ p.bulletExplode+=15; p.weaponExplode=15; p.weaponExplosionRadius=86; p.armor+=0.10; p.tankHpAttackDiv=40; }
 }
 const WEAPON_EVOLUTIONS={
   basic:[
@@ -503,7 +590,7 @@ function playPatternSfx(key, fn, cd = 0.18){
   PATTERN_SFX_CD[key] = now;
   try { fn(); } catch(e) {}
 }
-const ENEMY_PATTERN_SFX_GAIN = 2.2;
+const ENEMY_PATTERN_SFX_GAIN = 1.6;
 function patternVol(v){ return Math.min(0.16, v * ENEMY_PATTERN_SFX_GAIN); }
 const FILE_SFX_PATHS={
   act1Wing:'btv/assets/sfx/act1/wing_flap.mp3',
@@ -600,11 +687,15 @@ function playCustomSfxGroup(group,opts){
   const arr=CUSTOM_SFX_GROUPS[group];
   if(!arr||!arr.length) return;
   const name=arr[Math.floor(Math.random()*arr.length)];
-  playFileSfx(name,opts||{});
+  const tuned=Object.assign({},opts||{});
+  if(group==='set3Laser'&&tuned.vol!=null) tuned.vol*=0.72;
+  playFileSfx(name,tuned);
 }
 function playOnsterChainSfx(slot,opts){
   const name=slot===1?'onsterChain1':(slot===2?'onsterChain2':'onsterChain3');
-  playFileSfx(name,opts||{});
+  const tuned=Object.assign({},opts||{});
+  if(tuned.vol!=null) tuned.vol*=0.78;
+  playFileSfx(name,tuned);
 }
 function playOnsterLaserSfx(opts){
   playFileSfx('onsterLaserBasic',opts||{});
@@ -614,14 +705,61 @@ function playAct3MagnetPulseSfx(opts){
   playFileSfx('act3MagnetPulse',{vol:opts.vol==null?0.24:opts.vol,rate:opts.rate||1,maxDur:opts.maxDur||0.78,cd:opts.cd||1.35,key:opts.key||'act3MagnetPulse'});
 }
 const sfx={
-  shoot:()=>beep(680,0.05,'square',0.03),
-  hit:()=>beep(220,0.07,'sawtooth',0.05),
+  playerShoot:(weapon)=>{
+    switch(weapon){
+      case 'shotgun':
+        beep(190,0.07,'sawtooth',0.07);
+        setTimeout(()=>beep(120,0.05,'square',0.04),18);
+        break;
+      case 'sniper':
+        beep(1120,0.055,'square',0.065);
+        setTimeout(()=>beep(560,0.08,'sawtooth',0.035),22);
+        break;
+      case 'toxic':
+        beep(330,0.08,'triangle',0.055);
+        setTimeout(()=>beep(220,0.07,'sine',0.035),30);
+        break;
+      case 'cursed':
+        beep(480,0.07,'sawtooth',0.055);
+        setTimeout(()=>beep(140,0.09,'square',0.04),32);
+        break;
+      case 'bazooka':
+        beep(105,0.11,'sawtooth',0.075);
+        setTimeout(()=>beep(210,0.07,'square',0.045),28);
+        break;
+      default:
+        beep(680,0.05,'square',0.07);
+        break;
+    }
+  },
+  enemyShoot:()=>beep(680,0.05,'square',0.03),
+  hit:(crit)=>{
+    if(crit){
+      playPatternSfx('criticalHit',()=>{ beep(1180,0.045,'square',0.06); setTimeout(()=>beep(1580,0.055,'triangle',0.04),28); },0.06);
+      return;
+    }
+    playPatternSfx('playerHit',()=>beep(220,0.07,'sawtooth',0.05),0.045);
+  },
   hurt:()=>beep(140,0.16,'sawtooth',0.08),
   pick:()=>beep(900,0.1,'triangle',0.06),
   boss:()=>{beep(110,0.4,'sawtooth',0.09);setTimeout(()=>beep(90,0.5,'sawtooth',0.09),120);},
-  coin:()=>beep(1200,0.06,'square',0.04),
+  coin:()=>playPatternSfx('coin',()=>beep(1200,0.06,'square',0.04),0.06),
   vote:()=>beep(520,0.12,'triangle',0.05),
   dodge:()=>beep(440,0.08,'sine',0.04),
+  skillBasic:()=>{ beep(760,0.07,'square',0.055); setTimeout(()=>beep(1140,0.08,'triangle',0.04),45); },
+  skillRush:()=>{ beep(180,0.09,'sawtooth',0.06); setTimeout(()=>beep(520,0.06,'square',0.045),35); },
+  skillAlchemy:()=>{ beep(260,0.10,'triangle',0.055); setTimeout(()=>beep(390,0.12,'sine',0.04),55); },
+  skillTank:()=>{ beep(360,0.12,'sine',0.055); setTimeout(()=>beep(720,0.14,'triangle',0.045),70); },
+  chargeReady:(id)=>playPatternSfx('chargeReady:'+id,()=>{
+    if(id==='alchemy_streamer'){
+      beep(420,0.07,'triangle',0.045);
+      setTimeout(()=>beep(620,0.08,'sine',0.035),45);
+    }else{
+      beep(980,0.055,'square',0.045);
+      setTimeout(()=>beep(1320,0.07,'triangle',0.035),40);
+    }
+  },0.18),
+  roomClear:()=>playPatternSfx('roomClear',()=>{ beep(660,0.09,'triangle',0.05); setTimeout(()=>beep(990,0.12,'sine',0.045),80); },0.8),
   // UI 버튼 딸깍 사운드 (픽셀 레트로 느낌)
   click:()=>{ beep(1100,0.03,'square',0.045); setTimeout(()=>beep(820,0.025,'square',0.025),18); },
   clickSoft:()=>beep(780,0.04,'square',0.03),   // 보조 버튼·취소용 (살짝 낮고 부드럽게)
@@ -1319,7 +1457,7 @@ const RELICS=[
   {id:"curse_crown",name:"저주의 왕관",icon:"👑",desc:"공격력 +15. 받는 피해 +30%.",cls:"curse",apply:p=>{p.dmg+=15;p.damageTakenMul+=0.30;}},
   {id:"direction_compass",name:"방향성 나침반",icon:"🧭",desc:"경험치 획득량 +30%, 이동 속도 +8.",cls:"boon",apply:p=>{p.xpMul+=0.30;p.moveSpeedAdd+=8;}},
   {id:"whale_card",name:"큰손 카드",icon:"💳",desc:"상점 가격 -20%, 골드 획득량 +20%.",cls:"boon",apply:p=>{p.shopCostMul-=0.20;p.goldMul+=0.20;}},
-  {id:"no_spend_wallet",name:"무소비의 지갑",icon:"👛",desc:"골드 획득량 +50%.",cls:"boon",apply:p=>{p.goldMul+=0.50;}},
+  {id:"no_spend_wallet",name:"무소비의 지갑",icon:"👛",desc:"골드 획득량 +55%.",cls:"boon",apply:p=>{p.goldMul+=0.55;}},
   {id:"hardcore_transmitter",name:"하드코어 송출기",icon:"📡",desc:"보스 피해 +45%, 공격력 +7.",cls:"boon",apply:p=>{p.bossDmgMul+=0.45;p.dmg+=7;}},
   {id:"nohit_wings",name:"무피격의 날개",icon:"🪽",desc:"이동 속도 +18, 회피 쿨타임 -20%.",cls:"boon",apply:p=>{p.moveSpeedAdd+=18;p.dodgeCdMul-=0.20;}},
   {id:"bizarre_mask",name:"기괴한 가면",icon:"🎭",desc:"공격력 +12, 관통 +1.",cls:"boon",apply:p=>{p.dmg+=12;p.pierce+=1;}},
@@ -1333,16 +1471,16 @@ const RELICS=[
   {id:"med_kit",name:"응급 키트",icon:"📦",desc:"방 입장 시 체력 10 회복.",cls:"boon",apply:p=>{p.roomEntryHeal+=10;}},
   // ===== 저주: 양날의 검 =====
   {id:"glass",name:"유리 대포",icon:"🔮",desc:"공격력 +18. 최대 체력 -40%.",cls:"curse",apply:p=>{p.dmg+=18;p.maxhp=Math.round(p.maxhp*0.6);p.hp=Math.min(p.hp,p.maxhp);}},
-  {id:"berserk",name:"광전사의 분노",icon:"🩸",desc:"공격력 +9. 받는 피해 +20%.",cls:"curse",apply:p=>{p.dmg+=9;p.damageTakenMul+=0.20;}},
+  {id:"berserk",name:"광전사의 분노",icon:"🩸",desc:"공격력 +9. 받는 피해 +15%.",cls:"curse",apply:p=>{p.dmg+=9;p.damageTakenMul+=0.15;}},
   {id:"heavy_ammo",name:"무거운 탄약",icon:"🏋️",desc:"공격력 +8.5. 이동 속도 -12.",cls:"curse",apply:p=>{p.dmg+=8.5;p.moveSpeedAdd-=12;}},
   {id:"hair_trigger",name:"예민한 방아쇠",icon:"🔫",desc:"발사 속도 +45%. 탄 크기 -25%.",cls:"curse",apply:p=>{p.fireAdd+=0.45;p.bulletSize-=0.25;}},
   {id:"recoil",name:"강한 반동",icon:"🌪️",desc:"발사 속도 +40%. 가끔 오발.",cls:"curse",apply:p=>{p.fireAdd+=0.40;p.misfire=true;}},
   {id:"one_shot",name:"모 아니면 도",icon:"💀",desc:"공격력 +19. 최대 체력 100 고정.",cls:"curse",apply:p=>{p.dmg+=19;setFixedMaxHp(p,100);}},
-  {id:"thin_glass",name:"더 얇은 유리",icon:"🪟",desc:"치명타 +30%. 받는 피해 +25%.",cls:"curse",apply:p=>{p.critChance+=0.3;p.damageTakenMul+=0.25;}},
+  {id:"thin_glass",name:"더 얇은 유리",icon:"🪟",desc:"치명타 +35%, 치명타 피해 +20%. 받는 피해 +25%.",cls:"curse",apply:p=>{p.critChance+=0.35;p.critMult+=0.20;p.damageTakenMul+=0.25;}},
   {id:"time_bomb",name:"시한폭탄 심장",icon:"⏱️",desc:"공격력 +9. 초당 체력 -1.",cls:"curse",apply:p=>{p.dmg+=9;p.regen-=1;}},
   {id:"greed",name:"탐욕의 손",icon:"🤑",desc:"골드 획득량 +50%.",cls:"boon",apply:p=>{p.goldMul+=0.50;}},
-  {id:"slippery",name:"미끄러운 신발",icon:"🧊",desc:"이동 속도 +14. 회피 쿨 +50%.",cls:"curse",apply:p=>{p.moveSpeedAdd+=14;p.dodgeCdMul+=0.50;}},
-  {id:"glass_legs",name:"유리 다리",icon:"🦵",desc:"이동 속도 +14. 최대 체력 -20%.",cls:"curse",apply:p=>{p.moveSpeedAdd+=14;p.maxhp=Math.round(p.maxhp*0.8);p.hp=Math.min(p.hp,p.maxhp);}},
+  {id:"slippery",name:"미끄러운 신발",icon:"🧊",desc:"이동 속도 +20. 회피 쿨 +25%.",cls:"curse",apply:p=>{p.moveSpeedAdd+=20;p.dodgeCdMul+=0.25;}},
+  {id:"glass_legs",name:"유리 다리",icon:"🦵",desc:"이동 속도 +20. 최대 체력 -12%.",cls:"curse",apply:p=>{p.moveSpeedAdd+=20;p.maxhp=Math.round(p.maxhp*0.88);p.hp=Math.min(p.hp,p.maxhp);}},
   {id:"turtle",name:"거북이 등딱지",icon:"🐢",desc:"받는 피해 -15%. 이동 속도 -8.",cls:"curse",apply:p=>{p.armor+=0.15;p.moveSpeedAdd-=8;}},
   {id:"all_in",name:"올인",icon:"🎰",desc:"공격력 +10. 받는 피해 +20%.",cls:"curse",apply:p=>{p.dmg+=10;p.damageTakenMul+=0.20;}},
   {id:"gamble",name:"도박꾼의 주사위",icon:"🎲",desc:"매 발사 공격력 0.6~1.8배 도박.",cls:"curse",apply:p=>{p.gamble=true;}},
@@ -2187,6 +2325,7 @@ function castBasicSkill(chargeRatio){
   player.basicFocusT=dur;
   player.classSkillCd=classSkillMaxCooldown();
   burst(player.x,player.y,'#ffd34d',14+Math.round(12*c),190+120*c);
+  sfx.skillBasic();
   banner('빠른 재장전','발사속도 +30%',900);
   return true;
 }
@@ -2224,6 +2363,7 @@ function castRushSkill(chargeRatio){
   if(player.rushGuardDuration>0) player.rushGuardT=Math.max(player.rushGuardT||0,Number(player.rushGuardDuration)||0);
   spawnDashFx('start',player.x,player.y,-Math.cos(a),-Math.sin(a));
   burst(player.x,player.y,'#ffb347',14+Math.round(12*c),190+130*c);
+  sfx.skillRush();
   return true;
 }
 function castAlchemySkill(chargeRatio){
@@ -2234,13 +2374,14 @@ function castAlchemySkill(chargeRatio){
   playerSkillZones.push({kind:'toxic',x,y,r:(58+54*c)*(style.rMul||1)+(style.rAdd||0),t:0,life:style.life,tick:0,seed:rand(0,TAU),dmg:Math.max(2,totalAttackPower(player)*(style.dmgMul+0.08*c)*(style.dmgScale||1)*playerClassSkillPowerMul(player)),color:style.color,accent:style.accent});
   player.classSkillCd=classSkillMaxCooldown();
   burst(x,y,style.color,16+Math.round(12*c),220+120*c);
+  sfx.skillAlchemy();
   return true;
 }
 function castCurseSkill(chargeRatio){
   const c=clamp(Number(chargeRatio)||0,0.16,1);
-  const cost=Math.max(1,Math.round(player.maxhp*(0.05+0.08*c)*(Number(player.curseSurgeCostMul)||1)));
+  const cost=Math.max(1,Math.round(player.maxhp*(0.06+0.09*c)*(Number(player.curseSurgeCostMul)||1)));
   player.hp=Math.max(1,player.hp-cost);
-  player.curseSurgeT=4.0+(Number(player.curseSurgeDurationAdd)||0);
+  player.curseSurgeT=3.5+(Number(player.curseSurgeDurationAdd)||0);
   player.curseSurgePower=0.45+0.65*c+(Number(player.curseSurgePowerAdd)||0);
   player.classSkillCd=classSkillMaxCooldown();
   updateHpHud();
@@ -2275,27 +2416,35 @@ function castTankSkill(){
   if(player.tankHealGuardDuration>0) player.tankHealGuardT=Math.max(player.tankHealGuardT||0,Number(player.tankHealGuardDuration)||0);
   updateHpHud();
   burst(player.x,player.y,'#5dff9b',used>0?18:8,220);
+  sfx.skillTank();
   banner('응급 회복',used>0?'체력 +'+Math.round(used):'이미 최대 체력',900);
   return true;
+}
+function registerTutorialSkillUse(ok){
+  if(ok&&tutorialMode&&tutorial&&tutorial.active){
+    tutorial.skillUsed=true;
+    updateTutorialProgress();
+  }
+  return ok;
 }
 function beginClassSkill(){
   if(!classSkillReady()) return false;
   const id=player.classId||'basic_streamer';
   if(id==='basic_streamer'){
     mouseRightDown=false;
-    return castBasicSkill(1);
+    return registerTutorialSkillUse(castBasicSkill(1));
   }
   if(id==='rush_streamer'){
     mouseRightDown=false;
-    return castRushSkill(1);
+    return registerTutorialSkillUse(castRushSkill(1));
   }
   if(id==='curse_contractor'){
     mouseRightDown=false;
-    return castCurseSkill(1);
+    return registerTutorialSkillUse(castCurseSkill(1));
   }
   if(id==='tank_streamer'){
     mouseRightDown=false;
-    return castTankSkill();
+    return registerTutorialSkillUse(castTankSkill());
   }
   const spec=classSkillHoldSpec(id);
   mouseRightDown=true;
@@ -2321,6 +2470,10 @@ function updateClassSkillHold(dt,previewLocked){
   hold.t=Math.min(Math.max(0.01,Number(hold.max)||1),(Number(hold.t)||0)+dt);
   hold.fxT=(Number(hold.fxT)||0)+dt;
   const spec=classSkillHoldSpec(hold.id), charge=classSkillHoldRatio(hold);
+  if(charge>=1&&!hold.chargeReadyPlayed){
+    hold.chargeReadyPlayed=true;
+    sfx.chargeReady(hold.id);
+  }
   if(hold.id==='sniper_streamer'){
     player.sniperLaserChargeT=hold.t;
     player.sniperLaserChargeFxT=hold.fxT;
@@ -2350,15 +2503,16 @@ function releaseClassSkillAction(){
   cancelClassSkillHold();
   if(paused||previewLocked||player.stunT>0||player._adBlockT>0) return false;
   if(charge<(Number(hold.min)||0.12)) return false;
+  let used=false;
   switch(id){
-    case 'sniper_streamer': return firePlayerSniperLaser(charge);
-    case 'basic_streamer': return castBasicSkill(charge);
-    case 'rush_streamer': return castRushSkill(charge);
-    case 'alchemy_streamer': return castAlchemySkill(charge);
-    case 'curse_contractor': return castCurseSkill(charge);
-    case 'tank_streamer': return castTankSkill();
-    default: return false;
+    case 'sniper_streamer': used=firePlayerSniperLaser(charge); break;
+    case 'basic_streamer': used=castBasicSkill(charge); break;
+    case 'rush_streamer': used=castRushSkill(charge); break;
+    case 'alchemy_streamer': used=castAlchemySkill(charge); break;
+    case 'curse_contractor': used=castCurseSkill(charge); break;
+    case 'tank_streamer': used=castTankSkill(); break;
   }
+  return registerTutorialSkillUse(used);
 }
 cvs.addEventListener('mousemove',e=>{const p=canvasPos(e);mouseX=p.x;mouseY=p.y;});
 let autoFire=false;
@@ -3299,7 +3453,7 @@ function conditionalAttackFlat(p){
     flat+=curseStacks(p)*(Number(p.curseContractAtkFlat)||1.2);
   }
   if(p.curseSurgeT>0){
-    flat+=8*(Number(p.curseSurgePower)||1);
+    flat+=6*(Number(p.curseSurgePower)||1);
   }
   return flat;
 }
@@ -3626,7 +3780,7 @@ function getSpecialEffectTooltipData(effectKey){
     };
   };
   const simpleSpecialMap={
-    'crit-heal':{title:'치명타 회복',value:()=>'+'+Math.round(Number(player.critHeal)||0),description:'치명타 적중 시 체력을 회복합니다.',formulaText:'적용 방식: 치명타 적중 시 체력 '+Math.round(Number(player.critHeal)||0)+' 회복',kind:'regen'},
+    'crit-heal':{title:'치명타 회복',value:()=>'+'+Math.round(Number(player.critHeal)||0),description:'치명타 적중 시 체력을 회복합니다.',formulaText:'적용 방식: 치명타 적중 시 체력 '+Math.round(Number(player.critHeal)||0)+' 회복 · 내부쿨 0.4초',kind:'regen'},
     'crit-explode':{title:'치명타 폭발',value:'적용 중',description:'치명타 발생 시 작은 폭발을 일으킵니다.',formulaText:'적용 방식: 치명타 발생 위치에 추가 폭발 적용',kind:'crit'},
     'multi-shot':{title:'다중사격',value:()=>Math.max(1,Number(player.shots)||1)+'발',description:'한 번에 여러 발을 동시에 발사합니다.',formulaText:'적용 방식: 기본 발사에 추가 투사체를 합산',kind:'shots'},
     'pierce':{title:'관통',value:()=>Math.round(Number(player.pierce)||0)+'회',description:'탄이 적을 뚫고 지나갑니다.',formulaText:'적용 방식: 명중 후 남은 관통 횟수만큼 투사체 유지',kind:'shots'},
@@ -4556,7 +4710,7 @@ function updateSet3(b,dt){
       else { const pa=Math.atan2(player.y-b.y,player.x-b.x); for(let i=-2;i<=2;i++) eBullets.push({x:b.x,y:b.y,vx:Math.cos(pa+i*0.22)*255,vy:Math.sin(pa+i*0.22)*255,r:8,dmg:16,life:3.4,srcName:'케케로',style:'broadcast_signal'}); }
       b.attackT=1.15;
     }
-    sfx.shoot();
+    sfx.enemyShoot();
   }
   if(b.hp<=0) handleBossDefeat(b);
 }
@@ -7863,7 +8017,7 @@ function resetPlayer(){
     classSkillCd:0,classSkillHold:null,basicReloadT:0,basicFocusT:0,curseSurgeT:0,curseSurgePower:1,tankGuardT:0,tankGuardExploded:false,
     sniperLaserChargeT:0,sniperLaserCd:0,sniperLaserChargeFxT:0,curseContractClass:false,curseContractAtkFlat:0,curseContractGoldPerStack:0.06,
     // === 신규 퍼 스탯 ===
-    goldPower:0, goldPowerAtkFlat:0, statusDmgMul:0, statusDotDmgMul:0, critHeal:0, chainLightning:0,
+    goldPower:0, goldPowerAtkFlat:0, statusDmgMul:0, statusDotDmgMul:0, critHeal:0, critHealReadyAt:0, chainLightning:0,
     chainKillLightning:0, critExplodeMul:0, recoveryMul:1, roomClearHeal:0, roomEntryHeal:0, shopCostMul:1, timeStop:0,
     execThreshold:0, execDoom:false, execBlast:0, executeInstinctDmgMul:0, statusSpread:false,
     nonCritDmgMul:1, closeProjectileDmgMul:0, barrageFocus:false, extraProjectileCritChance:0,
@@ -7873,7 +8027,7 @@ function resetPlayer(){
     shadowBarrage:false, shadowBarrageExtraShots:1, shadowBarrageT:0, shadowBarrageCd:0, regenOverload:false,
     overhealShieldRate:0, overhealShieldCap:0.2, overhealShield:0, investmentReturn:false, investmentReturnAtkFlat:0,
     curseAffinity:false, corruptedContract:false, ominousAdaptation:false, ominousAdaptationAtkFlat:0, doomWorship:false, doomWorshipAtkFlat:0, _doomWorshipHpBase:null, _doomWorshipHpMul:1,
-    potionAmp:0, infiniteRefill:false, alchemySurge:false,
+    potionAmp:0, infiniteRefill:false, alchemySurge:false, _perkShadowStep:false,
     damageTakenMul:1, redPulseRegen:0, redPulseCd:0, redPulseBuff:0, gamblersBlade:false, greedContract:false, moveLockT:0, moveLockImmuneT:0,
     fixedMaxHp:0, levelFullHeal:false, unstableBroadcastT:0, cursedScreenT:0, delayInputT:0, brokenReloadT:0, shadowViewerT:0,
     training:Object.assign({},TRAINING_DEFAULTS), trainingAtkBonus:0, trainingSpeedBonus:0, trainingFocusBonus:0, trainingDefenseBonus:0,
@@ -9710,7 +9864,7 @@ function playerShoot(){
       const mid=Math.floor((pellets-1)/2);
       for(let i=0;i<pellets;i++){
         const off=pellets===1?0:(i-(pellets-1)/2)*(spread/Math.max(1,pellets-1));
-        addBullet(ang+off,0.48,{life:0.78,r:4.6,speedMul:0.94,extraProjectile:i!==mid});
+        addBullet(ang+off,0.58,{life:0.78,r:4.6,speedMul:0.94,extraProjectile:i!==mid});
       }
       if(player.backShot) addBullet(ang+Math.PI,0.52,{life:0.72,r:4.6,speedMul:0.92,extraProjectile:true});
       return;
@@ -9728,7 +9882,7 @@ function playerShoot(){
       return;
     }
     if(weapon==='cursed'){
-      addBullet(ang,1.08+curseRelicStacks(player)*0.05,{life:1.12,r:6.3,speedMul:1.04});
+      addBullet(ang,1.08+curseRelicStacks(player)*0.03,{life:1.12,r:6.3,speedMul:1.04});
       for(let i=0;i<extraShots;i++) addBullet(ang+(i%2?1:-1)*(0.13+0.03*i),0.62,{life:1.02,r:5.3,speedMul:1.02,extraProjectile:true});
       if(player.backShot) addBullet(ang+Math.PI,0.62,{life:1.02,r:5.3,speedMul:1.02,extraProjectile:true});
       return;
@@ -9756,7 +9910,7 @@ function playerShoot(){
   };
   fire();
   if(player.doubleTap>0 && Math.random()<player.doubleTap) fire();
-  sfx.shoot();
+  sfx.playerShoot(weapon);
 }
 
 function enemyBulletStyle(e){
@@ -10196,7 +10350,7 @@ function damageBoss(b,dmg,crit,fromBullet,bullet,opts){
   dmg*=executeInstinctMul(b,true);
   const bossBonus=statBonusFromMul(player.bossDmgMul)*(bullet&&bullet.minionShot?0.5:1);
   const dealt=dmg*statMulFromBonus(bossBonus,0.1)*(1-(b.armor||0));
-  b.hp-=dealt; b.hitT=0.08; burst(b.x,b.y,crit?'#ffd34d':'#fff',crit?8:5,crit?180:140); sfx.hit();
+  b.hp-=dealt; b.hitT=0.08; burst(b.x,b.y,crit?'#ffd34d':'#fff',crit?8:5,crit?180:140); sfx.hit(crit);
   applyShockStun(b);
   if(fromBullet) applyBulletStatuses(b);
   if(b.hp<=0) handleBossDefeat(b);
@@ -10219,9 +10373,12 @@ function damageEnemy(e,dmg,crit,fromBullet,bullet,opts){
     const bossBonus=statBonusFromMul(player.bossDmgMul)*(bullet&&bullet.minionShot?0.5:1);
     dmg*=statMulFromBonus(bossBonus,0.1);
   }
-  e.hp-=dmg*(1-(e.armor||0)); e.hitT=0.1; burst(e.x,e.y,crit?'#ffd34d':e.color,crit?8:4,crit?180:120); sfx.hit();
+  e.hp-=dmg*(1-(e.armor||0)); e.hitT=0.1; burst(e.x,e.y,crit?'#ffd34d':e.color,crit?8:4,crit?180:120); sfx.hit(crit);
   if(typeof GS!=='undefined'&&GS.dmgNum&&typeof spawnDmgNum==='function') spawnDmgNum(e.x,e.y-(e.r||10),Math.round(dmg*(1-(e.armor||0))),crit);
-  if(crit && player.critHeal>0){ healPlayerNoDrop(player.critHeal,player.x,player.y-player.r-18); } // 치명 흡혈
+  if(crit && player.critHeal>0 && performance.now()>=(Number(player.critHealReadyAt)||0)){
+    player.critHealReadyAt=performance.now()+400;
+    healPlayerNoDrop(player.critHeal,player.x,player.y-player.r-18);
+  } // 치명 흡혈: 내부쿨 0.4초
   if(e.midboss&&e.type==='yanggaeng'&&e.hp>0){
     const storyPhases=e._bossStoryPhases||{}, hpRatio=e.hp/Math.max(1,e.maxhp||e.hp);
     if(hpRatio<=0.65&&!storyPhases[2]&&!bossTalkActive()) armBossPhaseStory(e,2,'A면은 이미 끝났다.');
@@ -10240,7 +10397,7 @@ function damageEnemy(e,dmg,crit,fromBullet,bullet,opts){
   }
   if(fromBullet){
     applyBulletStatuses(e);
-    if(player.bulletExplode>0){ for(let k=enemies.length-1;k>=0;k--){ const o=enemies[k]; if(!o||o===e) continue; if(dist2(o.x,o.y,e.x,e.y)<8100) applyEnemyDirectDamage(o,player.bulletExplode,'#ff9b4d',{silent:true,explosion:true}); } burst(e.x,e.y,'#ff9b4d',8,150); }
+    if(player.bulletExplode>0){ const explosionR=Math.max(24,Number(player.weaponExplosionRadius)||90), explosionR2=explosionR*explosionR; for(let k=enemies.length-1;k>=0;k--){ const o=enemies[k]; if(!o||o===e) continue; if(dist2(o.x,o.y,e.x,e.y)<explosionR2) applyEnemyDirectDamage(o,player.bulletExplode,'#ff9b4d',{silent:true,explosion:true}); } burst(e.x,e.y,'#ff9b4d',8,150); }
     if(player.chainLightning>0){ let cnt=0; for(let k=enemies.length-1;k>=0&&cnt<player.chainLightning;k--){ const o=enemies[k]; if(!o||o===e) continue; if(dist2(o.x,o.y,e.x,e.y)<14400){ applyEnemyDirectDamage(o,dmg*0.5,'#7ad7ff',{silent:true}); cnt++; } } if(cnt>0) burst(e.x,e.y,'#7ad7ff',6,160); }
     if(crit && player.critExplodeMul>0){ const boom=relicAttackPower(player.critExplodeMul); for(let k=enemies.length-1;k>=0;k--){ const o=enemies[k]; if(!o||o===e) continue; if(dist2(o.x,o.y,e.x,e.y)<6400) applyEnemyDirectDamage(o,boom,'#ffb347',{silent:true,explosion:true}); } burst(e.x,e.y,'#ffb347',12,210); }
   }
@@ -11091,7 +11248,7 @@ function updateBoss(dt){
       if(Math.random()<0.4){ b.x=rand(80,W-80); b.y=rand(80,260); burst(b.x,b.y,b.color,20,260); chatRandom("렉걸렸다 ㅋㅋ"); }
       enemyShootAt(b,player.x,player.y,260,9);
     }
-    sfx.shoot();
+    sfx.enemyShoot();
   }
   if(b.hp<=0) handleBossDefeat(b);
 }
@@ -14065,10 +14222,10 @@ function update(dt){
   // 튜토리얼 완료 판정 + 잠시 뒤 닫기
   if(tutorial&&tutorial.active){
     updateTutorialProgress();
-    if(tutorial.moved&&tutorial.shot&&tutorial.dodged&&tutorial.controlsSeen&&!tutorial.doneAt) tutorial.doneAt=performance.now()||1;
+    if(tutorial.moved&&tutorial.shot&&tutorial.dodged&&tutorial.skillUsed&&tutorial.controlsSeen&&!tutorial.doneAt) tutorial.doneAt=performance.now()||1;
     if(tutorial.doneAt&&performance.now()-tutorial.doneAt>2600) tutorial.active=false;
   }
-  if(tutorialMode && tutorial && tutorial.moved && tutorial.shot && tutorial.dodged && tutorial.controlsSeen && !tutorialDoneFlag){ tutorialDoneFlag=true; finishTutorial(); }
+  if(tutorialMode && tutorial && tutorial.moved && tutorial.shot && tutorial.dodged && tutorial.skillUsed && tutorial.controlsSeen && !tutorialDoneFlag){ tutorialDoneFlag=true; finishTutorial(); }
   // 클리어 판정 (레벨업 등 오버레이 중엔 보류)
   if(state==='play' && !tutorialMode && !roomCleared && enemies.length===0 && !boss && bossBanner<=0 && combatVariantAllowsEnemyClear()){
     roomCleared=true; roomIsMidboss=false;
@@ -14695,11 +14852,12 @@ function onCombatCleared(){
     metaToast('📺 클리어 보너스 +10G',{tone:'gold',ms:1100});
   }
   combatXpMul=1;
-  if(player.infiniteRefill&&Math.random()<0.20){
+  if(player.infiniteRefill&&Math.random()<0.30){
     const pot=rollPotion();
     if(addPotion(pot)) setTimeout(()=>metaToast(pot.name+' 획득',{icon:'potion',tone:'potion',ms:1500}),180);
   }
   const eliteKind=currentEliteKind();
+  if(t==='fight'||t==='elite') sfx.roomClear();
   banner('CLEAR', t==='boss'?'보스 격파!':(t==='midboss'?'중간보스 격파!':(t==='elite'?eliteClearText(eliteKind):'정리 완료')), 1000);
   if(t==='fight'&&!combatTookHit) unlockAchievement('no_hit_room');
   if(t==='fight'&&roomStartedAt&&performance.now()-roomStartedAt<=10000) unlockAchievement('quick_room_clear');
@@ -15082,7 +15240,7 @@ function eventIsTransformableLevelPerk(pk){
 function eventUndoLevelPerkEffect(pk){
   if(!eventIsTransformableLevelPerk(pk)) return false;
   switch(pk.name){
-    case '공격 특화': player.dmg-=2; break;
+    case '공격 특화': player.dmg-=1.5; break;
     case '속사 특화': player.fireAdd-=0.10; break;
     case '민첩 특화': player.spd-=12; break;
     case '활력': player.maxhp=Math.max(1,player.maxhp-15); player.hp=Math.min(player.hp,player.maxhp); break;
@@ -15110,16 +15268,16 @@ function eventUndoLevelPerkEffect(pk){
     case '점화': player.statusDotDmgMul-=0.10; break;
     case '부식 표식': player.statusDmgMul-=0.08; break;
     case '맹공': player.dmg-=4; break;
-    case '그림자 보법': player.dodgeCdMul+=0.15; break;
+    case '그림자 보법': player.dodgeCdMul+=0.25; player._perkShadowStep=false; break;
     case '근접 난사': player.closeProjectileDmgMul-=0.20; break;
     case '맹독 가열': player.statusDotDmgMul-=0.20; player.dmg+=0.5; break;
     case '저체력 폭주': player.lowHpAtkFlat=Math.max(0,(Number(player.lowHpAtkFlat)||0)-8); break;
     case '처단': player.dodgeBlast-=30; break;
-    case '분노': player.crowdRageAtkFlat=Math.max(0,(Number(player.crowdRageAtkFlat)||0)-0.8); break;
-    case '치명 흡혈': player.critHeal-=3; break;
+    case '분노': player.crowdRageAtkFlat=Math.max(0,(Number(player.crowdRageAtkFlat)||0)-0.5); break;
+    case '치명 흡혈': player.critHeal=0; player.critHealReadyAt=0; break;
     case '치명 일격': player.critChance-=0.20; player.critMult-=0.5; break;
     case '폭주': player.dmg-=6; break;
-    case '처형 본능': player.executeInstinctDmgMul-=0.25; break;
+    case '처형 본능': player.executeInstinctDmgMul-=0.40; break;
     case '다중 사격': player.shots-=1; break;
     case '방송 폭주': player.dmg-=8; player.fireAdd-=0.20; player.damageTakenMul-=0.15; break;
     default: return false;
@@ -16537,7 +16695,7 @@ const EVENTS=[
    ]},
   {tag:'📚 금지된 서적',title:'봉인된 책',body:'책장을 넘기면 글자가 피부 위로 파고든다. 지식은 피를 요구한다.',
    choices:[
-     {t:'읽기 → 체력 10% 소모 후 영구 강화',f:()=>{eventHpCostPct(0.10);const result=pick(['atk','crit','fire']);if(result==='atk'){player.dmg+=2;banner('금서의 지식','공격력 +2',1500);}else if(result==='crit'){player.critChance=Math.min(1,player.critChance+0.08);banner('금서의 지식','치명타 +8%',1500);}else{player.fireAdd+=0.12;banner('금서의 지식','발사속도 +12%',1500);}updateHUD();finishNode();}},
+     {t:'읽기 → 체력 10% 소모 후 영구 강화',f:()=>{eventHpCostPct(0.10);const result=pick(['atk','crit','fire']);if(result==='atk'){player.dmg+=2;banner('금서의 지식','공격력 +2',1500);}else if(result==='crit'){player.critChance=Math.min(CRIT_CHANCE_CAP,player.critChance+0.08);banner('금서의 지식','치명타 +8%',1500);}else{player.fireAdd+=0.12;banner('금서의 지식','발사속도 +12%',1500);}updateHUD();finishNode();}},
      {t:'무시',f:()=>finishNode()},
    ]},
   {tag:'👑 왕의 보관함',title:'금빛 보관함',body:'묵직한 자물쇠가 왕관 모양으로 빛난다. 정식 열쇠는 비싸고, 힘으로 열면 피를 본다.',
@@ -17410,7 +17568,7 @@ const EXTRA_PERK_ICON_SPECS=[
 EXTRA_PERK_ICON_SPECS.forEach(([n,c,c2,m])=>{ if(!PERK_ICONS[n]) PERK_ICONS[n]=miniPixelIconSrc(c,c2,m); });
 const LEVEL_PERKS=[
   // ===== 일반 Common =====
-  {g:'common',icon:'⚔️',name:'공격 특화',desc:'공격력 +2',apply:p=>{p.dmg+=2;}},
+  {g:'common',icon:'⚔️',name:'공격 특화',desc:'공격력 +1.5',apply:p=>{p.dmg+=1.5;}},
   {g:'common',icon:'⚡',name:'속사 특화',desc:'발사 속도 +10%',apply:p=>{p.fireAdd+=0.10;}},
   {g:'common',icon:'🥾',name:'민첩 특화',desc:'이동 속도 +12',apply:p=>{p.spd+=12;}},
   {g:'common',icon:'❤️',name:'활력',desc:'최대 체력 +15, 10 회복',apply:p=>{p.maxhp+=15;healPlayer(10,player.x,player.y);}},
@@ -17421,7 +17579,7 @@ const LEVEL_PERKS=[
   {g:'rare',icon:'📈',name:'경험치 부스트',desc:'경험치 획득량 +15%',apply:p=>{p.xpMul+=0.15;}},
   {g:'common',icon:'💸',name:'도네 알림',desc:'처치 시 골드 폭탄 5%',apply:p=>{p.donateChance+=0.05;}},
   // ===== 희귀 Rare =====
-  {g:'common',icon:'🎯',name:'정밀 조준',desc:'치명타 확률 +7%',apply:p=>{p.critChance+=0.07;}},
+  {g:'common',icon:'🎯',name:'정밀 조준',desc:'치명타 확률 +7%',skip:p=>clamp(Number(p.critChance)||0,0,CRIT_CHANCE_CAP)>=CRIT_CHANCE_CAP,apply:p=>{p.critChance=Math.min(CRIT_CHANCE_CAP,(Number(p.critChance)||0)+0.07);}},
   {g:'rare',icon:'🩸',name:'흡혈',desc:'삭제된 레벨업 특성',removed:true,skip:()=>true,apply:p=>{}},
   {g:'rare',icon:'🔔',name:'충격파',desc:'기절 확률 +5%',apply:p=>{p.stunChance+=0.05;}},
   {g:'rare',icon:'🍢',name:'관통',desc:'관통 +1',apply:p=>{p.pierce+=1;}},
@@ -17446,7 +17604,7 @@ const LEVEL_PERKS=[
   {g:'epic',icon:'⚔️',name:'맹공',desc:'공격력 +4',apply:p=>{p.dmg+=4;}},
   {g:'epic',icon:'💣',name:'연쇄 폭발',desc:'삭제된 레벨업 특성',removed:true,skip:()=>true,apply:p=>{}},
   {g:'epic',icon:'🧛',name:'흡혈귀',desc:'삭제된 레벨업 특성',removed:true,skip:()=>true,apply:p=>{}},
-  {g:'epic',icon:'🌀',name:'그림자 보법',desc:'회피 쿨타임 -15%',apply:p=>{p.dodgeCdMul-=0.15;}},
+  {g:'epic',icon:'🌀',name:'그림자 보법',desc:'회피 쿨타임 -25%',skip:p=>p._perkShadowStep,apply:p=>{p._perkShadowStep=true;p.dodgeCdMul-=0.25;}},
   {g:'rare',icon:'🔙',name:'쌍방향 사격',desc:'뒤로도 1발, 공격력 +2',skip:p=>p.backShot,apply:p=>{p.backShot=true;p.dmg+=2;}},
   {g:'epic',icon:'🔫',name:'더블탭',desc:'삭제된 레벨업 특성',removed:true,skip:()=>true,apply:p=>{}},
   {g:'epic',icon:'✹',name:'근접 난사',desc:'근접 투사체 +20% (보스 절반)',apply:p=>{p.closeProjectileDmgMul+=0.20;}},
@@ -17454,8 +17612,8 @@ const LEVEL_PERKS=[
   {g:'legend',icon:'🩹',name:'막판 정신력',desc:'1회 체력1로 버티기',skip:p=>p.lastStand,apply:p=>{p.lastStand=true;}},
   {g:'epic',icon:'🆘',name:'저체력 폭주',desc:'체력 30% 이하일 때 공격력 +8',skip:p=>p.lowHpAtkFlat>0,apply:p=>{p.lowHpAtkFlat=(Number(p.lowHpAtkFlat)||0)+8;}},
   {g:'epic',icon:'🌪️',name:'처단',desc:'회피 시 주변에 피해 30 충격파 발생',skip:p=>p.dodgeBlast>0,apply:p=>{p.dodgeBlast+=30;}},
-  {g:'epic',icon:'😤',name:'분노',desc:'주변 적 1마리당 공격력 +0.8, 최대 10마리. 찍을 때마다 +0.8씩 누적.',apply:p=>{p.crowdRageAtkFlat=(Number(p.crowdRageAtkFlat)||0)+0.8;}},
-  {g:'epic',icon:'💉',name:'치명 흡혈',desc:'치명타 적중 시 체력 3 회복',apply:p=>{p.critHeal+=3;}},
+  {g:'epic',icon:'😤',name:'분노',desc:'주변 적 1마리당 공격력 +0.5, 최대 10마리. 찍을 때마다 +0.5씩 누적.',apply:p=>{p.crowdRageAtkFlat=(Number(p.crowdRageAtkFlat)||0)+0.5;}},
+  {g:'epic',icon:'💉',name:'치명 흡혈',desc:'치명타 적중 시 체력 2 회복 (내부쿨 0.4초)',skip:p=>p.critHeal>0,apply:p=>{p.critHeal=Math.max(Number(p.critHeal)||0,2);p.critHealReadyAt=0;}},
   {g:'epic',icon:'⚡',name:'감전 연쇄',desc:'삭제된 레벨업 특성',removed:true,skip:()=>true,apply:p=>{}},
   {g:'epic',icon:'✂️',name:'클립 박제',desc:'삭제된 레벨업 특성',removed:true,skip:()=>true,apply:p=>{}},
   // ===== 전설 Legend =====
@@ -17466,7 +17624,7 @@ const LEVEL_PERKS=[
   {g:'legend',icon:'🔵',name:'재충전 보호막',desc:'30초마다 1회 피격 무효',skip:p=>p.shieldRegen>0,apply:p=>{p.shieldRegen=30;}},
   {g:'legend',icon:'⚰️',name:'사형 선고',desc:'삭제된 레벨업 특성',removed:true,skip:()=>true,apply:p=>{}},
   {g:'legend',icon:'🌬️',name:'확산',desc:'상태이상 적 처치 시 주변에 같은 효과 전파',skip:p=>p.statusSpread,apply:p=>{p.statusSpread=true;}},
-  {g:'legend',icon:'☠',name:'처형 본능',desc:'체력 25% 이하 적 피해 +25% (보스 절반)',apply:p=>{p.executeInstinctDmgMul+=0.25;}},
+  {g:'legend',icon:'☠',name:'처형 본능',desc:'체력 25% 이하 적 피해 +40% (보스 절반)',apply:p=>{p.executeInstinctDmgMul+=0.40;}},
   // ===== 신화 Myth =====
   {g:'legend',icon:'🔱',name:'다중 사격',desc:'투사체 +1발',apply:p=>{p.shots+=1;}},
   {g:'mythic',icon:'🍷',name:'얇은 유리 대포',desc:'공격력 +10, 최대 체력 -30%',skip:p=>p.glassCannon,apply:p=>{p.glassCannon=true;p.dmg+=10;p.maxhp=Math.max(1,Math.round(p.maxhp*0.7));p.hp=Math.min(p.hp,p.maxhp);}},
@@ -17478,7 +17636,7 @@ const LEVEL_PERKS=[
   {g:'mythic',icon:'🕯️',name:'파멸 숭배',desc:'저주 스택 1개당 공격력 +3.2, 최대체력 -5% (최대 5스택)',skip:p=>p.doomWorship,apply:p=>{p.doomWorship=true;p.doomWorshipAtkFlat=3.2;}},
   {g:'rare',icon:'🧪',name:'약효 증폭',desc:'포션 회복량과 버프 효과 +15%',skip:p=>p._perkPotionAmp,apply:p=>{p._perkPotionAmp=true;p.potionAmp=(Number(p.potionAmp)||0)+0.15;}},
   {g:'legend',icon:'🔥',name:'연금 폭주',desc:'포션 사용 후 6초간 공격력 +5',skip:p=>p.alchemySurge,apply:p=>{p.alchemySurge=true;}},
-  {g:'mythic',icon:'♾️',name:'무한 리필',desc:'방 클리어 시 20% 확률로 랜덤 포션 획득',skip:p=>p.infiniteRefill,apply:p=>{p.infiniteRefill=true;}},
+  {g:'mythic',icon:'♾️',name:'무한 리필',desc:'방 클리어 시 30% 확률로 랜덤 포션 획득',skip:p=>p.infiniteRefill,apply:p=>{p.infiniteRefill=true;}},
 ];
 const TREE_ONLY_PERK_IDS=new Set([
   'sharp_senses','weakpoint_strike','red_pulse','gamblers_blade',
@@ -17585,12 +17743,12 @@ function perkBuildMetaText(pk){
 }
 function perkTooltipText(pk){
   const lines=[pk.name, pk.desc, perkBuildMetaText(pk)];
-  if(perkHasTag(pk,'crit')) lines.push('치명타 직접 피해 적용 · 확률 상한 60% · 피해 상한 350%');
+  if(perkHasTag(pk,'crit')) lines.push('치명타 직접 피해 적용 · 확률 상한 '+Math.round(CRIT_CHANCE_CAP*100)+'% · 피해 상한 '+Math.round(CRIT_MULT_CAP*100)+'%');
   if(pk.id==='red_pulse') lines.push('발동: 치명타 적중 · 지속 3초 · 내부쿨 6초');
   if(pk.id==='shotgun_mastery') lines.push('조건: 가까운 거리 · 보스 대상 보너스 절반');
   if(pk.id==='barrage_focus') lines.push('보정: 기본 100/35/20/10 → 100/45/30/15');
   if(pk.id==='elemental_overload') lines.push('조건: 대상이 상태이상일 때');
-  if(pk.id==='corrosive_spread') lines.push('처치 시 독/화상 전이 강화 · 공격력 -1.5');
+  if(pk.id==='corrosive_spread') lines.push('처치 시 독/화상 전이 강화 · 상태이상 피해 +25% · 공격력 -1');
   if(pk.id==='dodge_reload') lines.push('발동: 회피 후 다음 탄 · 지속 2초');
   if(pk.id==='perfect_dodge') lines.push('발동: 회피 이후 1초 무피격 · 지속 3초');
   if(pk.id==='shadow_barrage') lines.push('발동: 회피 후 1초 · 투사체 +2 · 회피 쿨다운 +25%');
@@ -17909,7 +18067,7 @@ const SMALL_REWARDS=[
   {icon:'⚡',name:'방아쇠 정비',desc:'발사 속도 +4%',apply:()=>{player.fireAdd+=0.04;banner('발사 속도 +4%','',1000);}},
   {icon:'🥾',name:'가벼운 발놀림',desc:'이동 속도 +8',apply:()=>{player.spd+=8;banner('이동 속도 +8','',1000);}},
   {icon:'🛡️',name:'방어구 정비',desc:'받는 피해 -2%',apply:()=>{player.armor=Math.min(0.85,player.armor+0.02);banner('받는 피해 -2%','',1000);}},
-  {icon:'🎯',name:'조준경',desc:'치명타 확률 +2%',apply:()=>{player.critChance=Math.min(1,player.critChance+0.02);banner('치명타 +2%','',1000);}},
+  {icon:'🎯',name:'조준경',desc:'치명타 확률 +2%',apply:()=>{player.critChance=Math.min(CRIT_CHANCE_CAP,player.critChance+0.02);banner('치명타 +2%','',1000);}},
   {icon:'💥',name:'탄 개조',desc:'투사체 크기 +5%',apply:()=>{player.bulletSize+=0.05;banner('투사체 크기 +5%','',1000);}},
   {icon:'🌿',name:'활력 물약',desc:'최대 체력 +12, 12 회복',apply:()=>{player.maxhp+=12;healPlayer(12,player.x,player.y);banner('최대 체력 +12','',1000);}},
   {icon:'🔋',name:'추진제',desc:'투사체 속도 +5%',apply:()=>{player.bulletSpeedMul+=0.05;banner('투사체 속도 +5%','',1000);}},
@@ -17947,7 +18105,9 @@ function offerRelics(n,tag,sub,after,opts){
   const cont=$('relicChoices');
   cont.innerHTML='';
   $('relicTag').textContent=tag||"유물 획득";
-  $('relicSub').textContent=sub||"하나만 챙겨라. 채팅이 지켜본다.";
+  const firstRelicChoice=player.relics.length===0;
+  const relicSubText=sub||"하나만 챙겨라. 채팅이 지켜본다.";
+  $('relicSub').textContent=relicSubText+(firstRelicChoice?' · 첫 선택: 현재 직업의 강점을 키우는 효과를 우선 보세요.':'');
   picks.forEach(r=>{
     const el=document.createElement('button');
     el.className='choice relic-'+(TIER_OF[r.id]||'rare');
@@ -20090,6 +20250,14 @@ function drawPlayer(){
   ctx.globalAlpha=1;
   ctx.restore();
 }
+function tutorialSkillGuide(short){
+  const c=playerClassById(player&&player.classId);
+  const hold=c.weaponType==='sniper'||c.weaponType==='toxic';
+  if(short) return hold?'우클릭 홀드 → 떼기':'마우스 우클릭';
+  return hold
+    ? c.name+'의 '+classSkillName()+'을 우클릭으로 충전한 뒤 떼세요.'
+    : c.name+'의 '+classSkillName()+'을 마우스 우클릭으로 사용하세요.';
+}
 function drawTutorial(){
   if(!tutorial||!tutorial.active||act!==1||state!=='play') return;
   const step=tutorial.step||'move';
@@ -20114,7 +20282,8 @@ function drawTutorial(){
     ['1. 이동','초록 지점까지 이동',tutorial.moved],
     ['2. 조준 발사','마우스 → 클릭',tutorial.shot],
     ['3. 회피','SPACE: 무적 돌진',tutorial.dodged],
-    ['4. 보조 키',(tutorial.controlsC?'C✓ 능력치':'C 능력치')+' / '+(tutorial.controlsEsc?'ESC✓ 일시정지':'ESC 일시정지'),tutorial.controlsSeen]
+    ['4. 직업 스킬',tutorialSkillGuide(true),tutorial.skillUsed],
+    ['5. 보조 키',(tutorial.controlsC?'C✓ 능력치':'C 능력치')+' / '+(tutorial.controlsEsc?'ESC✓ 일시정지':'ESC 일시정지'),tutorial.controlsSeen]
   ];
   const activeText=step==='move'
     ? '초록 원 안으로 이동하세요.'
@@ -20122,17 +20291,21 @@ function drawTutorial(){
     ? '허수아비를 조준하고 클릭하세요.'
     : step==='dodge'
     ? 'SPACE는 잠시 무적 돌진입니다.'
+    : step==='skill'
+    ? tutorialSkillGuide(false)
     : step==='controls'
     ? 'C와 ESC를 각각 눌러보세요.'
     : '튜토리얼 완료! 이제 실전으로 넘어갑니다.';
-  const x=22,y=54, w=Math.min(430,W-44), compact=false, h=350;
-  const activeIdx={move:0,shoot:1,dodge:2,controls:3,done:4}[step]||0;
-  const tip=tutorial.moved&&tutorial.shot&&tutorial.dodged&&tutorial.controlsSeen
+  const x=22,y=54, w=Math.min(430,W-44), compact=false, h=398;
+  const activeIdx={move:0,shoot:1,dodge:2,skill:3,controls:4,done:5}[step]||0;
+  const tip=tutorial.moved&&tutorial.shot&&tutorial.dodged&&tutorial.skillUsed&&tutorial.controlsSeen
     ? '완료! 실전으로 넘어갑니다.'
     : step==='shoot'&&tutorial.dummySpawned
     ? '팁: 한 번 클릭하면 자동 발사 ON'
     : step==='dodge'
     ? '팁: 회피 중 잠깐 피해 무시'
+    : step==='skill'
+    ? '팁: 직업 스킬은 우클릭, 일부 직업은 홀드 차지'
     : step==='controls'
     ? '팁: C는 능력치, ESC는 일시정지입니다.'
     : '팁: 초록 원에 들어가세요.';
@@ -20645,7 +20818,8 @@ function drawHazards(){
     if(h.kind==='slowfield'){
       if(h.t<h.warnT){
         const k=h.t/h.warnT; ctx.save(); ctx.globalAlpha=0.4+0.3*Math.abs(Math.sin(h.t*16));
-        ctx.strokeStyle='#a05bd0'; ctx.lineWidth=2.5; ctx.beginPath(); ctx.arc(h.x,h.y,h.r,0,TAU); ctx.stroke();
+        ctx.strokeStyle='#ff5a5f'; ctx.lineWidth=3; ctx.setLineDash([9,6]); ctx.beginPath(); ctx.arc(h.x,h.y,h.r,0,TAU); ctx.stroke(); ctx.setLineDash([]);
+        ctx.strokeStyle='#c98bff'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(h.x,h.y,h.r*(1-k*0.65),0,TAU); ctx.stroke();
         ctx.fillStyle='rgba(120,50,160,'+(0.06+0.12*k)+')'; ctx.beginPath(); ctx.arc(h.x,h.y,h.r*k,0,TAU); ctx.fill(); ctx.restore();
       } else {
         const a=Math.min(clamp((h.t-h.warnT)/0.5,0,1),clamp((h.life-h.t)/1.0,0,1)), sd=h.seed||0;
@@ -20657,7 +20831,7 @@ function drawHazards(){
         for(let ring=1;ring<=2;ring++){ ctx.globalAlpha=0.26*a; ctx.beginPath(); ctx.ellipse(h.x,h.y,h.r*ring/2.5,h.r*0.82*ring/2.5,0,0,TAU); ctx.stroke(); }
         ctx.globalAlpha=0.55*a; ctx.fillStyle='#7a3f5f';
         for(let k=0;k<5;k++){ const ka=k/5*TAU+sd*1.7; ctx.beginPath(); ctx.arc(h.x+Math.cos(ka)*h.r*0.5,h.y+Math.sin(ka)*h.r*0.4,h.r*0.13,0,TAU); ctx.fill(); }
-        ctx.globalAlpha=0.5*a; ctx.strokeStyle='#9a5fc0'; ctx.lineWidth=2; ctx.beginPath(); ctx.ellipse(h.x,h.y,h.r,h.r*0.82,0,0,TAU); ctx.stroke();
+        ctx.globalAlpha=0.72*a; ctx.strokeStyle='#ff5a5f'; ctx.lineWidth=2.5; ctx.setLineDash([9,6]); ctx.beginPath(); ctx.ellipse(h.x,h.y,h.r,h.r*0.82,0,0,TAU); ctx.stroke(); ctx.setLineDash([]);
         ctx.restore();
       }
       continue;
@@ -20794,6 +20968,7 @@ function drawHazards(){
       pxBlob(h.x,h.y,h.r,h.r*0.6,Math.max(4,h.r*0.34),col,_shade(col,-0.4));
       ctx.globalAlpha=0.3*a; ctx.fillStyle=_shade(col,0.4);
       for(let k=0;k<3;k++){ const ka=k/3*TAU+(h.seed||0)+h.t*1.2, bx=h.x+Math.cos(ka)*h.r*0.45, by=h.y+Math.sin(ka)*h.r*0.28, g=Math.max(3,h.r*0.2); ctx.fillRect(Math.round(bx-g/2),Math.round(by-g/2),Math.ceil(g),Math.ceil(g)); }
+      ctx.globalAlpha=0.78*a; ctx.strokeStyle='#ff5a5f'; ctx.lineWidth=2.5; ctx.setLineDash([9,6]); ctx.beginPath(); ctx.ellipse(h.x,h.y,h.r,h.r*0.6,0,0,TAU); ctx.stroke(); ctx.setLineDash([]);
       ctx.restore(); continue;
     }
     if(h.kind==='safezone'){
@@ -20832,7 +21007,8 @@ function drawHazards(){
     const ht=Number.isFinite(h.t)?h.t:0;
     if(ht<hwarn){
       const k=clamp(ht/hwarn,0,1); ctx.save(); ctx.globalAlpha=0.45+0.35*Math.abs(Math.sin(ht*22));
-      ctx.strokeStyle='#ff7a2a'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(hx,hy,hr,0,TAU); ctx.stroke();
+      ctx.strokeStyle='#ff5a5f'; ctx.lineWidth=3.5; ctx.setLineDash([10,7]); ctx.beginPath(); ctx.arc(hx,hy,hr,0,TAU); ctx.stroke(); ctx.setLineDash([]);
+      ctx.globalAlpha=0.35+0.45*k; ctx.strokeStyle='#ffffff'; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(hx,hy,Math.max(7,hr*(1-k)),0,TAU); ctx.stroke();
       ctx.fillStyle='rgba(255,90,20,'+clamp(0.10+0.16*k,0,1)+')'; ctx.beginPath(); ctx.arc(hx,hy,hr*k,0,TAU); ctx.fill(); ctx.restore();
     } else {
       const hlive=Math.max(0.01,Number.isFinite(h.liveT)?h.liveT:0.45);
@@ -20840,7 +21016,8 @@ function drawHazards(){
       const g=ctx.createLinearGradient(hx,hy-94,hx,hy+12);
       g.addColorStop(0,'rgba(255,230,120,0)'); g.addColorStop(0.55,'rgba(255,150,40,'+a+')'); g.addColorStop(1,'rgba(255,70,30,'+a+')');
       ctx.fillStyle=g; ctx.fillRect(hx-hr*0.62,hy-94,hr*1.24,106);
-      ctx.fillStyle='rgba(255,120,40,'+clamp(a*0.7,0,1)+')'; ctx.beginPath(); ctx.ellipse(hx,hy,hr,hr*0.42,0,0,TAU); ctx.fill(); ctx.restore();
+      ctx.fillStyle='rgba(255,120,40,'+clamp(a*0.7,0,1)+')'; ctx.beginPath(); ctx.ellipse(hx,hy,hr,hr*0.42,0,0,TAU); ctx.fill();
+      ctx.globalAlpha=clamp(a*0.9,0,1); ctx.strokeStyle='#ff5a5f'; ctx.lineWidth=3; ctx.beginPath(); ctx.ellipse(hx,hy,hr,hr*0.42,0,0,TAU); ctx.stroke(); ctx.restore();
     }
   }
 }
@@ -22557,7 +22734,7 @@ function spEffects(p){
   add(p.nonCritDmgMul<1,'🎲','비치명타 피해 '+pc(p.nonCritDmgMul),'도박사의 칼날','치명타 확률/피해 증가 대신 비치명타 피해 감소','noncrit-penalty');
   add(p.redPulseRegen>0,'🩸','붉은 맥박'+(p.redPulseBuff>0?timeLabel(p.redPulseBuff):''),'붉은 맥박','치명타 적중 시 재생 +'+p.redPulseRegen+'/초, 3초 지속, 내부쿨 6초','red-pulse');
   add(p.redPulseBuff>0,'🌿','맥박 재생 +'+p.redPulseRegen+'/초'+timeLabel(p.redPulseBuff),'붉은 맥박','현재 발동 중인 치명타 재생 버프','red-pulse-active');
-  add(p.critHeal>0,'💉','치명타 회복 +'+p.critHeal,'치명 흡혈','치명타 적중 시 체력 '+p.critHeal+' 회복','crit-heal');
+  add(p.critHeal>0,'💉','치명타 회복 +'+p.critHeal,'치명 흡혈','치명타 적중 시 체력 '+p.critHeal+' 회복 · 내부쿨 0.4초','crit-heal');
   add(p.critExplodeMul>0,'🧨','치명타 폭발','작렬탄','치명타 발생 시 작은 폭발','crit-explode');
 
   add(p.closeProjectileDmgMul>0,'🔱','근거리 투사체 +'+pc(p.closeProjectileDmgMul),'근거리 투사체','가까운 거리 투사체 피해 증가. 보스 대상은 절반','shotgun-mastery');
@@ -22589,7 +22766,7 @@ function spEffects(p){
   add(p.statusCritChance>0,'🔥','원소 과부하 +'+pc(p.statusCritChance),'원소 과부하','상태이상 걸린 적에게 치명타 확률 증가. 치명타 상한 적용','elemental-overload');
   add(p.chillCritChance>0,'❄️','냉기 각인 +'+pc(p.chillCritChance),'냉기 각인','둔화된 적에게 치명타 확률 증가. 치명타 상한 적용','frost-mark');
   add(p.poisonDotDmgMul>0,'🟢','맹독 숙성 +'+pc(p.poisonDotDmgMul),'맹독 숙성','독의 초당 피해가 증가합니다. 화상 피해에는 적용되지 않음','venom-mature');
-  add(p.corrosiveSpread,'🟢','부식 확산','부식 확산','상태이상 적 처치 시 독/화상 전이 강화. 공격력 -1.5','corrosive-spread');
+  add(p.corrosiveSpread,'🟢','부식 확산','부식 확산','상태이상 적 처치 시 독/화상 전이 강화. 상태이상 피해 +25%, 공격력 -1','corrosive-spread');
   add(p.statusSpread,'🌬️','상태 확산','확산','상태이상 적 처치 시 주변 전파','status-spread');
   add(p.chainLightning>0,'⚡','연쇄 번개 '+p.chainLightning,'연쇄 번개','명중 시 근처 적에게 연쇄 번개','chain-lightning');
   add(p.chainKillLightning>0,'⚡','처치 체인 번개','처치 체인 번개','처치 시 가장 가까운 적에게 1회 체인 번개. 처치 연쇄 폭딜은 직접 피해로 제한','kill-chain-lightning');
@@ -22627,7 +22804,7 @@ function spEffects(p){
   add(p.doomWorship,'🕯️','파멸 숭배 +'+flat(curseStacks(p)*(Number(p.doomWorshipAtkFlat)||3.2)),'파멸 숭배','저주 스택 1개당 공격력 +3.2, 최대체력 -5%, 최대 5스택','doom-worship');
   add(p.potionAmp>0,'🧪','약효 증폭 +'+pc(p.potionAmp),'약효 증폭','포션 회복량과 버프 효과 증가. 지속시간 제외','potion-amp');
   add(p.alchemySurge,'🔥','연금 폭주','연금 폭주','포션 사용 후 6초간 공격력 +5','alchemy-surge');
-  add(p.infiniteRefill,'♾️','무한 리필','무한 리필','방 클리어 시 20% 확률로 랜덤 포션 획득','infinite-refill');
+  add(p.infiniteRefill,'♾️','무한 리필','무한 리필','방 클리어 시 30% 확률로 랜덤 포션 획득','infinite-refill');
   add(((p.zoneRadiusMul&&p.zoneRadiusMul!==1)||(p.zoneDmgMul&&p.zoneDmgMul!==1)||(p.alchemyZoneRadiusMulAdd||0)||(p.alchemyZoneDmgMulAdd||0)),'🌫️',playerZoneModText(p),'장판 보정','플레이어 장판 범위 / 직접 장판 피해 보정','zone-mod');
   add(p.goldPowerAtkFlat>0,'💸','골드 공격 보너스','골드 공격 보너스','보유 골드 100당 공격력 +'+flat(Number(p.goldPowerAtkFlat)||0)+'. 최대 +9.6','gold-power');
   add(Math.abs(playerGoldGainMul(p)-1)>0.005,'🧲','골드 '+pc(playerGoldGainMul(p)-1),'골드 획득','처치 골드 획득량 변화','goldGain');
@@ -22636,10 +22813,10 @@ function spEffects(p){
   add(p.noPotionAtkFlat>0,'🏆','금욕의 성배 '+((!p.potions||p.potions.length===0)?'ON':'포션 보유 중'),'금욕의 성배','포션 0개 보유 시 공격력 +'+flat(Number(p.noPotionAtkFlat)||0),'no-potion');
   add(p.xpMul>1,'📈','경험치 +'+pc(p.xpMul-1),'경험치 부스트','경험치 획득량 증가','xpGain');
   add(p.donateChance>0,'💸','도네 '+pc(p.donateChance),'도네 알림','적 처치 시 확률로 골드','donate');
-  add(p.greedContract,'💎','탐욕의 계약','탐욕의 계약','골드 획득 +40%, 받는 피해 +10%','greed-contract');
+  add(p.greedContract,'💎','탐욕의 계약','탐욕의 계약','즉시 골드 +150, 골드 획득 +50%, 상점 가격 -10%, 받는 피해 +10%','greed-contract');
   add(p.shopCostMul>1,'💎','상점가 +'+pc(p.shopCostMul-1),'탐욕의 반지','상점 가격 증가 리스크','shop-risk');
   add(p.recoveryMul<1,'🌑','회복 효과 '+pc(p.recoveryMul),'공허의 심장','회복 효과 감소 리스크','recovery-risk');
-  add(p.crowdRageAtkFlat>0,'😡','분노 '+flat(p.crowdRageAtkFlat)+'/마리','분노','주변 적 1마리당 공격력 +0.8, 최대 10마리. 찍을 때마다 +0.8씩 누적','crowd-rage');
+  add(p.crowdRageAtkFlat>0,'😡','분노 '+flat(p.crowdRageAtkFlat)+'/마리','분노','주변 적 1마리당 공격력 +0.5, 최대 10마리. 찍을 때마다 +0.5씩 누적','crowd-rage');
   add(p.lowHpAtkFlat>0,'🆘','저체력 폭주','저체력 폭주','체력 30% 이하일 때 공격력 +'+flat(p.lowHpAtkFlat),'low-hp');
   add(p.bossDmgMul>1,'🗡️','거인사냥 +'+pc(p.bossDmgMul-1),'거인 사냥','보스·정예에게 추가 피해','bossDmg');
   add(p.executeInstinctDmgMul>0,'✂️','처형 본능 +'+pc(p.executeInstinctDmgMul),'처형 본능','체력 25% 이하 적에게 피해 증가. 보스 대상은 절반','execute-instinct');
@@ -23550,7 +23727,7 @@ function newGame(){
   applyStartBonuses();
   enemies=[];pBullets=[];eBullets=[];pickups=[];particles=[];boss=null;floatBubbles=[];lastKiller=null;
   pendingNode=null; roomCleared=true; tierIntroShown=false; treeIntroShown=false; shopIntroShown=false; eliteViewerSpawns=0;
-  tutorial={active:true,moved:false,shot:false,dodged:false,tabbed:false,doneAt:0};
+  tutorial={active:true,moved:false,shot:false,dodged:false,skillUsed:false,tabbed:false,doneAt:0};
   startTutorial();
 }
 function startTutorial(){
@@ -23560,7 +23737,7 @@ function startTutorial(){
   enemies=[]; pBullets=[]; eBullets=[]; pickups=[]; particles=[]; boss=null;
   roomCleared=false; roomIsBoss=false; kills=0; bossBanner=0;
   player.x=W/2; player.y=H-90;
-  tutorial={active:true,step:'move',moved:false,shot:false,dodged:false,controlsSeen:false,controlsC:false,controlsEsc:false,controlsAt:0,tabbed:false,doneAt:0,
+  tutorial={active:true,step:'move',moved:false,shot:false,dodged:false,skillUsed:false,controlsSeen:false,controlsC:false,controlsEsc:false,controlsAt:0,tabbed:false,doneAt:0,
     target:{x:W/2,y:Math.max(130,H*0.24),r:TUTORIAL_MOVE_RADIUS},dummySpawned:false,autoFireHint:false};
   currentRow=0;
   banner("튜토리얼 · 이동","WASD 중 편한 키로 표시된 위치까지 이동",2600);
@@ -23585,11 +23762,15 @@ function updateTutorialProgress(){
     tutorial.step='shoot';
     spawnTutorialDummy();
   }
-  if(tutorial.moved && tutorial.shot && tutorial.step!=='dodge' && tutorial.step!=='controls' && tutorial.step!=='done'){
+  if(tutorial.moved && tutorial.shot && tutorial.step!=='dodge' && tutorial.step!=='skill' && tutorial.step!=='controls' && tutorial.step!=='done'){
     tutorial.step='dodge';
     banner("튜토리얼 · 회피","SPACE로 짧게 돌진 · 잠시 무적 · 쿨다운 있음",3600);
   }
-  if(tutorial.moved&&tutorial.shot&&tutorial.dodged&&tutorial.step!=='controls'&&tutorial.step!=='done'){
+  if(tutorial.moved&&tutorial.shot&&tutorial.dodged&&!tutorial.skillUsed&&tutorial.step!=='skill'&&tutorial.step!=='controls'&&tutorial.step!=='done'){
+    tutorial.step='skill';
+    banner("튜토리얼 · 직업 스킬",tutorialSkillGuide(false),4200);
+  }
+  if(tutorial.moved&&tutorial.shot&&tutorial.dodged&&tutorial.skillUsed&&tutorial.step!=='controls'&&tutorial.step!=='done'){
     tutorial.step='controls';
     tutorial.controlsAt=performance.now()||1;
     tutorial.controlsC=false;
@@ -23628,7 +23809,7 @@ function newGameSkip(){
   applyStartBonuses();
   enemies=[];pBullets=[];eBullets=[];pickups=[];particles=[];boss=null;floatBubbles=[];lastKiller=null;
   pendingNode=null; roomCleared=true; tierIntroShown=false; treeIntroShown=false; shopIntroShown=false; eliteViewerSpawns=0;
-  tutorial={active:false,moved:true,shot:true,dodged:true,tabbed:true,doneAt:0};
+  tutorial={active:false,moved:true,shot:true,dodged:true,skillUsed:true,controlsSeen:true,tabbed:true,doneAt:0};
   tutorialMode=false; tutorialDoneFlag=true;
   showRunOpeningThenMap();
 }
@@ -24733,7 +24914,7 @@ function bootGame(){
   // tmSettings는 wireSettings()에서 openSettings로 연결됨 (아래에서 재정의)
   $('tmExit').onclick=()=>{ try{ window.close(); }catch(e){} };
   $('diffBack').onclick=closeDifficultyTab;
-  { const cb=$('classBack'); if(cb) cb.onclick=()=>{ pendingClassStartFn=null; show('start'); }; }
+  { const cb=$('classBack'); if(cb) cb.onclick=()=>{ pendingClassStartFn=null; openDifficultyTab(); }; }
 
   // 초기 채팅 잡담 미리 깔기
   chatSys("스트리머가 곧 들어옵니다...");
@@ -25165,18 +25346,18 @@ const TREE_NODES = [
   { id:'elemental_overload', name:'원소 과부하', icon:'🔥', branch:'status', req:['t_dmg'], cost:2, isMiniKeystone:true,
     desc:'상태이상 걸린 적에게 치명타 확률 +10%', apply:p=>{ p.statusCritChance+=0.10; } },
   { id:'corrosive_spread', name:'부식 확산', icon:'🟢', branch:'status', req:['elemental_overload','t_spread'], cost:2, isKeystone:true,
-    desc:'상태이상 적 처치 시 주변 적에게 독/화상 전이 강화. 공격력 -1.5', skip:p=>p.corrosiveSpread,
-    apply:p=>{ p.corrosiveSpread=true; p.statusDmgMul+=0.15; p.dmg=Math.max(1,p.dmg-1.5); } },
+    desc:'상태이상 적 처치 시 주변 적에게 독/화상 전이 강화. 상태이상 피해 +25%, 공격력 -1', skip:p=>p.corrosiveSpread,
+    apply:p=>{ p.corrosiveSpread=true; p.statusDmgMul+=0.25; p.dmg=Math.max(1,p.dmg-1); } },
 
   // ══════════════════════════════════
   // 💰 골드 라인 — "슈퍼챗 부자"
   // ══════════════════════════════════
   { id:'g_gold1', name:'골드 수집 I',  icon:'💰', branch:'gold', req:['hub'], cost:1,
     desc:'골드 획득 +14%', apply:p=>{ p.goldMul+=0.14; } },
-  { id:'g_bargain', name:'상점 흥정', icon:'🛒', branch:'gold', req:['g_gold1'], cost:2,
+  { id:'g_bargain', name:'상점 흥정', icon:'🛒', branch:'gold', req:['g_gold1'], cost:1,
     desc:'상점 가격 -8%', apply:p=>{ p.shopCostMul-=0.08; } },
   { id:'g_xp1',   name:'성장 계약',icon:'📈', branch:'gold', req:['g_gold1'], cost:2,
-    desc:'경험치 획득 +18%, 골드 획득 -8%', apply:p=>{ p.xpMul+=0.18; p.goldMul-=0.08; } },
+    desc:'경험치 획득 +18%, 골드 획득 -4%', apply:p=>{ p.xpMul+=0.18; p.goldMul-=0.04; } },
   { id:'g_gold2', name:'골드 수집 II', icon:'💰', branch:'gold', req:['g_gold1'], cost:1,
     desc:'골드 획득 추가 +14%', apply:p=>{ p.goldMul+=0.14; } },
   { id:'g_xp2',   name:'압축 성장',icon:'⏫',branch:'gold', req:['g_xp1'], cost:2,
@@ -25196,8 +25377,8 @@ const TREE_NODES = [
     desc:'골드 150 이상 보유 시 공격력 +4', skip:p=>p.investmentReturn,
     apply:p=>{ p.investmentReturn=true; p.investmentReturnAtkFlat=4; } },
   { id:'greed_contract', name:'탐욕의 계약', icon:'💎', branch:'gold', req:['investment_return','g_jackpot'], cost:3, isKeystone:true,
-    desc:'골드 획득 +40%, 받는 피해 +10%', skip:p=>p.greedContract,
-    apply:p=>{ p.greedContract=true; p.goldMul+=0.4; p.damageTakenMul+=0.10; } },
+    desc:'즉시 골드 +150, 골드 획득 +50%, 상점 가격 -10%, 받는 피해 +10%', skip:p=>p.greedContract,
+    apply:p=>{ p.greedContract=true; p.goldMul+=0.5; p.shopCostMul-=0.10; p.damageTakenMul+=0.10; addGold(150,'passive'); } },
 
   // ══════════════════════════════════
   // 🛡️ 생존 라인 — "불사 스트리머"
@@ -25239,8 +25420,8 @@ const TREE_NODES = [
   { id:'keystone_edge_broadcast', name:'키스톤: 외줄 방송', icon:'🎙️', branch:'survive', req:['bridge_risky_focus','heavy_broadcast'], cost:3, isKeystone:true,
     desc:'회복량 -35%. 직접 피해 +18%, 치명타 확률 +10%.', apply:p=>{ p.keystoneEdgeBroadcast=true; p.recoveryMul=statMulFromBonus(statBonusFromMul(p.recoveryMul)-0.35,0.1); p.directDmgMul=(p.directDmgMul||0)+0.18; p.critChance=(p.critChance||0)+0.10; } },
   { id:'v_last_show', name:'최후의 방송', icon:'💀', branch:'survive', req:['vamp_shield'], cost:3, isKeystone:true,
-    desc:'최대 체력 100당 공격력 +5 — 탱킹이 곧 화력', skip:p=>p.maxhpPowerAtkFlat>0,
-    apply:p=>{ p.maxhpPowerAtkFlat=(Number(p.maxhpPowerAtkFlat)||0)+5; } },
+    desc:'최대 체력 100당 공격력 +7 — 탱킹이 곧 화력', skip:p=>p.maxhpPowerAtkFlat>0,
+    apply:p=>{ p.maxhpPowerAtkFlat=(Number(p.maxhpPowerAtkFlat)||0)+7; } },
 
   // ══════════════════════════════════
   // ⚡ 기동 라인 — "신나는 방송"
@@ -25295,7 +25476,7 @@ const TREE_NODES = [
   { id:'a_recovery', name:'회복 조제', icon:'💚', branch:'alchemy', req:['a_amp1'], cost:2,
     desc:'포션 효과 +15%, 초당 체력 +0.5', apply:p=>{ p.potionAmp=(Number(p.potionAmp)||0)+0.15; p.regen+=0.5; } },
   { id:'a_refill', name:'자동 보급', icon:'♻️', branch:'alchemy', req:['a_amp2'], cost:2,
-    desc:'방 클리어 시 20% 확률로 랜덤 포션 획득', once:true, skip:p=>p.infiniteRefill,
+    desc:'방 클리어 시 30% 확률로 랜덤 포션 획득', once:true, skip:p=>p.infiniteRefill,
     apply:p=>{ p.infiniteRefill=true; } },
   { id:'a_surge', name:'연금 폭주', icon:'🔥', branch:'alchemy', req:['a_amp2'], cost:2, isMiniKeystone:true,
     desc:'포션 사용 후 6초간 공격력 +5', once:true, skip:p=>p.alchemySurge,
@@ -26316,9 +26497,3 @@ function initTreeEvents(){
 }
 
 bootGame();
-
-
-
-
-
-
