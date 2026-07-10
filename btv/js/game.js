@@ -7024,7 +7024,7 @@ function globalFloorOf(a,floor){
 const ACT_BOSS=[0,4,3]; // 1막 키죠 / 2막은 온스터 특수 스폰 / 3막 승우(글리치)
 const BOSS_SLOT_BALANCE={2:'onster',3:'set3'};
 const MIDBOSS_SLOT_BALANCE={2:'set3',3:'onster'};
-const SET3_MIDBOSS_HP_MUL=0.789; // normal 기준 2막 중보 총합 약 3만
+const SET3_MIDBOSS_HP_MUL=1.5783; // normal 기준 2막 중보 총합 약 6만 (현진 1만·번검 2만·케케로 3만)
 const CONTRACT_ROOM_CHANCE={fight:0.12,elite:0.18};
 const CONTRACT_ROOM_MAX_PER_ACT=3;
 const CONTRACT_TYPES=[
@@ -8018,7 +8018,7 @@ const BOSS_INTRO_LINES={
   kkotchung:{name:'미주',line:'꽃잎 밑을 본 적 있어?',sub:'꽃잎 사이로 검은 단맛이 번진다.',tone:'dark',glitch:true,ms:2100},
   act3_truck:{name:'노잭',line:'NO JACK.',sub:'송출 신호가 전장을 잠식합니다.',tone:'dark',ms:1900},
   onster:{name:'온스터',line:'여기서부턴 나갈 데가 없어.',sub:'화면 밖으로 나가는 문이 잠겨 있습니다.',tone:'dark',ms:2300},
-  set3:{name:'현진 세트',line:'우린 한 명이 아니야.',sub:'방송 사고 때 화면에 갇힌 프레임들이 응답합니다.',tone:'dark',ms:2300},
+  set3:{name:'현진',line:'우린 한 명이 아니야.',sub:'방송 사고 때 화면에 갇힌 프레임들이 응답합니다.',tone:'dark',ms:2300},
   seungwoo:{name:'승우',line:'봉식아, 거기서 나와.',sub:'화면 밖의 누군가가 송출을 끄려 합니다.',tone:'dark',glitch:true,ms:2400}
 };
 let bossIntroSeen={};
@@ -8070,7 +8070,7 @@ function showBossIntroLine(id,delay,entity){
 const BOSS_TALK_LINES={
   hyechul:{speaker:'혜철이',line:'이거 몬스터 아니에요. 아직 안 켜진 시청자예요.',color:'#c46bff',sub:'부화하는 시청자'},
   kijo:{speaker:'키죠',line:'보지 마. …아니, 봐. 안 보면 나와.',color:'#ff4d6d',sub:'화면 너머의 응시',glitch:true},
-  set3:{speaker:'현진 세트',line:'그 사고 때 화면에 남은 프레임들이야.',color:'#38e8ff',sub:'갇힌 프레임'},
+  set3:{speaker:'현진',line:'그 사고 때 화면에 남은 프레임들이야.',color:'#38e8ff',sub:'갇힌 프레임'},
   onster:{speaker:'온스터',line:'여기서부턴 나갈 데가 없어.',color:'#8d72ff',sub:'화면을 막은 문지기'},
   yanggaeng:{speaker:'박제인간',line:'너도 곧 나처럼 박제돼. …아니, 이미 됐지.',color:'#9b8fc4',sub:'박제된 시청자'},
   seungwoo:{speaker:'승우',line:'봉식아, 거기서 나와.',color:'#9146ff',sub:'화면 밖의 침입자',glitch:true},
@@ -8115,14 +8115,14 @@ const BOSS_STORY_DIALOGUES={
   set3:{
     encounter:[
       {speaker:'현진',text:'우린 한 명이 아니야.'},
-      {speaker:'번검',text:'그 방송 사고 때\n화면에 남은 프레임들이야.'},
-      {speaker:'케케로',text:'봉식님, 여기 갇힌 거…'},
-      {speaker:'현진 세트',text:'우리만인 줄 알아요?'}
+      {speaker:'현진',text:'그 방송 사고 때\n화면에 남은 프레임들이야.'},
+      {speaker:'현진',text:'봉식님, 여기 갇힌 거…'},
+      {speaker:'현진',text:'우리만인 줄 알아요?'}
     ],
     choices:[
       {id:'follow',label:'채팅 로그를 붙잡는다',response:[{speaker:'현진',text:'ㅋㅋㅋㅋㅋ...\n까지만 남아도 괜찮겠어?'},{speaker:'시스템',text:'채팅 로그 손상. 복원 불가.'}],effectText:'채팅 로그를 붙잡았습니다. 이동 속도가 오르지만, 현진의 공격 템포도 조금 빨라집니다.'},
-      {id:'stop',label:'옛 송출을 재생한다',response:[{speaker:'번검',text:'그 방송,\n다시 틀지 마.'},{speaker:'시스템',text:'사고 당시 기록 재생 중...'}],effectText:'옛 송출을 재생했습니다. 받는 피해가 감소하고 현진의 이동이 느려지지만, 체력이 조금 증가합니다.'},
-      {id:'cut_signal',label:'송출 신호를 끊는다',response:[{speaker:'케케로',text:'그걸 끊으면 안 돼.'},{speaker:'케케로',text:'...아니.\n어쩌면 그게 유일한 출구야.'}],effectText:'신호를 끊었습니다. 현진의 체력과 공격 템포가 감소하며, 후반 대사에도 영향을 줍니다.'}
+      {id:'stop',label:'옛 송출을 재생한다',response:[{speaker:'현진',text:'그 방송,\n다시 틀지 마.'},{speaker:'시스템',text:'사고 당시 기록 재생 중...'}],effectText:'옛 송출을 재생했습니다. 받는 피해가 감소하고 현진의 이동이 느려지지만, 체력이 조금 증가합니다.'},
+      {id:'cut_signal',label:'송출 신호를 끊는다',response:[{speaker:'현진',text:'그걸 끊으면 안 돼.'},{speaker:'현진',text:'...아니.\n어쩌면 그게 유일한 출구야.'}],effectText:'신호를 끊었습니다. 현진의 체력과 공격 템포가 감소하며, 후반 대사에도 영향을 줍니다.'}
     ],
     phase2:[{speaker:'번검',text:'채팅 로그 동기화 실패.'},{speaker:'번검',text:'ㅋㅋㅋㅋㅋ...\n까지만 남았네.'}],
     phase3:[{speaker:'케케로',text:'송출 타임라인에 균열 발생.'},{speaker:'케케로',text:'온스터가 막은 문 너머로 가면…\n봉식님도 못 돌아와요.'}],
@@ -9378,7 +9378,7 @@ function startCombat(kind, fresh){
         showBossIntroLine(eliteId,680);
         const ze=enemies[enemies.length-1]; roomHadElite=true; roomEliteKind=eliteId;
         ze.elite=true; ze.eliteViewer=true; ze.eliteKind=eliteId; ze.label=ze.name||"3막 정예";
-        ze.hp*=1.70; ze.maxhp*=1.70; ze.dmg=Math.round((ze.dmg||10)*1.35); if(ze.touchDmg!=null) ze.touchDmg=Math.round(ze.touchDmg*1.2); ze.r+=5; ze.xp=Math.max(900,ze.xp||0); ze.coolT=1.0;
+        ze.hp*=3.69; ze.maxhp*=3.69; ze.dmg=Math.round((ze.dmg||10)*1.35); // 노잭: normal 기준 약 5만 (등장 층에 따라 4.6~5.4만) if(ze.touchDmg!=null) ze.touchDmg=Math.round(ze.touchDmg*1.2); ze.r+=5; ze.xp=Math.max(900,ze.xp||0); ze.coolT=1.0;
         ze.x=W/2; ze.y=190; ze.intro=true; ze.introScale=0; ze.stunT=4; ze.tauntedHalf=false;
         eliteIntro={t:0, ze:ze, warn:null, landed:false, banner:0, tensionDone:false};
         beep(420,0.3,"sine",0.05); beep(280,0.5,"sine",0.035);
@@ -9505,7 +9505,7 @@ function applyMidbossSlotBalance(e,type,diff){
   const slotKey=MIDBOSS_SLOT_BALANCE[act]||type;
   const slotBase=enemyDataByKey(slotKey)||enemyDataByKey(type);
   if(slotBase){
-    const act3MidMul=(act>=3&&type==='yanggaeng')?1.5:1;
+    const act3MidMul=(act>=3&&type==='yanggaeng')?1.8805:1; // 박제인간: normal 기준 약 10만 (단일 바)
     const hpScale=diff*diffSet.hp*act3MidMul;
     const hp=slotBase.hp*hpScale;
     if(Array.isArray(slotBase.phaseHp)&&slotBase.phaseHp.length){
@@ -9527,7 +9527,7 @@ function spawnOnsterFinalBoss(diff){
   eb.phase=1; eb.atkT=1.2; eb.atkN=0; eb.summonT=3.8; eb.awakened=false;
   eb.title='2막 보스 · 사슬의 각성'; eb.quip='아직 깨우지 마라.';
   eb.x=W/2; eb.y=170; eb.intro=true; eb.introScale=1; eb.stunT=4; eb.tauntedHalf=false;
-  eb.hp*=1.25; eb.maxhp=eb.hp;
+  eb.hp*=2.089; eb.maxhp=eb.hp; // 온스터 전용 보정: normal 기준 총합 약 10만 (각성 50% 포함)
   eb.dmg=Math.round((eb.dmg||18)*1.08);
   eb.touchDmg=Math.round((eb.touchDmg||eb.dmg||18)*1.08);
   eb.xp=Math.max(actTuning(2).bossXp||3100,eb.xp||0);
@@ -9542,7 +9542,7 @@ function spawnSet3Midboss(b,diff){
   const sb=b||BOSSES.find(x=>x&&x.key==='set3');
   const spawned=spawnBoss(sb);
   const base=(ENEMY_TYPES.onster&&ENEMY_TYPES.onster.hp?ENEMY_TYPES.onster.hp*diff*diffSet.hp:8200)*SET3_MIDBOSS_HP_MUL;
-  spawned.phaseHp=[base*0.30,base*0.32,base*0.38];
+  spawned.phaseHp=[base/6,base/3,base/2]; // 1:2:3 → normal 현진 1만·번검 2만·케케로 3만
   spawned.hp=spawned.phaseHp[0]; spawned.maxhp=spawned.hp;
   spawned.name='현진';
   spawned.title='2막 중간보스 · 현진';
@@ -9567,8 +9567,8 @@ function spawnBoss(b){
   markDiscovered('bosses', b&&b.key);
   const slotBase=bossSlotBalanceData(b);
   const scale=(1+(act-1)*0.35)*diffSet.hp*(actTuning(act).bossHpMul||1);
-  // 3막 승우는 set3 슬롯 체력을 빌려 쓰므로, 2막 세트3 표시 데이터 2배와 합쳐 현재 기준 절반으로 맞춘다.
-  const finalBossHpMul=(act>=3&&b&&b.key==='seungwoo')?0.75:1;
+  // 3막 승우는 set3 슬롯 체력을 빌려 씀. normal 기준 GP1~GP3 총합 약 20만 (GP1≈60k·GP2≈64k·GP3≈76k).
+  const finalBossHpMul=(act>=3&&b&&b.key==='seungwoo')?1.6528:1;
   const phaseHp=slotBase.phaseHp?slotBase.phaseHp.map(v=>v*scale*finalBossHpMul):null;
   const hp=phaseHp?phaseHp[0]:slotBase.hp*scale*finalBossHpMul;
   const spawned={
@@ -11721,7 +11721,7 @@ function enterSeungwooVoidPhase(b){
   b.title='진보스 · 공허 속의 승우';
   b.r=126;
   b.color='#c45bff';
-  const voidHp=Math.round(((b.phaseHp&&b.phaseHp[2])||b.maxhp||b.hp||1)*1.05);
+  const voidHp=Math.round(((b.phaseHp&&b.phaseHp[2])||b.maxhp||b.hp||1)*1.3237); // 공허: normal 기준 약 10만 (GP3의 1.32배)
   b.maxhp=Math.max(1,voidHp);
   b.hp=b.maxhp;
   b.baseSpd=150;
