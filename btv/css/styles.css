@@ -2654,7 +2654,8 @@
 }
 
 .tree-rec-preset,
-.tree-rec-off {
+.tree-rec-off,
+.tree-rec-auto {
   border: 1px solid rgba(139,232,255,.28);
   background: rgba(9,13,18,.86);
   color: rgba(223,250,255,.78);
@@ -2712,6 +2713,31 @@
   color: #dffaff;
   font-size: 11px;
   font-weight: 900;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tree-rec-next > span {
+  flex: 1 1 auto;
+}
+
+.tree-rec-auto {
+  flex: 0 0 auto;
+  border-color: rgba(243,217,139,.5);
+  color: #fff3c0;
+  white-space: nowrap;
+}
+
+.tree-rec-auto:hover:not(:disabled) {
+  border-color: #f3d98b;
+  background: rgba(50,42,24,.95);
+  box-shadow: 0 0 12px rgba(243,217,139,.18);
+}
+
+.tree-rec-auto:disabled {
+  opacity: .38;
+  cursor: not-allowed;
 }
 
 .tree-rec-next.ready {
