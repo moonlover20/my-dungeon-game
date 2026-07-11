@@ -490,7 +490,7 @@ const WORM_SPRITE=new Image();let wormReady=false;WORM_SPRITE.onload=()=>{wormRe
 const MAGPIE_SPRITE=new Image();let magpieReady=false;MAGPIE_SPRITE.onload=()=>{magpieReady=true;};MAGPIE_SPRITE.src="btv/assets/asset-009-e610c24586.png";
 const OWL_SPRITE=new Image();let owlReady=false;OWL_SPRITE.onload=()=>{owlReady=true;};OWL_SPRITE.src="btv/assets/asset-010-2d24e08db4.png";
 const SHIELD_SPRITE=new Image();let shieldReady=false;SHIELD_SPRITE.onload=()=>{shieldReady=true;};SHIELD_SPRITE.src="btv/assets/asset-011-69c7bd18c1.png";
-const TRASH_SPRITE=new Image();let trashReady=false;TRASH_SPRITE.onload=()=>{trashReady=true;};TRASH_SPRITE.src="btv/assets/asset-012-115e7cc76b.png";
+const TRASH_SPRITE=new Image();let trashReady=false;TRASH_SPRITE.onload=()=>{trashReady=true;};TRASH_SPRITE.src="btv/assets/asset-012-115e7cc76b.png?v=2";
 const TRASHBIT_SPRITE=new Image();let trashbitReady=false;TRASHBIT_SPRITE.onload=()=>{trashbitReady=true;};TRASHBIT_SPRITE.src="btv/assets/asset-013-c0095fd832.png";
 const DODGE_ICON=new Image();let dodgeIconReady=false;DODGE_ICON.onload=()=>{dodgeIconReady=true;};DODGE_ICON.src="btv/assets/dodge-icon.png";
 const LAIR_SPRITE=new Image();let lairReady=false;LAIR_SPRITE.onload=()=>{lairReady=true;};LAIR_SPRITE.src="btv/assets/asset-015-a4f7b5bb1f.png";
