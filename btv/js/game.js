@@ -4719,7 +4719,8 @@ function onsterChainBeam(e){
   if(beams>=2) angs.push(base+rand(0.22,0.40));           // 오른 플랭크
   if(beams>=3) angs.push(base-rand(0.22,0.40));           // 왼 플랭크
   const col=e.awakened?'#ff4dd2':'#8d72ff', w=e.awakened?23:17, warn=e.awakened?0.60:0.64, dmg=e.awakened?22:16;
-  for(const a of angs) kijoLaserWarns.push({x:e.x,y:e.y,ang:a,width:w,range:720,t:0,warn,color:col,fired:false,sniper:true,dmg,srcName:'온스터 사슬빔'});
+  const range=Math.hypot(W,H)+160;                       // 보스 위치와 무관하게 반대편 모서리까지 도달
+  for(const a of angs) kijoLaserWarns.push({x:e.x,y:e.y,ang:a,width:w,range,t:0,warn,color:col,fired:false,sniper:true,dmg,srcName:'온스터 사슬빔'});
 }
 // setTimeout 대체: dt 기반 지연 실행 (일시정지·timeScale 준수, 보스 사망 시 자동 폐기)
 let set3Delays=[];
@@ -4951,7 +4952,7 @@ function a3Objective(x,y,opts){
     x:clamp(x,40,W-40),y:clamp(y,110,H-90),r:opts.r||26,
     hp,maxhp:hp,spd:0,_spd0:0,dmg:0,touchDmg:0,bodyDmg:0,color:opts.color||'#ff4dd2',xp:0,
     ai:'bossorb',fuseT:opts.fuse||6,fuseMax:opts.fuse||6,fail:opts.fail||'aoe',
-    failDmg:opts.failDmg||40,shootCd:opts.shootCd||0,_st:opts.shootCd||0,owner:opts.owner||null,
+    failDmg:opts.failDmg||40,failGroup:opts.failGroup||null,shootCd:opts.shootCd||0,_st:opts.shootCd||0,owner:opts.owner||null,
     hitT:0,coolT:0,summoned:true,noKillScore:true,noReward:true,wob:rand(0,TAU),
   });
 }
@@ -4983,9 +4984,10 @@ function drawBossOrb(e){
 
 // ===== 상태형 패턴 서브시스템 (장막 · 순서기억 · 전멸기 안전지대 · 분신) =====
 let a3veil=null, a3seq=null, a3strike=null, a3tether=null, set3Poll=null, set3Ring=null, set3Ad=null;
-let onsterCross=null, onsterBreath=null, set3Half=null, set3Reaper=null, onsterWeb=null;   // 신규: 교차빔/깊은숨결/반반시간/검은마법/거미줄
+let onsterCross=null, onsterBreath=null, onsterReelWarn=null, set3Half=null, set3Reaper=null, onsterWeb=null;   // 신규: 교차빔/깊은숨결/견인예고/거미줄
+let onsterObjectiveFailGroups={};
 let set3Dominion=null;
-function clearA3Systems(){ a3veil=null; a3seq=null; a3strike=null; a3tether=null; set3Poll=null; set3Ring=null; set3Ad=null; onsterCross=null; onsterBreath=null; set3Half=null; set3Reaper=null; onsterWeb=null; set3Dominion=null; if(typeof player==='object'&&player) player._adBlockT=0; }
+function clearA3Systems(){ a3veil=null; a3seq=null; a3strike=null; a3tether=null; set3Poll=null; set3Ring=null; set3Ad=null; onsterCross=null; onsterBreath=null; onsterReelWarn=null; set3Half=null; set3Reaper=null; onsterWeb=null; onsterObjectiveFailGroups={}; set3Dominion=null; if(typeof player==='object'&&player) player._adBlockT=0; }
 
 // 마녀의 장막 — 화면 암전, 플레이어 주변만 보임
 function a3Veil(dur,label){
@@ -5136,6 +5138,11 @@ function runOnsterPat(e,p){
   else if(p==='web') onsterChainWeb(e);
   else onsterChainBurst(e);
 }
+function onsterMajorPatternActive(e){
+  if((onsterCross&&onsterCross.owner===e)||(onsterBreath&&onsterBreath.owner===e)||(onsterWeb&&onsterWeb.owner===e)||(onsterReelWarn&&onsterReelWarn.owner===e)||(a3tether&&a3tether.owner===e)) return true;
+  if(kijoLaserWarns.some(w=>w&&w.srcName==='사슬 미로')) return true;
+  return eBullets.some(b=>b&&(b.srcName==='사슬 격자'||b.srcName==='사슬 파편'));
+}
 function onsterChainGrid(e){
   playOnsterChainSfx(1,{vol:0.66,rate:e&&e.awakened?1.06:0.98,maxDur:1.25,cd:0.24,key:'onsterChainLight'});
   // 사슬 격자(연사형): 빔이 아니라 사슬탄을 가로행+세로열로 연속 사출. _onRep로 2~3회 반복 → 다른 보스 탄막처럼 연사.
@@ -5180,13 +5187,14 @@ function onsterChainWeb(e){
   if(onsterWeb) return;
   if(sfx.enemyChain) sfx.enemyChain();
   const refs=[], polar=[], n=5, cx=W/2, cy=H*0.44, rot=(Math.random()<0.5?1:-1)*0.34;
+  onsterObjectiveFailGroups.onster_web=false;
   for(let i=0;i<n;i++){
     const a=i/n*TAU, rr=300;   // 균등 배치(회전 안정)
     a3Objective(clamp(cx+Math.cos(a)*rr,60,W-60), clamp(cy+Math.sin(a)*rr*0.66,115,H-80),
-      {hp:100, fuse:12, fail:'aoe', failDmg:30, label:'사슬 거미줄', color:'#9d7bff', r:22, owner:e});
+      {hp:100, fuse:12, fail:'aoe', failDmg:38, failGroup:'onster_web', label:'사슬 거미줄', color:'#9d7bff', r:22, owner:e});
     refs.push(enemies[enemies.length-1]); polar.push({a,rr});
   }
-  onsterWeb={anchors:refs, polar, cx, cy, rot, ang:0, t:0, warnT:0.9, dmg:e.awakened?17:14, _hitCd:0, col:'#9d7bff'};
+  onsterWeb={owner:e,anchors:refs, polar, cx, cy, rot, ang:0, t:0, warnT:0.9, dmg:e.awakened?17:14, _hitCd:0, col:'#9d7bff'};
   banner('🕸 사슬 거미줄','도는 거미줄 — 닻을 부숴 변을 끊어라',1300);
   if(typeof beep==='function')beep(120,0.18,'sawtooth',0.05);
 }
@@ -5487,10 +5495,11 @@ function onsterChainAnchor(e){
   if(enemies.some(o=>o&&o.ai==='bossorb'&&o.label==='사슬 닻')) return;  // 중복 스폰 방지
   if(sfx.enemyChain) sfx.enemyChain();
   const n=e.awakened?3:2, shootCd=e.awakened?1.5:0;   // 각성 후 작은 사슬탄 발사
+  onsterObjectiveFailGroups.onster_anchor=false;
   for(let i=0;i<n;i++){
     const a=i/n*TAU+rand(-0.3,0.3), rr=rand(150,235);
     a3Objective(clamp(player.x+Math.cos(a)*rr,60,W-60), clamp(player.y+Math.sin(a)*rr,120,H-90),
-      {hp:e.awakened?150:128, fuse:e.awakened?6.5:7.2, fail:'aoe', failDmg:e.awakened?32:26,
+      {hp:e.awakened?150:128, fuse:e.awakened?6.5:7.2, fail:'aoe', failDmg:e.awakened?38:32, failGroup:'onster_anchor',
        label:'사슬 닻', color:'#8d72ff', r:24, owner:e, shootCd});
   }
   banner('⛓ 사슬 닻 '+n+'개','제한시간 내 부숴라 — 못 부수면 사슬 폭발',1050);
@@ -5568,19 +5577,14 @@ function onsterCounterWhip(e){
 // ── [중보 온스터] 사슬 견인 → 군집 — 플레이어를 소환수 무리(없으면 보스) 쪽으로 끌어당김. 회피로 끊기 ──
 function onsterReelToMinions(e){
   playOnsterChainSfx(1,{vol:0.64,maxDur:1.25,cd:0.28,key:'onsterChainLight'});
+  if(onsterReelWarn) return;
   if(sfx.enemyChain) sfx.enemyChain();
   const mins=onsterSummons(e);
   let tx=e.x, ty=e.y;
   if(mins.length){ tx=mins.reduce((s,m)=>s+m.x,0)/mins.length; ty=mins.reduce((s,m)=>s+m.y,0)/mins.length; }
-  banner('🪝 사슬 견인','무리 쪽으로 끌려간다 — 회피로 끊어라',1000);
+  onsterReelWarn={owner:e,tx,ty,t:0,warnT:0.85};
+  banner('🪝 사슬 견인 예고','사슬이 당겨지기 전에 회피로 끊어라',1000);
   if(typeof beep==='function')beep(90,0.2,'sawtooth',0.06);
-  if((player.dodging||0)<=0){
-    const a=Math.atan2(ty-player.y,tx-player.x);
-    player.x=clamp(player.x+Math.cos(a)*200,player.r,W-player.r);
-    player.y=clamp(player.y+Math.sin(a)*200,player.r,H-player.r);
-    burst(player.x,player.y,'#8d72ff',16,210);
-    screenShake=Math.max(screenShake||0,6);
-  }
 }
 
 // ── [현진 P1] 벽치기 돌진 — 0.8초 경고 → 돌진 → 벽 방향 넉백(벽 근처 추가 충격파) ──
@@ -5744,12 +5748,12 @@ function act3TruckMegaBeam(e){
 function onsterCrossLaser(e){
   playOnsterChainSfx(2,{vol:0.7,maxDur:1.45,cd:0.28,key:'onsterChainMid'});
   if(sfx.enemyChain) sfx.enemyChain();
-  const ph=e.awakened?2:1, dir=(Math.random()<0.5?1:-1);
+  const ph=e.awakened?2:1, dir=(Math.random()<0.5?1:-1), base=rand(0,TAU), rot=dir*(ph===2?0.38:0.32);
   onsterCross={owner:e,x:e.x,y:e.y,t:0,warnT:1.2,life:ph===2?5.0:4.2,
-    a1:rand(0,TAU), a2:rand(0,TAU)+Math.PI/2, a3:rand(0,TAU)+2.094,
-    rot1:dir*0.5, rot2:dir*0.64, rot3:dir*0.57,   // 세 팔 모두 같은 방향 회전 → 사이 틈은 닫히지 않음(좁아질 뿐)
-    width:ph===2?24:22, dmg:ph===2?18:14, _hitCd:0, col:'#8d72ff'};
-  banner('✖ 사슬 교차','같은 방향으로 도는 세 빔 — 사이 빈 칸으로',1300);
+    a1:base, a2:base+TAU/3, a3:base+TAU*2/3,
+    rot1:rot, rot2:rot, rot3:rot,                 // 같은 각속도 → 세 안전 부채꼴이 절대 닫히지 않음
+    innerGap:ph===2?135:115, width:ph===2?22:20, dmg:ph===2?18:14, _hitCd:0, col:'#8d72ff'};
+  banner('✖ 사슬 교차','중앙 안전구멍 또는 세 빔 사이로',1300);
   if(typeof beep==='function')beep(150,0.2,'square',0.05);
 }
 
@@ -5877,7 +5881,7 @@ function set3KekeSweep(b){
 }
 
 function updateA3Systems(dt){
-  if(state!=='play'){ a3veil=null; a3seq=null; a3strike=null; a3tether=null; set3Poll=null; set3Ring=null; set3Ad=null; onsterCross=null; onsterBreath=null; set3Half=null; set3Reaper=null; onsterWeb=null; set3Dominion=null; if(player) player._adBlockT=0; return; }
+  if(state!=='play'){ a3veil=null; a3seq=null; a3strike=null; a3tether=null; set3Poll=null; set3Ring=null; set3Ad=null; onsterCross=null; onsterBreath=null; onsterReelWarn=null; set3Half=null; set3Reaper=null; onsterWeb=null; onsterObjectiveFailGroups={}; set3Dominion=null; if(player) player._adBlockT=0; return; }
   if(set3Dominion){
     set3Dominion.value=Math.max(0,(set3Dominion.value||0)-dt*3.5);
     if(set3Dominion.overload>0) set3Dominion.overload=Math.max(0,set3Dominion.overload-dt);
@@ -5888,6 +5892,19 @@ function updateA3Systems(dt){
     }
   }
 
+  // ── 온스터 사슬 견인 예고 ──
+  if(onsterReelWarn){
+    const R=onsterReelWarn; R.t+=dt;
+    if(!R.owner||!a3Alive(R.owner)){ onsterReelWarn=null; }
+    else if((player.dodging||0)>0){ banner('⛓ 견인 절단!','회피로 사슬을 끊었다',750); burst(player.x,player.y,'#8d72ff',14,190); onsterReelWarn=null; }
+    else if(R.t>=R.warnT){
+      const a=Math.atan2(R.ty-player.y,R.tx-player.x);
+      player.x=clamp(player.x+Math.cos(a)*200,player.r,W-player.r);
+      player.y=clamp(player.y+Math.sin(a)*200,player.r,H-player.r);
+      burst(player.x,player.y,'#8d72ff',16,210); screenShake=Math.max(screenShake||0,6);
+      onsterReelWarn=null;
+    }
+  }
   // ── 온스터 사슬 교차빔 ──
   if(onsterCross){
     const C=onsterCross; C.t+=dt; C._hitCd-=dt;
@@ -5899,7 +5916,8 @@ function updateA3Systems(dt){
       if(active && C._hitCd<=0){
         const px=player.x-C.x, py=player.y-C.y;
         const under=(ang)=>Math.abs(-px*Math.sin(ang)+py*Math.cos(ang))<C.width;
-        if((under(C.a1)||under(C.a2)||under(C.a3)) && (player.dodging||0)<=0){ hurtPlayer(C.dmg,'사슬 교차'); C._hitCd=0.42; }
+        const outsideGap=Math.hypot(px,py)>(C.innerGap||0);
+        if(outsideGap && (under(C.a1)||under(C.a2)||under(C.a3)) && (player.dodging||0)<=0){ hurtPlayer(C.dmg,'사슬 교차'); C._hitCd=0.42; }
       }
       if(C.t>=C.warnT+C.life){ burst(C.x,C.y,C.col,14,180); onsterCross=null; }
     }
@@ -5931,7 +5949,12 @@ function updateA3Systems(dt){
       for(let i=0;i<Wb.anchors.length;i++){ const A=Wb.anchors[i], p=Wb.polar[i]; if(A&&enemies.includes(A)){ A.x=clamp(Wb.cx+Math.cos(p.a+Wb.ang)*p.rr,60,W-60); A.y=clamp(Wb.cy+Math.sin(p.a+Wb.ang)*p.rr*0.66,115,H-80); } }
     }
     const N=Wb.anchors.length, alive=Wb.anchors.filter(o=>o&&enemies.includes(o)).length;
-    if(alive<2){ onsterWeb=null; }
+    if(alive<2){
+      for(const A of Wb.anchors){ const ix=enemies.indexOf(A); if(ix>=0){ burst(A.x,A.y,Wb.col,8,130); enemies.splice(ix,1); } }
+      onsterObjectiveFailGroups.onster_web=true;
+      banner('⛓ 거미줄 붕괴!','남은 닻도 함께 끊어졌다',800);
+      onsterWeb=null;
+    }
     else if(Wb.t>=Wb.warnT && Wb._hitCd<=0 && (player.dodging||0)<=0){
       const segD=(px,py,ax,ay,bx,by)=>{ const dx=bx-ax,dy=by-ay,L=dx*dx+dy*dy||1; let t=((px-ax)*dx+(py-ay)*dy)/L; t=Math.max(0,Math.min(1,t)); return Math.hypot(px-(ax+t*dx),py-(ay+t*dy)); };
       let hit=false;
@@ -6074,6 +6097,14 @@ function drawA3World(){
     ctx.globalAlpha=0.10; ctx.fillStyle=col; ctx.beginPath(); ctx.arc(a3tether.x,a3tether.y,a3tether.r,0,TAU); ctx.fill();
     ctx.restore();
   }
+  if(onsterReelWarn){
+    const R=onsterReelWarn, k=clamp(R.t/R.warnT,0,1), dx=R.tx-player.x, dy=R.ty-player.y, d=Math.hypot(dx,dy)||1;
+    ctx.save(); ctx.globalAlpha=0.45+0.45*k; ctx.strokeStyle='#c9b8ff'; ctx.lineWidth=3+3*k; ctx.setLineDash([10,7]);
+    ctx.beginPath(); ctx.moveTo(player.x,player.y); ctx.lineTo(R.tx,R.ty); ctx.stroke(); ctx.setLineDash([]);
+    const links=Math.max(3,Math.floor(d/34));
+    for(let i=1;i<links;i++){ const q=i/links, x=player.x+dx*q, y=player.y+dy*q; ctx.fillStyle=i%2?'#8d72ff':'#d8ccff'; ctx.fillRect(Math.round(x-4),Math.round(y-3),8,6); }
+    ctx.globalAlpha=0.75+0.25*Math.sin(performance.now()/70); ctx.strokeStyle='#ff4dd2'; ctx.lineWidth=4; ctx.beginPath(); ctx.arc(player.x,player.y,26+8*k,0,TAU); ctx.stroke(); ctx.restore();
+  }
   if(boss&&boss.key==='set3'&&(boss.reflectT||0)>0){
     ctx.save(); ctx.globalAlpha=0.5+0.3*Math.sin(performance.now()/80); ctx.strokeStyle='#ff4dd2'; ctx.lineWidth=4; ctx.beginPath(); ctx.arc(boss.x,boss.y,boss.r+12,0,TAU); ctx.stroke(); ctx.restore();
   }
@@ -6081,12 +6112,12 @@ function drawA3World(){
   if(onsterCross){
     const C=onsterCross, warn=C.t<C.warnT, col=C.col;
     const drawArm=(ang)=>{
-      const len=Math.max(W,H)*1.2, w=C.width, grid=Math.max(6,w*0.52);
+      const len=Math.max(W,H)*1.2, gap=C.innerGap||0, w=C.width, grid=Math.max(6,w*0.52);
       ctx.save(); ctx.translate(C.x,C.y); ctx.rotate(ang);
       ctx.globalAlpha=warn?(0.13+0.12*Math.abs(Math.sin(C.t*16))):0.42;
-      ctx.fillStyle='rgba(141,114,255,0.22)'; ctx.fillRect(-len,-w*0.8,len*2,w*1.6);
+      ctx.fillStyle='rgba(141,114,255,0.22)'; ctx.fillRect(-len,-w*0.8,len-gap,w*1.6); ctx.fillRect(gap,-w*0.8,len-gap,w*1.6);
       const a=warn?0.42:0.95;
-      for(let x=-len;x<=len;x+=grid){ const cell=Math.round(x/grid);
+      for(let x=-len;x<=len;x+=grid){ if(Math.abs(x)<gap) continue; const cell=Math.round(x/grid);
         ctx.globalAlpha=a; ctx.fillStyle=(cell%2===0)?col:_shade(col,-0.42);
         ctx.fillRect(Math.round(x-grid/2),Math.round(-w*0.72),Math.ceil(grid*0.8),Math.ceil(w*1.44));
         if(!warn){ ctx.globalAlpha=a; ctx.fillStyle=_shade(col,0.6); ctx.fillRect(Math.round(x-grid*0.16),-3,Math.max(2,Math.round(grid*0.3)),6); }
@@ -13695,9 +13726,9 @@ function update(dt){
 
       if(!e.awakened && e.hp<=e.maxhp*onsterStoryAwakenThreshold(e)) onsterAwaken(e);
 
-      const ph=e.awakened?2:1, target=ph===2?280:340;
+      const ph=e.awakened?2:1, target=ph===2?280:340, majorBusy=onsterMajorPatternActive(e);
       const storyMoveMul=onsterStoryMoveMul(e,ph), storyCdMul=onsterStoryCadenceMul(e,ph);
-      e._tethT=(e._tethT==null?12:e._tethT)-dt; if(e._tethT<=0&&!a3tether){ if((e._bindCd||0)>0){ e._tethT=1.6; } else { onsterTether(e); e._bindCd=e.awakened?7:8; e._tethT=(e.awakened?rand(12,16):rand(17,22))*storyCdMul; } }
+      e._tethT=(e._tethT==null?12:e._tethT)-(majorBusy?0:dt); if(e._tethT<=0&&!a3tether&&!majorBusy){ if((e._bindCd||0)>0){ e._tethT=1.6; } else { onsterTether(e); e._bindCd=e.awakened?7:8; e._tethT=(e.awakened?rand(12,16):rand(17,22))*storyCdMul; } }
 
       if(d<target*0.7){ e.x-=Math.cos(a)*e.spd*storyMoveMul*dt; e.y-=Math.sin(a)*e.spd*storyMoveMul*0.55*dt; }
 
@@ -13705,11 +13736,12 @@ function update(dt){
 
       else { e.x+=Math.cos(a+Math.PI/2)*e.spd*storyMoveMul*(ph===2?0.38:0.2)*dt; e.y+=Math.sin(a+Math.PI/2)*e.spd*storyMoveMul*(ph===2?0.26:0.14)*dt; }
 
-      e.summonT=(e.summonT==null?4.2:e.summonT)-dt;
+      e.summonT=(e.summonT==null?4.2:e.summonT)-(majorBusy?0:dt);
 
-      if(e.summonT<=0){ for(let i=0;i<(ph===2?2:1);i++) spawnOnsterMinion(e); e.summonT=(ph===2?6.4:6.5)*storyCdMul; }
+      if(e.summonT<=0&&!onsterMajorPatternActive(e)){ for(let i=0;i<(ph===2?2:1);i++) spawnOnsterMinion(e); e.summonT=(ph===2?6.4:6.5)*storyCdMul; }
 
       // ── 3막 중간보스 사슬 패턴 (셔플백 + 연속 버스트) ──
+      if(majorBusy&&!(e._onRep>0)) e.a3T=Math.max(e.a3T||0,0.5);
       e.a3T=(e.a3T==null?6:e.a3T)-dt;
       if(e.a3T<=0){
         if((e._onRep||0)>0){
@@ -13721,11 +13753,13 @@ function update(dt){
           if(ONSTER_BIND.has(p)&&(e._bindCd||0)>0){ const alts=pool.filter(x=>!ONSTER_BIND.has(x)); p=alts[irand(0,alts.length-1)]; }   // 속박 연속 방지 → 비속박으로 교체
           e._onPat=p; runOnsterPat(e,p);
           if(ONSTER_BIND.has(p)) e._bindCd=e.awakened?7:8;   // 속박 발동 시 쿨 설정
-          if(p==='grid'||p==='maze'||(ph===2&&p==='burst')){ e._onRep=2; e.a3T=a3Jit(ph===2?1.4:1.7,0.1)*storyCdMul; }
+          if(p==='grid'||p==='maze'){ e._onRep=2; e.a3T=a3Jit(ph===2?1.4:1.7,0.1)*storyCdMul; }
+          else if(ph===2&&p==='burst'){ e._onRep=1; e.a3T=a3Jit(1.5,0.1)*storyCdMul; }
           else e.a3T=a3Jit(ph===2?6.0:6.6,0.12)*storyCdMul;
         }
       }
 
+      if(onsterMajorPatternActive(e)) e.atkT=Math.max(e.atkT||0,0.35);
       e.atkT=(e.atkT==null?1.3:e.atkT)-dt;
 
       if(e.atkT<=0){
@@ -13742,10 +13776,11 @@ function update(dt){
             const cols=['#8d72ff','#a06bff','#c45bff'];
             let acc=0;
             for(let s=0;s<stages;s++){
-              const band=bands[Math.min(s,2)], lo=band[0], hi=band[1], col=cols[Math.min(s,2)], warn=s===0?0.54:0.48;
+              const band=bands[Math.min(s,2)], lo=band[0], hi=band[1], col=cols[Math.min(s,2)], warn=s===0?0.72:0.64;
               const doFire=()=>{ if(!a3Alive(e))return;
                 const b=Math.atan2(player.y-e.y,player.x-e.x), offL=-rand(lo,hi), offR=rand(lo,hi);
-                for(const off of [offL,offR]) kijoLaserWarns.push({x:e.x,y:e.y,ang:b+off,width:16,range:790,t:0,warn,color:col,fired:false,sniper:true,dmg:16,srcName:'온스터 사슬채찍'});
+                const range=Math.hypot(W,H)+160;
+                for(const off of [offL,offR]) kijoLaserWarns.push({x:e.x,y:e.y,ang:b+off,width:16,range,t:0,warn,color:col,fired:false,sniper:true,dmg:16,srcName:'온스터 사슬채찍'});
                 if(s>0) playOnsterLaserSfx({vol:0.52,rate:1.05,maxDur:0.58,cd:0.12,key:'onsterBasicLaser'});
               };
               if(s===0) doFire(); else onsterDelay(acc, doFire);
@@ -13815,11 +13850,13 @@ function update(dt){
         if(e._st<=0){ e._st=e.shootCd; const pa=Math.atan2(player.y-e.y,player.x-e.x); for(let i=-1;i<=1;i++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa+i*0.2)*235,vy:Math.sin(pa+i*0.2)*235,r:7,dmg:9,life:3.4,srcName:e.label}); }
       }
       if(e.fuseT<=0){
-        if(e.fail==='aoe'){
+        const groupedFail=!!e.failGroup, firstGroupFail=!groupedFail||!onsterObjectiveFailGroups[e.failGroup];
+        if(groupedFail&&firstGroupFail) onsterObjectiveFailGroups[e.failGroup]=true;
+        if(e.fail==='aoe'&&firstGroupFail){
           hurtPlayer(e.failDmg||40,e.label||'전체 피해'); screenShake=Math.max(screenShake||0,16); hitFlash=Math.max(hitFlash||0,0.5);
           for(let i=0;i<24;i++){ const a2=i/24*TAU; eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*230,vy:Math.sin(a2)*230,r:8,dmg:Math.max(8,Math.round((e.failDmg||40)*0.28)),life:3.2,srcName:e.label}); }
           banner('💥 '+(e.label||'목표물')+' 폭발!','막지 못했다',900);
-        } else if(e.fail==='slow'){
+        } else if(e.fail==='slow'&&firstGroupFail){
           player.slowDebuffT=Math.max(player.slowDebuffT||0,5);
           banner('🪢 '+(e.label||'속박')+'!','이동속도가 크게 떨어졌다',900);
           burst(player.x,player.y,'#c46bff',16,180);
