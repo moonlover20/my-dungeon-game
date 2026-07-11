@@ -6310,7 +6310,7 @@ function updateIntentPatterns(e,dt){
       const a=Math.atan2(player.y-e.y,player.x-e.x);
       for(let i=-1;i<=1;i++){
         const aa=a+i*0.18;
-        eBullets.push({x:e.x,y:e.y,vx:Math.cos(aa)*250,vy:Math.sin(aa)*250,r:7,dmg:intentDamage(e,14),life:3.6,srcName:'케터 실탄',style:'web_thread',col:e.color,stun:true,stunDur:0.85});
+        eBullets.push({x:e.x,y:e.y,vx:Math.cos(aa)*250,vy:Math.sin(aa)*250,r:7,dmg:intentDamage(e,14),life:3.6,srcName:'지렁이 실탄',style:'web_thread',col:e.color,stun:true,stunDur:0.85});
       }
       playFileSfx('ketterThreadShot',{vol:0.62,rate:1.02,maxDur:0.34,cd:0.16,key:'ketterThreadShot'});
       if(typeof beep==='function')beep(200,0.1,'triangle',0.04);
@@ -7371,6 +7371,20 @@ const ACT_BOSS=[0,4,3]; // 1막 키죠 / 2막은 온스터 특수 스폰 / 3막 
 const BOSS_SLOT_BALANCE={2:'onster',3:'set3'};
 const MIDBOSS_SLOT_BALANCE={2:'set3',3:'onster'};
 const SET3_MIDBOSS_HP_MUL=1.5783; // normal 기준 2막 중보 총합 약 6만 (현진 1만·번검 2만·케케로 3만)
+const ACT2_NORMAL_HP={
+  mijuTotal:20000,
+  onster:30000,
+  set3:[15000,20000,25000]
+};
+const ACT3_NORMAL_HP={
+  nojack:30000,
+  yanggaeng:60000,
+  seungwoo:[30000,40000,50000],
+  seungwooVoid:60000
+};
+function hpFromNormal(value){
+  return Math.max(1,Number(value||1)*(diffSet.hp/DIFFS.normal.hp));
+}
 const CONTRACT_ROOM_CHANCE={fight:0.12,elite:0.18};
 const CONTRACT_ROOM_MAX_PER_ACT=3;
 const CONTRACT_TYPES=[
@@ -9810,7 +9824,9 @@ function startCombat(kind, fresh){
         showBossIntroLine(eliteId,680);
         const ze=enemies[enemies.length-1]; roomHadElite=true; roomEliteKind=eliteId;
         ze.elite=true; ze.eliteViewer=true; ze.eliteKind=eliteId; ze.label=ze.name||"3막 정예";
-        ze.hp*=3.69; ze.maxhp*=3.69; ze.dmg=Math.round((ze.dmg||10)*1.35); // 노잭: normal 기준 약 5만 (등장 층에 따라 4.6~5.4만) if(ze.touchDmg!=null) ze.touchDmg=Math.round(ze.touchDmg*1.2); ze.r+=5; ze.xp=Math.max(900,ze.xp||0); ze.coolT=1.0;
+        const eliteTune=Number(actTuning(3).eliteHpMul)||1;
+        ze.hp=hpFromNormal(ACT3_NORMAL_HP.nojack/eliteTune); ze.maxhp=ze.hp; // 공통 3막 배율 적용 후 normal 3만
+        ze.dmg=Math.round((ze.dmg||10)*1.35);
         ze.x=W/2; ze.y=190; ze.intro=true; ze.introScale=0; ze.stunT=4; ze.tauntedHalf=false;
         eliteIntro={t:0, ze:ze, warn:null, landed:false, banner:0, tensionDone:false};
         beep(420,0.3,"sine",0.05); beep(280,0.5,"sine",0.035);
@@ -9820,7 +9836,8 @@ function startCombat(kind, fresh){
         showBossIntroLine('kkotchung',680);
         const ze=enemies[enemies.length-1]; roomHadElite=true; roomEliteKind='yanggaeng';
         ze.elite=true; ze.eliteViewer=true; ze.eliteKind='yanggaeng'; ze.label='미주';
-        ze.hp*=1.75; ze.maxhp*=1.75; ze.dmg=Math.round(ze.dmg*1.4); ze.r+=5; ze.xp=900; ze.coolT=1.0;
+        ze.hp=hpFromNormal(ACT2_NORMAL_HP.mijuTotal/3); ze.maxhp=ze.hp; // 3페이즈 합계: normal 기준 2만
+        ze.dmg=Math.round(ze.dmg*1.4); ze.r+=5; ze.xp=900; ze.coolT=1.0;
         ze.x=W/2; ze.y=190; ze.intro=true; ze.introScale=0; ze.stunT=4; ze.tauntedHalf=false;
         ze.atkT=1.8; ze.atkN=0; ze.enr=false; ze.enrShown=false;
         ze.phase=1; ze.climaxT=0; ze.eyeOrbs=[];   // 미주는 3바 풀피 전환(kkotNextPhase) — phaseHp 임계값 미사용이라 제거
@@ -9936,9 +9953,11 @@ function applyMidbossSlotBalance(e,type,diff){
   if(!e) return e;
   const slotKey=MIDBOSS_SLOT_BALANCE[act]||type;
   const slotBase=enemyDataByKey(slotKey)||enemyDataByKey(type);
-  if(slotBase){
-    const act3MidMul=(act>=3&&type==='yanggaeng')?1.8805:1; // 박제인간: normal 기준 약 10만 (단일 바)
-    const hpScale=diff*diffSet.hp*act3MidMul;
+  if(act>=3&&type==='yanggaeng'){
+    const midTune=Number(actTuning(3).eliteHpMul)||1;
+    e.hp=hpFromNormal(ACT3_NORMAL_HP.yanggaeng/midTune); e.maxhp=e.hp; // 공통 3막 배율 적용 후 normal 6만
+  }else if(slotBase){
+    const hpScale=diff*diffSet.hp;
     const hp=slotBase.hp*hpScale;
     if(Array.isArray(slotBase.phaseHp)&&slotBase.phaseHp.length){
       e.phaseHp=slotBase.phaseHp.map(v=>Math.max(1,Number(v||1)*hpScale));
@@ -9992,7 +10011,7 @@ function spawnOnsterMidboss(diff){
   eb.phase=1; eb.atkT=1.2; eb.atkN=0; eb.summonT=3.8; eb.awakened=false;
   eb.title='2막 중간보스 · 사슬의 각성'; eb.quip='아직 깨우지 마라.';
   eb.x=W/2; eb.y=170; eb.intro=true; eb.introScale=1; eb.stunT=4; eb.tauntedHalf=false;
-  eb.hp*=1.578; eb.maxhp=eb.hp; // 중보 보정: normal 기준 총합 약 6만 (각성 50% 포함)
+  eb.hp=hpFromNormal(ACT2_NORMAL_HP.onster); eb.maxhp=eb.hp; // normal 기준 3만, 각성 시 체력 리필 없음
   eb.xp=Math.max(actTuning(2).bossXp||3100,eb.xp||0);
   eb.slotRole='midboss'; eb.slotAct=act; eb.slotBalanceKey='onster_midboss'; eb.slotDamageScale=0.9;
   onsterDelays=[];   // 지연 큐 초기화
@@ -10004,8 +10023,7 @@ function spawnOnsterMidboss(diff){
 function spawnSet3FinalBoss(b,diff){
   const sb=b||BOSSES.find(x=>x&&x.key==='set3');
   const spawned=spawnBoss(sb);
-  const base=(ENEMY_TYPES.onster&&ENEMY_TYPES.onster.hp?ENEMY_TYPES.onster.hp*diff*diffSet.hp:8200)*2.089; // 최종 보정: normal 기준 총합 약 10만
-  spawned.phaseHp=[base/6,base/3,base/2]; // 1:2:3 → normal 현진 약1.7만·번검 약3.3만·케케로 5만
+  spawned.phaseHp=ACT2_NORMAL_HP.set3.map(hpFromNormal); // normal: 현진 1.5만·번검 2만·케케로 2.5만
   spawned.hp=spawned.phaseHp[0]; spawned.maxhp=spawned.hp;
   spawned.name='현진';
   spawned.title='2막 보스 · 갇힌 프레임들';
@@ -10030,10 +10048,10 @@ function spawnBoss(b){
   markDiscovered('bosses', b&&b.key);
   const slotBase=bossSlotBalanceData(b);
   const scale=(1+(act-1)*0.35)*diffSet.hp*(actTuning(act).bossHpMul||1);
-  // 3막 승우는 set3 슬롯 체력을 빌려 씀. normal 기준 GP1~GP3 총합 약 20만 (GP1≈60k·GP2≈64k·GP3≈76k).
-  const finalBossHpMul=(act>=3&&b&&b.key==='seungwoo')?1.6528:1;
-  const phaseHp=slotBase.phaseHp?slotBase.phaseHp.map(v=>v*scale*finalBossHpMul):null;
-  const hp=phaseHp?phaseHp[0]:slotBase.hp*scale*finalBossHpMul;
+  // 승우 GP1~GP3는 normal 3만·4만·5만. Void 6만은 전환 함수에서 별도 적용한다.
+  const isSeungwoo=act>=3&&b&&b.key==='seungwoo';
+  const phaseHp=isSeungwoo?ACT3_NORMAL_HP.seungwoo.map(hpFromNormal):(slotBase.phaseHp?slotBase.phaseHp.map(v=>v*scale):null);
+  const hp=phaseHp?phaseHp[0]:slotBase.hp*scale;
   const spawned={
     boss:true,key:b.key,sprite:b.sprite,name:b.name,x:W/2,y:140,r:b.r,
     title:placedBossTitle(b),quip:b.quip||'',
@@ -12195,10 +12213,10 @@ function enterSeungwooVoidPhase(b){
   b.voidPhase=true;
   b.voidTransitionStarted=false;
   b.name='승우';
-  b.title='진보스 · 공허 속의 승우';
+  b.title='3막 최종보스 · 시스템 침식';
   b.r=126;
   b.color='#c45bff';
-  const voidHp=Math.round(((b.phaseHp&&b.phaseHp[2])||b.maxhp||b.hp||1)*1.3237); // 공허: normal 기준 약 10만 (GP3의 1.32배)
+  const voidHp=Math.round(hpFromNormal(ACT3_NORMAL_HP.seungwooVoid)); // normal 기준 6만
   b.maxhp=Math.max(1,voidHp);
   b.hp=b.maxhp;
   b.baseSpd=150;
@@ -19750,6 +19768,7 @@ const YANG_SPRITE=new Image();let yangReady=false;YANG_SPRITE.onload=()=>yangRea
 const SW_SPRITE=new Image();let swReady=false;SW_SPRITE.onload=()=>swReady=true;SW_SPRITE.src="btv/assets/asset-083-30a6f3480f.png";
 const SW2_SPRITE=new Image();let sw2Ready=false;SW2_SPRITE.onload=()=>sw2Ready=true;SW2_SPRITE.src="btv/assets/seungwoo-phase2.png";
 const SW3_SPRITE=new Image();let sw3Ready=false;SW3_SPRITE.onload=()=>sw3Ready=true;SW3_SPRITE.src="btv/assets/seungwoo-phase3.png";
+const SW4_SPRITE=new Image();let sw4Ready=false;SW4_SPRITE.onload=()=>sw4Ready=true;SW4_SPRITE.src="btv/assets/seungwoo-phase4.png";
 function drawOnsterSprite(r,e,forcePhase){
   const phase=forcePhase||(e&&e.phase>=2?2:1);
   const ready=phase>=2?onsterP2Ready:onsterP1Ready;
@@ -19790,9 +19809,23 @@ const SPRITES={
   set3:(r,b)=>{ const ph=(b&&b.setPhase)||1; const img=ph===1?SET_HYEONJIN_SPRITE:(ph===2?SET_BEONGEOM_SPRITE:SET_KEKERORO_SPRITE); const ready=ph===1?setHyeonjinReady:(ph===2?setBeongeomReady:setKekeroroReady); if(ready){ const S=r*2.45; ctx.drawImage(img,-S/2,-S/2,S,S); return; } circle(0,0,r*0.9,ph===1?'#cc3040':ph===2?'#38e8ff':'#b84dff',ph===1?'#ff9b9b':ph===2?'#eafaff':'#ff4dd2'); },
   seungwoo:(r,b)=>{
     const ph=(b&&b.gphase)||1;
-    const img=ph>=3?SW3_SPRITE:(ph===2?SW2_SPRITE:SW_SPRITE);
-    const ready=ph>=3?sw3Ready:(ph===2?sw2Ready:swReady);
-    if(ready){ctx.save();ctx.beginPath();ctx.arc(0,-r*0.05,r*0.98,0,TAU);ctx.clip();const ih=img.naturalHeight||1;const sh=r*(ph>=3?2.45:2.3);const sw=sh*(img.naturalWidth/ih);ctx.drawImage(img,-sw/2,-sh*0.52,sw,sh);ctx.restore();ctx.lineWidth=Math.max(2,r*0.06);ctx.strokeStyle=ph>=3?'#ff7a1f':(ph===2?'#ff4dd2':'#9146ff');ctx.beginPath();ctx.arc(0,-r*0.05,r*0.98,0,TAU);ctx.stroke();if(ph>=2){ctx.globalAlpha=ph>=3?0.18:0.14;ctx.fillStyle=ph>=3?'#ff7a1f':'#ff4dd2';ctx.beginPath();ctx.arc(-2,-r*0.05,r*1.0,0,TAU);ctx.fill();ctx.globalAlpha=1;}return;}
+    const voidLook=!!(b&&b.voidPhase);
+    const img=voidLook?SW4_SPRITE:(ph>=3?SW3_SPRITE:(ph===2?SW2_SPRITE:SW_SPRITE));
+    const ready=voidLook?sw4Ready:(ph>=3?sw3Ready:(ph===2?sw2Ready:swReady));
+    if(ready){
+      ctx.save();ctx.beginPath();ctx.arc(0,-r*0.05,r*0.98,0,TAU);ctx.clip();
+      if(voidLook){
+        const side=Math.min(img.naturalWidth||1,img.naturalHeight||1), sx=((img.naturalWidth||side)-side)/2, S=r*2.25;
+        ctx.imageSmoothingEnabled=false;
+        ctx.drawImage(img,sx,0,side,side,-S/2,-S*0.52,S,S);
+      }else{
+        const ih=img.naturalHeight||1, sh=r*(ph>=3?2.45:2.3), sw=sh*(img.naturalWidth/ih);
+        ctx.drawImage(img,-sw/2,-sh*0.52,sw,sh);
+      }
+      ctx.restore();ctx.lineWidth=Math.max(2,r*0.06);ctx.strokeStyle=voidLook?'#ff4b24':(ph>=3?'#ff7a1f':(ph===2?'#ff4dd2':'#9146ff'));ctx.beginPath();ctx.arc(0,-r*0.05,r*0.98,0,TAU);ctx.stroke();
+      if(ph>=2){ctx.globalAlpha=voidLook?0.08:(ph>=3?0.18:0.14);ctx.fillStyle=voidLook?'#ff4b24':(ph>=3?'#ff7a1f':'#ff4dd2');ctx.beginPath();ctx.arc(-2,-r*0.05,r*1.0,0,TAU);ctx.fill();ctx.globalAlpha=1;}
+      return;
+    }
     const glitch=ph>=2, off=glitch?2:0;
     if(glitch){ ctx.globalAlpha=0.55; ctx.fillStyle=ph>=3?'#ff7a1f':'#ff4dd2'; ctx.beginPath(); ctx.arc(-off,0,r*0.8,0,TAU); ctx.fill(); ctx.fillStyle='#38e8ff'; ctx.beginPath(); ctx.arc(off,0,r*0.8,0,TAU); ctx.fill(); ctx.globalAlpha=1; }
     // 양복 어깨
@@ -20449,7 +20482,7 @@ function drawBoss(b){
 function encounterPhaseLabel(e){
   if(!e) return '';
   if(e.key==='set3'){ const p=e.setPhase||1; return p>1?'PHASE '+p:''; }
-  if(e.key==='seungwoo'){ const p=e.gphase||1; return e.voidPhase?'VOID':(p>1?'GLITCH '+p:''); }
+  if(e.key==='seungwoo'){ const p=e.gphase||1; return p>1?'GLITCH '+p:''; }
   if(e.key==='kijo'){ const p=e.kijoFinalPhase?3:(e.enraged?2:1); return p>1?'PHASE '+p:''; }
   if(e.type==='onster'||e.key==='onster'){ const p=e.awakened||e.phase>=2?2:1; return p>1?'PHASE '+p:''; }
   const phase=Number(e.phase)||1;
