@@ -168,7 +168,7 @@
             <p>특히 다른 창에서 영상, 방송, 비디오처럼 자원을 많이 쓰는 콘텐츠를 함께 실행하면 화면 끊김이나 지연이 발생할 수 있습니다.</p>
           </div>
           <div class="title-live title-info-card" aria-label="게임 소개">
-            <div class="title-live-head"><span><span class="ld"></span>LIVE</span><span class="title-version">v1.8.85</span></div>
+            <div class="title-live-head"><span><span class="ld"></span>LIVE</span><span class="title-version">v1.8.92</span></div>
             <div class="title-card-name">NO SIGNAL</div>
             <p class="title-card-desc">스트리머가 되어 끝없이 몰려오는 시청자를 막아내는 픽셀 로그라이크 액션 게임</p>
             <div class="title-info-grid">
@@ -202,7 +202,7 @@
             <button class="title-item" id="tmExit" style="font-size:clamp(15px,2.5vw,21px);color:#9b8fc4">EXIT</button>
           </div>
         </div>
-        <div style="position:fixed;bottom:12px;right:16px;font-family:'Courier New',monospace;font-size:11px;color:#3a2f50;letter-spacing:2px;pointer-events:none;z-index:1;" id="verTag">v1.8.85</div>
+        <div style="position:fixed;bottom:12px;right:16px;font-family:'Courier New',monospace;font-size:11px;color:#3a2f50;letter-spacing:2px;pointer-events:none;z-index:1;" id="verTag">v1.8.92</div>
       </div>
 
       <!-- START (난이도 선택) -->
@@ -442,6 +442,7 @@
         <div class="panel-box">
           <div class="tag" id="endTag">방송 종료</div>
           <h1 id="endTitle">GG</h1>
+          <p class="sub" id="endQuip" style="color:var(--magenta)"></p>
           <p class="sub" id="endStats"></p>
           <div class="score-card" id="endScoreCard">
             <div class="score-label">SCORE</div>
@@ -457,7 +458,10 @@
             </div>
             <div class="score-save" id="endScoreSave">ranking standby</div>
           </div>
-          <p class="sub" id="endQuip" style="color:var(--magenta)"></p>
+          <div class="end-gold-fold" id="endGoldFold" style="margin:10px 0">
+            <button class="score-guide-toggle" id="goldSummaryToggle" type="button" aria-expanded="false" aria-controls="goldSummaryBody">골드 요약 보기 ▼</button>
+            <div class="score-guide-body hidden" id="goldSummaryBody"></div>
+          </div>
           <button class="btn" id="retryBtn" style="background:#3a2a52;border-color:#c98bff">↺ 재도전하기</button>
           <button class="btn" id="restartBtn">다시 시작하기</button>
           <button class="btn ghost" id="titleBtn">시작화면으로</button>
@@ -645,11 +649,11 @@
 
 <!-- ===== JS: Game runtime ===== -->
 <script defer src="btv/js/firebase-config.public.js"></script>
-<script defer src="btv/js/data/enemies.js?v=1.8.19"></script>
+<script defer src="btv/js/data/enemies.js?v=1.8.20"></script>
 <script defer src="btv/js/data/bosses.js?v=1.8.15"></script>
 <script defer src="btv/js/data/relicPixels.js?v=1.8.14"></script>
 <script defer src="btv/js/data/achievements.js?v=1.8.14"></script>
-<script defer src="btv/js/game.js?v=1.8.85"></script>
+<script defer src="btv/js/game.js?v=1.8.92"></script>
 
       <!-- PASSIVE TREE -->
       <div class="hidden" id="ovTree" style="position:fixed;inset:0;z-index:500;background:rgba(5,3,10,0.97);display:flex;flex-direction:column;align-items:stretch;">
