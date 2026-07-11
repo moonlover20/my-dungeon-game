@@ -34,7 +34,7 @@ const ENEMY_TYPES={
   gwangcheon_gim:{name:"광천김", r:23, hp:73,  spd:46, dmg:10,  touchDmg:10,  color:"#3f7a34", xp:88,  ai:"shooter", range:350, cool:1.45, label:"광천김"},
   reura         :{name:"러라",   r:21, hp:70,  spd:98, dmg:14, touchDmg:14, color:"#ffd166", xp:84,  ai:"chase", lunge:true, label:"러라"},
   namu          :{name:"나무",   r:25, hp:97,  spd:40, dmg:17, touchDmg:17, color:"#5fa84a", xp:96, ai:"chase",   label:"나무"},
-  ketter        :{name:"케터",   r:22, hp:73,  spd:58, dmg:11,  color:"#7ed957", xp:86,  ai:"orbit", range:285, cool:1.25, label:"케터"},
+  ketter        :{name:"지렁이", r:22, hp:73,  spd:58, dmg:11,  color:"#7ed957", xp:86,  ai:"orbit", range:285, cool:1.25, label:"지렁이"},
   // --- 2막 어려운 적 ---
   pobear        :{name:"포베어", r:30, hp:148, spd:66, dmg:20, touchDmg:18, color:"#c8884a", xp:330, ai:"charge", armor:0.08, label:"포베어"},
   blackstar     :{name:"흑별",   r:27, hp:132, spd:42, dmg:17, touchDmg:14, color:"#17111f", xp:315, ai:"orbit", range:300, cool:1.15, label:"흑별"},
@@ -64,7 +64,7 @@ const ACT1_WEAK_ENEMY_IDS=["goblin_warrior","goblin_archer","goblin_shaman","gob
 const ACT1_LATE_ENEMY_IDS=["hoonsangtae","jaemin","killjoy","stream_watcher"];
 const ACT1_PRIORITY_CAPS={killjoy:3,stream_watcher:3,jaemin:3,hoonsangtae:3};
 // === 2막 잡몹 분리 ===
-const ACT2_BASIC_ENEMY_IDS=["gwangcheon_gim","reura","namu","ketter"];      // 일반몹: 광천김/러라/나무/케터
+const ACT2_BASIC_ENEMY_IDS=["gwangcheon_gim","reura","namu","ketter"];      // 일반몹: 광천김/러라/나무/지렁이
 const ACT2_LATE_ENEMY_IDS=["pobear","blackstar","sniper_viewer","apple"];          // 어려운 적: 포베어/흑별/저격러/사과
 const ACT2_PRIORITY_CAPS={blackstar:3,sniper_viewer:3,apple:3,pobear:3};                    // 방당 최대 3마리 허용
 // 3막 전용 풀: 초반/중반/후반을 나눠 강한 조합이 너무 일찍 겹치지 않게 한다.
