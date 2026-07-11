@@ -2577,7 +2577,7 @@ const SCORE_MAX=9999999;
 const LEADERBOARD_MIN_SCORE=3000;
 const NAME_MAX_LEN=12;
 const FLOORS_PER_ACT=15;
-const RETRY_SCORE_PENALTY=5000;
+const RETRY_SCORE_PENALTY=3000;
 const HIT_SCORE_PENALTY=0;
 const LEADERBOARD_COLLECTIONS={easy:'scores_easy',normal:'scores_normal',hard:'scores_hard'};
 const LEADERBOARD_SUMMARY_COLLECTION='leaderboard';
@@ -6620,14 +6620,13 @@ function calcScoreBreakdown(data){
   const levelScore=(scoreLevel-1)*1500;
   const actClearBonus=(cleared&&scoreAct>=3)?12000:0;
   const clearBonus=cleared?30000+actClearBonus:0;
-  const timeBonus=cleared?Math.max(0,Math.round((2000-elapsedSec)*10)):0;
   const hitPenalty=hits*HIT_SCORE_PENALTY;
   const retryPenalty=scoreRetries*RETRY_SCORE_PENALTY;
-  const grossScore=progressScore+levelScore+clearBonus+timeBonus;
+  const grossScore=progressScore+levelScore+clearBonus;
   const penaltyScore=hitPenalty+retryPenalty;
   const rawScore=Math.round(grossScore-penaltyScore);
   const score=clamp(Math.max(0,rawScore),0,SCORE_MAX);
-  return {score,totalScore:score,reachedFloor:floor,act:scoreAct,globalFloor,progressScore,killScore,levelScore,earnedScore:progressScore+levelScore,clearBonus,timeBonus,hitPenalty,retryPenalty,penaltyScore,appliedPenalty:penaltyScore,rawScore,elapsedSec,kills:scoreKills,level:scoreLevel,hits,retries:scoreRetries,cleared};
+  return {score,totalScore:score,reachedFloor:floor,act:scoreAct,globalFloor,progressScore,killScore,levelScore,earnedScore:progressScore+levelScore,clearBonus,hitPenalty,retryPenalty,penaltyScore,appliedPenalty:penaltyScore,rawScore,elapsedSec,kills:scoreKills,level:scoreLevel,hits,retries:scoreRetries,cleared};
 }
 function scoreBreakdownFromSummary(data){
   if(!data) return null;
@@ -6945,7 +6944,6 @@ function renderScoreBreakdownSection(summary){
     ['진행 점수',b.progressScore],
     ['레벨 점수',b.levelScore],
     ['클리어 보너스',b.clearBonus],
-    ['시간 보너스',b.timeBonus],
     ['재도전 패널티',-Math.abs(Number(b.retryPenalty)||0)],
     ['총점',total]
   ].map(item=>{
@@ -6965,7 +6963,6 @@ function renderScoreBreakdownSectionV2(summary){
     ['진행 점수',b.progressScore,'add'],
     ['레벨 점수',b.levelScore,'add'],
     ['클리어 보너스',b.clearBonus,'add'],
-    ['시간 보너스',b.timeBonus,'add'],
     ['재도전 패널티',-Math.abs(Number(b.retryPenalty)||0),'penalty'],
     ['총점',total,'total']
   ].map(item=>{
@@ -23658,15 +23655,85 @@ function retryRoom(){
   player.iframes=1.2;
 }
 const DEATH_LINES={
+  // ── 보스 / 중보 ──
   '승우':{title:'승우가 게임을 닫았다', q:['승우: "버그가 아니라 실력입니다."','채팅: 화면 돌 때 죽음 KEKW','승우: "한 번 더 하시죠, 봉식님."']},
-  '미주':{title:'미주에게 짓눌렸다', q:['채팅: 미주한테 짐 ㅋㅋ Sadge','미주: 말랑말랑~','채팅: 흑임자 맛 ㄷㄷ']},
-  '자잘자':{title:'자잘자에게 긁혔다', q:['자잘자: 봉식님 그것밖에 안 되시네요 KEKW','채팅: 자잘자한테 짐ㅋㅋ Sadge','자잘자: 로블록스나 하러 가세요']},
-  '혜철이':{title:'혜철이에게 잡아먹혔다', q:['혜철이: 크아아앙!','채팅: 보스도 아닌데… monkaS','혜철이: 한 입 거리였네']},
+  '공허 승우':{title:'공허의 승우에게 삼켜졌다', q:['채팅: 마지막 시청자 monkaS','승우: "아직 안 끝났어요."','채팅: 화면 뒤에 뭐가 있어 ㄷㄷ']},
   '키죠':{title:'키죠의 가면에 짓밟혔다', q:['키죠: 가소롭군.','채팅: 1막 보스한테 ㅠㅠ','키죠: 이 정도였나?']},
+  '온스터':{title:'온스터의 사슬에 묶였다', q:['온스터: 끌려와라.','채팅: 사슬 끊었어야지 Sadge','온스터: 도망은 없다']},
+  '현진':{title:'현진에게 짓밟혔다', q:['현진: ㅋㅋㅋㅋ 약하네','채팅: 진각 못 피함 monkaS','현진: 이게 다야?']},
+  '번검':{title:'번검의 발도에 베였다', q:['번검: 한 칼이면 충분해.','채팅: 라인 봤어야지 KEKW','번검: 납도.']},
+  '케케로':{title:'케케로의 방송에 놀아났다', q:['케케로: 채팅이 골랐어~','채팅: 투표 배신 ㅋㅋ','케케로: 다음 판도 보자']},
+  '박제인간':{title:'박제인간에게 박제됐다', q:['채팅: 벽에 걸렸다 ㄷㄷ','박제인간: …','채팅: 표정이 왜 저래 monkaS']},
   '강철 군주':{title:'강철 군주에게 분쇄당했다', q:['강철 군주: 약하다.','채팅: 2막에서 막혔다 Sadge','강철 군주: 녹슨 실력이군']},
   '거대 곰':{title:'거대 곰에게 짓이겨졌다', q:['거대 곰: 크어어!','채팅: 곰을 어떻게 이겨요…','채팅: 숲의 지배자 클라스 ㄷㄷ']},
+  // ── 1막 잡몹 / 엘리트 ──
+  '자잘자':{title:'자잘자에게 긁혔다', q:['자잘자: 봉식님 그것밖에 안 되시네요 KEKW','채팅: 자잘자한테 짐ㅋㅋ Sadge','자잘자: 로블록스나 하러 가세요']},
+  '혜철이':{title:'혜철이에게 잡아먹혔다', q:['혜철이: 크아아앙!','채팅: 보스도 아닌데… monkaS','혜철이: 한 입 거리였네']},
+  '러부엉':{title:'러부엉에게 물렸다', q:['러부엉: 부엉!','채팅: 잡몹한테 짐 ㅋㅋ Sadge','채팅: 달려드는 거 피해요']},
+  '대파':{title:'대파에게 저격당했다', q:['채팅: 대파한테 짐?? KEKW','대파: 파닥파닥','채팅: 원딜을 왜 안 잡아']},
+  '까치':{title:'까치에게 쪼였다', q:['까치: 깍깍!','채팅: 빙글빙글 도는 거 ㄷㄷ','채팅: 까치도 못 잡네 Sadge']},
+  '블페러':{title:'블페러와 함께 터졌다', q:['채팅: 자폭각 monkaS','블페러: 펑!','채팅: 붙지 말라니까 KEKW']},
+  '훈상태':{title:'훈상태의 식칼에 맞았다', q:['훈상태: 받아라!','채팅: 식칼 날아온다 ㄷㄷ','채팅: 던지는 거 피해요 Sadge']},
+  '재민':{title:'재민의 부메랑에 당했다', q:['재민: 다시 돌아온다~','채팅: 부메랑 뒤통수 KEKW','채팅: 돌아오는 거 까먹음']},
+  '저격러':{title:'저격러에게 헤드샷 당했다', q:['채팅: 빨간 선 봤어야지 monkaS','저격러: 조준 완료.','채팅: 저격 라인 ㄷㄷ']},
+  '방플러':{title:'방플러에게 발이 묶였다', q:['채팅: 발 묶였다 Sadge','방플러: 가만히 있어.','채팅: 이동 잠기는 거 ㄷㄷ']},
+  '케터피':{title:'케터피에게 갉아먹혔다', q:['채팅: 애벌레한테?? KEKW','케터피: 꿈틀','채팅: 이건 좀…']},
+  '저글링':{title:'저글링 떼에 뜯겼다', q:['채팅: 저글링 러쉬 ㄷㄷ','채팅: 뭉치면 무섭다 monkaS','채팅: 알부터 깨지…']},
+  '뮤탈':{title:'뮤탈에게 쪼였다', q:['채팅: 공중 유닛 ㄷㄷ','채팅: 뮤짤 당함 KEKW','채팅: 대공이 없네']},
   '울트라':{title:'울트라에게 깔렸다', q:['채팅: 울트라 컨트롤 ㄷㄷ','울트라: 쿠어어','채팅: 저글링부터 잡지 그랬어']},
+  // ── 던전 잡몹 ──
+  '스켈레톤 워리어':{title:'스켈레톤 워리어에게 베였다', q:['채팅: 해골한테 짐 Sadge','채팅: 딸깍딸깍 ㄷㄷ','채팅: 뼈다귀 조심']},
+  '고스트':{title:'고스트에게 홀렸다', q:['채팅: 유령 못 피함 monkaS','채팅: 왔다갔다 ㄷㄷ','채팅: 예측을 해요']},
+  '작은 골렘':{title:'작은 골렘에게 밟혔다', q:['채팅: 작은데 아프네 ㄷㄷ','채팅: 골렘한테 짐 Sadge','채팅: 느린데 왜 맞아']},
+  '루인스 골렘':{title:'루인스 골렘에게 뭉개졌다', q:['채팅: 돌덩이 ㄷㄷ','채팅: 피하면 되는데 Sadge','채팅: 무겁다 무거워']},
+  '거대 골렘':{title:'거대 골렘에게 짓눌렸다', q:['채팅: 덩치값 하네 ㄷㄷ','채팅: 큰 거 조심 monkaS','채팅: 각 나오는데…']},
+  '엘드리치':{title:'엘드리치에게 잠식됐다', q:['채팅: 뭔가 이상한 거 ㄷㄷ','엘드리치: …','채팅: 보라색 조심 monkaS']},
+  '초록 슬라임':{title:'초록 슬라임에게 삼켜졌다', q:['채팅: 슬라임한테 짐 ㅋㅋ KEKW','채팅: 튜토리얼 몹인데 Sadge','채팅: ㄹㅇ?']},
+  '빨강 슬라임':{title:'빨강 슬라임에게 삼켜졌다', q:['채팅: 빨간 건 빠르다 ㄷㄷ','채팅: 슬라임한테… Sadge','채팅: 발컨 인정']},
+  '노랑 슬라임':{title:'노랑 슬라임에게 삼켜졌다', q:['채팅: 노란 건 아프다 ㄷㄷ','채팅: 슬라임 3연 Sadge','채팅: 색깔별로 다르네']},
+  '엘프 검사':{title:'엘프 검사에게 베였다', q:['채팅: 엘프 빠르다 ㄷㄷ','채팅: 3연속 베기 monkaS','채팅: 붙기 전에 잡아요']},
+  // ── 2막 시참 ──
+  '미주':{title:'미주에게 짓눌렸다', q:['채팅: 미주한테 짐 ㅋㅋ Sadge','미주: 말랑말랑~']},
+  '광천김':{title:'광천김에게 당했다', q:['광천김: 김 한 장 하실래예','채팅: 김 맞고 죽음 KEKW','채팅: 초록초록하다']},
+  '러라':{title:'러라에게 물렸다', q:['러라: 라라~','채팅: 돌진 러라 ㄷㄷ','채팅: 달려드는 거 피해요 Sadge']},
+  '나무':{title:'나무에게 짓눌렸다', q:['나무: …','채팅: 나무한테 짐 ㅋㅋ','채팅: 느린데 왜 맞아 Sadge']},
+  '지렁이':{title:'지렁이에게 감겼다', q:['채팅: 지렁이 빙글빙글 ㄷㄷ','채팅: 궤도 읽어요','채팅: 이것도 못 잡네 Sadge']},
+  '포베어':{title:'포베어에게 들이받혔다', q:['채팅: 곰 돌진 monkaS','포베어: 크앙','채팅: 자잘자 사촌인가 KEKW']},
+  '흑별':{title:'흑별에게 삼켜졌다', q:['채팅: 검은 별 ㄷㄷ','흑별: …','채팅: 회전 조심']},
+  '킬조이':{title:'킬조이에게 저격당했다', q:['채팅: 킬조이 딜 ㄷㄷ','킬조이: GG']},
+  '사과':{title:'사과에게 굴러 맞았다', q:['채팅: 사과한테 짐?? KEKW','채팅: 굴러다니는 거 ㄷㄷ','채팅: 예측 불가 Sadge']},
+  // ── 3막 시참 ──
+  '노잭':{title:'노잭에게 치였다', q:['채팅: 트럭 조심 KEKW','노잭: 빵—']},
+  '도민':{title:'도민에게 기습당했다', q:['채팅: 잠수 돌진 monkaS','도민: 슉—']},
+  '오픈더':{title:'오픈더의 반사에 당했다', q:['채팅: 반사됨 KEKW','오픈더: 되돌려주지','채팅: 거울 조심']},
+  '소실아':{title:'소실아에게 끌려갔다', q:['소실아: 이리 와']},
+  '바나나':{title:'바나나의 랙필드에 갇혔다', q:['채팅: 렉 걸림 monkaS','바나나: 뚝—뚝','채팅: 순간이동 ㄷㄷ']},
+  '알빠노':{title:'알빠노의 물량에 밀렸다', q:['알빠노: 더 불러라','채팅: 본체를 쳐요 Sadge']},
+  '쿨제':{title:'쿨제에게 암살당했다', q:['쿨제: 뒤를 봐','채팅: 안 보였다 ㄷㄷ']},
+  '타포':{title:'타포에게 분열당했다', q:['채팅: 계속 갈라짐 ㄷㄷ','타포: 하나가 둘로','채팅: 다 잡아야 함 Sadge']},
+  // ── 환경 ──
   '바닥 장판':{title:'바닥 장판에 녹았다', q:['채팅: 바닥 보고 다녀요 KEKW','채팅: 장판 회피 연습… Sadge','채팅: 그건 좀…']},
+};
+// 패턴/탄막 소스명 → 대표 킬러 키 별칭. (사망화면 조회에서만 사용 — 전투 로직/탄막 srcName은 절대 안 건드림)
+const KILLER_ALIAS={
+  // 키죠 (시선/무대)
+  '키죠의 시선':'키죠','키죠 노려봐':'키죠','탈춤 가면':'키죠','스포트라이트':'키죠',
+  // 온스터 (사슬)
+  '사슬 교차':'온스터','사슬 거미줄':'온스터','사슬 격자':'온스터','사슬 파편':'온스터','온스터 사슬 파편':'온스터','사슬 미로':'온스터',
+  // 현진 (근접/씨름판)
+  '현진 대시':'현진','씨름판 이탈':'현진',
+  // 번검 (거합)
+  '번검 거합(근접)':'번검',
+  // 케케로 (방송/송출)
+  '검은 마법 · 미래시':'케케로','송출 점거':'케케로',
+  // 혜철이 (물량/포자/지뢰)
+  '산란 회랑':'혜철이','부화 지뢰':'혜철이',
+  // 미주 (개화)
+  '미주 만개':'미주',
+  // 공허 승우
+  '공허 파동':'공허 승우','공허구':'공허 승우','공허 중력':'공허 승우','공허 돌진':'공허 승우',
+  // 노잭 (대형빔)
+  '노잭 대형빔':'노잭',
 };
 function leaderboardMinScoreMessage(){
   return fmtScore(LEADERBOARD_MIN_SCORE)+'점 이상부터 랭킹 등록 가능';
@@ -23696,17 +23763,14 @@ function renderEndScoreGuide(scoreData,expanded){
       '<div>레벨 점수 = (레벨 - 1) × 1500</div>'+
       '<div>클리어 보너스 = 클리어 시 +30,000</div>'+
       '<div>3막 클리어 추가 보너스 = +12,000</div>'+
-      '<div>시간 보너스 = 클리어 시 max(0, (2000초 - 플레이시간) × 10)</div>'+
-      '<div class="score-guide-note">※ 2000초 초과 클리어 또는 미클리어 시 0점</div>'+
       '<br>'+
-      '<div>재도전 패널티 = 재도전 횟수 × -5000</div>'+
+      '<div>재도전 패널티 = 재도전 횟수 × -3000</div>'+
     '</div>'+
     '<div class="score-guide-section">'+
       '<div class="score-guide-title">이번 런 점수 분해</div>'+
       scoreGuideLine('진행 점수',signedScoreText(data.progressScore),false)+
       scoreGuideLine('레벨 점수',signedScoreText(data.levelScore),false)+
       scoreGuideLine('클리어 보너스',signedScoreText(data.clearBonus),false)+
-      scoreGuideLine('시간 보너스',signedScoreText(data.timeBonus),false)+
       scoreGuideLine('재도전 패널티',signedScoreText(-Math.abs(Number(data.retryPenalty)||0)),true)+
       '<div class="score-guide-line total"><span>총점</span><b>'+rankBuildText(fmtScore(total))+'</b></div>'+
     '</div>';
@@ -23716,6 +23780,14 @@ function toggleEndScoreGuide(){
   const expanded=!(body&&body.classList.contains('hidden'));
   renderEndScoreGuide(pendingScoreData,!expanded);
 }
+function toggleEndGoldSummary(){
+  const body=$('goldSummaryBody');
+  const toggle=$('goldSummaryToggle');
+  if(!body) return;
+  const willExpand=body.classList.contains('hidden');
+  body.classList.toggle('hidden',!willExpand);
+  if(toggle){ toggle.setAttribute('aria-expanded',willExpand?'true':'false'); toggle.textContent=willExpand?'골드 요약 숨기기 ▲':'골드 요약 보기 ▼'; }
+}
 function refreshEndRankEligibility(){
   const submit=$('endRankSubmit');
   const saveEl=$('endScoreSave');
@@ -23724,7 +23796,7 @@ function refreshEndRankEligibility(){
   if(!submit) return eligible;
   if(!eligible){
     submit.disabled=true;
-    submit.textContent='등록 불가';
+    submit.textContent='랭킹 등록';
     if(saveEl) saveEl.textContent=leaderboardMinScoreMessage();
   }else{
     submit.disabled=false;
@@ -24304,7 +24376,7 @@ function gameOver(win, killer, options){
   if(voidDeath){ title='마지막 시청자'; quip='방송은 끝나지 않았다. 보는 사람이 한 명 남아 있었으므로.'; }
   else if(win){ title=act>=3?(bossStoryTrueEndingReady()?'화면이 꺼졌다':'송출 계속 중'):'CLEAR!'; quip=act>=3?(bossStoryTrueEndingReady()?'아무도 그가 어디로 갔는지 모른다.':'송출 정상 / 시청자 수 계속 증가 / 다음 방송까지 00:00'):pick(["재밌었다. 다음 시즌에 보자.","채팅 단체기립 POGGERS","갓겜 인정 GIGACHAD","클립 박제각 Clap","이게 되네?! KEKW"]); }
   else {
-    const entry = DEATH_LINES[k];
+    const entry = DEATH_LINES[KILLER_ALIAS[k]||k];
     if(entry){ title=entry.title; quip=pick(entry.q); }
     else { title='"'+k+'"에게 당했다'; quip=pick(["채팅 폭소 KEKW","아 아까비 Sadge","한 판 더! LULW","발컨 박제 monkaS","멘탈 챙기세요"]); }
   }
@@ -24315,11 +24387,14 @@ function gameOver(win, killer, options){
   const scheduleNames=runScheduleSummary().map(r=>r.label+' '+r.name).join(' / ');
   const startChoiceLine=runStartChoicePick?('시작 선택: <b>'+escapeRunText(runStartChoicePick.name)+'</b>'):'시작 선택: <b>-</b>';
   const broadcastLine='<br><span class="end-run-rules">'+startChoiceLine+(scheduleNames?' · 편성표: '+escapeRunText(scheduleNames):'')+'</span>'+renderRunHistorySummary();
+  const _rp=Math.round(Number(scoreData.retryPenalty)||0);
+  const retryPenText=_rp>0?("<b style='color:#ff748b'>-"+fmtScore(_rp)+"</b>"):"<b>0</b>";
   $('endStats').innerHTML=
     "도달: <b>"+act+"막 "+scoreData.reachedFloor+"층</b> · 처치: <b>"+totalKills+"</b> · 레벨: <b>"+level+"</b><br>"+
-    "피격: <b>"+runHits+"</b> · 시간: <b>"+fmtTime(scoreData.elapsedSec)+"</b> · 재도전 감점: <b style='color:#ff748b'>-"+fmtScore(scoreData.retryPenalty)+"</b><br>"+
-    "골드: <b style='color:#ffd34d'>"+gold+"</b> · 유물: <b>"+player.relics.length+"개</b> · 난이도: <b style='color:"+diffSet.col+"'>"+diffSet.label+"</b>"+broadcastLine+
-    renderEndGoldSummary();
+    "피격: <b>"+runHits+"</b> · 시간: <b>"+fmtTime(scoreData.elapsedSec)+"</b> · 재도전 감점: "+retryPenText+"<br>"+
+    "골드: <b style='color:#ffd34d'>"+gold+"</b> · 유물: <b>"+player.relics.length+"개</b> · 난이도: <b style='color:"+diffSet.col+"'>"+diffSet.label+"</b>"+broadcastLine;
+  { const gb=$('goldSummaryBody'); if(gb){ gb.innerHTML=renderEndGoldSummary(); gb.classList.add('hidden'); } }
+  { const gt=$('goldSummaryToggle'); if(gt){ gt.setAttribute('aria-expanded','false'); gt.textContent='골드 요약 보기 ▼'; } }
   const scoreEl=$('endScore'); if(scoreEl) scoreEl.textContent=fmtScore(scoreData.score);
   pendingScoreData=scoreData;
   pendingScoreWin=!!win;
@@ -24515,6 +24590,7 @@ function wireMainControls(){
   };
   { const rb=$('endRankSubmit'); if(rb) rb.onclick=submitEndRankScore; }
   { const sgt=$('scoreGuideToggle'); if(sgt) sgt.onclick=toggleEndScoreGuide; }
+  { const gst=$('goldSummaryToggle'); if(gst) gst.onclick=toggleEndGoldSummary; }
   $('restartBtn').onclick=()=>{
     introFxReset(); stopBGM(); hideAll();
     try{ if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)(); if(audioCtx.state==='suspended')audioCtx.resume(); }catch(e){}
