@@ -20448,12 +20448,12 @@ function drawBoss(b){
 }
 function encounterPhaseLabel(e){
   if(!e) return '';
-  if(e.key==='set3') return 'PHASE '+(e.setPhase||1);
-  if(e.key==='seungwoo') return e.voidPhase?'VOID':('GLITCH '+(e.gphase||1));
-  if(e.key==='kijo') return 'PHASE '+(e.kijoFinalPhase?3:(e.enraged?2:1));
-  if(e.type==='onster'||e.key==='onster') return 'PHASE '+(e.awakened||e.phase>=2?2:1);
+  if(e.key==='set3'){ const p=e.setPhase||1; return p>1?'PHASE '+p:''; }
+  if(e.key==='seungwoo'){ const p=e.gphase||1; return e.voidPhase?'VOID':(p>1?'GLITCH '+p:''); }
+  if(e.key==='kijo'){ const p=e.kijoFinalPhase?3:(e.enraged?2:1); return p>1?'PHASE '+p:''; }
+  if(e.type==='onster'||e.key==='onster'){ const p=e.awakened||e.phase>=2?2:1; return p>1?'PHASE '+p:''; }
   const phase=Number(e.phase)||1;
-  if(phase>1||Array.isArray(e.phaseHp)) return 'PHASE '+phase;
+  if(phase>1) return 'PHASE '+phase;
   return '';
 }
 function encounterStatusParts(e){
@@ -20478,16 +20478,16 @@ function encounterStatusParts(e){
 function drawEncounterStatusLine(parts,centerX,y){
   if(!parts||!parts.length) return;
   ctx.save();
-  ctx.font='bold 9px "Galmuri11","Malgun Gothic",monospace';
-  const gap=5, pads=10;
+  ctx.font='bold 12px "Galmuri11","Malgun Gothic",monospace';
+  const gap=6, pads=14;
   const widths=parts.map(p=>Math.ceil(ctx.measureText(p.text).width)+pads);
   const total=widths.reduce((a,b)=>a+b,0)+gap*(widths.length-1);
   let x=centerX-total/2;
   parts.forEach((p,i)=>{
     const w=widths[i];
-    ctx.fillStyle='rgba(7,6,14,0.88)'; ctx.fillRect(Math.round(x),Math.round(y-10),w,15);
-    ctx.strokeStyle=p.col; ctx.lineWidth=1; ctx.strokeRect(Math.round(x)+0.5,Math.round(y-10)+0.5,w-1,14);
-    ctx.fillStyle=p.col; ctx.textAlign='center'; ctx.fillText(p.text,x+w/2,y+1);
+    ctx.fillStyle='rgba(7,6,14,0.88)'; ctx.fillRect(Math.round(x),Math.round(y-13),w,20);
+    ctx.strokeStyle=p.col; ctx.lineWidth=1.5; ctx.strokeRect(Math.round(x)+0.5,Math.round(y-13)+0.5,w-1,19);
+    ctx.fillStyle=p.col; ctx.textAlign='center'; ctx.fillText(p.text,x+w/2,y+2);
     x+=w+gap;
   });
   ctx.restore();
@@ -20496,7 +20496,7 @@ function drawEncounterBar(e,opts){
   if(!e||!Number.isFinite(Number(e.maxhp))||e.maxhp<=0) return;
   opts=opts||{};
   const bw=Math.round(clamp(Number(opts.width)||W*0.66,320,W-100));
-  const bh=Math.round(Number(opts.height)||17);
+  const bh=Math.round(Number(opts.height)||22);
   const bx=Math.round((W-bw)/2), by=Math.round(Number(opts.y)||18);
   const col=opts.color||e.color||'#ff5b3b';
   const light=_shade(col,0.38), dark=_shade(col,-0.72), deep=_shade(col,-0.88);
@@ -20522,19 +20522,19 @@ function drawEncounterBar(e,opts){
   ctx.globalAlpha=1;
   if(f>0&&f<1){ ctx.fillStyle='#fff'; ctx.globalAlpha=0.8; ctx.fillRect(Math.round(innerX+innerW*f)-1,innerY,2,innerH); ctx.globalAlpha=1; }
   const hpText=Math.ceil(hp).toLocaleString()+' / '+Math.ceil(maxhp).toLocaleString()+' · '+Math.round(f*100)+'%';
-  ctx.font='bold 10px "Galmuri11","Malgun Gothic",monospace'; ctx.textAlign='right'; ctx.textBaseline='middle';
-  ctx.strokeStyle='#05030a'; ctx.lineWidth=3; ctx.strokeText(hpText,bx+bw-9,by+bh/2+1); ctx.fillStyle='#fff'; ctx.fillText(hpText,bx+bw-9,by+bh/2+1);
+  ctx.font='bold 13px "Galmuri11","Malgun Gothic",monospace'; ctx.textAlign='right'; ctx.textBaseline='middle';
+  ctx.strokeStyle='#05030a'; ctx.lineWidth=4; ctx.strokeText(hpText,bx+bw-11,by+bh/2+1); ctx.fillStyle='#fff'; ctx.fillText(hpText,bx+bw-11,by+bh/2+1);
   const name=opts.name||(e.key==='set3'?set3PhaseName(e):(e.label||e.name||'보스'));
   const rank=opts.rank||'BOSS'; const phase=encounterPhaseLabel(e);
   const label=(rank?rank+' · ':'')+name+(phase?'  '+phase:'');
-  ctx.font='bold 12px "Galmuri11","Malgun Gothic",monospace'; ctx.textAlign='center'; ctx.textBaseline='alphabetic';
-  ctx.strokeStyle='#05030a'; ctx.lineWidth=4; ctx.strokeText(label,W/2,by+bh+19); ctx.fillStyle=light; ctx.fillText(label,W/2,by+bh+19);
+  ctx.font='bold 16px "Galmuri11","Malgun Gothic",monospace'; ctx.textAlign='center'; ctx.textBaseline='alphabetic';
+  ctx.strokeStyle='#05030a'; ctx.lineWidth=5; ctx.strokeText(label,W/2,by+bh+24); ctx.fillStyle=light; ctx.fillText(label,W/2,by+bh+24);
   ctx.restore();
-  drawEncounterStatusLine(encounterStatusParts(e),W/2,by+bh+36);
+  drawEncounterStatusLine(encounterStatusParts(e),W/2,by+bh+45);
 }
 function drawBossTopBar(b){
   if(!b) return;
-  drawEncounterBar(b,{rank:b.key==='seungwoo'?'FINAL BOSS':'BOSS',width:W*0.68,color:b.color});
+  drawEncounterBar(b,{rank:b.key==='seungwoo'?'FINAL BOSS':'BOSS',width:W*0.86,color:b.color});
 }
 function drawPlayer(){
   const p=player;
@@ -21443,10 +21443,10 @@ function drawEliteBar(e){
   const kind=eliteKindOf(e);
   const miju=isKkotMain(e);
   const col=miju?((e.phase||1)>=3?'#ff2060':'#ff6fae'):(e.color||'#ff8a4d');
-  drawEncounterBar(e,{rank:'ELITE',name:miju?'미주':eliteDisplayName(kind),width:420,height:15,color:col});
+  drawEncounterBar(e,{rank:'ELITE',name:miju?'미주':eliteDisplayName(kind),width:560,height:20,color:col});
 }
 function drawMidbossBar(e){
-  drawEncounterBar(e,{rank:e.finalBoss?'BOSS':'MID BOSS',name:e.label||e.name||'',width:440,height:16,color:e.color||'#ffae42'});
+  drawEncounterBar(e,{rank:e.finalBoss?'BOSS':'MID BOSS',name:e.label||e.name||'',width:585,height:21,color:e.color||'#ffae42'});
 }
 
 function drawKijoMaskShape(x,y,r,kind,alpha,seed){
@@ -22106,7 +22106,7 @@ function draw(){
   if(roomPreviewT>0 && state==='play'){
     const a=clamp(roomPreviewT/2,0,1);
     const encounterBarOpen=!!boss||enemies.some(e=>e&&(e.midboss||e.eliteViewer));
-    const previewY=encounterBarOpen?96:56;
+    const previewY=encounterBarOpen?116:56;
     ctx.save();
     ctx.fillStyle='rgba(21,16,31,'+(0.16*a)+')'; ctx.fillRect(0,0,W,H);
     ctx.textAlign='center';
