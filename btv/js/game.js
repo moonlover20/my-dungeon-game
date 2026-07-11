@@ -20610,18 +20610,18 @@ function drawPlayerLocalHpBar(p){
   if(!p||!(p.maxhp>0)) return;
   const now=performance.now(), ratio=clamp((Number(p.hp)||0)/p.maxhp,0,1);
   const recent=Number.isFinite(p.lastHitAt)&&now-p.lastHitAt<2500, low=ratio<=0.30;
-  const bw=recent?82:72, bh=recent?9:7, below=p.y+p.r*2.2+bh+6<H;
+  if(ratio>=0.999&&!recent) return;
+  const bw=low?52:(recent?50:46), bh=low?5:4, below=p.y+p.r*1.65+bh+4<H;
   const bx=isSeungwooVoidFight()?-bw/2:clamp(p.x-bw/2,4,W-bw-4)-p.x;
-  const by=below?p.r*2.05:-p.r*2.05-bh;
+  const by=below?p.r*1.55:-p.r*1.55-bh;
   const pulse=0.5+0.5*Math.sin(now/90), col=low?'#ff2638':(ratio<=0.5?'#ffd34d':'#ff5d8a');
   ctx.save();
-  ctx.globalAlpha=low?0.88+0.12*pulse:(recent||ratio<0.999?0.92:0.42);
-  ctx.fillStyle='rgba(5,3,12,0.88)'; ctx.fillRect(Math.round(bx-2),Math.round(by-2),bw+4,bh+4);
-  ctx.strokeStyle=low?'#ff6b7d':'#c7b8e8'; ctx.lineWidth=1; ctx.strokeRect(Math.round(bx-1.5),Math.round(by-1.5),bw+3,bh+3);
-  ctx.fillStyle='#2a1834'; ctx.fillRect(Math.round(bx),Math.round(by),bw,bh);
+  ctx.globalAlpha=low?0.88+0.12*pulse:0.88;
+  ctx.fillStyle='rgba(5,3,12,0.90)'; ctx.fillRect(Math.round(bx-1),Math.round(by-1),bw+2,bh+2);
+  ctx.fillStyle='#211429'; ctx.fillRect(Math.round(bx),Math.round(by),bw,bh);
   const fill=Math.round(bw*ratio);
-  if(fill>0){ ctx.fillStyle=col; ctx.fillRect(Math.round(bx),Math.round(by),fill,bh); ctx.globalAlpha*=0.45; ctx.fillStyle='#ffffff'; ctx.fillRect(Math.round(bx),Math.round(by),fill,2); }
-  if(low){ ctx.globalAlpha=0.35+0.35*pulse; ctx.strokeStyle='#ff2638'; ctx.lineWidth=2; ctx.strokeRect(Math.round(bx-4),Math.round(by-4),bw+8,bh+8); }
+  if(fill>0){ ctx.fillStyle=col; ctx.fillRect(Math.round(bx),Math.round(by),fill,bh); ctx.globalAlpha*=0.42; ctx.fillStyle='#ffffff'; ctx.fillRect(Math.round(bx),Math.round(by),fill,1); }
+  if(low){ ctx.globalAlpha=0.32+0.30*pulse; ctx.strokeStyle='#ff2638'; ctx.lineWidth=1; ctx.strokeRect(Math.round(bx-2),Math.round(by-2),bw+4,bh+4); }
   ctx.restore();
 }
 function drawPlayerLowHealthWarning(){
