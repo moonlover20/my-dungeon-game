@@ -46,7 +46,7 @@ const ENEMY_TYPES={
   act3_magnet    :{name:"소실아", r:23, hp:232, spd:42, dmg:11,  touchDmg:13,  color:"#ff4d5a", xp:165, ai:"magnet", range:220, cool:2.3, label:"소실아"},
   act3_buffering :{name:"바나나", r:22, hp:168, spd:72, dmg:12, touchDmg:14,  color:"#38e8ff", xp:160, ai:"blink_lagfield", range:330, cool:2.8, label:"바나나"},
   act3_alppano   :{name:"\uC54C\uBE60\uB178", r:27, hp:380, spd:24, dmg:13,  touchDmg:12,  color:"#ffd34d", xp:620, ai:"summoner", range:340, cool:3.8, label:"\uC54C\uBE60\uB178"},
-  act3_kullje    :{name:"\uCFFC\uC81C", r:26, hp:330, spd:92, dmg:21, touchDmg:18, color:"#ff4dd2", xp:680, ai:"stealth_assassin", range:360, cool:6.0, label:"\uCFFC\uC81C"},
+  act3_kullje    :{name:"\uCFE8\uC81C", r:26, hp:330, spd:92, dmg:21, touchDmg:18, color:"#ff4dd2", xp:680, ai:"stealth_assassin", range:360, cool:6.0, label:"\uCFE8\uC81C"},
   act3_clone     :{name:"타포", r:25, hp:330, spd:62, dmg:18, touchDmg:16, color:"#b86bff", xp:650, ai:"splitter", range:320, cool:1.05, label:"타포"},
   act3_truck     :{name:"노잭", r:40, hp:1950, spd:24, dmg:16, touchDmg:13, color:"#58d8ff", xp:1500, ai:"beam_sweep", range:620, cool:5.8, armor:0.18, label:"노잭"},
   act3_sand_soldier:{name:"\uBAA8\uB798\uBCD1\uC0AC", r:13, hp:68, spd:112, dmg:10, touchDmg:10, color:"#e0b85a", xp:0, ai:"chase", summoned:true, noReward:true, noKillScore:true, label:"\uBAA8\uB798\uBCD1\uC0AC"},
