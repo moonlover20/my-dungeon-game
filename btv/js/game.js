@@ -25925,64 +25925,64 @@ const TREE_NODES = [
 
 const PASSIVE_TREE_RECOMMENDATIONS = {
   basic_streamer: [
-    { id:'safe_projectile', name:'초보 안정형', short:'투사체 + 생존', beginner:true,
-      desc:'기본 화력을 먼저 확보하고 체력/방어로 실수를 보완하는 추천 경로입니다.',
-      nodes:['s_speed1','s_size1','s_speed2','s_spread','s_stable_barrage','v_hp1','v_armor1','v_hp2'],
-      tips:{ s_speed1:'기본탄이 맞기 쉬워지는 첫 화력 노드', s_size1:'초보자가 명중률을 체감하기 좋음', v_hp1:'실수를 버티기 위한 생존 보강' } },
-    { id:'basic_power', name:'화력형', short:'치명타 + 원거리 화력',
-      desc:'치명타와 거리 보너스를 활용해 보스전 화력을 끌어올리는 경로입니다.',
-      nodes:['sharp_senses','weakpoint_strike','red_pulse','s_longcast','s_long_hit','far_focus','keystone_long_distance','gamblers_blade'],
-      tips:{ sharp_senses:'치명 기반 화력의 출발점', s_long_hit:'끝거리 적중 보너스를 체감하기 좋음', keystone_long_distance:'거리 유지에 익숙할 때 고점이 높음' } }
+    { id:'safe_projectile', name:'초보 안정형', short:'연사 + 생존', beginner:true,
+      desc:'강화탄과 빠른 재장전의 연사 시너지를 먼저 살리고 체력/방어로 실수를 보완하는 경로입니다.',
+      nodes:['m_fire1','m_fire2','v_hp1','v_hp2','v_armor1','v_armor2','bridge_guarded_trigger','skill_quick_ready'],
+      tips:{ m_fire1:'더 자주 발사해 4번째 강화탄을 빠르게 순환', v_hp1:'초반 실수를 버티는 체력 보강', bridge_guarded_trigger:'연사와 방어를 함께 완성' } },
+    { id:'basic_power', name:'치명 연사형', short:'치명타 + 더블탭',
+      desc:'치명타 고점과 더블탭을 묶어 강화탄과 집중 시간의 화력을 극대화하는 경로입니다.',
+      nodes:['sharp_senses','weakpoint_strike','red_pulse','gamblers_blade','m_fire1','m_fire2','m_spd1','m_dodge','m_dtap'],
+      tips:{ sharp_senses:'치명 기반 화력의 출발점', gamblers_blade:'집중의 치명 보너스와 함께 고점을 크게 높임', m_dtap:'강화탄과 치명타 발사 횟수를 동시에 늘림' } }
   ],
   rush_streamer: [
-    { id:'rush_beginner', name:'초보 돌격형', short:'산탄 + 생존', beginner:true,
-      desc:'산탄 핵심 노드와 생존 노드를 같이 찍어 근접 교전의 위험을 줄이는 경로입니다.',
-      nodes:['shotgun_mastery','s_spread','barrage_focus','bridge_close_shot','close_lock','v_hp1','v_armor1','v_hp2'],
-      tips:{ shotgun_mastery:'돌격 방송인의 산탄 운용을 강화', s_spread:'산탄 퍼짐을 줄여 근접 명중률 상승', v_hp1:'근접 실수를 버티기 위한 첫 생존 노드' } },
-    { id:'rush_expert', name:'숙련 돌격형', short:'근접 정박 + 회피',
-      desc:'근접 유지와 회피 후 보너스를 묶어 공격적인 돌파 플레이를 돕는 경로입니다.',
-      nodes:['shotgun_mastery','bridge_close_shot','close_lock','m_dodge','perfect_dodge','dodge_reload','bridge_dodge_range','m_blitz'],
-      tips:{ close_lock:'가까이 붙을수록 강해지는 핵심 축', m_dodge:'숙련 돌격의 생존 버튼', m_blitz:'회피 이후 화력을 크게 밀어줌' } }
+    { id:'rush_beginner', name:'초보 돌격형', short:'집탄 + 근접 생존', beginner:true,
+      desc:'산탄을 안정적으로 모아 근접 피해를 확보한 뒤 체력과 방어를 보강하는 경로입니다.',
+      nodes:['shotgun_mastery','s_speed1','s_size1','s_spread','barrage_focus','bridge_close_shot','close_lock','v_hp1','v_hp2','v_armor1'],
+      tips:{ shotgun_mastery:'기본 산탄과 돌파 산탄을 바로 강화', s_spread:'여러 탄을 한 대상에게 모아 실전 피해 상승', close_lock:'보스 근접전까지 강화하는 핵심 노드' } },
+    { id:'rush_expert', name:'산탄 폭발형', short:'집탄 + 다중 사격',
+      desc:'추가 투사체 보정을 완화하고 산탄 수를 크게 늘려 근접 순간 화력을 극대화하는 경로입니다.',
+      nodes:['shotgun_mastery','s_speed1','s_size1','s_spread','barrage_focus','s_size2','s_shots1','s_shots2','keystone_overloaded_projectiles'],
+      tips:{ barrage_focus:'추가 산탄의 피해 보정을 완화', s_shots2:'산탄 수를 본격적으로 늘리는 구간', keystone_overloaded_projectiles:'탄 수로 후반 고점을 완성' } }
   ],
   sniper_streamer: [
-    { id:'sniper_beginner', name:'초보 저격형', short:'사거리 + 탄속 + 치명', beginner:true,
-      desc:'사거리와 탄속을 먼저 확보해 안전한 거리에서 치명타 빌드로 이어지는 경로입니다.',
-      nodes:['s_speed1','s_speed2','s_longcast','s_fastcast','sharp_senses','weakpoint_strike','red_pulse','s_long_hit'],
-      tips:{ s_longcast:'저격수가 안전거리를 유지하기 쉬워짐', sharp_senses:'저격 치명타 운영의 기본', s_long_hit:'멀리서 맞힐수록 보상이 커짐' } },
-    { id:'sniper_peak', name:'고점 저격형', short:'끝거리 + 치명 키스톤',
-      desc:'끝거리 적중과 치명 계열을 깊게 타서 한 방 고점을 노리는 경로입니다.',
-      nodes:['sharp_senses','weakpoint_strike','red_pulse','s_longcast','s_long_hit','far_focus','keystone_long_distance','gamblers_blade'],
-      tips:{ far_focus:'거리 유지 숙련도를 화력으로 전환', keystone_long_distance:'저격수의 장거리 고점 선택지', gamblers_blade:'치명 운영을 더 공격적으로 밀어줌' } }
+    { id:'sniper_beginner', name:'초보 저격형', short:'사거리 + 생존 + 스킬 순환', beginner:true,
+      desc:'안전거리를 확보하고 낮은 기본 체력을 보완한 뒤 차지 레이저를 더 자주 사용하는 경로입니다.',
+      nodes:['s_speed1','s_speed2','s_longcast','v_hp1','v_hp2','v_armor1','v_armor2','skill_quick_ready'],
+      tips:{ s_longcast:'일반탄과 차지 레이저의 안전거리 확보', v_hp1:'저격수의 매우 낮은 시작 체력을 크게 보완', skill_quick_ready:'무한 관통 레이저의 사용 주기를 단축' } },
+    { id:'sniper_peak', name:'레이저 고점형', short:'장거리 + 과충전 + 치명',
+      desc:'장거리 직접 피해와 직업 스킬 과충전을 결합해 차지 레이저의 한 방 고점을 노리는 경로입니다.',
+      nodes:['s_speed1','s_speed2','s_longcast','s_long_hit','far_focus','keystone_long_distance','skill_quick_ready','skill_overcharge','sharp_senses','weakpoint_strike'],
+      tips:{ far_focus:'일반탄과 레이저의 원거리 직접 피해 강화', keystone_long_distance:'거리 유지 숙련도를 큰 화력으로 전환', skill_overcharge:'차지 레이저 피해를 직접 증폭' } }
   ],
   alchemy_streamer: [
-    { id:'alchemy_beginner', name:'초보 연금형', short:'독 + 포션 보조', beginner:true,
-      desc:'독/상태이상 기본기와 연금 보조를 같이 챙겨 안정적으로 성장하는 경로입니다.',
-      nodes:['t_poison1','t_poison2','t_dmg','t_venom_mature','a_amp1','a_amp2','a_recovery','a_potency'],
-      tips:{ t_poison1:'연금 방송인의 독 운용 시작점', t_venom_mature:'독 누적 체감이 커지는 핵심 노드', a_recovery:'포션과 회복으로 안정성 보강' } },
-    { id:'poison_stack', name:'독 누적형', short:'지속 + 스택 + 확산',
-      desc:'독 지속시간, 독 최대 스택, 상태 확산을 묶어 누적 피해를 키우는 경로입니다.',
-      nodes:['t_poison1','t_poison2','t_venom_mature','t_long_poison','t_acute_poison','t_venom_cultivate','t_spread','corrosive_spread'],
-      tips:{ t_long_poison:'독이 오래 남아 누적 유지가 쉬움', t_venom_cultivate:'독 최대 스택을 늘리는 핵심', corrosive_spread:'상태이상 확산으로 다수전을 보조' } }
+    { id:'alchemy_beginner', name:'초보 연금형', short:'상태이상 + 넓은 장판', beginner:true,
+      desc:'독과 화상으로 상태이상 강화를 열고 넓은 독 장판과 재생으로 안정적인 전투를 만드는 경로입니다.',
+      nodes:['t_poison1','t_poison2','t_burn1','t_burn2','t_dmg','zone_wide','v_hp1','v_regen'],
+      tips:{ t_poison1:'직업 기본 독 피해와 즉시 중첩', t_dmg:'독과 화상이 걸린 적에게 모든 피해 강화', zone_wide:'독 장판의 명중 안정성과 다수전 성능 상승' } },
+    { id:'poison_stack', name:'맹독 확산형', short:'7스택 + 급성 독 + 확산',
+      desc:'높은 연사로 급성 독을 유지하고 최대 독 스택과 부식 확산으로 후반 피해를 극대화하는 경로입니다.',
+      nodes:['t_poison1','t_poison2','t_venom_mature','t_venom_cultivate','t_acute_poison','t_burn1','t_burn2','t_dmg','t_spread','elemental_overload','corrosive_spread'],
+      tips:{ t_venom_cultivate:'직업 기본 4스택을 7스택으로 확장', t_acute_poison:'빠른 연사로 짧은 지속시간을 보완하며 초당 피해 상승', corrosive_spread:'다수전 확산과 상태이상 피해 고점 완성' } }
   ],
   curse_contractor: [
     { id:'curse_beginner', name:'초보 계약형', short:'생존 우선 + 저주 보조', beginner:true,
       desc:'저주 화력 욕심을 조금 늦추고 체력/방어를 먼저 챙기는 안전 경로입니다.',
-      nodes:['v_hp1','v_armor1','v_hp2','v_armor2','v_regen','sharp_senses','weakpoint_strike','red_pulse'],
+      nodes:['v_hp1','v_hp2','v_regen','v_armor1','v_armor2','sharp_senses','weakpoint_strike','red_pulse'],
       tips:{ v_hp1:'낮은 체력을 보완하는 첫 선택', v_regen:'저주 리스크를 버티기 위한 회복축', red_pulse:'생존을 챙긴 뒤 화력으로 전환' } },
-    { id:'curse_risk', name:'고위험 계약형', short:'골드 + 치명 + 위험 집중',
-      desc:'골드/계약 성장을 공격적으로 활용하고 위험한 집중 계열로 고점을 노리는 경로입니다.',
-      nodes:['g_gold1','g_gold2','g_power','investment_return','greed_contract','sharp_senses','bridge_risky_focus','gamblers_blade'],
-      tips:{ greed_contract:'계약형 성장 고점을 여는 선택지', bridge_risky_focus:'위험을 감수하고 화력을 끌어올림', gamblers_blade:'치명 기반 폭발력을 보강' } }
+    { id:'curse_risk', name:'탐욕 계약형', short:'체력 보완 + 골드 화력',
+      desc:'낮은 체력을 먼저 보완하고 저주 스택의 골드 보너스를 현질의 힘과 탐욕의 계약으로 연결하는 경로입니다.',
+      nodes:['v_hp1','v_hp2','g_gold1','g_gold2','g_donate','g_power','investment_return','g_magnet','g_jackpot','greed_contract'],
+      tips:{ v_hp1:'스킬 체력 소모와 탐욕 페널티를 버티는 기반', g_power:'저주 계약자의 높은 골드 수급을 공격력으로 전환', greed_contract:'골드 성장과 후반 화력을 완성' } }
   ],
   tank_streamer: [
     { id:'tank_beginner', name:'초보 탱커형', short:'체력 + 방어 + 재생', beginner:true,
       desc:'탱커의 장점인 최대 체력과 방어를 먼저 키워 안정적으로 버티는 경로입니다.',
-      nodes:['v_hp1','v_armor1','v_hp2','v_armor2','v_regen','v_shield_training','regen_overload','overheal_guard'],
+      nodes:['v_hp1','v_hp2','v_armor1','v_armor2','v_regen','v_shield_training','regen_overload','overheal_guard'],
       tips:{ v_hp1:'탱커 직업 패시브 공격력도 함께 보조', v_armor1:'받는 피해를 줄이는 기본 방어축', regen_overload:'낮은 체력 구간을 버티기 쉬워짐' } },
-    { id:'tank_counter', name:'반격형', short:'생존 + 근접/폭발/가시',
-      desc:'체력 기반 생존을 바탕으로 가시, 근접, 폭발 계열을 섞는 반격 경로입니다.',
-      nodes:['v_hp1','v_armor1','v_armor2','v_thorns','v_shield_training','heavy_broadcast','close_lock','keystone_crowd_addict'],
-      tips:{ v_thorns:'맞으면서 버티는 탱커 감성에 맞는 반격 노드', heavy_broadcast:'묵직한 폭발 계열 보조', keystone_crowd_addict:'주변 적이 많을수록 직접 피해를 보강' } }
+    { id:'tank_counter', name:'체력 보호막형', short:'최대 체력 + 보호막 + 화력',
+      desc:'최대 체력을 생존, 응급 회복, 직업 패시브 공격력과 최후의 방송 화력으로 동시에 전환하는 고점 경로입니다.',
+      nodes:['v_hp1','v_hp2','v_armor1','v_armor2','v_regen','v_shield_training','regen_overload','overheal_guard','v_steal','vamp_shield','v_last_show'],
+      tips:{ v_hp1:'체력, 응급 회복량, 직업 공격력을 동시에 강화', vamp_shield:'초과 회복을 반복해서 보호막으로 전환', v_last_show:'탱커의 최대 체력을 큰 공격력으로 바꾸는 최종 고점' } }
   ]
 };
 
@@ -26182,6 +26182,25 @@ function treeRecommendationEdgeSet(){
     if(ids.has(edge.from) && ids.has(edge.to)) edgeKeys.add(edge.key);
   }
   return edgeKeys;
+}
+function treeAutoAllocateRecommendation(){
+  const preset=currentTreeRecommendation();
+  if(!preset) return 0;
+  const allocated=[];
+  for(const id of treeRecommendationNodes(preset)){
+    if(treeUnlocked.has(id)) continue;
+    const node=treeNodeByIdStrict(id);
+    if(!node || !treeCanUnlock(node)) break;
+    if(!treeUnlockNode(node)) break;
+    allocated.push(node);
+  }
+  if(!allocated.length) return 0;
+  treeAtlasSelected=allocated[allocated.length-1].id;
+  try{sfx.pick&&sfx.pick();}catch(e){}
+  banner('추천 자동 분배',allocated.length+'개 패시브 노드 해금',1200);
+  updateTreePanel();
+  renderTree();
+  return allocated.length;
 }
 loadTreeRecommendationState();
 
@@ -26538,7 +26557,7 @@ function updateTreeRecommendPanel(){
     '<div class="tree-rec-body">'+
       '<div class="tree-rec-buttons">'+buttons+'<button class="tree-rec-off'+(!treeRecommendEnabled?' active':'')+'" data-rec-off="1">추천 '+(treeRecommendEnabled?'끄기':'켜기')+'</button></div>'+
       (treeRecommendEnabled&&preset?'<div class="tree-rec-title">'+treeRecEsc(preset.name)+'</div><div class="tree-rec-short">'+treeRecEsc(preset.short||'추천 경로')+'</div><div class="tree-rec-desc">'+treeRecEsc(preset.desc||'')+'</div>':'<div class="tree-rec-desc">추천 표시가 꺼져 있습니다. 자유롭게 노드를 선택할 수 있습니다.</div>')+
-      '<div class="tree-rec-next '+treeRecEsc(next.state)+'">'+treeRecEsc(next.text||'추천 정보 없음')+'</div>'+
+      '<div class="tree-rec-next '+treeRecEsc(next.state)+'"><span>'+treeRecEsc(next.text||'추천 정보 없음')+'</span><button class="tree-rec-auto" type="button" data-rec-auto="1"'+(treeRecommendEnabled&&next.state==='ready'?'':' disabled')+' title="보유한 스킬 포인트로 추천 경로를 순서대로 해금합니다">자동 분배</button></div>'+
     '</div>';
   const collapseBtn=el.querySelector('.tree-rec-collapse');
   if(collapseBtn) collapseBtn.onclick=()=>{
@@ -26561,6 +26580,8 @@ function updateTreeRecommendPanel(){
     updateTreeRecommendPanel();
     renderTree();
   };
+  const auto=el.querySelector('[data-rec-auto]');
+  if(auto) auto.onclick=()=>treeAutoAllocateRecommendation();
 }
 function updateTreePointBadge(){
   const el=$('treePointBadge');
