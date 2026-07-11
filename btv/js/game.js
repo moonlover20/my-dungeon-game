@@ -20606,6 +20606,30 @@ function drawBossTopBar(b){
   if(!b) return;
   drawEncounterBar(b,{rank:b.key==='seungwoo'?'FINAL BOSS':'BOSS',width:W*0.86,color:b.color});
 }
+function drawPlayerLocalHpBar(p){
+  if(!p||!(p.maxhp>0)) return;
+  const now=performance.now(), ratio=clamp((Number(p.hp)||0)/p.maxhp,0,1);
+  const recent=Number.isFinite(p.lastHitAt)&&now-p.lastHitAt<2500, low=ratio<=0.30;
+  const bw=recent?82:72, bh=recent?9:7, below=p.y+p.r*2.2+bh+6<H;
+  const bx=isSeungwooVoidFight()?-bw/2:clamp(p.x-bw/2,4,W-bw-4)-p.x;
+  const by=below?p.r*2.05:-p.r*2.05-bh;
+  const pulse=0.5+0.5*Math.sin(now/90), col=low?'#ff2638':(ratio<=0.5?'#ffd34d':'#ff5d8a');
+  ctx.save();
+  ctx.globalAlpha=low?0.88+0.12*pulse:(recent||ratio<0.999?0.92:0.42);
+  ctx.fillStyle='rgba(5,3,12,0.88)'; ctx.fillRect(Math.round(bx-2),Math.round(by-2),bw+4,bh+4);
+  ctx.strokeStyle=low?'#ff6b7d':'#c7b8e8'; ctx.lineWidth=1; ctx.strokeRect(Math.round(bx-1.5),Math.round(by-1.5),bw+3,bh+3);
+  ctx.fillStyle='#2a1834'; ctx.fillRect(Math.round(bx),Math.round(by),bw,bh);
+  const fill=Math.round(bw*ratio);
+  if(fill>0){ ctx.fillStyle=col; ctx.fillRect(Math.round(bx),Math.round(by),fill,bh); ctx.globalAlpha*=0.45; ctx.fillStyle='#ffffff'; ctx.fillRect(Math.round(bx),Math.round(by),fill,2); }
+  if(low){ ctx.globalAlpha=0.35+0.35*pulse; ctx.strokeStyle='#ff2638'; ctx.lineWidth=2; ctx.strokeRect(Math.round(bx-4),Math.round(by-4),bw+8,bh+8); }
+  ctx.restore();
+}
+function drawPlayerLowHealthWarning(){
+  if(state!=='play'||!player||!(player.maxhp>0)||player.hp<=0||player.hp/player.maxhp>0.30) return;
+  const pulse=0.5+0.5*Math.sin(performance.now()/125), fs=(typeof GS!=='undefined'&&GS.flashScale!=null)?GS.flashScale:1;
+  ctx.save(); ctx.globalAlpha=(0.10+0.08*pulse)*fs; ctx.strokeStyle='#ff2638'; ctx.lineWidth=8;
+  ctx.strokeRect(4,4,W-8,H-8); ctx.globalAlpha=(0.08+0.05*pulse)*fs; ctx.lineWidth=3; ctx.strokeRect(15,15,W-30,H-30); ctx.restore();
+}
 function drawPlayer(){
   const p=player;
   // ★ player 미초기화(타이틀/메뉴 등)면 그리지 않음 — NaN 좌표/반지름 크래시 방지
@@ -20702,6 +20726,8 @@ function drawPlayer(){
     ctx.beginPath(); ctx.arc(0,0,p.r*1.5,0,TAU); ctx.fill();
     ctx.restore();
   }
+
+  drawPlayerLocalHpBar(p);
 
   ctx.globalAlpha=1;
   ctx.restore();
@@ -22161,6 +22187,7 @@ function draw(){
 
   // 피격 플래시
   if(hitFlash>0){ ctx.fillStyle='rgba(255,77,109,'+(hitFlash*0.6*(typeof GS!=='undefined'?GS.flashScale:1))+')'; ctx.fillRect(0,0,W,H); }
+  drawPlayerLowHealthWarning();
   if(isSeungwooVoidFight()&&boss) drawBossTopBar(boss);
   if(boss&&(boss.pattern==='glitch'||boss.pattern==='set3')&&state==='play') drawSeungwooOverlay();
   drawSeungwooVoidOverlay();
