@@ -242,7 +242,7 @@ const PLAYER_CLASSES=[
    hpMul:1.35,dmgMul:0.88,fireMul:0.82,rangeMul:0.85,bulletSpeedMul:0.90,bulletSizeMul:1.34,moveSpeed:160,naturalRegen:0.75,
    desc:'묵직한 폭발탄과 높은 체력의 생존형.',
    skill:'클릭: 응급 회복. 즉시 체력 회복.',
-   passive:'최대 체력 40당 공격력 +1.'}
+   passive:'방어력 +10. 최대 체력 40당 공격력 +1.'}
 ];
 let selectedPlayerClassId='basic_streamer';
 let pendingClassStartFn=null;
@@ -408,7 +408,7 @@ const WEAPON_EVOLUTIONS={
     {id:'basic_power_pierce',icon:'🍢',name:'하이라이트 탄',desc:'고유 패시브 강화탄 피해 +20%, 관통 +1',apply:p=>{p.basicPowerShotDmgAdd=(Number(p.basicPowerShotDmgAdd)||0)+0.20;p.basicPowerShotPierceAdd=(Number(p.basicPowerShotPierceAdd)||0)+1;}}
   ],
   shotgun:[
-    {id:'rush_dash_far',icon:'💨',name:'과감한 돌파',desc:'돌파 산탄 이동거리 +32, 사용 후 1초간 받는 피해 -25%',apply:p=>{p.rushSkillRangeAdd=(Number(p.rushSkillRangeAdd)||0)+32;p.rushGuardDuration=Math.max(Number(p.rushGuardDuration)||0,1);}},
+    {id:'rush_dash_far',icon:'💨',name:'과감한 돌파',desc:'돌파 산탄 이동거리 +32, 사용 후 1초간 방어력 +25',apply:p=>{p.rushSkillRangeAdd=(Number(p.rushSkillRangeAdd)||0)+32;p.rushGuardDuration=Math.max(Number(p.rushGuardDuration)||0,1);}},
     {id:'rush_pellet_storm',icon:'💥',name:'돌파 난사',desc:'돌파 산탄 탄 수 +2',apply:p=>{p.rushSkillPelletAdd=(Number(p.rushSkillPelletAdd)||0)+2;}},
     {id:'rush_close_haste',icon:'⚡',name:'근접 템포',desc:'고유 패시브 지속 +1.5초, 이동속도 보너스 +8%',apply:p=>{p.closeKillHasteDurationAdd=(Number(p.closeKillHasteDurationAdd)||0)+1.5;p.closeKillHasteMoveAdd=(Number(p.closeKillHasteMoveAdd)||0)+0.08;}},
     {id:'rush_breakthrough',icon:'🧨',name:'돌파 충격',desc:'돌파 산탄 피해 +18%',apply:p=>{p.rushSkillDmgMulAdd=(Number(p.rushSkillDmgMulAdd)||0)+0.18;}}
@@ -433,7 +433,7 @@ const WEAPON_EVOLUTIONS={
   ],
   bazooka:[
     {id:'tank_heal_plus',icon:'✚',name:'응급 처치 강화',desc:'응급 회복 회복량 +8%p',apply:p=>{p.tankHealPctAdd=(Number(p.tankHealPctAdd)||0)+0.08;}},
-    {id:'tank_guard_burst',icon:'💥',name:'구급 폭발',desc:'응급 회복 시 주변 폭발, 이후 2초간 받는 피해 -20%',apply:p=>{p.tankHealBurst=true;p.tankHealGuardDuration=Math.max(Number(p.tankHealGuardDuration)||0,2);}},
+    {id:'tank_guard_burst',icon:'💥',name:'구급 폭발',desc:'응급 회복 시 주변 폭발, 이후 2초간 방어력 +20',apply:p=>{p.tankHealBurst=true;p.tankHealGuardDuration=Math.max(Number(p.tankHealGuardDuration)||0,2);}},
     {id:'tank_hp_power',icon:'🛡️',name:'두꺼운 체력',desc:'고유 패시브 강화: 최대 체력 32당 공격력 +1',apply:p=>{p.tankHpAttackDiv=32;}},
     {id:'tank_counter_shell',icon:'🔥',name:'반격 포화',desc:'고유 반격 피해 +30%, 범위 +25%',apply:p=>{p.tankCounterDmgMulAdd=(Number(p.tankCounterDmgMulAdd)||0)+0.30;p.tankCounterRadiusMulAdd=(Number(p.tankCounterRadiusMulAdd)||0)+0.25;}}
   ]
@@ -1116,7 +1116,7 @@ function isDiscovered(type,id){
 }
 // ---------- 난이도 ----------
 const DIFFS={
-  easy:  {key:'easy',  label:'쉬움',   hp:1.3, dmg:1.25,cnt:1.1, spd:1.00, eliteCount:2, col:'#5dff9b', desc:'누구나 깰 수 있는 난이도입니다.<br>50% 배율 · 재도전 무제한', maxRetries:Infinity},
+  easy:  {key:'easy',  label:'쉬움',   hp:1.3, dmg:1.60,cnt:1.1, spd:1.00, eliteCount:2, col:'#5dff9b', desc:'누구나 깰 수 있는 난이도입니다.<br>50% 배율 · 재도전 무제한', maxRetries:Infinity},
   normal:{key:'normal',label:'보통',   hp:2.2, dmg:2.1, cnt:1.45,spd:1.13, eliteCount:3, col:'#ffd34d', desc:'일반적인 난이도입니다.<br>100% 배율 · 재도전 10회', maxRetries:10},
   hard:  {key:'hard',  label:'어려움', hp:2.9, dmg:2.7, cnt:1.7, spd:1.22, eliteCount:5, col:'#ff4d6d', desc:'모든 패턴을 숙지한 플레이어에게만 추천드립니다. 매우 어렵습니다.<br>200% 배율 · 재도전 3회', maxRetries:3},
 };
@@ -1437,7 +1437,7 @@ const RELICS=[
   {id:"bread",name:"곰팡이 핀 식빵",icon:"🍞",desc:"최대 체력 +25.",cls:"boon",apply:p=>{p.maxhp+=25;p.hp+=25;}},
   {id:"big_heart",name:"거대한 심장",icon:"❤️‍🔥",desc:"최대 체력 +40.",cls:"boon",apply:p=>{p.maxhp+=40;p.hp+=40;}},
   {id:"nature_bless",name:"자연의 가호",icon:"🌿",desc:"초당 체력 +1.0 재생.",cls:"boon",apply:p=>{p.regen+=1.0;}},
-  {id:"iron_skin",name:"강철 피부",icon:"🪨",desc:"받는 피해 -15%.",cls:"boon",apply:p=>{p.armor+=0.15;}},
+  {id:"iron_skin",name:"강철 피부",icon:"🪨",desc:"방어력 +15.",cls:"boon",apply:p=>{p.armor+=0.15;}},
   {id:"vampire",name:"모기향(역효과)",icon:"🦟",desc:"처치 시 8% 확률로 체력 5 회복.",cls:"boon",apply:p=>{p.lifesteal+=0.08;}},
   {id:"vampire_fang",name:"흡혈귀 송곳니",icon:"🧛",desc:"처치 시 18% 확률로 체력 5 회복.",cls:"boon",apply:p=>{p.lifesteal+=0.18;}},
   // ===== 축복: 기동/유틸 =====
@@ -1469,11 +1469,11 @@ const RELICS=[
   {id:"nohit_wings",name:"무피격의 날개",icon:"🪽",desc:"이동 속도 +18, 회피 쿨타임 -20%.",cls:"boon",apply:p=>{p.moveSpeedAdd+=18;p.dodgeCdMul-=0.20;}},
   {id:"bizarre_mask",name:"기괴한 가면",icon:"🎭",desc:"공격력 +12, 관통 +1.",cls:"boon",apply:p=>{p.dmg+=12;p.pierce+=1;}},
   {id:"void_heart",name:"공허의 심장",icon:"🌑",desc:"공격력 +12, 치명타 확률 +20%.",cls:"boon",apply:p=>{p.dmg+=12;p.critChance+=0.20;}},
-  {id:"guardian_shield",name:"수호자의 방패",icon:"🛡️",desc:"받는 피해 -25%.",cls:"boon",apply:p=>{p.armor+=0.25;}},
+  {id:"guardian_shield",name:"수호자의 방패",icon:"🛡️",desc:"방어력 +25.",cls:"boon",apply:p=>{p.armor+=0.25;}},
   {id:"greed_ring",name:"탐욕의 반지",icon:"💎",desc:"골드 획득량 +65%. 상점 가격 -15%.",cls:"boon",apply:p=>{p.goldMul+=0.65;p.shopCostMul-=0.15;}},
   {id:"time_warp",name:"시간 왜곡기",icon:"🔄",desc:"레벨업 시 체력 완전 회복.",cls:"boon",apply:p=>{p.levelFullHeal=true;}},
   {id:"old_boots",name:"낡은 군화",icon:"🥾",desc:"이동 속도 +10.",cls:"boon",apply:p=>{p.moveSpeedAdd+=10;}},
-  {id:"strange_mushroom",name:"이상한 버섯",icon:"🍄",desc:"받는 피해 -10%.",cls:"boon",apply:p=>{p.armor+=0.1;}},
+  {id:"strange_mushroom",name:"이상한 버섯",icon:"🍄",desc:"방어력 +10.",cls:"boon",apply:p=>{p.armor+=0.1;}},
   {id:"hunters_eye",name:"사냥꾼의 눈",icon:"🎯",desc:"치명타 확률 +15%.",cls:"boon",apply:p=>{p.critChance+=0.15;}},
   {id:"med_kit",name:"응급 키트",icon:"📦",desc:"방 입장 시 체력 10 회복.",cls:"boon",apply:p=>{p.roomEntryHeal+=10;}},
   // ===== 저주: 양날의 검 =====
@@ -1488,7 +1488,7 @@ const RELICS=[
   {id:"greed",name:"탐욕의 손",icon:"🤑",desc:"골드 획득량 +50%.",cls:"boon",apply:p=>{p.goldMul+=0.50;}},
   {id:"slippery",name:"미끄러운 신발",icon:"🧊",desc:"이동 속도 +20. 회피 쿨 +25%.",cls:"curse",apply:p=>{p.moveSpeedAdd+=20;p.dodgeCdMul+=0.25;}},
   {id:"glass_legs",name:"유리 다리",icon:"🦵",desc:"이동 속도 +20. 최대 체력 -12%.",cls:"curse",apply:p=>{p.moveSpeedAdd+=20;p.maxhp=Math.round(p.maxhp*0.88);p.hp=Math.min(p.hp,p.maxhp);}},
-  {id:"turtle",name:"거북이 등딱지",icon:"🐢",desc:"받는 피해 -15%. 이동 속도 -8.",cls:"curse",apply:p=>{p.armor+=0.15;p.moveSpeedAdd-=8;}},
+  {id:"turtle",name:"거북이 등딱지",icon:"🐢",desc:"방어력 +15. 이동 속도 -8.",cls:"curse",apply:p=>{p.armor+=0.15;p.moveSpeedAdd-=8;}},
   {id:"all_in",name:"올인",icon:"🎰",desc:"공격력 +10. 받는 피해 +20%.",cls:"curse",apply:p=>{p.dmg+=10;p.damageTakenMul+=0.20;}},
   {id:"gamble",name:"도박꾼의 주사위",icon:"🎲",desc:"매 발사 공격력 0.6~1.8배 도박.",cls:"curse",apply:p=>{p.gamble=true;}},
   {id:"cursed_mask",name:"저주받은 가면",icon:"👺",desc:"공격력 +6.5, 발사속도 +10%, 이동 속도 +8, 초당 체력 -0.6.",cls:"curse",apply:p=>{p.dmg+=6.5;p.fireAdd+=0.10;p.moveSpeedAdd+=8;p.regen-=0.6;}},
@@ -1850,7 +1850,7 @@ function relicDetailText(r){
   if(/치명타|크리/.test(hay)) bits.push('치명타 확률 또는 치명타 피해 계수에 반영되는 전투 강화 유물입니다.');
   if(/이동|속도|신발|군화|잔상/.test(hay)) bits.push('이동 관련 보너스는 현재 이동 속도 계산에 즉시 반영됩니다.');
   if(/발사|연사|투사체|탄/.test(hay)) bits.push('발사와 투사체 관련 수치를 바꿔 전투 리듬을 달라지게 합니다.');
-  if(/받는 피해|방어|피해 감소|피부|방패|등딱지/.test(hay)) bits.push('방어 수치에 반영되며 음수일 경우 받는 피해가 증가합니다.');
+  if(/받는 피해|방어|피해 감소|피부|방패|등딱지/.test(hay)) bits.push('방어력은 100 / (100 + 방어력) 공식으로 피해를 줄이며, 음수 방어력은 받는 피해를 증가시킵니다.');
   if(/체력|회복|재생|흡혈/.test(hay)) bits.push('생존 관련 수치를 바꿔 전투 지속력에 영향을 줍니다.');
   if(!bits.length) bits.push('획득 즉시 캐릭터 능력치나 전투 규칙에 반영됩니다.');
   return bits.slice(0,2).join(' ');
@@ -3197,7 +3197,7 @@ const TRAINING_DEFS=[
   {id:'atk',name:'공격 훈련',icon:'ATK',desc:'공격력 +1.2. 이번 런 동안 영구 적용.',baseCost:220,bonusText:c=>'+'+(c*TRAINING_ATK_BONUS).toFixed(1)},
   {id:'speed',name:'민첩 훈련',icon:'SPD',desc:'이동 속도 +8. 이번 런 동안 영구 적용.',baseCost:180,bonusText:c=>'+'+Math.round(c*TRAINING_SPEED_BONUS)},
   {id:'focus',name:'집중 훈련',icon:'CRIT',desc:'치명타 확률 +4%. 이번 런 동안 영구 적용.',baseCost:220,bonusText:c=>'+'+Math.round(c*TRAINING_FOCUS_BONUS*100)+'%'},
-  {id:'defense',name:'방어 훈련',icon:'DEF',desc:'받는 피해 -4%. 이번 런 동안 영구 적용.',baseCost:200,bonusText:c=>'+'+Math.round(c*TRAINING_DEFENSE_BONUS*100)+'%'}
+  {id:'defense',name:'방어 훈련',icon:'DEF',desc:'방어력 +4. 이번 런 동안 영구 적용.',baseCost:200,bonusText:c=>'+'+Math.round(c*TRAINING_DEFENSE_BONUS*100)}
 ];
 const TRAINING_PRICE_MUL=0.55;
 function shopText(v){
@@ -3247,8 +3247,8 @@ function trainingPreviewRows(def,p){
     rows.push(['집중 훈련 보너스', trainingPct(Number(p.trainingFocusBonus)||0)+' → '+trainingPct((Number(p.trainingFocusBonus)||0)+TRAINING_FOCUS_BONUS)]);
   }else if(id==='defense'){
     const cur=Number(p.trainingDefenseBonus)||0;
-    rows.push(['받는 피해 감소', trainingPct(cur)+' -> '+trainingPct(cur+TRAINING_DEFENSE_BONUS)]);
-    rows.push(['피해 감소', '+'+Math.round(TRAINING_DEFENSE_BONUS*100)+'%']);
+    rows.push(['방어 훈련 보너스', armorPointText(cur)+' -> '+armorPointText(cur+TRAINING_DEFENSE_BONUS)]);
+    rows.push(['방어력', '+'+Math.round(TRAINING_DEFENSE_BONUS*100)]);
   }
   return rows;
 }
@@ -3279,7 +3279,7 @@ function trainingNextState(id,p){
     next.critChance=clamp(cur.critChance+TRAINING_FOCUS_BONUS,0,CRIT_CHANCE_CAP);
   }else if(id==='defense'){
     next.defenseBonus=cur.defenseBonus+TRAINING_DEFENSE_BONUS;
-    next.armor=clamp((Number(p.armor)||0)+TRAINING_DEFENSE_BONUS+(Number(p.potionArmor)||0),-1,0.85);
+    next.armor=armorReductionFromRaw(rawArmorValue(p)+TRAINING_DEFENSE_BONUS);
   }
   return {current:cur,next};
 }
@@ -3325,10 +3325,11 @@ function getTrainingTooltipData(trainingKey){
       {label:'구매 후 치명타',value:trainingPct(state.next.critChance),sourceType:'예상'}
     );
   }else if(id==='defense'){
-    valueText='받는 피해 -4%';
+    valueText='방어력 +4';
     rows.unshift(
-      {label:'현재 피해 감소',value:armorDisplayValue(state.current.armor),sourceType:'전투값'},
-      {label:'구매 후 피해 감소',value:armorDisplayValue(state.next.armor),sourceType:'예상'}
+      {label:'현재 방어력',value:Math.round(armorPoints(player)),sourceType:'전투값'},
+      {label:'구매 후 방어력',value:Math.round(armorPoints(player)+TRAINING_DEFENSE_BONUS*100),sourceType:'예상'},
+      {label:'피해 감소',value:armorDisplayValue(state.current.armor)+' -> '+armorDisplayValue(state.next.armor),sourceType:'예상'}
     );
   }
   rows.push({label:'다음 구매 가격',value:maxed?'MAX':nextCost+'G',sourceType:'가격 증가'});
@@ -3374,7 +3375,7 @@ function applyShopTraining(id){
     player.critChance=Math.min(CRIT_CHANCE_CAP,(Number(player.critChance)||0)+TRAINING_FOCUS_BONUS);
   }else if(id==='defense'){
     player.trainingDefenseBonus=(Number(player.trainingDefenseBonus)||0)+TRAINING_DEFENSE_BONUS;
-    player.armor=Math.min(0.85,(Number(player.armor)||0)+TRAINING_DEFENSE_BONUS);
+    player.armor=(Number(player.armor)||0)+TRAINING_DEFENSE_BONUS;
   }
   tr[id]=Math.min(TRAINING_MAX_PURCHASES,(tr[id]||0)+1);
   return true;
@@ -3528,13 +3529,24 @@ function fmtSignedNumber(n){
   const v=Math.round(n*10)/10;
   return (v>0?'+':'')+(Number.isInteger(v)?String(v):v.toFixed(1));
 }
-function effectiveArmor(p){
+const ARMOR_FORMULA_BASE=100;
+function rawArmorValue(p){
   p=p||player;
   const guard=(p&&p.tankGuardT>0)?0.35:0;
   const holdGuard=(p&&p.classSkillHold&&p.classSkillHold.id==='tank_streamer')?0.15:0;
   const rushGuard=(p&&p.rushGuardT>0)?0.25:0;
   const tankHealGuard=(p&&p.tankHealGuardT>0)?0.20:0;
-  return clamp((p.armor||0)+(p.potionArmor||0)+guard+holdGuard+rushGuard+tankHealGuard,-1,0.85);
+  return (Number(p&&p.armor)||0)+(Number(p&&p.potionArmor)||0)+guard+holdGuard+rushGuard+tankHealGuard;
+}
+function armorReductionFromRaw(raw){
+  const points=(Number(raw)||0)*100;
+  return points>=0?points/(ARMOR_FORMULA_BASE+points):points/(ARMOR_FORMULA_BASE-points);
+}
+function effectiveArmor(p){ return armorReductionFromRaw(rawArmorValue(p)); }
+function armorPoints(p){ return rawArmorValue(p)*100; }
+function armorPointText(raw){
+  const n=Math.round((Number(raw)||0)*100);
+  return (n>0?'+':'')+n;
 }
 function armorDisplayLabel(v){
   return v<0?'받는 피해':'피해 감소';
@@ -3752,12 +3764,12 @@ function getFireRateBreakdown(){
   return {total,parts};
 }
 function getArmorBreakdown(){
-  const total=effectiveArmor(player);
+  const total=rawArmorValue(player);
   const parts=collectAppliedSourceParts('armor',player);
   addTrainingPart(parts,'defense','방어 훈련',Number(player.trainingDefenseBonus)||0);
   addPotionBuffParts(parts,'armor');
   addRemainderPart(parts,total,'기타 방어 효과');
-  return {total,parts};
+  return {total,points:total*100,reduction:effectiveArmor(player),parts};
 }
 function getXpBonusBreakdown(){
   const total=(Number(player.xpMul)||1)-1;
@@ -3874,11 +3886,12 @@ function getSpecialEffectTooltipData(effectKey){
     b=getArmorBreakdown();
     const finalMul=incomingDamageMul(player);
     const takenMul=curseDamageTakenMul(player);
-    const rows=specialPartsToText(b.parts,pct);
+    const rows=specialPartsToText(b.parts,armorPointText);
     const curseAffinityReduction=(player&&player.curseAffinity)?curseDamageTakenBonus(player)*0.20:0;
     if(curseAffinityReduction>0.0005) rows.push({label:'저주 친화 완화',value:'-'+pct(curseAffinityReduction),sourceType:'레벨업 특성'});
     if(Math.abs(takenMul-1)>0.005) rows.push({label:'받는 피해 배율',value:pct(takenMul-1),sourceType:'리스크'});
-    title=incomingDamageDisplayLabel(finalMul)+' '+incomingDamageDisplayValue(finalMul); totalText=incomingDamageDisplayValue(finalMul); description='현재 최종 받는 피해 보정입니다.'; formulaText='적용 방식: (1 - 방어 수치) x 받는 피해 배율'; kind='armor';
+    rows.unshift({label:'총 방어력',value:Math.round(b.points)+' · 피해 감소 '+Math.round(b.reduction*100)+'%',sourceType:'최종'});
+    title='방어력 '+Math.round(b.points); totalText=incomingDamageDisplayValue(finalMul); description='방어력으로 감소한 뒤 받는 피해 배율을 적용합니다.'; formulaText='적용 방식: 100 / (100 + 방어력) x 받는 피해 배율'; kind='armor';
     return {title,totalText,description,breakdown:rows,formulaText,kind};
   }
   if(key==='xpGain'||key==='xp-boost'){
@@ -3893,7 +3906,7 @@ function getSpecialEffectTooltipData(effectKey){
     const bId=key.slice('potion-buff:'.length);
     const buff=(player.potionBuffs||[]).find(x=>(x.id||[x.atkFlat,x.atkMul,x.fireAdd,x.armor,x.regen].join(':'))===bId);
     const label=buff&&(buff.label||buff.name)||'포션 효과';
-    const val=buff&&buff.regen?perSec(buff.regen):(buff&&buff.atkFlat?flat(buff.atkFlat):(buff&&buff.atkMul?pct(buff.atkMul):(buff&&buff.fireAdd?pct(buff.fireAdd):(buff&&buff.armor?pct(buff.armor):''))));
+    const val=buff&&buff.regen?perSec(buff.regen):(buff&&buff.atkFlat?flat(buff.atkFlat):(buff&&buff.atkMul?pct(buff.atkMul):(buff&&buff.fireAdd?pct(buff.fireAdd):(buff&&buff.armor?armorPointText(buff.armor):''))));
     return {title:label,totalText:val||'ON',description:(buff&&buff.desc)||'포션으로 적용 중인 임시 효과입니다.',breakdown:[{label:(buff&&buff.name)||'포션',value:val||'ON',sourceType:'포션'}],formulaText:'적용 방식: 지속시간 '+Math.max(0,Math.ceil(buff&&buff.t||0))+'초 남음',kind:'special'};
   }
   return {title:'특수 효과',totalText:'적용 중',description:'현재 적용 중인 특수 효과입니다.',breakdown:[{label:'특수 효과',value:'적용 중',sourceType:'패시브/기타'}],formulaText:'적용 방식: 효과별로 자동 적용됩니다',kind:'special'};
@@ -3989,14 +4002,15 @@ function getStatTooltipData(statKey){
     formulaText='적용 방식: 기본 이동속도 '+Math.round(b.base)+' + 고정 보너스 = '+Math.round(b.final);
   }else if(key==='armor'){
     const b=getArmorBreakdown();
-    breakdown=specialPartsToText(b.parts,pct);
+    breakdown=specialPartsToText(b.parts,armorPointText);
+    breakdown.unshift({label:'총 방어력',value:Math.round(b.points)+' · 피해 감소 '+Math.round(b.reduction*100)+'%',sourceType:'최종'});
     const takenMul=curseDamageTakenMul(player);
     const curseAffinityReduction=(player&&player.curseAffinity)?curseDamageTakenBonus(player)*0.20:0;
     if(curseAffinityReduction>0.0005) breakdown.push({label:'저주 친화 완화',value:'-'+pct(curseAffinityReduction),sourceType:'레벨업 특성'});
     if(Math.abs(takenMul-1)>0.005) breakdown.push({label:'받는 피해 배율',value:pct(takenMul-1),sourceType:'리스크'});
     const finalMul=incomingDamageMul(player);
-    description='현재 최종 받는 피해 보정입니다.';
-    formulaText='적용 방식: (1 - 방어 수치) x 받는 피해 배율 = '+incomingDamageDisplayLabel(finalMul)+' '+incomingDamageDisplayValue(finalMul);
+    description='방어력으로 감소한 뒤 받는 피해 배율을 적용합니다.';
+    formulaText='적용 방식: 100 / (100 + 방어력) x 받는 피해 배율 = '+incomingDamageDisplayLabel(finalMul)+' '+incomingDamageDisplayValue(finalMul);
   }else if(key==='regen'){
     const b=getRegenBreakdown();
     breakdown=specialPartsToText(b.parts,perSec);
@@ -4234,7 +4248,7 @@ function hudControlTooltipData(key){
       {label:'산탄 수',value:pellets+'발',sourceType:'효과'},
       {label:'탄환당 피해',value:Math.round(dmg),sourceType:'현재'}
     );
-    if(player.rushGuardDuration>0) rows.push({label:'사용 후 피해 감소',value:'25% · '+Number(player.rushGuardDuration).toFixed(1)+'초',sourceType:'강화'});
+    if(player.rushGuardDuration>0) rows.push({label:'사용 후 방어력',value:'+25 · '+Number(player.rushGuardDuration).toFixed(1)+'초',sourceType:'강화'});
     description='돌파 산탄: 조준 반대 방향으로 물러나면서 조준 방향에 산탄을 발사합니다.';
     formulaText='표시 수치는 최대 위력 기준 · 우클릭 즉시 발동'; kind='attack';
   }else if(id==='sniper_streamer'){
@@ -4277,7 +4291,7 @@ function hudControlTooltipData(key){
     const heal=Math.max(24,Math.round(player.maxhp*(0.20+(Number(player.tankHealPctAdd)||0))));
     rows.push({label:'즉시 회복',value:heal+' HP',sourceType:'현재'});
     if(player.tankHealBurst) rows.push({label:'회복 폭발',value:'주변 피해',sourceType:'강화'});
-    if(player.tankHealGuardDuration>0) rows.push({label:'사용 후 피해 감소',value:'20% · '+Number(player.tankHealGuardDuration).toFixed(1)+'초',sourceType:'강화'});
+    if(player.tankHealGuardDuration>0) rows.push({label:'사용 후 방어력',value:'+20 · '+Number(player.tankHealGuardDuration).toFixed(1)+'초',sourceType:'강화'});
     description='응급 회복: 우클릭 즉시 최대 체력에 비례한 체력을 회복합니다.';
     formulaText='회복량: 최대 체력의 '+Math.round((0.20+(Number(player.tankHealPctAdd)||0))*100)+'% · 최소 24 HP'; kind='hp';
   }else{
@@ -4593,7 +4607,7 @@ function bagjeinRingWithGap(e,k,sp,dmg,life,offset,gapSize){
     let delta=Math.abs(i-gap); delta=Math.min(delta,k-delta);
     if(delta<=gapSize) continue;
     const a2=i/k*TAU+(offset||0);
-    eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*sp,vy:Math.sin(a2)*sp,r:8,dmg:dmg||13,life:life||3.6,srcName:'박제인간'});
+    eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*sp,vy:Math.sin(a2)*sp,r:8,dmg:dmg||20,life:life||3.6,srcName:'박제인간'});
   }
 }
 function bagjeinDoRewind(e,opts){
@@ -4603,7 +4617,7 @@ function bagjeinDoRewind(e,opts){
   if(typeof sfx!=='undefined'&&sfx.enemyGlitch) sfx.enemyGlitch();
   screenShake=Math.max(screenShake||0,12); if(typeof beep==='function')beep(440,0.08,'square',0.04);
   // 1) 되감을 음(탄막)을 먼저 크게 흩뿌린다 (속도 낮춰 화면에 머물게)
-  const k=opts.count||28, sp=opts.speed||190, dmg=opts.dmg||14, life=opts.life||6.5;
+  const k=opts.count||28, sp=opts.speed||190, dmg=opts.dmg||22, life=opts.life||6.5;
   for(let i=0;i<k;i++){ const a2=i/k*TAU+(e.spinAng||0); eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*sp,vy:Math.sin(a2)*sp,r:8,dmg,life,srcName:'박제인간'}); }
   bagjeinRewind={t:0,e:e};
   // 2) 탄이 충분히 퍼지고 플레이어를 지나간 뒤 — 멈췄다가 보스 쪽으로 역재생
@@ -4783,7 +4797,7 @@ function onsterAwaken(e){
   cutsceneT=1.6;
   banner('🛡 온스터 각성 · 무적 10초','데미지가 들어가지 않는다 — 10초간 버텨라',2400);
   if(typeof chatRandom==='function') chatRandom('10초간 무적이다 ㄷㄷ');
-  for(let i=0;i<24;i++){ const a=i/24*TAU; eBullets.push({x:e.x,y:e.y,vx:Math.cos(a)*230,vy:Math.sin(a)*230,r:8,dmg:9,life:3.2,srcName:'온스터 사슬 파편'}); }
+  for(let i=0;i<24;i++){ const a=i/24*TAU; eBullets.push({x:e.x,y:e.y,vx:Math.cos(a)*230,vy:Math.sin(a)*230,r:8,dmg:14,life:3.2,srcName:'온스터 사슬 파편'}); }
   if(typeof beep==='function'){ beep(90,0.45,'sawtooth',0.07); beep(240,0.36,'triangle',0.05); }
 }
 function onsterSummons(e){ return enemies.filter(o=>o&&o._summonOwner===e); }
@@ -4805,7 +4819,7 @@ function onsterChainBeam(e){
   const angs=[base];
   if(beams>=2) angs.push(base+rand(0.22,0.40));           // 오른 플랭크
   if(beams>=3) angs.push(base-rand(0.22,0.40));           // 왼 플랭크
-  const col=e.awakened?'#ff4dd2':'#8d72ff', w=e.awakened?23:17, warn=e.awakened?0.60:0.64, dmg=e.awakened?22:16;
+  const col=e.awakened?'#ff4dd2':'#8d72ff', w=e.awakened?23:17, warn=e.awakened?0.60:0.64, dmg=e.awakened?27:19;
   const range=Math.hypot(W,H)+160;                       // 보스 위치와 무관하게 반대편 모서리까지 도달
   for(const a of angs) kijoLaserWarns.push({x:e.x,y:e.y,ang:a,width:w,range,t:0,warn,color:col,fired:false,sniper:true,dmg,srcName:'온스터 사슬빔'});
 }
@@ -5235,7 +5249,7 @@ function onsterChainGrid(e){
   // 사슬 격자(연사형): 빔이 아니라 사슬탄을 가로행+세로열로 연속 사출. _onRep로 2~3회 반복 → 다른 보스 탄막처럼 연사.
   if(sfx.enemyChain) sfx.enemyChain();
   if(!e._gridBnT || performance.now()-e._gridBnT>1200){ banner('⛓ 사슬 격자','빈틈으로 누벼라',850); e._gridBnT=performance.now(); }
-  const dmg=e.awakened?16:13, col=e.awakened?'#ff4dd2':'#8d72ff', sp=e.awakened?245:215;
+  const dmg=e.awakened?21:16, col=e.awakened?'#ff4dd2':'#8d72ff', sp=e.awakened?245:215;
   const hn=13, vn=10, hgap=irand(0,hn-2), vgap=irand(0,vn-2);
   const fromTop=Math.random()<0.5, fromLeft=Math.random()<0.5;
   // 가로행: 위/아래에서 세로로 내려오는 사슬탄 줄 (1~2칸 빈틈)
@@ -5262,7 +5276,7 @@ function onsterChainBurst(e){
   playOnsterChainSfx(3,{vol:0.74,maxDur:1.6,cd:0.3,key:'onsterChainHeavy'});
   if(sfx.enemyCore) sfx.enemyCore();
   // [각성] 사슬 파편 폭발(버프): 빠른 바깥 링 + 느린 안쪽 링, 회전 오프셋으로 빈틈 이동
-  const off=(e._cbN=(e._cbN||0)+1)*0.3, dmg=18;
+  const off=(e._cbN=(e._cbN||0)+1)*0.3, dmg=24;
   const ko=18; for(let i=0;i<ko;i++){ const a=off+i/ko*TAU; eBullets.push({x:e.x,y:e.y,vx:Math.cos(a)*245,vy:Math.sin(a)*245,r:8,dmg,life:3.6,srcName:'사슬 파편',col:'#ff4dd2'}); }
   const ki=14; for(let i=0;i<ki;i++){ const a=-off*1.3+i/ki*TAU; eBullets.push({x:e.x,y:e.y,vx:Math.cos(a)*175,vy:Math.sin(a)*175,r:8,dmg,life:3.8,srcName:'사슬 파편',col:'#c45bff'}); }
   burst(e.x,e.y,'#ff4dd2',16,190);
@@ -5278,10 +5292,10 @@ function onsterChainWeb(e){
   for(let i=0;i<n;i++){
     const a=i/n*TAU, rr=300;   // 균등 배치(회전 안정)
     a3Objective(clamp(cx+Math.cos(a)*rr,60,W-60), clamp(cy+Math.sin(a)*rr*0.66,115,H-80),
-      {hp:100, fuse:12, fail:'aoe', failDmg:38, failGroup:'onster_web', label:'사슬 거미줄', color:'#9d7bff', r:22, owner:e});
+      {hp:100, fuse:12, fail:'aoe', failDmg:48, failGroup:'onster_web', label:'사슬 거미줄', color:'#9d7bff', r:22, owner:e});
     refs.push(enemies[enemies.length-1]); polar.push({a,rr});
   }
-  onsterWeb={owner:e,anchors:refs, polar, cx, cy, rot, ang:0, t:0, warnT:0.9, dmg:e.awakened?17:14, _hitCd:0, col:'#9d7bff'};
+  onsterWeb={owner:e,anchors:refs, polar, cx, cy, rot, ang:0, t:0, warnT:0.9, dmg:e.awakened?22:18, _hitCd:0, col:'#9d7bff'};
   banner('🕸 사슬 거미줄','도는 거미줄 — 닻을 부숴 변을 끊어라',1300);
   if(typeof beep==='function')beep(120,0.18,'sawtooth',0.05);
 }
@@ -5586,7 +5600,7 @@ function onsterChainAnchor(e){
   for(let i=0;i<n;i++){
     const a=i/n*TAU+rand(-0.3,0.3), rr=rand(150,235);
     a3Objective(clamp(player.x+Math.cos(a)*rr,60,W-60), clamp(player.y+Math.sin(a)*rr,120,H-90),
-      {hp:e.awakened?150:128, fuse:e.awakened?6.5:7.2, fail:'aoe', failDmg:e.awakened?38:32, failGroup:'onster_anchor',
+      {hp:e.awakened?150:128, fuse:e.awakened?6.5:7.2, fail:'aoe', failDmg:e.awakened?48:38, failGroup:'onster_anchor',
        label:'사슬 닻', color:'#8d72ff', r:24, owner:e, shootCd});
   }
   banner('⛓ 사슬 닻 '+n+'개','제한시간 내 부숴라 — 못 부수면 사슬 폭발',1050);
@@ -5598,7 +5612,7 @@ function onsterChainMaze(e){
   playOnsterChainSfx(1,{vol:0.66,rate:e&&e.awakened?1.08:1.0,maxDur:1.25,cd:0.24,key:'onsterChainLight'});
   // 사슬 미로(연사형): _onRep로 3연발. 매 웨이브마다 안전 통로가 랜덤하게 이동 → 통로를 쫓아 누벼야 함
   if(sfx.enemyChain) sfx.enemyChain();
-  const col=e.awakened?'#ff4dd2':'#8d72ff', dmg=e.awakened?18:15, warn=e.awakened?0.66:0.78;
+  const col=e.awakened?'#ff4dd2':'#8d72ff', dmg=e.awakened?23:18, warn=e.awakened?0.66:0.78;
   const lane=irand(0,2), safeX=[W*0.2,W*0.5,W*0.8][lane], safeW=120;  // 중앙/좌/우 중 안전통로 (웨이브마다 랜덤)
   let placed=0;
   for(let i=0;i<9&&placed<6;i++){ const x=rand(60,W-60); if(Math.abs(x-safeX)<safeW) continue;  // 세로빔(안전통로 비움)
@@ -5839,7 +5853,7 @@ function onsterCrossLaser(e){
   onsterCross={owner:e,x:e.x,y:e.y,t:0,warnT:1.2,life:ph===2?5.0:4.2,
     a1:base, a2:base+TAU/3, a3:base+TAU*2/3,
     rot1:rot, rot2:rot, rot3:rot,                 // 같은 각속도 → 세 안전 부채꼴이 절대 닫히지 않음
-    innerGap:ph===2?135:115, width:ph===2?22:20, dmg:ph===2?18:14, _hitCd:0, col:'#8d72ff'};
+    innerGap:ph===2?135:115, width:ph===2?22:20, dmg:ph===2?24:18, _hitCd:0, col:'#8d72ff'};
   banner('✖ 사슬 교차','중앙 안전구멍 또는 세 빔 사이로',1300);
   if(typeof beep==='function')beep(150,0.2,'square',0.05);
 }
@@ -5850,7 +5864,7 @@ function onsterDeepBreath(e){
   if(sfx.enemyCast) sfx.enemyCast();
   const ph=e.awakened?2:1;
   onsterBreath={owner:e,t:0,inhaleT:1.6,exhaleT:1.35,pull:ph===2?120:95,
-    dmg:ph===2?10:8,dir:Math.atan2(player.y-e.y,player.x-e.x),_fired:false,ph};
+    dmg:ph===2?16:12,dir:Math.atan2(player.y-e.y,player.x-e.x),_fired:false,ph};
   banner('🌀 깊은 들숨','빨려든다 — 옆으로 빠져 숨결을 피해라',1100);
   if(typeof beep==='function')beep(78,0.55,'sine',0.05);
 }
@@ -6129,7 +6143,7 @@ function updateA3Systems(dt){
     if(a3tether.ring){
       a3tether._ringAng=(a3tether._ringAng||0)+dt*1.6;
       a3tether._ringT=(a3tether._ringT||0)-dt;
-      if(a3tether._ringT<=0){ a3tether._ringT=0.9; const k=8; for(let i=0;i<k;i++){ const a=a3tether._ringAng+i/k*TAU; eBullets.push({x:tx+Math.cos(a)*r,y:ty+Math.sin(a)*r,vx:Math.cos(a+Math.PI/2)*120,vy:Math.sin(a+Math.PI/2)*120,r:7,dmg:13,life:2.6,srcName:'수축 감옥 사슬',col:a3tether.col}); } if(typeof beep==='function')beep(160,0.05,'square',0.03); }
+      if(a3tether._ringT<=0){ a3tether._ringT=0.9; const k=8; for(let i=0;i<k;i++){ const a=a3tether._ringAng+i/k*TAU; eBullets.push({x:tx+Math.cos(a)*r,y:ty+Math.sin(a)*r,vx:Math.cos(a+Math.PI/2)*120,vy:Math.sin(a+Math.PI/2)*120,r:7,dmg:18,life:2.6,srcName:'수축 감옥 사슬',col:a3tether.col}); } if(typeof beep==='function')beep(160,0.05,'square',0.03); }
     }
     const dx=player.x-tx, dy=player.y-ty, d=Math.hypot(dx,dy);
     if((player.dodging||0)>0 && d>r*0.80){ banner('⛓ 테더 절단!','사슬을 끊었다',800); burst(tx,ty,a3tether.col,18,220); if(sfx.enemyChain) sfx.enemyChain(); a3tether=null; }
@@ -7485,17 +7499,16 @@ function globalFloorOf(a,floor){
 const ACT_BOSS=[0,4,3]; // 1막 키죠 / 2막은 온스터 특수 스폰 / 3막 승우(글리치)
 const BOSS_SLOT_BALANCE={2:'onster',3:'set3'};
 const MIDBOSS_SLOT_BALANCE={2:'set3',3:'onster'};
-const SET3_MIDBOSS_HP_MUL=1.5783; // normal 기준 2막 중보 총합 약 6만 (현진 1만·번검 2만·케케로 3만)
 const ACT2_NORMAL_HP={
   mijuTotal:20000,
-  onster:30000,
-  set3:[15000,20000,25000]
+  onster:50000,
+  set3:[5000,10000,15000]
 };
 const ACT3_NORMAL_HP={
   nojack:30000,
-  yanggaeng:60000,
-  seungwoo:[30000,40000,50000],
-  seungwooVoid:60000
+  yanggaeng:40000,
+  seungwoo:[30000,30000,30000],
+  seungwooVoid:30000
 };
 function hpFromNormal(value){
   return Math.max(1,Number(value||1)*(diffSet.hp/DIFFS.normal.hp));
@@ -8426,7 +8439,7 @@ function getPotionTooltipData(index){
   else if(pot.id==='swift') buff('발사속도','+'+Math.round(20*amp)+'%',8,'fire-rate');
   else if(pot.id==='fury') buff('공격력','+'+(5*amp).toFixed(1),8,'attack');
   else if(pot.id==='focus') buff('발사속도','+'+Math.round(30*amp)+'%',8,'fire-rate');
-  else if(pot.id==='ironclad') buff('피해 감소','+'+Math.round(25*amp)+'%',8,'armor');
+  else if(pot.id==='ironclad') buff('방어력','+'+Math.round(25*amp),8,'armor');
   else if(pot.id==='berserk_potion') buff('공격력','+'+(8*amp).toFixed(1),6,'attack');
   else if(pot.id==='hyperfocus') buff('발사속도','+'+Math.round(50*amp)+'%',6,'fire-rate');
   else if(pot.id==='regen_potion') buff('체력 재생','+'+(12*amp).toFixed(1)+'/초',10,'regen');
@@ -8645,7 +8658,7 @@ const BOSS_STORY_DIALOGUES={
       {speaker:'혜철이',text:'막으라고요? 근데 이상하죠…\n막는데 왜 자꾸 늘어나요.'}
     ],
     choices:[
-      {id:'quiet',label:'조용히 지나가려 한다',response:[{speaker:'혜철이',text:'쉿. 알들이 소리를 들어요.'},{speaker:'혜철이',text:'깨우지 않으면\n조금은 늦게 켜질 거예요.'}],effectText:'조용히 접근했습니다. 받는 피해가 감소하고, 혜철이의 첫 압박이 조금 느려집니다.'},
+      {id:'quiet',label:'조용히 지나가려 한다',response:[{speaker:'혜철이',text:'쉿. 알들이 소리를 들어요.'},{speaker:'혜철이',text:'깨우지 않으면\n조금은 늦게 켜질 거예요.'}],effectText:'조용히 접근했습니다. 방어력이 오르고, 혜철이의 첫 압박이 조금 느려집니다.'},
       {id:'inspect_egg',label:'알을 살펴본다',response:[{speaker:'혜철이',text:'가까이 보지 마세요.'},{speaker:'혜철이',text:'그 안에서… 뭔가가\n봉식님을 마주 보고 있어요.'}],effectText:'알을 들여다봤습니다. 혜철이의 최대 체력과 방어가 감소합니다.'},
       {id:'make_noise',label:'강제로 깨운다',response:[{speaker:'혜철이',text:'…왜 깨우세요.'},{speaker:'혜철이',text:'한 번 켜진 시청자는\n다시 안 꺼져요.'}],effectText:'강제로 깨웠습니다. 공격력과 발사 속도가 오르지만, 혜철이도 더 거칠어집니다.'}
     ],
@@ -8660,9 +8673,9 @@ const BOSS_STORY_DIALOGUES={
       {speaker:'키죠',text:'화면 밖에 누가 앉아서\n봉식님을 보고 있어요. 계속.'}
     ],
     choices:[
-      {id:'look_away',label:'눈을 피한다',response:[{speaker:'키죠',text:'피하는 것도 방법이죠.'},{speaker:'키죠',text:'근데 안 본다고\n걔가 안 보는 건 아니에요.'}],effectText:'시선을 피했습니다. 회피 쿨타임과 받는 피해가 감소하고, 키죠의 첫 공격 템포가 늦어집니다.'},
+      {id:'look_away',label:'눈을 피한다',response:[{speaker:'키죠',text:'피하는 것도 방법이죠.'},{speaker:'키죠',text:'근데 안 본다고\n걔가 안 보는 건 아니에요.'}],effectText:'시선을 피했습니다. 회피 쿨타임이 줄고 방어력이 오르며, 키죠의 첫 공격 템포가 늦어집니다.'},
       {id:'stare',label:'화면 밖을 마주 본다',response:[{speaker:'키죠',text:'용감하네요.'},{speaker:'키죠',text:'근데 거기 앉은 사람,\n봉식님이 안 보이나 봐요.'}],effectText:'정면으로 응시했습니다. 보스 피해와 치명타 확률이 오르지만, 키죠의 공격도 더 아파집니다.'},
-      {id:'close_eyes',label:'눈을 감고 듣는다',response:[{speaker:'키죠',text:'잘 들어요.'},{speaker:'키죠',text:'그 자동 안내 목소리,\n항상 친절하게 거짓말해요.'}],effectText:'감각에 집중했습니다. 받는 피해가 크게 줄고 키죠의 방어가 낮아지지만, 이동 속도가 조금 감소합니다.'}
+      {id:'close_eyes',label:'눈을 감고 듣는다',response:[{speaker:'키죠',text:'잘 들어요.'},{speaker:'키죠',text:'그 자동 안내 목소리,\n항상 친절하게 거짓말해요.'}],effectText:'감각에 집중했습니다. 방어력이 크게 오르고 키죠의 방어가 낮아지지만, 이동 속도가 조금 감소합니다.'}
     ],
     phase2:[{speaker:'키죠',text:'봉식님은 화면을 보는 게 아니에요.'},{speaker:'키죠',text:'화면 안에서\n밖을 보고 있는 거예요.'}],
     phase3:[{speaker:'키죠',text:'저 밖에 몇 명이 보고 있는지\n세지 마세요.'},{speaker:'키죠',text:'세는 순간\n걔들도 봉식님을 세거든요.'}],
@@ -8681,7 +8694,7 @@ const BOSS_STORY_DIALOGUES={
     ],
     choices:[
       {id:'follow',label:'채팅 로그를 붙잡는다',response:[{speaker:'현진',text:'ㅋㅋㅋㅋㅋ...\n까지만 남아도 괜찮겠어?'},{speaker:'시스템',text:'채팅 로그 손상. 복원 불가.'}],effectText:'채팅 로그를 붙잡았습니다. 이동 속도가 오르지만, 현진의 공격 템포도 조금 빨라집니다.'},
-      {id:'stop',label:'옛 송출을 재생한다',response:[{speaker:'현진',text:'그 방송,\n다시 틀지 마.'},{speaker:'시스템',text:'사고 당시 기록 재생 중...'}],effectText:'옛 송출을 재생했습니다. 받는 피해가 감소하고 현진의 이동이 느려지지만, 체력이 조금 증가합니다.'},
+      {id:'stop',label:'옛 송출을 재생한다',response:[{speaker:'현진',text:'그 방송,\n다시 틀지 마.'},{speaker:'시스템',text:'사고 당시 기록 재생 중...'}],effectText:'옛 송출을 재생했습니다. 방어력이 오르고 현진의 이동이 느려지지만, 체력이 조금 증가합니다.'},
       {id:'cut_signal',label:'송출 신호를 끊는다',response:[{speaker:'현진',text:'그걸 끊으면 안 돼.'},{speaker:'현진',text:'...아니.\n어쩌면 그게 유일한 출구야.'}],effectText:'신호를 끊었습니다. 현진의 체력과 공격 템포가 감소하며, 후반 대사에도 영향을 줍니다.'}
     ],
     phase2:[{speaker:'번검',text:'채팅 로그 동기화 실패.'},{speaker:'번검',text:'ㅋㅋㅋㅋㅋ...\n까지만 남았네.'}],
@@ -8728,7 +8741,7 @@ const BOSS_STORY_DIALOGUES={
     ],
     choices:[
       {id:'allow',label:'시스템 명령을 따른다',response:[{speaker:'승우',text:'그 목소리 말 들으면\n편하긴 하겠지.'},{speaker:'승우',text:'근데 그건 방송이\n네 목소리로 하는 말이야.'}],effectText:'시스템 명령을 따랐습니다. 공격력이 크게 오르지만, 승우의 피해와 속도도 증가합니다. 엔딩 대사가 달라집니다.'},
-      {id:'refuse',label:'제거 명령을 거부한다',response:[{speaker:'승우',text:'아직 거부할 수 있구나.'},{speaker:'승우',text:'그럼 아직\n네가 조금은 남아 있는 거야.'}],effectText:'제거 명령을 거부했습니다. 받는 피해가 감소하고 승우의 공격 템포가 조금 늦어집니다.'},
+      {id:'refuse',label:'제거 명령을 거부한다',response:[{speaker:'승우',text:'아직 거부할 수 있구나.'},{speaker:'승우',text:'그럼 아직\n네가 조금은 남아 있는 거야.'}],effectText:'제거 명령을 거부했습니다. 방어력이 오르고 승우의 공격 템포가 조금 늦어집니다.'},
       {id:'protect_save',label:'종료 버튼을 지킨다',response:[{speaker:'승우',text:'...'},{speaker:'승우',text:'그걸 지키면\n내가 널 꺼낼 수 있어.'}],effectText:'종료 권한을 지켰습니다. 최대 체력이 오르고 승우의 체력이 감소하며, 결말에도 영향을 줍니다.'}
     ],
     phase2:[{speaker:'승우',text:'넌 그날 방송 끝나고\n안 돌아왔어.'},{speaker:'승우',text:'화면에 남았어.\n난… 그걸 계속 보고 있었고.'},{speaker:'승우',text:'몇 년을.'}],
@@ -10070,7 +10083,7 @@ function applyMidbossSlotBalance(e,type,diff){
   const slotBase=enemyDataByKey(slotKey)||enemyDataByKey(type);
   if(act>=3&&type==='yanggaeng'){
     const midTune=Number(actTuning(3).eliteHpMul)||1;
-    e.hp=hpFromNormal(ACT3_NORMAL_HP.yanggaeng/midTune); e.maxhp=e.hp; // 공통 3막 배율 적용 후 normal 6만
+    e.hp=hpFromNormal(ACT3_NORMAL_HP.yanggaeng/midTune); e.maxhp=e.hp; // 공통 3막 배율 적용 후 normal 4만
   }else if(slotBase){
     const hpScale=diff*diffSet.hp;
     const hp=slotBase.hp*hpScale;
@@ -10093,7 +10106,7 @@ function spawnOnsterFinalBoss(diff){
   eb.phase=1; eb.atkT=1.2; eb.atkN=0; eb.summonT=3.8; eb.awakened=false;
   eb.title='2막 보스 · 사슬의 각성'; eb.quip='아직 깨우지 마라.';
   eb.x=W/2; eb.y=170; eb.intro=true; eb.introScale=1; eb.stunT=4; eb.tauntedHalf=false;
-  eb.hp*=2.089; eb.maxhp=eb.hp; // 온스터 전용 보정: normal 기준 총합 약 10만 (각성 50% 포함)
+  eb.hp=hpFromNormal(ACT2_NORMAL_HP.onster); eb.maxhp=eb.hp; // normal 기준 총 5만 (각성 시 체력 리필 없음)
   eb.dmg=Math.round((eb.dmg||18)*1.08);
   eb.touchDmg=Math.round((eb.touchDmg||eb.dmg||18)*1.08);
   eb.xp=Math.max(actTuning(2).bossXp||3100,eb.xp||0);
@@ -10107,8 +10120,7 @@ function spawnOnsterFinalBoss(diff){
 function spawnSet3Midboss(b,diff){
   const sb=b||BOSSES.find(x=>x&&x.key==='set3');
   const spawned=spawnBoss(sb);
-  const base=(ENEMY_TYPES.onster&&ENEMY_TYPES.onster.hp?ENEMY_TYPES.onster.hp*diff*diffSet.hp:8200)*SET3_MIDBOSS_HP_MUL;
-  spawned.phaseHp=[base/6,base/3,base/2]; // 1:2:3 → normal 현진 1만·번검 2만·케케로 3만
+  spawned.phaseHp=ACT2_NORMAL_HP.set3.map(hpFromNormal); // normal 현진 5천·번검 1만·케케로 1.5만 → 총 3만
   spawned.hp=spawned.phaseHp[0]; spawned.maxhp=spawned.hp;
   spawned.name='현진';
   spawned.title='2막 중간보스 · 현진';
@@ -10133,7 +10145,7 @@ function spawnBoss(b){
   markDiscovered('bosses', b&&b.key);
   const slotBase=bossSlotBalanceData(b);
   const scale=(1+(act-1)*0.35)*diffSet.hp*(actTuning(act).bossHpMul||1);
-  // 승우 GP1~GP3는 normal 3만·4만·5만. Void 6만은 전환 함수에서 별도 적용한다.
+  // 승우 GP1~GP3과 Void는 normal 기준 각각 3만이다.
   const isSeungwoo=act>=3&&b&&b.key==='seungwoo';
   const phaseHp=isSeungwoo?ACT3_NORMAL_HP.seungwoo.map(hpFromNormal):(slotBase.phaseHp?slotBase.phaseHp.map(v=>v*scale):null);
   const hp=phaseHp?phaseHp[0]:slotBase.hp*scale;
@@ -12402,7 +12414,7 @@ function enterSeungwooVoidPhase(b){
   b.title='3막 최종보스 · 시스템 침식';
   b.r=126;
   b.color='#c45bff';
-  const voidHp=Math.round(hpFromNormal(ACT3_NORMAL_HP.seungwooVoid)); // normal 기준 6만
+  const voidHp=Math.round(hpFromNormal(ACT3_NORMAL_HP.seungwooVoid)); // normal 기준 3만
   b.maxhp=Math.max(1,voidHp);
   b.hp=b.maxhp;
   b.baseSpd=150;
@@ -14009,7 +14021,7 @@ function update(dt){
               const doFire=()=>{ if(!a3Alive(e))return;
                 const b=Math.atan2(player.y-e.y,player.x-e.x), offL=-rand(lo,hi), offR=rand(lo,hi);
                 const range=Math.hypot(W,H)+160;
-                for(const off of [offL,offR]) kijoLaserWarns.push({x:e.x,y:e.y,ang:b+off,width:16,range,t:0,warn,color:col,fired:false,sniper:true,dmg:16,srcName:'온스터 사슬채찍'});
+                for(const off of [offL,offR]) kijoLaserWarns.push({x:e.x,y:e.y,ang:b+off,width:16,range,t:0,warn,color:col,fired:false,sniper:true,dmg:20,srcName:'온스터 사슬채찍'});
                 if(s>0) playOnsterLaserSfx({vol:0.52,rate:1.05,maxDur:0.58,cd:0.12,key:'onsterBasicLaser'});
               };
               if(s===0) doFire(); else onsterDelay(acc, doFire);
@@ -14026,7 +14038,7 @@ function update(dt){
             // 유도 파편(강화): 5→7갈래, 속도·유도 상향. 직선 회피 불가
             const pa=Math.atan2(player.y-e.y,player.x-e.x);
             playOnsterLaserSfx({vol:0.54,rate:1.22,maxDur:0.58,cd:0.14,key:'onsterBasicLaser'});
-            for(let i=-3;i<=3;i++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa+i*0.19)*275,vy:Math.sin(pa+i*0.19)*275,r:8,dmg:15,life:3.6,home:0.72,srcName:'\uC628\uC2A4\uD130 \uC720\uB3C4 \uD30C\uD3B8'});
+            for(let i=-3;i<=3;i++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa+i*0.19)*275,vy:Math.sin(pa+i*0.19)*275,r:8,dmg:20,life:3.6,home:0.72,srcName:'\uC628\uC2A4\uD130 \uC720\uB3C4 \uD30C\uD3B8'});
           }
           else onsterChainBeam(e);   // 조준빔 — 돌진강타 삭제분 흡수
 
@@ -14076,7 +14088,7 @@ function update(dt){
       e.fuseT-=dt;
       if(e.shootCd>0){
         e._st=(e._st||0)-dt;
-        if(e._st<=0){ e._st=e.shootCd; const pa=Math.atan2(player.y-e.y,player.x-e.x); for(let i=-1;i<=1;i++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa+i*0.2)*235,vy:Math.sin(pa+i*0.2)*235,r:7,dmg:9,life:3.4,srcName:e.label}); }
+        if(e._st<=0){ e._st=e.shootCd; const pa=Math.atan2(player.y-e.y,player.x-e.x), shotDmg=e.label==='사슬 닻'?18:9; for(let i=-1;i<=1;i++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa+i*0.2)*235,vy:Math.sin(pa+i*0.2)*235,r:7,dmg:shotDmg,life:3.4,srcName:e.label}); }
       }
       if(e.fuseT<=0){
         const groupedFail=!!e.failGroup, firstGroupFail=!groupedFail||!onsterObjectiveFailGroups[e.failGroup];
@@ -14481,7 +14493,7 @@ function update(dt){
 
       // [시그니처] 되감기 — 격노(B면) 직전 마지막 발악 1회
       if(!e._rewindDone && !e.enr && e.hp < e.maxhp*0.46){ e._rewindDone=true; bagjeinDoRewind(e); }
-      if(e.enr && !e._rewindDone2 && e.hp < e.maxhp*0.28){ e._rewindDone2=true; banner('⏪ B면 재되감기','한 번 더 되돌아온다',1100); bagjeinDoRewind(e,{count:22,speed:205,dmg:13,life:5.6}); }
+      if(e.enr && !e._rewindDone2 && e.hp < e.maxhp*0.28){ e._rewindDone2=true; banner('⏪ B면 재되감기','한 번 더 되돌아온다',1100); bagjeinDoRewind(e,{count:22,speed:205,dmg:22,life:5.6}); }
 
       // 격노: HP 40% 이하
       if(!e.enr && e.hp<e.maxhp*0.4){
@@ -14497,8 +14509,8 @@ function update(dt){
         e._finalBRush=true;
         banner('💿 최종 B면 러시','속도가 망가진다',1300);
         if(sfx.enemyGlitch) sfx.enemyGlitch(); screenShake=Math.max(screenShake||0,16);
-        bagjeinDoRewind(e,{count:20,speed:220,dmg:13,life:5.2});
-        for(let w=0;w<4;w++) enemyDelay(e,w*0.42,()=>{ if(!enemies.includes(e))return; const k=14, sp=170+w*32, off=(e.spinAng||0)+w*0.55; for(let i=0;i<k;i++){ if(i%7===w%7) continue; const a2=i/k*TAU+off; eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*sp,vy:Math.sin(a2)*sp,r:7,dmg:13,life:3.6,srcName:'박제인간'}); } if(w%2===0){ timeScale=0.42; slowmoT=0.34; } else { timeScale=2.2; slowmoT=0.28; } });
+        bagjeinDoRewind(e,{count:20,speed:220,dmg:22,life:5.2});
+        for(let w=0;w<4;w++) enemyDelay(e,w*0.42,()=>{ if(!enemies.includes(e))return; const k=14, sp=170+w*32, off=(e.spinAng||0)+w*0.55; for(let i=0;i<k;i++){ if(i%7===w%7) continue; const a2=i/k*TAU+off; eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*sp,vy:Math.sin(a2)*sp,r:7,dmg:22,life:3.6,srcName:'박제인간'}); } if(w%2===0){ timeScale=0.42; slowmoT=0.34; } else { timeScale=2.2; slowmoT=0.28; } });
       }
 
       // 이동
@@ -14518,7 +14530,7 @@ function update(dt){
           // 탄 먼저 발사
           const k=32; for(let i=0;i<k;i++){
             const a2=i/k*TAU+e.spinAng;
-            eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*285,vy:Math.sin(a2)*285,r:7,dmg:16,life:4.8,srcName:'박제인간'});
+            eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*285,vy:Math.sin(a2)*285,r:7,dmg:26,life:4.8,srcName:'박제인간'});
           }
           banner('💿 레코드 긁힘!','…',700);
           if(sfx.enemyGlitch) sfx.enemyGlitch(); screenShake=Math.max(screenShake||0,10);
@@ -14542,7 +14554,7 @@ function update(dt){
           enemyDelay(e,0.38,()=>{ timeScale=0.38; slowmoT=0.95; if(sfx.enemyWarn) sfx.enemyWarn(); banner('💿 …','',400); beep(100,0.06,'sine',0.04); });   // dt큐: 사망/일시정지/timeScale 준수
           enemyDelay(e,1.35,()=>{ if(sfx.enemyCast) sfx.enemyCast(); });   // timeScale 복원은 slowmoT 만료가 담당(자동)
           const pa2=Math.atan2(player.y-e.y,player.x-e.x);
-          for(let i=-2;i<=2;i++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa2+i*0.2)*265,vy:Math.sin(pa2+i*0.2)*265,r:8,dmg:13,life:3.5,srcName:'박제인간'});
+          for(let i=-2;i<=2;i++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa2+i*0.2)*265,vy:Math.sin(pa2+i*0.2)*265,r:8,dmg:20,life:3.5,srcName:'박제인간'});
         }
       }
 
@@ -14559,7 +14571,7 @@ function update(dt){
           beep(80,0.15,'sawtooth',0.06);
           const k=14; for(let i=0;i<k;i++){
             const a2=i/k*TAU+e.spinAng;
-            eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*220,vy:Math.sin(a2)*220,r:8,dmg:14,life:3.8,srcName:'박제인간'});
+            eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*220,vy:Math.sin(a2)*220,r:8,dmg:21,life:3.8,srcName:'박제인간'});
           }
         }
       }
@@ -14577,7 +14589,7 @@ function update(dt){
               if(!enemies.includes(e)) return;
               const gapY=clamp(player.y+rand(-40,40),90,H-90);
               const sx=fromLeft?-12:W+12, vx=(fromLeft?1:-1)*300;
-              for(let yy=70;yy<H-50;yy+=34){ if(Math.abs(yy-gapY)<48) continue; eBullets.push({x:sx,y:yy,vx:vx,vy:0,r:8,dmg:15,life:3.6,srcName:'\uBC15\uC81C\uC778\uAC04'}); }
+              for(let yy=70;yy<H-50;yy+=34){ if(Math.abs(yy-gapY)<48) continue; eBullets.push({x:sx,y:yy,vx:vx,vy:0,r:8,dmg:23,life:3.6,srcName:'\uBC15\uC81C\uC778\uAC04'}); }
               beep(180,0.08,'sawtooth',0.05);
             });
           }
@@ -14597,10 +14609,10 @@ function update(dt){
         if(ph===0){
           // 소용돌이 링
           const k=en?18:10;
-          if(en) bagjeinRingWithGap(e,k,248,13,3.5,e.spinAng+(e.atkN*0.42),1);
+          if(en) bagjeinRingWithGap(e,k,248,20,3.5,e.spinAng+(e.atkN*0.42),1);
           else for(let i=0;i<k;i++){
             const a2=i/k*TAU+e.spinAng+(e.atkN*0.42);
-            eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*240,vy:Math.sin(a2)*240,r:8,dmg:13,life:3.5,srcName:'박제인간'});
+            eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*240,vy:Math.sin(a2)*240,r:8,dmg:20,life:3.5,srcName:'박제인간'});
           }
           banner('💿 소용돌이','',500);
           beep(200,0.06,'sine',0.04);
@@ -14611,7 +14623,7 @@ function update(dt){
           const k=en?8:5;
           for(let i=0;i<k;i++){
             const a2=pa+(i-(k-1)/2)*0.17;
-            eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*260,vy:Math.sin(a2)*260,r:9,dmg:14,life:3.2,srcName:'박제인간'});
+            eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*260,vy:Math.sin(a2)*260,r:9,dmg:21,life:3.2,srcName:'박제인간'});
           }
           banner('🎵 바늘 쐐기탄','',550);
           e.atkT=en?0.88:1.7;
@@ -14623,10 +14635,10 @@ function update(dt){
             const k=10+ring*4, sp=170+ring*52;
             enemyDelay(e,ring*0.26,()=>{
               if(!enemies.includes(e)) return;
-              if(en) bagjeinRingWithGap(e,k,sp,12,3.8,e.spinAng+ring*0.3,1);
+              if(en) bagjeinRingWithGap(e,k,sp,18,3.8,e.spinAng+ring*0.3,1);
               else for(let i=0;i<k;i++){
                 const a2=i/k*TAU+e.spinAng+ring*0.3;
-                eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*sp,vy:Math.sin(a2)*sp,r:8,dmg:12,life:3.8,srcName:'박제인간'});
+                eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*sp,vy:Math.sin(a2)*sp,r:8,dmg:18,life:3.8,srcName:'박제인간'});
               }
             });
           }
@@ -14639,12 +14651,12 @@ function update(dt){
           const cols=en?9:5;
           for(let i=0;i<cols;i++){
             const fx=W*(i+0.5)/cols+rand(-18,18);
-            eBullets.push({x:fx,y:-12,vx:rand(-12,12),vy:rand(205,250),r:8,dmg:13,life:4.2,srcName:'박제인간'});
+            eBullets.push({x:fx,y:-12,vx:rand(-12,12),vy:rand(205,250),r:8,dmg:20,life:4.2,srcName:'박제인간'});
           }
-          eBullets.push({x:player.x+rand(-25,25),y:-12,vx:rand(-8,8),vy:245,r:10,dmg:15,life:4,srcName:'박제인간'});
+          eBullets.push({x:player.x+rand(-25,25),y:-12,vx:rand(-8,8),vy:245,r:10,dmg:23,life:4,srcName:'박제인간'});
           if(en){
             // 격노 시 측면에서도
-            for(let i=0;i<3;i++){ eBullets.push({x:-10,y:rand(80,H-80),vx:rand(170,210),vy:rand(-15,15),r:7,dmg:12,life:4,srcName:'박제인간'}); eBullets.push({x:W+10,y:rand(80,H-80),vx:-rand(170,210),vy:rand(-15,15),r:7,dmg:12,life:4,srcName:'박제인간'}); }
+            for(let i=0;i<3;i++){ eBullets.push({x:-10,y:rand(80,H-80),vx:rand(170,210),vy:rand(-15,15),r:7,dmg:18,life:4,srcName:'박제인간'}); eBullets.push({x:W+10,y:rand(80,H-80),vx:-rand(170,210),vy:rand(-15,15),r:7,dmg:18,life:4,srcName:'박제인간'}); }
           }
           banner('🎵 바늘 낙하','위에서 쏟아진다!',700);
           e.atkT=en?0.95:1.8;
@@ -14657,7 +14669,7 @@ function update(dt){
               if(!enemies.includes(e)) return;
               const spd=155+i*30;
               const a2=e.spinAng+i*(TAU/steps)*0.7;
-              eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*spd,vy:Math.sin(a2)*spd,r:7+Math.floor(i/3),dmg:12,life:3.6,srcName:'박제인간'});
+              eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*spd,vy:Math.sin(a2)*spd,r:7+Math.floor(i/3),dmg:18,life:3.6,srcName:'박제인간'});
             });
           }
           banner('💿 RPM 가속','점점 빨라진다!',750);
@@ -14670,7 +14682,7 @@ function update(dt){
           const k=en?6:3;
           for(let i=0;i<k;i++){
             const a2=pa+(i-(k-1)/2)*0.20;
-            eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*250,vy:Math.sin(a2)*250,r:8,dmg:13,life:3.4,srcName:'박제인간'});
+            eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*250,vy:Math.sin(a2)*250,r:8,dmg:20,life:3.4,srcName:'박제인간'});
           }
           banner('⮃ 방향키 반전!','조작이 뒤집혔다',950);
           beep(300,0.1,'square',0.05);
@@ -14679,13 +14691,13 @@ function update(dt){
         } else {
           // 고속 스파이럴 (격노 전 3발 / 격노 후 14발)
           if(!en){
-            for(let i=-1;i<=1;i++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa+i*0.30)*245,vy:Math.sin(pa+i*0.30)*245,r:8,dmg:13,life:3.4,srcName:'박제인간'});
+            for(let i=-1;i<=1;i++) eBullets.push({x:e.x,y:e.y,vx:Math.cos(pa+i*0.30)*245,vy:Math.sin(pa+i*0.30)*245,r:8,dmg:20,life:3.4,srcName:'박제인간'});
           } else {
             for(let i=0;i<14;i++){
               enemyDelay(e,i*0.05,()=>{
                 if(!enemies.includes(e)) return;
                 const a2=e.spinAng+i*(TAU/14);
-                eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*255,vy:Math.sin(a2)*255,r:7,dmg:12,life:3.6,srcName:'박제인간'});
+                eBullets.push({x:e.x,y:e.y,vx:Math.cos(a2)*255,vy:Math.sin(a2)*255,r:7,dmg:18,life:3.6,srcName:'박제인간'});
               });
             }
             banner('💿 고속 회전','',600);
@@ -15496,8 +15508,8 @@ const LEGACY_EVENTS=[
   // ===== 신규 이벤트 =====
   {tag:'⚠️ 방송 사고',title:'송출 오류 발생',body:'장비에 문제가 생겼다. 무리하게 밀어붙이면 한쪽이 강해지고 다른 쪽이 약해진다.',
    choices:[
-     {t:'화력에 올인 — 공격력 +1, 받는 피해 +5%',f:()=>{player.dmg+=1;player.armor-=0.05;banner('공격력 +1 / 방어 -5%','영구',1400);updateHUD();finishNode();}},
-     {t:'안전제일 — 받는 피해 -8%, 공격력 -0.5',f:()=>{player.armor+=0.08;player.dmg=Math.max(1,player.dmg-0.5);banner('방어↑ / 공격력 -0.5','영구',1400);updateHUD();finishNode();}},
+     {t:'화력에 올인 — 공격력 +1, 방어력 -5',f:()=>{player.dmg+=1;player.armor-=0.05;banner('공격력 +1 / 방어력 -5','영구',1400);updateHUD();finishNode();}},
+     {t:'안전제일 — 방어력 +8, 공격력 -0.5',f:()=>{player.armor+=0.08;player.dmg=Math.max(1,player.dmg-0.5);banner('방어력 +8 / 공격력 -0.5','영구',1400);updateHUD();finishNode();}},
      {t:'기동 강화 — 이동 +12%, 최대체력 -8%',f:()=>{player.spd+=20;player.maxhp=Math.round(player.maxhp*0.92);player.hp=Math.min(player.hp,player.maxhp);banner('이동↑ / 체력↓','영구',1400);updateHUD();finishNode();}},
    ]},
   {tag:'🚨 도네 협박',title:'정체불명의 후원',body:'"골드 안 보내면 스왓 부른다." 무시하면 그만이지만, 응하면 가끔 답례가 온다.',
@@ -17241,7 +17253,7 @@ const EVENTS=[
    ]},
   {tag:'🧪 수상한 물약',title:'라벨 없는 병',body:'색이 계속 바뀌는 물약이다. 마시면 즉시 효과가 오지만, 무슨 효과인지는 모른다.',
    choices:[
-     {t:'마신다',f:()=>{const result=pick(['heal','atk','armor','curse']);if(result==='heal'){healPlayer(Math.max(45,player.maxhp*0.45),player.x,player.y);banner('물약 효과','체력 회복',1400);finishNode();}else if(result==='atk'){player.dmg+=2.5;banner('물약 효과','공격력 +2.5',1400);updateHUD();finishNode();}else if(result==='armor'){player.armor=Math.min(0.85,player.armor+0.10);banner('물약 효과','받는 피해 -10%',1400);updateHUD();finishNode();}else{grantMysteryPenaltyCurse('mystery_potion','drink',{source:'mystery_event_penalty'});finishNode();}}},
+     {t:'마신다',f:()=>{const result=pick(['heal','atk','armor','curse']);if(result==='heal'){healPlayer(Math.max(45,player.maxhp*0.45),player.x,player.y);banner('물약 효과','체력 회복',1400);finishNode();}else if(result==='atk'){player.dmg+=2.5;banner('물약 효과','공격력 +2.5',1400);updateHUD();finishNode();}else if(result==='armor'){player.armor+=0.10;banner('물약 효과','방어력 +10',1400);updateHUD();finishNode();}else{grantMysteryPenaltyCurse('mystery_potion','drink',{source:'mystery_event_penalty'});finishNode();}}},
      {t:'버린다',f:()=>finishNode()},
    ]},
   {tag:'📚 금지된 서적',title:'봉인된 책',body:'책장을 넘기면 글자가 피부 위로 파고든다. 지식은 피를 요구한다.',
@@ -17961,7 +17973,7 @@ const TRAIN_OPTS=[
   {label:'공격력 +1.2',   f:()=>{ player.dmg+=1.2; }},
   {label:'발사 속도 +10%', f:()=>{ player.fireAdd+=0.10; }},
   {label:'이동 속도 +14',  f:()=>{ player.spd+=14; }},
-  {label:'방어 +6%',       f:()=>{ player.armor=Math.min(0.85, player.armor+0.06); }},
+  {label:'방어력 +6',      f:()=>{ player.armor+=0.06; }},
 ];
 function openCampfire(cb){
   const rest=$('cfRest'), train=$('cfTrain');
@@ -18037,7 +18049,7 @@ const POTIONS=[
   {id:'greater_heal', rarity:'rare', name:'상급 치유 물약', icon:'💚', desc:POTION_HEALING.greater_heal.desc, use:p=>{healPlayer(potionHealAmount('greater_heal',p),player.x,player.y);}},
   {id:'fury', rarity:'rare', name:'분노 물약', icon:'🔥', desc:'8초간 공격력 +5', use:p=>{addPotionBuff(p,{id:'fury',name:'분노 물약',label:'공격력 +5',icon:'🔥',desc:'8초간 공격력 증가',t:8,atkFlat:5});}},
   {id:'focus', rarity:'rare', name:'집중 물약', icon:'🎯', desc:'8초간 발사속도 +30%', use:p=>{addPotionBuff(p,{id:'focus',name:'집중 물약',label:'발사속도 +30%',icon:'🎯',desc:'8초간 발사속도 증가',t:8,fireAdd:0.30});}},
-  {id:'ironclad', rarity:'rare', name:'철갑 물약', icon:'🛡️', desc:'8초간 받는 피해 25% 감소', use:p=>{addPotionBuff(p,{id:'ironclad',name:'철갑 물약',label:'피해감소 +25%',icon:'🛡️',desc:'8초간 받는 피해 감소',t:8,armor:0.25});}},
+  {id:'ironclad', rarity:'rare', name:'철갑 물약', icon:'🛡️', desc:'8초간 방어력 +25', use:p=>{addPotionBuff(p,{id:'ironclad',name:'철갑 물약',label:'방어력 +25',icon:'🛡️',desc:'8초간 방어력 증가',t:8,armor:0.25});}},
   {id:'lightning_potion', rarity:'rare', name:'번개 물약', icon:'⚡', desc:'랜덤 적 10회 타격', use:p=>{useLightningPotion();}},
   {id:'bomb_potion', rarity:'rare', name:'폭탄 물약', icon:'💣', desc:'사용 즉시 공격력 기반 범위 폭발', use:p=>{useBombPotion();}},
   {id:'berserk_potion', rarity:'epic', name:'광폭 물약', icon:'💢', desc:'6초간 공격력 +8', use:p=>{addPotionBuff(p,{id:'berserk_potion',name:'광폭 물약',label:'공격력 +8',icon:'💢',desc:'6초간 공격력 증가',t:6,atkFlat:8});}},
@@ -18125,7 +18137,7 @@ const LEVEL_PERKS=[
   {g:'common',icon:'⚡',name:'속사 특화',desc:'발사 속도 +10%',apply:p=>{p.fireAdd+=0.10;}},
   {g:'common',icon:'🥾',name:'민첩 특화',desc:'이동 속도 +12',apply:p=>{p.spd+=12;}},
   {g:'common',icon:'❤️',name:'활력',desc:'최대 체력 +15, 10 회복',apply:p=>{p.maxhp+=15;healPlayer(10,player.x,player.y);}},
-  {g:'common',icon:'🛡️',name:'방어 특화',desc:'받는 피해 -4%',apply:p=>{p.armor+=0.04;}},
+  {g:'common',icon:'🛡️',name:'방어 특화',desc:'방어력 +4',apply:p=>{p.armor+=0.04;}},
   {g:'common',icon:'🧲',name:'광부',desc:'골드 획득량 +10%',apply:p=>{p.goldMul+=0.10;}},
   {g:'common',icon:'💥',name:'대구경',desc:'투사체 크기 +10%, 크기 초과분의 35%만큼 피해 증가',apply:p=>{p.bulletSize+=0.10;}},
   {g:'common',icon:'🌿',name:'재생',desc:'초당 체력 +0.5',apply:p=>{p.regen+=0.5;}},
@@ -18627,7 +18639,7 @@ const SMALL_REWARDS=[
   {icon:'⚔️',name:'무기 손질',desc:'공격력 +1',apply:()=>{player.dmg+=1;banner('공격력 +1','',1000);}},
   {icon:'⚡',name:'방아쇠 정비',desc:'발사 속도 +4%',apply:()=>{player.fireAdd+=0.04;banner('발사 속도 +4%','',1000);}},
   {icon:'🥾',name:'가벼운 발놀림',desc:'이동 속도 +8',apply:()=>{player.spd+=8;banner('이동 속도 +8','',1000);}},
-  {icon:'🛡️',name:'방어구 정비',desc:'받는 피해 -2%',apply:()=>{player.armor=Math.min(0.85,player.armor+0.02);banner('받는 피해 -2%','',1000);}},
+  {icon:'🛡️',name:'방어구 정비',desc:'방어력 +2',apply:()=>{player.armor+=0.02;banner('방어력 +2','',1000);}},
   {icon:'🎯',name:'조준경',desc:'치명타 확률 +2%',apply:()=>{player.critChance=Math.min(CRIT_CHANCE_CAP,player.critChance+0.02);banner('치명타 +2%','',1000);}},
   {icon:'💥',name:'탄 개조',desc:'투사체 크기 +5% (크기 피해 약 +2%)',apply:()=>{player.bulletSize+=0.05;banner('투사체 크기 +5%','',1000);}},
   {icon:'🌿',name:'활력 물약',desc:'최대 체력 +12, 12 회복',apply:()=>{player.maxhp+=12;healPlayer(12,player.x,player.y);banner('최대 체력 +12','',1000);}},
@@ -23473,7 +23485,7 @@ function spStats(p){
     ['fire-rate 초당발사', playerFireRate(p).toFixed(1)+'발', playerFireRate(p)],
     ['shots 투사체', shots+'발', shots],
     ['speed 이동', Math.round(playerMoveSpeed(p)), playerMoveSpeed(p)],
-    ['armor '+incomingDamageDisplayLabel(incomingMul), incomingDamageDisplayValue(incomingMul), 1-incomingMul],
+    ['armor 방어력', Math.round(armorPoints(p))+' · '+incomingDamageDisplayLabel(incomingMul)+' '+incomingDamageDisplayValue(incomingMul), 1-incomingMul],
     ['regen 재생', fmtSignedNumber(regen)+'/초', regen],
   ];
 }
@@ -23773,7 +23785,7 @@ function renderInventory(){
     ['초당 발사', fr+'발'],
     ['투사체', p.shots+'발'],
     ['이동 속도', Math.round(playerMoveSpeed(p))],
-    [incomingDamageDisplayLabel(incomingMul), incomingDamageDisplayValue(incomingMul)],
+    ['방어력', Math.round(armorPoints(p))+' · '+incomingDamageDisplayLabel(incomingMul)+' '+incomingDamageDisplayValue(incomingMul)],
   ];
   // 투자한 항목만 추가 표시
   if(p.critChance>0||p.critMult!==CRIT_BASE_MULT) stats.push(['치명타 피해', 'x'+clamp(p.critMult,1,CRIT_MULT_CAP).toFixed(1)]);
@@ -25838,7 +25850,7 @@ window.debugTrainingQA=function(){
     attack:{base:Number(p.dmg)||0,potion:Number(p.potionAtkFlat)||0,conditional:conditionalAttackFlat(p),final:totalAttackPower(p),trainingBonus:trainingCount('atk',p)*TRAINING_ATK_BONUS},
     speed:{base:Number(p.spd)||0,final:playerMoveSpeed(p),trainingBonus:Number(p.trainingSpeedBonus)||0},
     focus:{critChance:clamp(Number(p.critChance)||0,0,CRIT_CHANCE_CAP),trainingBonus:Number(p.trainingFocusBonus)||0,cap:CRIT_CHANCE_CAP},
-    defense:{armor:effectiveArmor(p),trainingBonus:Number(p.trainingDefenseBonus)||0,cap:0.85}
+    defense:{armorPoints:armorPoints(p),reduction:effectiveArmor(p),trainingBonus:Number(p.trainingDefenseBonus)||0,formulaBase:100}
   };
 };
 
@@ -26392,11 +26404,11 @@ const TREE_NODES = [
   { id:'v_hp1',   name:'체력 강화 I',  icon:'❤️', branch:'survive', req:['hub'], cost:1,
     desc:'최대 체력 +20', apply:p=>{ p.maxhp+=20; p.hp+=20; } },
   { id:'v_armor1',name:'방어 강화 I',  icon:'🛡️', branch:'survive', req:['hub'], cost:1,
-    desc:'받는 피해 -5%', apply:p=>{ p.armor+=0.05; } },
+    desc:'방어력 +5', apply:p=>{ p.armor+=0.05; } },
   { id:'v_hp2',   name:'체력 강화 II', icon:'❤️', branch:'survive', req:['v_hp1'], cost:1,
     desc:'최대 체력 추가 +20', apply:p=>{ p.maxhp+=20; p.hp+=20; } },
   { id:'v_armor2',name:'방어 강화 II', icon:'🛡️', branch:'survive', req:['v_armor1'], cost:1,
-    desc:'받는 피해 추가 -5%', apply:p=>{ p.armor+=0.05; } },
+    desc:'방어력 추가 +5', apply:p=>{ p.armor+=0.05; } },
   { id:'v_regen', name:'재생 I',       icon:'🌿', branch:'survive', req:['v_hp1'], cost:1,
     desc:'초당 체력 +0.8 재생', apply:p=>{ p.regen+=0.8; } },
   { id:'v_alchemy_pouch', name:'연금술 주머니', icon:'🧪', branch:'survive', req:['v_regen'], cost:2,
@@ -26411,7 +26423,7 @@ const TREE_NODES = [
   { id:'v_blood_cycle', name:'피의 순환', icon:'🩸', branch:'survive', req:['v_regen'], cost:2,
     desc:'흡혈 확률 +7%, 최대 체력 -8%', apply:p=>{ p.lifesteal+=0.07; p.maxhp=Math.max(1,Math.round(p.maxhp*0.92)); p.hp=Math.min(p.hp,p.maxhp); } },
   { id:'v_shield_training', name:'방패 운용', icon:'🛡️', branch:'survive', req:['v_armor2'], cost:2,
-    desc:'받는 피해 -8%, 이동속도 -8', apply:p=>{ p.armor+=0.08; p.spd-=8; } },
+    desc:'방어력 +8, 이동속도 -8', apply:p=>{ p.armor+=0.08; p.spd-=8; } },
   { id:'regen_overload', name:'재생 과부하', icon:'🌿', branch:'survive', req:['v_regen'], cost:2, isMiniKeystone:true,
     desc:'체력 50% 이하일 때 재생 효과 +50%', skip:p=>p.regenOverload,
     apply:p=>{ p.regenOverload=true; } },
@@ -26455,7 +26467,7 @@ const TREE_NODES = [
   { id:'m_dash_shot', name:'질주 사격', icon:'🔫', branch:'speed', req:['m_fire2'], cost:2,
     desc:'발사 속도 +18%, 받는 피해 +4%', apply:p=>{ p.fireAdd+=0.18; p.damageTakenMul+=0.04; } },
   { id:'bridge_guarded_trigger', name:'방벽 연사', icon:'🛡️', branch:'speed', req:['m_fire2','v_armor2'], cost:1,
-    desc:'받는 피해 -4%. 발사속도 +6%.', apply:p=>{ p.armor=(p.armor||0)+0.04; p.fireAdd=(p.fireAdd||0)+0.06; } },
+    desc:'방어력 +4. 발사속도 +6%.', apply:p=>{ p.armor=(p.armor||0)+0.04; p.fireAdd=(p.fireAdd||0)+0.06; } },
   { id:'dodge_reload', name:'회피 재장전', icon:'🌀', branch:'speed', req:['hub'], cost:1,
     desc:'회피 직후 다음 탄 피해 +40% (2초)', skip:p=>p.dodgeReload,
     apply:p=>{ p.dodgeReload=true; p.dodgeReloadShotDmgMul=Math.max(Number(p.dodgeReloadShotDmgMul)||0,0.40); } },
