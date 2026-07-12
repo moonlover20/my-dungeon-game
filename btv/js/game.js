@@ -23476,7 +23476,6 @@ function spStats(p){
   const regen=effectiveRegen(p);
   const shots=(p.shots||1)+(p.shadowBarrageT>0?(p.shadowBarrageExtraShots||1):0);
   const atk=totalAttackPower(p);
-  const incomingMul=incomingDamageMul(p);
   return [
     ['hp 최대체력', Math.round(p.maxhp), p.maxhp],
     ['attack 공격력', atk.toFixed(1), atk],
@@ -23485,7 +23484,7 @@ function spStats(p){
     ['fire-rate 초당발사', playerFireRate(p).toFixed(1)+'발', playerFireRate(p)],
     ['shots 투사체', shots+'발', shots],
     ['speed 이동', Math.round(playerMoveSpeed(p)), playerMoveSpeed(p)],
-    ['armor 방어력', Math.round(armorPoints(p))+' · '+incomingDamageDisplayLabel(incomingMul)+' '+incomingDamageDisplayValue(incomingMul), 1-incomingMul],
+    ['armor 방어력', Math.round(armorPoints(p)), effectiveArmor(p)],
     ['regen 재생', fmtSignedNumber(regen)+'/초', regen],
   ];
 }
@@ -23721,7 +23720,7 @@ function renderSidePanel(previewPk){
       const dv=aft[i][2]-r[2];
       if(Math.abs(dv)>1e-9) val='<b class="sp-old">'+spEsc(r[1])+'</b> <b class="sp-new">→ '+spEsc(aft[i][1])+'</b>';
     }
-    h+='<div class="sp-row sp-kind-'+spEsc(kind)+'" data-stat-key="'+spEsc(statKey)+'" aria-label="'+spEsc(statNameFromLabel(r[0]))+'"><span class="sp-label">'+spLabelHTML(r[0])+'</span><span class="sp-value">'+val+'</span></div>';
+    h+='<div class="sp-row sp-kind-'+spEsc(kind)+'" data-stat-key="'+spEsc(statKey)+'" tabindex="0" aria-label="'+spEsc(statNameFromLabel(r[0]))+'"><span class="sp-label">'+spLabelHTML(r[0])+'</span><span class="sp-value">'+val+'</span></div>';
   });
   if(curT.length){
     h+='<div class="sp-title sp-subtitle sp-training-title"><span aria-hidden="true">◇</span> 훈련</div>';
